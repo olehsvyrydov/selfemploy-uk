@@ -1,54 +1,106 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Button?>
+<?import java.lang.String?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="uk.selfemploy.ui.controller.MainController"
-            styleClass="root-container">
+            styleClass="root-container"
+            prefWidth="1200" prefHeight="800"
+            minWidth="900" minHeight="600">
 
-    <!-- Top Navigation Bar -->
+    <stylesheets>
+        <String fx:value="/css/main.css"/>
+    </stylesheets>
+
+    <!-- Header Bar -->
     <top>
-        <HBox styleClass="nav-bar" alignment="CENTER_LEFT" spacing="20">
-            <padding>
-                <Insets top="15" right="20" bottom="15" left="20"/>
-            </padding>
-            <Label text="UK Self-Employment Manager" styleClass="app-title"/>
-            <HBox HBox.hgrow="ALWAYS"/>
-            <Button text="Settings" styleClass="nav-button"/>
+        <HBox fx:id="headerBar" styleClass="header-bar" alignment="CENTER_LEFT" spacing="15">
+            <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
+
+            <!-- Logo & Title -->
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="SE" styleClass="logo-text"/>
+                <Label text="UK Self-Employment Manager" styleClass="app-title"/>
+            </HBox>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <!-- Tax Year Selector -->
+            <HBox alignment="CENTER" spacing="8">
+                <Label text="Tax Year:" styleClass="label-secondary"/>
+                <ComboBox fx:id="taxYearSelector" styleClass="tax-year-selector" prefWidth="130"/>
+            </HBox>
+
+            <!-- Action Buttons -->
+            <Button fx:id="helpButton" styleClass="header-button"
+                    text="?" onAction="#handleHelp" accessibleText="Help"/>
+            <Button fx:id="settingsButton" styleClass="header-button"
+                    text="Settings" onAction="#handleSettings"/>
         </HBox>
     </top>
 
-    <!-- Left Sidebar Navigation -->
+    <!-- Navigation Sidebar -->
     <left>
-        <VBox styleClass="sidebar" spacing="5" prefWidth="200">
-            <padding>
-                <Insets top="20" right="10" bottom="20" left="10"/>
-            </padding>
-            <Button text="Dashboard" styleClass="sidebar-button" maxWidth="Infinity"/>
-            <Button text="Income" styleClass="sidebar-button" maxWidth="Infinity"/>
-            <Button text="Expenses" styleClass="sidebar-button" maxWidth="Infinity"/>
-            <Button text="Tax Summary" styleClass="sidebar-button" maxWidth="Infinity"/>
-            <Button text="HMRC Submission" styleClass="sidebar-button" maxWidth="Infinity"/>
-            <VBox VBox.vgrow="ALWAYS"/>
-            <Button text="Help" styleClass="sidebar-button-secondary" maxWidth="Infinity"/>
+        <VBox fx:id="sidebar" styleClass="sidebar" spacing="4" prefWidth="220" minWidth="220">
+            <padding><Insets top="20" right="12" bottom="20" left="12"/></padding>
+
+            <!-- Main Navigation -->
+            <Label text="NAVIGATION" styleClass="nav-section-label"/>
+
+            <ToggleButton fx:id="navDashboard" text="Dashboard" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToDashboard" selected="true">
+                <toggleGroup><ToggleGroup fx:id="navGroup"/></toggleGroup>
+            </ToggleButton>
+
+            <ToggleButton fx:id="navIncome" text="Income" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToIncome">
+                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
+            </ToggleButton>
+
+            <ToggleButton fx:id="navExpenses" text="Expenses" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToExpenses">
+                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
+            </ToggleButton>
+
+            <ToggleButton fx:id="navTax" text="Tax Summary" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToTax">
+                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
+            </ToggleButton>
+
+            <ToggleButton fx:id="navHmrc" text="HMRC Submission" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToHmrc">
+                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
+            </ToggleButton>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <!-- Secondary Navigation -->
+            <Separator styleClass="nav-separator"/>
+
+            <Button fx:id="navHelp" text="Help &amp; Support" styleClass="nav-button-secondary"
+                    maxWidth="Infinity" onAction="#handleHelp"/>
         </VBox>
     </left>
 
-    <!-- Main Content Area -->
+    <!-- Content Area -->
     <center>
-        <VBox fx:id="contentArea" styleClass="content-area" spacing="20">
-            <padding>
-                <Insets top="30" right="30" bottom="30" left="30"/>
-            </padding>
-            <Label text="Welcome to UK Self-Employment Manager" styleClass="page-title"/>
-            <Label text="Track your income, expenses, and submit to HMRC with one click."
-                   styleClass="page-subtitle"/>
-        </VBox>
+        <StackPane fx:id="contentPane" styleClass="content-pane">
+            <!-- Views loaded dynamically -->
+        </StackPane>
     </center>
+
+    <!-- Status Bar -->
+    <bottom>
+        <HBox fx:id="statusBar" styleClass="status-bar" alignment="CENTER_LEFT" spacing="20">
+            <padding><Insets top="8" right="20" bottom="8" left="20"/></padding>
+
+            <Label fx:id="taxYearLabel" text="Tax Year 2025/26" styleClass="status-item"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="deadlineLabel" text="Loading..." styleClass="status-item"/>
+        </HBox>
+    </bottom>
 
 </BorderPane>

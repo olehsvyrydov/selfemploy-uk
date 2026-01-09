@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      styleClass="card" spacing="20" alignment="CENTER">
+    <padding><Insets topRightBottomLeft="50"/></padding>
+
+    <Label text="Tax Summary" styleClass="page-title"/>
+    <Label text="Coming soon - View your tax breakdown here" styleClass="page-subtitle"/>
+</VBox>
