@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/olehsvyrydov/selfemploy-uk/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: HMRC Documentation
+    url: https://developer.service.hmrc.gov.uk/api-documentation
+    about: Official HMRC API documentation for MTD

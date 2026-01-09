@@ -98,4 +98,4 @@ This software is provided for informational purposes only and does not constitut
 
 ---
 
-Built with assistance from the AI Development Team (Claude Code)
+Built with assistance from the [AI Scrum Team project (Claude Code)](https://github.com/olehsvyrydov/AI-development-team)
