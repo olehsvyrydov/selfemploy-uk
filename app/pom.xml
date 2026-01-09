@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>uk.selfemploy</groupId>
+        <artifactId>self-employment-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>self-employment-app</artifactId>
+    <name>Self-Employment :: App</name>
+    <description>Application launcher and native packaging</description>
+
+    <dependencies>
+        <!-- All Project Modules -->
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-persistence</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-hmrc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-ui</artifactId>
+        </dependency>
+
+        <!-- Quarkus -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+
+        <!-- JavaFX -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>uk.selfemploy.app.Launcher</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Native packaging profile -->
+        <profile>
+            <id>package</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>${jpackage-maven-plugin.version}</version>
+                        <configuration>
+                            <name>UK Self-Employment Manager</name>
+                            <vendor>Self-Employment UK</vendor>
+                            <description>Manage accounting and submit HMRC reports</description>
+                            <appVersion>${project.version}</appVersion>
+                            <mainClass>uk.selfemploy.app.Launcher</mainClass>
+                            <mainJar>self-employment-app-${project.version}.jar</mainJar>
+                            <destination>${project.build.directory}/installer</destination>
+                            <javaOptions>
+                                <option>-Dfile.encoding=UTF-8</option>
+                            </javaOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

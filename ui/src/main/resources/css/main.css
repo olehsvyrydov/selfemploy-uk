@@ -1,0 +1,243 @@
+/*
+ * UK Self-Employment Manager - Main Stylesheet
+ * Design: Modern, clean, professional
+ * Colors: Trust-based blues with neutral backgrounds
+ */
+
+/* ===== CSS Variables ===== */
+.root {
+    -fx-primary: #0066cc;
+    -fx-primary-dark: #004d99;
+    -fx-primary-light: #e6f0ff;
+    -fx-secondary: #6c757d;
+    -fx-success: #28a745;
+    -fx-warning: #ffc107;
+    -fx-danger: #dc3545;
+
+    -fx-bg-primary: #ffffff;
+    -fx-bg-secondary: #f8f9fa;
+    -fx-bg-tertiary: #e9ecef;
+
+    -fx-text-primary: #212529;
+    -fx-text-secondary: #6c757d;
+    -fx-text-muted: #adb5bd;
+
+    -fx-border-color: #dee2e6;
+    -fx-shadow: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+}
+
+/* ===== Root Container ===== */
+.root-container {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+/* ===== Navigation Bar ===== */
+.nav-bar {
+    -fx-background-color: -fx-bg-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+}
+
+.app-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-cursor: hand;
+    -fx-padding: 8 16;
+    -fx-background-radius: 6;
+}
+
+.nav-button:hover {
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 0 1 0 0;
+}
+
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-primary;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 16;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+}
+
+.sidebar-button:hover {
+    -fx-background-color: -fx-primary-light;
+}
+
+.sidebar-button:focused {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+}
+
+.sidebar-button-secondary {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12 16;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+}
+
+.sidebar-button-secondary:hover {
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+/* ===== Content Area ===== */
+.content-area {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.page-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.page-subtitle {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Cards ===== */
+.card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 8;
+    -fx-effect: -fx-shadow;
+    -fx-padding: 20;
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.card-value {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+/* ===== Buttons ===== */
+.button-primary {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.button-primary:hover {
+    -fx-background-color: -fx-primary-dark;
+}
+
+.button-secondary {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-text-fill: -fx-text-primary;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.button-secondary:hover {
+    -fx-background-color: -fx-border-color;
+}
+
+.button-success {
+    -fx-background-color: -fx-success;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.button-success:hover {
+    -fx-background-color: derive(-fx-success, -10%);
+}
+
+/* ===== Forms ===== */
+.text-field, .text-area {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10;
+}
+
+.text-field:focused, .text-area:focused {
+    -fx-border-color: -fx-primary;
+}
+
+.label {
+    -fx-text-fill: -fx-text-primary;
+}
+
+.label-secondary {
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-size: 13px;
+}
+
+/* ===== Tables ===== */
+.table-view {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.table-view .column-header {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-font-weight: bold;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: -fx-primary-light;
+}
+
+/* ===== Utility Classes ===== */
+.text-success {
+    -fx-text-fill: -fx-success;
+}
+
+.text-danger {
+    -fx-text-fill: -fx-danger;
+}
+
+.text-warning {
+    -fx-text-fill: -fx-warning;
+}
+
+.mb-10 {
+    -fx-padding: 0 0 10 0;
+}
+
+.mb-20 {
+    -fx-padding: 0 0 20 0;
+}
+
+.mt-10 {
+    -fx-padding: 10 0 0 0;
+}
+
+.mt-20 {
+    -fx-padding: 20 0 0 0;
+}

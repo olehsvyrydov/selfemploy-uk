@@ -1,0 +1,125 @@
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+!gradle-wrapper.jar
+
+# IDE - IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# IDE - Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# IDE - VS Code
+.vscode/
+
+# IDE - NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Quarkus
+.quarkus/
+
+# Java
+hs_err_pid*
+
+# JavaFX
+*.jfx
+
+# GraalVM Native Image
+*.dll
+*.dylib
+*.so
+native-image.properties
+
+# JPackage output
+installer/
+
+# Test outputs
+test-output/
+surefire-reports/
+failsafe-reports/
+
+# H2 Database files
+*.db
+*.trace.db
+*.lock.db
+
+# Application data (user-specific)
+data/
+*.h2.db
+*.mv.db
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+*.jks
+secrets.properties
+credentials.json
+
+# HMRC tokens
+hmrc-tokens.json
+oauth-tokens/
+
+# Drafts and temporary files
+drafts/
+*.tmp
+*.temp
+*.bak
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Documentation (managed separately)
+docs/
+drafts/
