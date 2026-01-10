@@ -1,5 +1,8 @@
 # UK Self-Employment Manager
 
+[![CI Build](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/ci.yml/badge.svg)](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/codeql.yml/badge.svg)](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/codeql.yml)
+
 A free, open-source desktop application for UK self-employed individuals to manage their accounting and submit annual reports to HMRC via Making Tax Digital (MTD) APIs.
 
 ## Features
