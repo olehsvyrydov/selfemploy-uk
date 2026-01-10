@@ -1,13 +1,218 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1"
-      styleClass="card" spacing="20" alignment="CENTER">
-    <padding><Insets topRightBottomLeft="50"/></padding>
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.TaxSummaryController"
+            styleClass="tax-summary-scroll"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <stylesheets>
+        <String fx:value="/css/tax-summary.css"/>
+    </stylesheets>
 
-    <Label text="Tax Summary" styleClass="page-title"/>
-    <Label text="Coming soon - View your tax breakdown here" styleClass="page-subtitle"/>
-</VBox>
+    <VBox fx:id="taxSummaryContainer" styleClass="tax-summary-container" spacing="20">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Page Header -->
+        <HBox alignment="CENTER_LEFT" spacing="15">
+            <Label text="Tax Summary" styleClass="page-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="taxYearBadge" text="Tax Year 2025/26" styleClass="tax-year-badge"/>
+        </HBox>
+
+        <!-- Draft Banner (conditional) -->
+        <HBox fx:id="draftBanner" styleClass="draft-banner" alignment="CENTER_LEFT" spacing="12"
+              managed="true" visible="true">
+            <Label text="!" styleClass="draft-banner-icon"/>
+            <Label text="DRAFT - This calculation has not been submitted to HMRC"
+                   styleClass="draft-banner-text"/>
+        </HBox>
+
+        <!-- Tax At A Glance -->
+        <VBox styleClass="tax-glance-card" spacing="20">
+            <Label text="YOUR TAX AT A GLANCE" styleClass="tax-glance-title"/>
+
+            <HBox spacing="20">
+                <!-- Net Profit Metric -->
+                <VBox styleClass="tax-metric-card" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="8">
+                    <Label text="NET PROFIT" styleClass="tax-metric-label"/>
+                    <Label text="(Box 31)" styleClass="tax-metric-box-ref"/>
+                    <Label fx:id="netProfitValue" text="£0.00" styleClass="tax-metric-value, profit"/>
+                </VBox>
+
+                <!-- Income Tax Metric -->
+                <VBox styleClass="tax-metric-card" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="8">
+                    <Label text="INCOME TAX" styleClass="tax-metric-label"/>
+                    <Label fx:id="incomeTaxValue" text="£0.00" styleClass="tax-metric-value, income-tax"/>
+                </VBox>
+
+                <!-- NI Class 4 Metric -->
+                <VBox styleClass="tax-metric-card" HBox.hgrow="ALWAYS" alignment="CENTER" spacing="8">
+                    <Label text="NI CLASS 4" styleClass="tax-metric-label"/>
+                    <Label fx:id="niClass4Value" text="£0.00" styleClass="tax-metric-value, ni-class4"/>
+                </VBox>
+            </HBox>
+
+            <HBox alignment="CENTER" styleClass="total-tax-due-container" spacing="8">
+                <Label text="TOTAL TAX DUE:" styleClass="total-tax-due-label"/>
+                <Label fx:id="totalTaxDueValue" text="£0.00" styleClass="total-tax-due-value"/>
+            </HBox>
+        </VBox>
+
+        <!-- Income Section -->
+        <VBox fx:id="incomeSection" styleClass="section-card">
+            <HBox styleClass="section-header" alignment="CENTER_LEFT"
+                  onMouseClicked="#handleToggleIncomeSection">
+                <Label fx:id="incomeToggle" text="[v]" styleClass="section-toggle"/>
+                <Label text="INCOME" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="incomeTotalLabel" text="£0.00" styleClass="section-total, income"/>
+            </HBox>
+            <VBox fx:id="incomeContent" styleClass="section-content" spacing="0">
+                <!-- Income line items populated dynamically -->
+                <HBox styleClass="line-item" alignment="CENTER_LEFT">
+                    <Label text="Total Turnover" styleClass="line-item-label"/>
+                    <Label text="(Box 15)" styleClass="line-item-box"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="turnoverLineValue" text="£0.00" styleClass="line-item-value"/>
+                </HBox>
+                <HBox styleClass="line-item" alignment="CENTER_LEFT">
+                    <Label text="Other Income" styleClass="line-item-label"/>
+                    <Label text="(Box 16)" styleClass="line-item-box"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="otherIncomeLineValue" text="£0.00" styleClass="line-item-value"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Expenses Section -->
+        <VBox fx:id="expensesSection" styleClass="section-card">
+            <HBox styleClass="section-header" alignment="CENTER_LEFT"
+                  onMouseClicked="#handleToggleExpensesSection">
+                <Label fx:id="expensesToggle" text="[v]" styleClass="section-toggle"/>
+                <Label text="ALLOWABLE EXPENSES" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="expensesTotalLabel" text="£0.00" styleClass="section-total, expenses"/>
+            </HBox>
+            <VBox fx:id="expensesContent" styleClass="section-content" spacing="0">
+                <!-- Expense line items populated dynamically by controller -->
+            </VBox>
+        </VBox>
+
+        <!-- Profit Calculation Section -->
+        <VBox styleClass="section-card">
+            <HBox styleClass="section-header" alignment="CENTER_LEFT">
+                <Label text="[=]" styleClass="section-toggle"/>
+                <Label text="PROFIT CALCULATION" styleClass="section-title"/>
+            </HBox>
+            <VBox styleClass="section-content" spacing="0">
+                <HBox styleClass="calc-row" alignment="CENTER_LEFT">
+                    <Label text="Turnover" styleClass="calc-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="turnoverCalcValue" text="£0.00" styleClass="calc-value"/>
+                </HBox>
+                <HBox styleClass="calc-row" alignment="CENTER_LEFT">
+                    <Label text="Less: Allowable Expenses" styleClass="calc-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="expensesCalcValue" text="-£0.00" styleClass="calc-value, line-item-value, negative"/>
+                </HBox>
+                <Separator styleClass="calc-divider"/>
+                <HBox styleClass="calc-row" alignment="CENTER_LEFT">
+                    <Label text="NET PROFIT (Box 31)" styleClass="calc-label" style="-fx-font-weight: bold;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="netProfitCalcValue" text="£0.00" styleClass="calc-result"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Income Tax Section -->
+        <VBox fx:id="incomeTaxSection" styleClass="section-card">
+            <HBox styleClass="section-header" alignment="CENTER_LEFT"
+                  onMouseClicked="#handleToggleIncomeTaxSection">
+                <Label fx:id="incomeTaxToggle" text="[v]" styleClass="section-toggle"/>
+                <Label text="INCOME TAX" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="incomeTaxTotalLabel" text="£0.00" styleClass="section-total, tax"/>
+            </HBox>
+            <VBox fx:id="incomeTaxContent" styleClass="section-content" spacing="0">
+                <!-- Tax band rows populated dynamically by controller -->
+            </VBox>
+        </VBox>
+
+        <!-- NI Class 4 Section -->
+        <VBox fx:id="niSection" styleClass="section-card">
+            <HBox styleClass="section-header" alignment="CENTER_LEFT"
+                  onMouseClicked="#handleToggleNISection">
+                <Label fx:id="niToggle" text="[v]" styleClass="section-toggle"/>
+                <Label text="NATIONAL INSURANCE CLASS 4" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="niTotalLabel" text="£0.00" styleClass="section-total, ni"/>
+            </HBox>
+            <VBox fx:id="niContent" styleClass="section-content" spacing="0">
+                <!-- NI rate rows populated dynamically by controller -->
+            </VBox>
+        </VBox>
+
+        <!-- Payments on Account Section (conditional) -->
+        <VBox fx:id="poaSection" styleClass="section-card" managed="false" visible="false">
+            <HBox styleClass="section-header" alignment="CENTER_LEFT"
+                  onMouseClicked="#handleTogglePOASection">
+                <Label fx:id="poaToggle" text="[v]" styleClass="section-toggle"/>
+                <Label fx:id="poaSectionTitle" text="PAYMENTS ON ACCOUNT (2026/27)" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="poaTotalLabel" text="£0.00" styleClass="section-total, tax"/>
+            </HBox>
+            <VBox fx:id="poaContent" styleClass="section-content" spacing="8">
+                <HBox styleClass="line-item" alignment="CENTER_LEFT">
+                    <Label fx:id="poaFirstLabel" text="First Payment (31 January 2027)" styleClass="line-item-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="poaFirstPayment" text="£0.00" styleClass="line-item-value"/>
+                </HBox>
+                <HBox styleClass="line-item" alignment="CENTER_LEFT">
+                    <Label fx:id="poaSecondLabel" text="Second Payment (31 July 2027)" styleClass="line-item-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="poaSecondPayment" text="£0.00" styleClass="line-item-value"/>
+                </HBox>
+                <Hyperlink fx:id="poaInfoLink" text="[?] Why am I being asked for payments on account?"
+                           styleClass="poa-info-link" onAction="#handleShowPOAInfo"/>
+            </VBox>
+        </VBox>
+
+        <!-- Total Amount Due Card -->
+        <VBox styleClass="total-due-card" spacing="16" alignment="CENTER">
+            <Label text="TOTAL AMOUNT DUE" styleClass="total-due-title"/>
+
+            <VBox spacing="8" alignment="CENTER">
+                <HBox alignment="CENTER" spacing="8">
+                    <Label fx:id="taxYearDueLabel" text="Tax Year 2025/26:" styleClass="total-due-breakdown-label"/>
+                    <Label fx:id="taxYearDueValue" text="£0.00" styleClass="total-due-breakdown-value"/>
+                </HBox>
+                <HBox fx:id="poaDueRow" alignment="CENTER" spacing="8" managed="false" visible="false">
+                    <Label text="Payments on Account:" styleClass="total-due-breakdown-label"/>
+                    <Label fx:id="poaDueValue" text="£0.00" styleClass="total-due-breakdown-value"/>
+                </HBox>
+                <Separator/>
+                <Label fx:id="grandTotalValue" text="£0.00" styleClass="total-due-amount"/>
+            </VBox>
+
+            <Label fx:id="dueDateLabel" text="Due by 31 January 2027" styleClass="total-due-date"/>
+        </VBox>
+
+        <!-- Action Bar -->
+        <HBox styleClass="tax-action-bar" alignment="CENTER_RIGHT" spacing="16">
+            <Button fx:id="exportPdfBtn" text="Export PDF" styleClass="button-pdf"
+                    onAction="#handleExportPDF"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="submitBtn" text="Submit to HMRC" styleClass="button-submit"
+                    onAction="#handleSubmitToHMRC" disable="true">
+                <tooltip>
+                    <Tooltip text="HMRC submission will be available in a future update"/>
+                </tooltip>
+            </Button>
+        </HBox>
+
+    </VBox>
+</ScrollPane>

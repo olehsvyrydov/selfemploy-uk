@@ -5,16 +5,26 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.ReceiptMetadata;
+import uk.selfemploy.core.service.ReceiptStorageException;
+import uk.selfemploy.core.service.ReceiptStorageService;
 import uk.selfemploy.ui.viewmodel.ExpenseDialogViewModel;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -561,6 +571,746 @@ class ExpenseDialogControllerTest {
 
             assertThat(viewModel.getAvailableCategories())
                 .contains(ExpenseCategory.SUBCONTRACTOR_COSTS);
+        }
+    }
+
+    // =====================================================================
+    // SE-308: Receipt Attachment Tests
+    // =====================================================================
+
+    @Nested
+    @DisplayName("Receipt Attachment - Initial State")
+    class ReceiptInitialState {
+
+        @Test
+        @DisplayName("should initialize with zero receipts")
+        void shouldInitializeWithZeroReceipts() {
+            assertThat(viewModel.getReceiptCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("should show '0 of 5' in receipt count text")
+        void shouldShowZeroOfFiveInReceiptCountText() {
+            assertThat(viewModel.getReceiptCountText()).isEqualTo("0 of 5");
+        }
+
+        @Test
+        @DisplayName("should allow adding receipts when none attached")
+        void shouldAllowAddingReceiptsWhenNoneAttached() {
+            assertThat(viewModel.canAddMoreReceipts()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should have empty receipt list")
+        void shouldHaveEmptyReceiptList() {
+            assertThat(viewModel.getReceipts()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should not have receipt error initially")
+        void shouldNotHaveReceiptErrorInitially() {
+            assertThat(viewModel.hasReceiptError()).isFalse();
+            assertThat(viewModel.getReceiptErrorMessage()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should show dropzone when no receipts")
+        void shouldShowDropzoneWhenNoReceipts() {
+            assertThat(viewModel.isDropzoneVisible()).isTrue();
+            assertThat(viewModel.isReceiptGridVisible()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Receipt Attachment - Adding Receipts")
+    class ReceiptAddition {
+
+        @Mock
+        private ReceiptStorageService receiptStorageService;
+
+        @TempDir
+        Path tempDir;
+
+        private Path validJpegFile;
+        private Path validPdfFile;
+        private UUID expenseId;
+
+        @BeforeEach
+        void setUpReceipts() throws IOException {
+            expenseId = UUID.randomUUID();
+            viewModel.setReceiptStorageService(receiptStorageService);
+
+            // Create test files
+            validJpegFile = tempDir.resolve("receipt.jpg");
+            Files.write(validJpegFile, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00, 0x00});
+
+            validPdfFile = tempDir.resolve("invoice.pdf");
+            Files.write(validPdfFile, "%PDF-1.4".getBytes());
+        }
+
+        @Test
+        @DisplayName("should increment receipt count when receipt added")
+        void shouldIncrementReceiptCountWhenReceiptAdded() {
+            ReceiptMetadata mockMetadata = createMockReceiptMetadata(expenseId, "receipt.jpg", "image/jpeg");
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(validJpegFile.toFile());
+
+            assertThat(viewModel.getReceiptCount()).isEqualTo(1);
+            assertThat(viewModel.getReceiptCountText()).isEqualTo("1 of 5");
+        }
+
+        @Test
+        @DisplayName("should add receipt to list")
+        void shouldAddReceiptToList() {
+            ReceiptMetadata mockMetadata = createMockReceiptMetadata(expenseId, "receipt.jpg", "image/jpeg");
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(validJpegFile.toFile());
+
+            assertThat(viewModel.getReceipts()).hasSize(1);
+            assertThat(viewModel.getReceipts().get(0).originalFilename()).isEqualTo("receipt.jpg");
+        }
+
+        @Test
+        @DisplayName("should show receipt grid when receipts exist")
+        void shouldShowReceiptGridWhenReceiptsExist() {
+            ReceiptMetadata mockMetadata = createMockReceiptMetadata(expenseId, "receipt.jpg", "image/jpeg");
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(validJpegFile.toFile());
+
+            assertThat(viewModel.isDropzoneVisible()).isFalse();
+            assertThat(viewModel.isReceiptGridVisible()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should mark form as dirty when receipt added")
+        void shouldMarkFormAsDirtyWhenReceiptAdded() {
+            ReceiptMetadata mockMetadata = createMockReceiptMetadata(expenseId, "receipt.jpg", "image/jpeg");
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(validJpegFile.toFile());
+
+            assertThat(viewModel.isDirty()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should allow adding multiple receipts")
+        void shouldAllowAddingMultipleReceipts() {
+            for (int i = 0; i < 3; i++) {
+                ReceiptMetadata mockMetadata = createMockReceiptMetadata(expenseId, "receipt" + i + ".jpg", "image/jpeg");
+                when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+                viewModel.attachReceipt(validJpegFile.toFile());
+            }
+
+            assertThat(viewModel.getReceiptCount()).isEqualTo(3);
+            assertThat(viewModel.getReceiptCountText()).isEqualTo("3 of 5");
+            assertThat(viewModel.canAddMoreReceipts()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should support PDF files")
+        void shouldSupportPdfFiles() {
+            ReceiptMetadata mockMetadata = createMockReceiptMetadata(expenseId, "invoice.pdf", "application/pdf");
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(validPdfFile.toFile());
+
+            assertThat(viewModel.getReceipts()).hasSize(1);
+            assertThat(viewModel.getReceipts().get(0).isPdf()).isTrue();
+        }
+
+        private ReceiptMetadata createMockReceiptMetadata(UUID expenseId, String filename, String mimeType) {
+            return new ReceiptMetadata(
+                UUID.randomUUID(),
+                expenseId,
+                filename,
+                tempDir.resolve(filename),
+                mimeType,
+                1024L,
+                Instant.now()
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("Receipt Attachment - Maximum Limit")
+    class ReceiptMaxLimit {
+
+        @Mock
+        private ReceiptStorageService receiptStorageService;
+
+        @TempDir
+        Path tempDir;
+
+        private Path validJpegFile;
+        private UUID expenseId;
+
+        @BeforeEach
+        void setUpReceipts() throws IOException {
+            expenseId = UUID.randomUUID();
+            viewModel.setReceiptStorageService(receiptStorageService);
+
+            validJpegFile = tempDir.resolve("receipt.jpg");
+            Files.write(validJpegFile, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00, 0x00});
+        }
+
+        @Test
+        @DisplayName("should not allow more than 5 receipts")
+        void shouldNotAllowMoreThanFiveReceipts() {
+            // Add 5 receipts
+            for (int i = 0; i < 5; i++) {
+                ReceiptMetadata mockMetadata = createMockReceiptMetadata(i);
+                when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+                viewModel.attachReceipt(validJpegFile.toFile());
+            }
+
+            assertThat(viewModel.getReceiptCount()).isEqualTo(5);
+            assertThat(viewModel.canAddMoreReceipts()).isFalse();
+            assertThat(viewModel.getReceiptCountText()).isEqualTo("5 of 5");
+        }
+
+        @Test
+        @DisplayName("should show error when max receipts exceeded")
+        void shouldShowErrorWhenMaxReceiptsExceeded() {
+            // Add 5 receipts
+            for (int i = 0; i < 5; i++) {
+                ReceiptMetadata mockMetadata = createMockReceiptMetadata(i);
+                when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+                viewModel.attachReceipt(validJpegFile.toFile());
+            }
+
+            // Try to add 6th
+            when(receiptStorageService.storeReceipt(any(), any(), any()))
+                .thenThrow(new ReceiptStorageException(
+                    ReceiptStorageException.ErrorType.MAX_RECEIPTS_EXCEEDED));
+            viewModel.attachReceipt(validJpegFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isTrue();
+            assertThat(viewModel.getReceiptErrorMessage())
+                .contains("Maximum 5 receipts");
+        }
+
+        @Test
+        @DisplayName("should allow adding again after removing receipt")
+        void shouldAllowAddingAgainAfterRemovingReceipt() {
+            // Add 5 receipts
+            for (int i = 0; i < 5; i++) {
+                ReceiptMetadata mockMetadata = createMockReceiptMetadata(i);
+                when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+                viewModel.attachReceipt(validJpegFile.toFile());
+            }
+
+            assertThat(viewModel.canAddMoreReceipts()).isFalse();
+
+            // Remove one
+            when(receiptStorageService.deleteReceipt(any())).thenReturn(true);
+            viewModel.removeReceipt(viewModel.getReceipts().get(0).receiptId());
+
+            assertThat(viewModel.canAddMoreReceipts()).isTrue();
+            assertThat(viewModel.getReceiptCount()).isEqualTo(4);
+        }
+
+        private ReceiptMetadata createMockReceiptMetadata(int index) {
+            return new ReceiptMetadata(
+                UUID.randomUUID(),
+                expenseId,
+                "receipt" + index + ".jpg",
+                tempDir.resolve("receipt" + index + ".jpg"),
+                "image/jpeg",
+                1024L,
+                Instant.now()
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("Receipt Attachment - File Validation")
+    class ReceiptFileValidation {
+
+        @Mock
+        private ReceiptStorageService receiptStorageService;
+
+        @TempDir
+        Path tempDir;
+
+        private UUID expenseId;
+
+        @BeforeEach
+        void setUpReceipts() {
+            expenseId = UUID.randomUUID();
+            viewModel.setReceiptStorageService(receiptStorageService);
+        }
+
+        @Test
+        @DisplayName("should reject unsupported file format")
+        void shouldRejectUnsupportedFileFormat() throws IOException {
+            Path docFile = tempDir.resolve("document.doc");
+            Files.write(docFile, "This is a Word doc".getBytes());
+
+            when(receiptStorageService.storeReceipt(any(), any(), any()))
+                .thenThrow(new ReceiptStorageException(
+                    ReceiptStorageException.ErrorType.UNSUPPORTED_FORMAT,
+                    "Unsupported file format: application/msword"));
+
+            viewModel.attachReceipt(docFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isTrue();
+            assertThat(viewModel.getReceiptErrorMessage())
+                .contains("Unsupported file format");
+            assertThat(viewModel.getReceiptErrorHelper())
+                .contains("JPG, PNG, PDF, GIF");
+        }
+
+        @Test
+        @DisplayName("should reject file exceeding 10MB")
+        void shouldRejectFileExceedingTenMb() throws IOException {
+            Path largeFile = tempDir.resolve("large.jpg");
+            Files.write(largeFile, new byte[100]); // Just a small file for the mock
+
+            when(receiptStorageService.storeReceipt(any(), any(), any()))
+                .thenThrow(new ReceiptStorageException(
+                    ReceiptStorageException.ErrorType.FILE_TOO_LARGE,
+                    "File size 11000000 bytes exceeds maximum size 10485760 bytes"));
+
+            viewModel.attachReceipt(largeFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isTrue();
+            assertThat(viewModel.getReceiptErrorMessage())
+                .contains("exceeds");
+            assertThat(viewModel.getReceiptErrorHelper())
+                .contains("10MB");
+        }
+
+        @Test
+        @DisplayName("should accept valid JPG file")
+        void shouldAcceptValidJpgFile() throws IOException {
+            Path jpgFile = tempDir.resolve("receipt.jpg");
+            Files.write(jpgFile, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+
+            ReceiptMetadata mockMetadata = new ReceiptMetadata(
+                UUID.randomUUID(), expenseId, "receipt.jpg",
+                jpgFile, "image/jpeg", 1024L, Instant.now()
+            );
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(jpgFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isFalse();
+            assertThat(viewModel.getReceipts()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should accept valid PNG file")
+        void shouldAcceptValidPngFile() throws IOException {
+            Path pngFile = tempDir.resolve("receipt.png");
+            Files.write(pngFile, new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47});
+
+            ReceiptMetadata mockMetadata = new ReceiptMetadata(
+                UUID.randomUUID(), expenseId, "receipt.png",
+                pngFile, "image/png", 2048L, Instant.now()
+            );
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(pngFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isFalse();
+            assertThat(viewModel.getReceipts()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should accept valid GIF file")
+        void shouldAcceptValidGifFile() throws IOException {
+            Path gifFile = tempDir.resolve("receipt.gif");
+            Files.write(gifFile, new byte[]{0x47, 0x49, 0x46, 0x38});
+
+            ReceiptMetadata mockMetadata = new ReceiptMetadata(
+                UUID.randomUUID(), expenseId, "receipt.gif",
+                gifFile, "image/gif", 512L, Instant.now()
+            );
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(gifFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isFalse();
+            assertThat(viewModel.getReceipts()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should accept valid PDF file")
+        void shouldAcceptValidPdfFile() throws IOException {
+            Path pdfFile = tempDir.resolve("invoice.pdf");
+            Files.write(pdfFile, "%PDF-1.4".getBytes());
+
+            ReceiptMetadata mockMetadata = new ReceiptMetadata(
+                UUID.randomUUID(), expenseId, "invoice.pdf",
+                pdfFile, "application/pdf", 4096L, Instant.now()
+            );
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+
+            viewModel.attachReceipt(pdfFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isFalse();
+            assertThat(viewModel.getReceipts()).hasSize(1);
+            assertThat(viewModel.getReceipts().get(0).isPdf()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Receipt Attachment - Removal")
+    class ReceiptRemoval {
+
+        @Mock
+        private ReceiptStorageService receiptStorageService;
+
+        @TempDir
+        Path tempDir;
+
+        private UUID expenseId;
+        private UUID receiptId;
+
+        @BeforeEach
+        void setUpReceipts() throws IOException {
+            expenseId = UUID.randomUUID();
+            receiptId = UUID.randomUUID();
+            viewModel.setReceiptStorageService(receiptStorageService);
+
+            // Add a receipt first
+            Path jpgFile = tempDir.resolve("receipt.jpg");
+            Files.write(jpgFile, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+
+            ReceiptMetadata mockMetadata = new ReceiptMetadata(
+                receiptId, expenseId, "receipt.jpg",
+                jpgFile, "image/jpeg", 1024L, Instant.now()
+            );
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+            viewModel.attachReceipt(jpgFile.toFile());
+        }
+
+        @Test
+        @DisplayName("should decrement count when receipt removed")
+        void shouldDecrementCountWhenReceiptRemoved() {
+            when(receiptStorageService.deleteReceipt(receiptId)).thenReturn(true);
+
+            viewModel.removeReceipt(receiptId);
+
+            assertThat(viewModel.getReceiptCount()).isZero();
+            assertThat(viewModel.getReceiptCountText()).isEqualTo("0 of 5");
+        }
+
+        @Test
+        @DisplayName("should remove receipt from list")
+        void shouldRemoveReceiptFromList() {
+            when(receiptStorageService.deleteReceipt(receiptId)).thenReturn(true);
+
+            viewModel.removeReceipt(receiptId);
+
+            assertThat(viewModel.getReceipts()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should show dropzone when last receipt removed")
+        void shouldShowDropzoneWhenLastReceiptRemoved() {
+            when(receiptStorageService.deleteReceipt(receiptId)).thenReturn(true);
+
+            viewModel.removeReceipt(receiptId);
+
+            assertThat(viewModel.isDropzoneVisible()).isTrue();
+            assertThat(viewModel.isReceiptGridVisible()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should mark form as dirty when receipt removed")
+        void shouldMarkFormAsDirtyWhenReceiptRemoved() {
+            // Reset dirty flag first
+            viewModel.resetForm();
+            viewModel.setReceiptStorageService(receiptStorageService);
+
+            // Re-add a receipt
+            ReceiptMetadata mockMetadata = new ReceiptMetadata(
+                receiptId, expenseId, "receipt.jpg",
+                tempDir.resolve("receipt.jpg"), "image/jpeg", 1024L, Instant.now()
+            );
+            when(receiptStorageService.storeReceipt(any(), any(), any())).thenReturn(mockMetadata);
+            viewModel.attachReceipt(tempDir.resolve("receipt.jpg").toFile());
+
+            // Clear dirty flag manually for test
+            // Note: In real implementation, loading would clear dirty
+            when(receiptStorageService.deleteReceipt(receiptId)).thenReturn(true);
+
+            viewModel.removeReceipt(receiptId);
+
+            assertThat(viewModel.isDirty()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Receipt Attachment - Error Handling")
+    class ReceiptErrorHandling {
+
+        @Mock
+        private ReceiptStorageService receiptStorageService;
+
+        @TempDir
+        Path tempDir;
+
+        @BeforeEach
+        void setUpReceipts() {
+            viewModel.setReceiptStorageService(receiptStorageService);
+        }
+
+        @Test
+        @DisplayName("should show error message with filename")
+        void shouldShowErrorMessageWithFilename() throws IOException {
+            Path invalidFile = tempDir.resolve("document.doc");
+            Files.write(invalidFile, "doc content".getBytes());
+
+            when(receiptStorageService.storeReceipt(any(), any(), eq("document.doc")))
+                .thenThrow(new ReceiptStorageException(
+                    ReceiptStorageException.ErrorType.UNSUPPORTED_FORMAT));
+
+            viewModel.attachReceipt(invalidFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isTrue();
+            assertThat(viewModel.getReceiptErrorMessage()).contains("document.doc");
+        }
+
+        @Test
+        @DisplayName("should clear error when dismissed")
+        void shouldClearErrorWhenDismissed() throws IOException {
+            Path invalidFile = tempDir.resolve("document.doc");
+            Files.write(invalidFile, "doc content".getBytes());
+
+            when(receiptStorageService.storeReceipt(any(), any(), any()))
+                .thenThrow(new ReceiptStorageException(
+                    ReceiptStorageException.ErrorType.UNSUPPORTED_FORMAT));
+
+            viewModel.attachReceipt(invalidFile.toFile());
+            assertThat(viewModel.hasReceiptError()).isTrue();
+
+            viewModel.clearReceiptError();
+
+            assertThat(viewModel.hasReceiptError()).isFalse();
+            assertThat(viewModel.getReceiptErrorMessage()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should show storage error message")
+        void shouldShowStorageErrorMessage() throws IOException {
+            Path jpgFile = tempDir.resolve("receipt.jpg");
+            Files.write(jpgFile, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+
+            when(receiptStorageService.storeReceipt(any(), any(), any()))
+                .thenThrow(new ReceiptStorageException(
+                    ReceiptStorageException.ErrorType.STORAGE_ERROR,
+                    "Disk full"));
+
+            viewModel.attachReceipt(jpgFile.toFile());
+
+            assertThat(viewModel.hasReceiptError()).isTrue();
+            assertThat(viewModel.getReceiptErrorMessage()).contains("Could not save");
+        }
+    }
+
+    @Nested
+    @DisplayName("Receipt Attachment - Edit Mode")
+    class ReceiptEditMode {
+
+        @Mock
+        private ReceiptStorageService receiptStorageService;
+
+        @TempDir
+        Path tempDir;
+
+        private UUID expenseId;
+        private Expense existingExpense;
+
+        @BeforeEach
+        void setUpEditMode() {
+            expenseId = UUID.randomUUID();
+            existingExpense = new Expense(
+                expenseId,
+                businessId,
+                LocalDate.of(2025, 6, 15),
+                new BigDecimal("54.99"),
+                "Office Supplies",
+                ExpenseCategory.OFFICE_COSTS,
+                null,
+                null
+            );
+            viewModel.setReceiptStorageService(receiptStorageService);
+        }
+
+        @Test
+        @DisplayName("should load existing receipts when entering edit mode")
+        void shouldLoadExistingReceiptsWhenEnteringEditMode() {
+            List<ReceiptMetadata> existingReceipts = List.of(
+                new ReceiptMetadata(UUID.randomUUID(), expenseId, "receipt1.jpg",
+                    tempDir.resolve("r1.jpg"), "image/jpeg", 1024L, Instant.now()),
+                new ReceiptMetadata(UUID.randomUUID(), expenseId, "receipt2.pdf",
+                    tempDir.resolve("r2.pdf"), "application/pdf", 2048L, Instant.now())
+            );
+            when(receiptStorageService.listReceipts(expenseId)).thenReturn(existingReceipts);
+
+            viewModel.loadExpense(existingExpense);
+
+            assertThat(viewModel.getReceiptCount()).isEqualTo(2);
+            assertThat(viewModel.getReceiptCountText()).isEqualTo("2 of 5");
+            assertThat(viewModel.getReceipts()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should not mark dirty when loading existing receipts")
+        void shouldNotMarkDirtyWhenLoadingExistingReceipts() {
+            List<ReceiptMetadata> existingReceipts = List.of(
+                new ReceiptMetadata(UUID.randomUUID(), expenseId, "receipt.jpg",
+                    tempDir.resolve("r.jpg"), "image/jpeg", 1024L, Instant.now())
+            );
+            when(receiptStorageService.listReceipts(expenseId)).thenReturn(existingReceipts);
+
+            viewModel.loadExpense(existingExpense);
+
+            assertThat(viewModel.isDirty()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should show receipt grid when expense has receipts")
+        void shouldShowReceiptGridWhenExpenseHasReceipts() {
+            List<ReceiptMetadata> existingReceipts = List.of(
+                new ReceiptMetadata(UUID.randomUUID(), expenseId, "receipt.jpg",
+                    tempDir.resolve("r.jpg"), "image/jpeg", 1024L, Instant.now())
+            );
+            when(receiptStorageService.listReceipts(expenseId)).thenReturn(existingReceipts);
+
+            viewModel.loadExpense(existingExpense);
+
+            assertThat(viewModel.isDropzoneVisible()).isFalse();
+            assertThat(viewModel.isReceiptGridVisible()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should clear receipts when resetting form")
+        void shouldClearReceiptsWhenResettingForm() {
+            List<ReceiptMetadata> existingReceipts = List.of(
+                new ReceiptMetadata(UUID.randomUUID(), expenseId, "receipt.jpg",
+                    tempDir.resolve("r.jpg"), "image/jpeg", 1024L, Instant.now())
+            );
+            when(receiptStorageService.listReceipts(expenseId)).thenReturn(existingReceipts);
+
+            viewModel.loadExpense(existingExpense);
+            assertThat(viewModel.getReceiptCount()).isEqualTo(1);
+
+            viewModel.resetForm();
+
+            assertThat(viewModel.getReceiptCount()).isZero();
+            assertThat(viewModel.getReceipts()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Receipt Attachment - Multiple Files")
+    class ReceiptMultipleFiles {
+
+        @Mock
+        private ReceiptStorageService receiptStorageService;
+
+        @TempDir
+        Path tempDir;
+
+        private UUID expenseId;
+
+        @BeforeEach
+        void setUpReceipts() {
+            expenseId = UUID.randomUUID();
+            viewModel.setReceiptStorageService(receiptStorageService);
+        }
+
+        @Test
+        @DisplayName("should attach multiple files at once")
+        void shouldAttachMultipleFilesAtOnce() throws IOException {
+            List<File> files = createTestFiles(3);
+            mockSuccessfulStorage();
+
+            viewModel.attachReceipts(files);
+
+            assertThat(viewModel.getReceiptCount()).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("should stop at max when attaching multiple files")
+        void shouldStopAtMaxWhenAttachingMultipleFiles() throws IOException {
+            // Pre-add 3 receipts
+            for (int i = 0; i < 3; i++) {
+                mockSuccessfulStorageForFile("existing" + i + ".jpg");
+                viewModel.attachReceipt(tempDir.resolve("existing" + i + ".jpg").toFile());
+            }
+
+            // Try to add 4 more (only 2 should fit)
+            List<File> newFiles = createTestFiles(4);
+            for (int i = 0; i < 2; i++) {
+                mockSuccessfulStorageForFile("new" + i + ".jpg");
+            }
+            // Note: ViewModel checks max before calling service, so no stubbing needed for files 2-3
+
+            viewModel.attachReceipts(newFiles);
+
+            // Should have 5 receipts (3 existing + 2 new)
+            assertThat(viewModel.getReceiptCount()).isEqualTo(5);
+            assertThat(viewModel.hasReceiptError()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should continue attaching valid files after invalid one")
+        void shouldContinueAttachingValidFilesAfterInvalidOne() throws IOException {
+            // First file invalid, second and third valid
+            File invalidFile = tempDir.resolve("invalid.doc").toFile();
+            Files.write(invalidFile.toPath(), "doc".getBytes());
+
+            File validFile1 = tempDir.resolve("valid1.jpg").toFile();
+            Files.write(validFile1.toPath(), new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+
+            File validFile2 = tempDir.resolve("valid2.jpg").toFile();
+            Files.write(validFile2.toPath(), new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+
+            when(receiptStorageService.storeReceipt(any(), any(), eq("invalid.doc")))
+                .thenThrow(new ReceiptStorageException(
+                    ReceiptStorageException.ErrorType.UNSUPPORTED_FORMAT));
+            mockSuccessfulStorageForFile("valid1.jpg");
+            mockSuccessfulStorageForFile("valid2.jpg");
+
+            viewModel.attachReceipts(List.of(invalidFile, validFile1, validFile2));
+
+            // Should have 2 valid receipts and show error for invalid one
+            assertThat(viewModel.getReceiptCount()).isEqualTo(2);
+            assertThat(viewModel.hasReceiptError()).isTrue();
+        }
+
+        private List<File> createTestFiles(int count) throws IOException {
+            List<File> files = new java.util.ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                Path file = tempDir.resolve("new" + i + ".jpg");
+                Files.write(file, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+                files.add(file.toFile());
+            }
+            return files;
+        }
+
+        private void mockSuccessfulStorage() {
+            when(receiptStorageService.storeReceipt(any(), any(), any()))
+                .thenAnswer(inv -> new ReceiptMetadata(
+                    UUID.randomUUID(), expenseId, inv.getArgument(2),
+                    tempDir.resolve(inv.getArgument(2).toString()),
+                    "image/jpeg", 1024L, Instant.now()
+                ));
+        }
+
+        private void mockSuccessfulStorageForFile(String filename) {
+            when(receiptStorageService.storeReceipt(any(), any(), eq(filename)))
+                .thenReturn(new ReceiptMetadata(
+                    UUID.randomUUID(), expenseId, filename,
+                    tempDir.resolve(filename), "image/jpeg", 1024L, Instant.now()
+                ));
         }
     }
 }

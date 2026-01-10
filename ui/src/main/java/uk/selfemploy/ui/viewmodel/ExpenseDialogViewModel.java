@@ -7,7 +7,11 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.ReceiptMetadata;
+import uk.selfemploy.core.service.ReceiptStorageException;
+import uk.selfemploy.core.service.ReceiptStorageService;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
@@ -20,8 +24,10 @@ import java.util.function.Consumer;
 public class ExpenseDialogViewModel {
 
     private static final int MAX_DESCRIPTION_LENGTH = 200;
+    private static final int MAX_RECEIPTS = 5;
 
     private final ExpenseService expenseService;
+    private ReceiptStorageService receiptStorageService;
 
     // Business context
     private UUID businessId;
@@ -59,6 +65,17 @@ public class ExpenseDialogViewModel {
     // Dirty tracking
     private final BooleanProperty dirty = new SimpleBooleanProperty(false);
     private boolean ignoreChanges = false;
+
+    // Receipt management (SE-308)
+    private final ObservableList<ReceiptMetadata> receipts = FXCollections.observableArrayList();
+    private final IntegerProperty receiptCount = new SimpleIntegerProperty(0);
+    private final StringProperty receiptCountText = new SimpleStringProperty("0 of 5");
+    private final BooleanProperty canAddMoreReceipts = new SimpleBooleanProperty(true);
+    private final BooleanProperty hasReceiptError = new SimpleBooleanProperty(false);
+    private final StringProperty receiptErrorMessage = new SimpleStringProperty("");
+    private final StringProperty receiptErrorHelper = new SimpleStringProperty("");
+    private final BooleanProperty dropzoneVisible = new SimpleBooleanProperty(true);
+    private final BooleanProperty receiptGridVisible = new SimpleBooleanProperty(false);
 
     // Callbacks
     private Consumer<Expense> onSave;
@@ -119,6 +136,9 @@ public class ExpenseDialogViewModel {
             // Update category help
             onCategoryChanged(expense.category());
 
+            // Load existing receipts (SE-308)
+            loadReceiptsForExpense(expense.id());
+
             // Validate form
             validateForm();
 
@@ -126,6 +146,18 @@ public class ExpenseDialogViewModel {
         } finally {
             ignoreChanges = false;
         }
+    }
+
+    /**
+     * Loads existing receipts for an expense.
+     */
+    private void loadReceiptsForExpense(UUID expenseId) {
+        receipts.clear();
+        if (receiptStorageService != null) {
+            List<ReceiptMetadata> existingReceipts = receiptStorageService.listReceipts(expenseId);
+            receipts.addAll(existingReceipts);
+        }
+        updateReceiptState();
     }
 
     /**
@@ -157,11 +189,28 @@ public class ExpenseDialogViewModel {
             categoryHelpExamples.clear();
             categoryWarning.set(false);
 
+            // Clear receipts (SE-308)
+            receipts.clear();
+            updateReceiptState();
+            clearReceiptError();
+
             formValid.set(false);
             dirty.set(false);
         } finally {
             ignoreChanges = false;
         }
+    }
+
+    /**
+     * Updates receipt-related state properties.
+     */
+    private void updateReceiptState() {
+        int count = receipts.size();
+        receiptCount.set(count);
+        receiptCountText.set(count + " of " + MAX_RECEIPTS);
+        canAddMoreReceipts.set(count < MAX_RECEIPTS);
+        dropzoneVisible.set(count == 0);
+        receiptGridVisible.set(count > 0);
     }
 
     // === Validation ===
@@ -680,6 +729,180 @@ public class ExpenseDialogViewModel {
 
     public void setOnClose(Runnable onClose) {
         this.onClose = onClose;
+    }
+
+    // === Receipt Management (SE-308) ===
+
+    /**
+     * Sets the receipt storage service.
+     */
+    public void setReceiptStorageService(ReceiptStorageService receiptStorageService) {
+        this.receiptStorageService = receiptStorageService;
+    }
+
+    /**
+     * Attaches a single receipt file.
+     */
+    public void attachReceipt(File file) {
+        if (receiptStorageService == null || file == null) {
+            return;
+        }
+
+        try {
+            UUID expenseId = existingExpenseId != null ? existingExpenseId : UUID.randomUUID();
+            ReceiptMetadata metadata = receiptStorageService.storeReceipt(
+                expenseId, file.toPath(), file.getName());
+            receipts.add(metadata);
+            updateReceiptState();
+            if (!ignoreChanges) {
+                dirty.set(true);
+            }
+        } catch (ReceiptStorageException e) {
+            showReceiptError(file.getName(), e);
+        }
+    }
+
+    /**
+     * Attaches multiple receipt files.
+     */
+    public void attachReceipts(List<File> files) {
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+
+        for (File file : files) {
+            if (receipts.size() >= MAX_RECEIPTS) {
+                showReceiptError(file.getName(),
+                    new ReceiptStorageException(ReceiptStorageException.ErrorType.MAX_RECEIPTS_EXCEEDED));
+                break;
+            }
+            attachReceipt(file);
+        }
+    }
+
+    /**
+     * Removes a receipt by ID.
+     */
+    public void removeReceipt(UUID receiptId) {
+        if (receiptStorageService == null || receiptId == null) {
+            return;
+        }
+
+        receiptStorageService.deleteReceipt(receiptId);
+        receipts.removeIf(r -> r.receiptId().equals(receiptId));
+        updateReceiptState();
+        if (!ignoreChanges) {
+            dirty.set(true);
+        }
+    }
+
+    /**
+     * Shows a receipt error message.
+     */
+    private void showReceiptError(String filename, ReceiptStorageException e) {
+        hasReceiptError.set(true);
+
+        switch (e.getErrorType()) {
+            case UNSUPPORTED_FORMAT -> {
+                receiptErrorMessage.set(filename + " - Unsupported file format");
+                receiptErrorHelper.set("Supported: JPG, PNG, PDF, GIF");
+            }
+            case FILE_TOO_LARGE -> {
+                receiptErrorMessage.set(filename + " - File exceeds size limit");
+                receiptErrorHelper.set("Maximum file size: 10MB");
+            }
+            case MAX_RECEIPTS_EXCEEDED -> {
+                receiptErrorMessage.set("Maximum 5 receipts per expense reached");
+                receiptErrorHelper.set("Remove a receipt to add more");
+            }
+            case STORAGE_ERROR -> {
+                receiptErrorMessage.set("Could not save " + filename);
+                receiptErrorHelper.set("Please try again");
+            }
+            default -> {
+                receiptErrorMessage.set("Error processing " + filename);
+                receiptErrorHelper.set(e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Clears the receipt error message.
+     */
+    public void clearReceiptError() {
+        hasReceiptError.set(false);
+        receiptErrorMessage.set("");
+        receiptErrorHelper.set("");
+    }
+
+    // === Receipt Getters ===
+
+    public ObservableList<ReceiptMetadata> getReceipts() {
+        return receipts;
+    }
+
+    public int getReceiptCount() {
+        return receiptCount.get();
+    }
+
+    public IntegerProperty receiptCountProperty() {
+        return receiptCount;
+    }
+
+    public String getReceiptCountText() {
+        return receiptCountText.get();
+    }
+
+    public StringProperty receiptCountTextProperty() {
+        return receiptCountText;
+    }
+
+    public boolean canAddMoreReceipts() {
+        return canAddMoreReceipts.get();
+    }
+
+    public BooleanProperty canAddMoreReceiptsProperty() {
+        return canAddMoreReceipts;
+    }
+
+    public boolean hasReceiptError() {
+        return hasReceiptError.get();
+    }
+
+    public BooleanProperty hasReceiptErrorProperty() {
+        return hasReceiptError;
+    }
+
+    public String getReceiptErrorMessage() {
+        return receiptErrorMessage.get();
+    }
+
+    public StringProperty receiptErrorMessageProperty() {
+        return receiptErrorMessage;
+    }
+
+    public String getReceiptErrorHelper() {
+        return receiptErrorHelper.get();
+    }
+
+    public StringProperty receiptErrorHelperProperty() {
+        return receiptErrorHelper;
+    }
+
+    public boolean isDropzoneVisible() {
+        return dropzoneVisible.get();
+    }
+
+    public BooleanProperty dropzoneVisibleProperty() {
+        return dropzoneVisible;
+    }
+
+    public boolean isReceiptGridVisible() {
+        return receiptGridVisible.get();
+    }
+
+    public BooleanProperty receiptGridVisibleProperty() {
+        return receiptGridVisible;
     }
 
     // === Helper Record ===

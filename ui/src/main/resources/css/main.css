@@ -1082,3 +1082,49 @@
 .form-input.text-area {
     -fx-padding: 10 16;
 }
+
+/* ===== Notification Bell (SE-309) ===== */
+.notification-bell {
+    -fx-cursor: hand;
+}
+
+.notification-badge {
+    -fx-background-color: -fx-danger;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 24;
+    -fx-max-height: 18;
+    -fx-background-radius: 9;
+    -fx-padding: 2 6;
+    -fx-alignment: CENTER;
+    -fx-translate-x: 8;
+    -fx-translate-y: -4;
+}
+
+/* Notification priority styles */
+.notification-low {
+    -fx-background-color: #e6f0ff;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 4;
+}
+
+.notification-medium {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: -fx-warning;
+    -fx-border-width: 0 0 0 4;
+}
+
+.notification-high {
+    -fx-background-color: #ffe5d6;
+    -fx-border-color: #fd7e14;
+    -fx-border-width: 0 0 0 4;
+}
+
+.notification-critical {
+    -fx-background-color: #f8d7da;
+    -fx-border-color: -fx-danger;
+    -fx-border-width: 0 0 0 4;
+}

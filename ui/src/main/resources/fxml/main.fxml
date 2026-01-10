@@ -34,6 +34,15 @@
                 <ComboBox fx:id="taxYearSelector" styleClass="tax-year-selector" prefWidth="130"/>
             </HBox>
 
+            <!-- Notification Bell (SE-309) -->
+            <StackPane fx:id="notificationBell" styleClass="notification-bell" onMouseClicked="#handleNotifications">
+                <Button fx:id="notificationButton" styleClass="header-button"
+                        text="B" onAction="#handleNotifications" accessibleText="Notifications"/>
+                <Label fx:id="notificationBadge" styleClass="notification-badge"
+                       text="0" visible="false" managed="false"
+                       StackPane.alignment="TOP_RIGHT"/>
+            </StackPane>
+
             <!-- Action Buttons -->
             <Button fx:id="helpButton" styleClass="header-button"
                     text="?" onAction="#handleHelp" accessibleText="Help"/>

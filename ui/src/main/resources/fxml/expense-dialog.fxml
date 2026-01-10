@@ -103,6 +103,49 @@
                       styleClass="form-input" prefRowCount="3" wrapText="true"/>
         </VBox>
 
+        <!-- Receipt Section (SE-308) -->
+        <VBox fx:id="receiptSection" styleClass="receipt-section" spacing="8">
+            <!-- Section Header -->
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Receipts" styleClass="field-label"/>
+                <Label text="(Optional)" styleClass="optional-indicator"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="receiptCount" text="0 of 5" styleClass="receipt-count"/>
+            </HBox>
+
+            <!-- Receipt Container -->
+            <StackPane fx:id="receiptContainer">
+                <!-- Drop Zone (shown when no receipts) -->
+                <VBox fx:id="receiptDropzone" styleClass="receipt-dropzone" spacing="12"
+                      alignment="CENTER" onDragOver="#handleDragOver" onDragDropped="#handleDragDropped"
+                      onDragExited="#handleDragExited">
+                    <Label text="+" styleClass="receipt-dropzone-icon"/>
+                    <Button fx:id="attachBtn" text="+ Attach Receipt" styleClass="button-attach"
+                            onAction="#handleAttachReceipt"/>
+                    <Label text="Drag &amp; drop files here" styleClass="receipt-dropzone-text"/>
+                    <Label text="JPG, PNG, PDF, GIF up to 10MB each" styleClass="receipt-dropzone-formats"/>
+                </VBox>
+
+                <!-- Receipt Grid (shown when receipts exist) -->
+                <FlowPane fx:id="receiptGrid" styleClass="receipt-grid"
+                          hgap="12" vgap="12" managed="false" visible="false">
+                    <!-- Populated dynamically with receipt thumbnails -->
+                </FlowPane>
+            </StackPane>
+
+            <!-- Error Message (conditional) -->
+            <HBox fx:id="receiptError" styleClass="receipt-error" spacing="8"
+                  alignment="CENTER_LEFT" managed="false" visible="false">
+                <Label text="!" styleClass="receipt-error-icon"/>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="receiptErrorText" text="" styleClass="receipt-error-text"/>
+                    <Label fx:id="receiptErrorHelper" text="" styleClass="receipt-error-helper"/>
+                </VBox>
+                <Button fx:id="dismissErrorBtn" text="X" styleClass="btn-error-dismiss"
+                        onAction="#handleDismissReceiptError"/>
+            </HBox>
+        </VBox>
+
     </VBox>
 
     <!-- Dialog Footer -->

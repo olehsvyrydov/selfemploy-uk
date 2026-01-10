@@ -1,0 +1,332 @@
+/*
+ * Tax Summary View Styles - SE-306
+ * Based on /aura design specification
+ */
+
+/* ===== Tax Summary Page Container ===== */
+.tax-summary-scroll {
+    -fx-background-color: transparent;
+    -fx-background: -fx-bg-secondary;
+}
+
+.tax-summary-scroll > .viewport {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.tax-summary-container {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-max-width: 900;
+}
+
+/* ===== Draft Banner ===== */
+.draft-banner {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: #ffc107;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 16 20;
+}
+
+.draft-banner-icon {
+    -fx-text-fill: #856404;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.draft-banner-text {
+    -fx-text-fill: #856404;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Tax At A Glance Card ===== */
+.tax-glance-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 24;
+}
+
+.tax-glance-title {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.tax-metric-card {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 20;
+    -fx-alignment: CENTER;
+}
+
+.tax-metric-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.tax-metric-box-ref {
+    -fx-font-size: 11px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.tax-metric-value {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+}
+
+.tax-metric-value.profit {
+    -fx-text-fill: -fx-primary;
+}
+
+.tax-metric-value.income-tax {
+    -fx-text-fill: #6f42c1;
+}
+
+.tax-metric-value.ni-class4 {
+    -fx-text-fill: #17a2b8;
+}
+
+.total-tax-due-container {
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 20 0 0 0;
+}
+
+.total-tax-due-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.total-tax-due-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-danger;
+}
+
+/* ===== Expandable Section Card ===== */
+.section-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+}
+
+.section-header {
+    -fx-padding: 16 20;
+    -fx-cursor: hand;
+}
+
+.section-header:hover {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 12 12 0 0;
+}
+
+.section-toggle {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-min-width: 24;
+}
+
+.section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.section-total {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.section-total.income {
+    -fx-text-fill: -fx-success;
+}
+
+.section-total.expenses {
+    -fx-text-fill: #fd7e14;
+}
+
+.section-total.profit {
+    -fx-text-fill: -fx-primary;
+}
+
+.section-total.tax {
+    -fx-text-fill: #6f42c1;
+}
+
+.section-total.ni {
+    -fx-text-fill: #17a2b8;
+}
+
+.section-content {
+    -fx-padding: 0 20 20 48;
+}
+
+/* ===== Line Items ===== */
+.line-item {
+    -fx-padding: 8 0;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-style: dashed;
+}
+
+.line-item-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.line-item-box {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.line-item-value {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.line-item-value.negative {
+    -fx-text-fill: #fd7e14;
+}
+
+/* ===== Profit Calculation ===== */
+.calc-row {
+    -fx-padding: 12 0;
+}
+
+.calc-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.calc-value {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.calc-divider {
+    -fx-border-color: -fx-text-primary;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 8 0;
+}
+
+.calc-result {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+/* ===== Tax Band Rows ===== */
+.tax-band-row {
+    -fx-padding: 10 0;
+}
+
+.tax-band-desc {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.tax-band-range {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.tax-band-amount {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.tax-band-amount.income-tax {
+    -fx-text-fill: #6f42c1;
+}
+
+.tax-band-amount.ni-class4 {
+    -fx-text-fill: #17a2b8;
+}
+
+/* ===== Total Due Card ===== */
+.total-due-card {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 24;
+}
+
+.total-due-title {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.total-due-breakdown-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.total-due-breakdown-value {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.total-due-amount {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+.total-due-date {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-danger;
+}
+
+/* ===== POA Info Link ===== */
+.poa-info-link {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-primary;
+}
+
+.poa-info-link:hover {
+    -fx-underline: true;
+}
+
+/* ===== Action Bar ===== */
+.tax-action-bar {
+    -fx-padding: 20 0;
+}
+
+.button-pdf {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-text-fill: -fx-text-primary;
+    -fx-padding: 12 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.button-pdf:hover {
+    -fx-background-color: #dee2e6;
+}
+
+.button-submit {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+    -fx-padding: 12 24;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.button-submit:hover {
+    -fx-background-color: -fx-primary-dark;
+}
+
+.button-submit:disabled {
+    -fx-background-color: #adb5bd;
+    -fx-cursor: default;
+}

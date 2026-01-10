@@ -6,9 +6,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.service.DeadlineNotificationService;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
 
@@ -19,12 +21,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.logging.Logger;
 
 /**
  * Main controller for the application's root layout.
  * Manages navigation, tax year selection, and content view switching.
  */
 public class MainController implements Initializable {
+
+    private static final Logger LOG = Logger.getLogger(MainController.class.getName());
 
     @FXML private StackPane contentPane;
     @FXML private ToggleGroup navGroup;
@@ -37,16 +42,41 @@ public class MainController implements Initializable {
     @FXML private Label taxYearLabel;
     @FXML private Label deadlineLabel;
 
+    // Notification Bell (SE-309)
+    @FXML private StackPane notificationBell;
+    @FXML private Button notificationButton;
+    @FXML private Label notificationBadge;
+
     private final NavigationViewModel navigationViewModel = new NavigationViewModel();
     private final Map<View, Node> viewCache = new HashMap<>();
+    private final DeadlineNotificationService notificationService = new DeadlineNotificationService();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupTaxYearSelector();
         setupNavigationBindings();
+        setupNotifications();
 
         // Load dashboard by default
         loadView(View.DASHBOARD);
+    }
+
+    private void setupNotifications() {
+        // Bind badge visibility to unread count
+        notificationService.unreadCountProperty().addListener((obs, oldVal, newVal) -> {
+            int count = newVal.intValue();
+            notificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+            notificationBadge.setVisible(count > 0);
+            notificationBadge.setManaged(count > 0);
+        });
+
+        // Start notification scheduler for current tax year
+        TaxYear currentYear = navigationViewModel.getSelectedTaxYear();
+        if (currentYear != null) {
+            notificationService.startScheduler(currentYear);
+        }
+
+        LOG.info("Notification service initialized");
     }
 
     private void setupTaxYearSelector() {
@@ -70,6 +100,8 @@ public class MainController implements Initializable {
                 navigationViewModel.setSelectedTaxYear(newVal);
                 updateStatusBar();
                 refreshCurrentView();
+                // Restart notification scheduler for new tax year
+                notificationService.startScheduler(newVal);
             }
         });
 
@@ -186,11 +218,70 @@ public class MainController implements Initializable {
         loadView(View.HELP);
     }
 
+    @FXML
+    void handleNotifications(ActionEvent event) {
+        showNotificationPanel();
+    }
+
+    @FXML
+    void handleNotifications(MouseEvent event) {
+        showNotificationPanel();
+    }
+
+    private void showNotificationPanel() {
+        // Mark all as read when opening
+        notificationService.markAllAsRead();
+
+        // TODO: Show notification panel/popup with history
+        // For now, show a simple dialog with notification history
+        var notifications = notificationService.getNotificationHistory();
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Notifications");
+        alert.setHeaderText("Deadline Notifications");
+
+        if (notifications.isEmpty()) {
+            alert.setContentText("No notifications yet.\n\nNotifications will appear when deadlines approach.");
+        } else {
+            StringBuilder sb = new StringBuilder();
+            int shown = 0;
+            for (var notification : notifications) {
+                if (shown >= 5) {
+                    sb.append("\n... and ").append(notifications.size() - 5).append(" more");
+                    break;
+                }
+                sb.append("• ").append(notification.title()).append("\n");
+                sb.append("  ").append(notification.message()).append("\n\n");
+                shown++;
+            }
+            alert.setContentText(sb.toString());
+        }
+
+        alert.showAndWait();
+        LOG.info("Notification panel shown, " + notifications.size() + " notifications");
+    }
+
     /**
      * Returns the currently selected tax year.
      */
     public TaxYear getSelectedTaxYear() {
         return navigationViewModel.getSelectedTaxYear();
+    }
+
+    /**
+     * Returns the notification service for testing and external access.
+     */
+    public DeadlineNotificationService getNotificationService() {
+        return notificationService;
+    }
+
+    /**
+     * Shuts down the notification scheduler.
+     * Should be called when the application is closing.
+     */
+    public void shutdown() {
+        notificationService.shutdown();
+        LOG.info("MainController shutdown complete");
     }
 
     /**

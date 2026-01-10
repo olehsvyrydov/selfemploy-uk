@@ -428,6 +428,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
 
             Scene scene = new Scene(dialogContent);
             scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/css/receipt-attachment.css").toExternalForm());
             dialogStage.setScene(scene);
 
             // Set callbacks
