@@ -64,7 +64,7 @@
             <!-- Estimated Tax Card -->
             <VBox styleClass="metric-card, metric-tax" GridPane.columnIndex="3">
                 <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label text="%" styleClass="metric-icon, icon-tax"/>
+                    <Label text="£" styleClass="metric-icon, icon-tax"/>
                     <Label text="ESTIMATED TAX" styleClass="metric-label"/>
                 </HBox>
                 <Region VBox.vgrow="ALWAYS"/>

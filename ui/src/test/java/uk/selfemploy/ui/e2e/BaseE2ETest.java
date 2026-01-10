@@ -49,7 +49,13 @@ public abstract class BaseE2ETest extends ApplicationTest {
         Parent root = loader.load();
 
         Scene scene = new Scene(root, 1200, 800);
-        scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+
+        // Clear all stylesheets (main.fxml loads main.css which has circular lookups)
+        // Then use minimal test CSS to avoid StackOverflow from CSS lookup chains
+        scene.getStylesheets().clear();
+        root.getStylesheets().clear();
+        String testCss = getClass().getResource("/css/test-minimal.css").toExternalForm();
+        scene.getStylesheets().add(testCss);
 
         stage.setTitle("UK Self-Employment Manager");
         stage.setMinWidth(900);

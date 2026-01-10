@@ -2,20 +2,29 @@ package uk.selfemploy.ui.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel.ActivityItem;
 import uk.selfemploy.ui.viewmodel.Deadline;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
+import java.util.UUID;
 
 /**
  * Controller for the Dashboard view.
@@ -46,6 +55,15 @@ public class DashboardController implements Initializable, MainController.TaxYea
     @FXML private Label emptyActivityLabel;
 
     private final DashboardViewModel viewModel = new DashboardViewModel();
+
+    // Service dependencies (SE-207, SE-208)
+    private IncomeService incomeService;
+    private ExpenseService expenseService;
+    private UUID businessId;
+    private TaxYear currentTaxYear;
+    private Runnable onNavigateToIncome;
+    private Runnable onNavigateToExpenses;
+    private Runnable onNavigateToTax;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -198,37 +216,177 @@ public class DashboardController implements Initializable, MainController.TaxYea
         return item;
     }
 
-    // === Action Handlers ===
+    // === Service Initialization (SE-207) ===
+
+    /**
+     * Initializes the controller with required service dependencies.
+     * This enables dashboard data integration with real backend services.
+     *
+     * @param incomeService  the income service for loading income data
+     * @param expenseService the expense service for loading expense data
+     * @param businessId     the current business ID
+     */
+    public void initializeWithDependencies(IncomeService incomeService, ExpenseService expenseService, UUID businessId) {
+        this.incomeService = incomeService;
+        this.expenseService = expenseService;
+        this.businessId = businessId;
+
+        // Load data if tax year is already set
+        if (currentTaxYear != null) {
+            loadDashboardData();
+        }
+    }
+
+    /**
+     * Sets navigation callbacks for quick actions.
+     * These allow the dashboard to navigate to other views.
+     *
+     * @param onNavigateToIncome   callback to navigate to Income view
+     * @param onNavigateToExpenses callback to navigate to Expenses view
+     * @param onNavigateToTax      callback to navigate to Tax view
+     */
+    public void setNavigationCallbacks(Runnable onNavigateToIncome, Runnable onNavigateToExpenses, Runnable onNavigateToTax) {
+        this.onNavigateToIncome = onNavigateToIncome;
+        this.onNavigateToExpenses = onNavigateToExpenses;
+        this.onNavigateToTax = onNavigateToTax;
+    }
+
+    private void loadDashboardData() {
+        if (incomeService != null && expenseService != null && businessId != null && currentTaxYear != null) {
+            viewModel.loadData(incomeService, expenseService, businessId, currentTaxYear);
+            // Refresh UI after loading data
+            populateActivity();
+        }
+    }
+
+    /**
+     * Refreshes the dashboard data.
+     * Call this after adding income/expenses from quick actions.
+     */
+    public void refresh() {
+        loadDashboardData();
+    }
+
+    // === Action Handlers (SE-208) ===
 
     @FXML
     void handleAddIncome(ActionEvent event) {
-        // TODO: Navigate to Income view or open Add Income dialog
-        System.out.println("Add Income clicked");
+        if (incomeService == null || businessId == null || currentTaxYear == null) {
+            // If services not available, just navigate to Income view
+            if (onNavigateToIncome != null) {
+                onNavigateToIncome.run();
+            }
+            return;
+        }
+
+        try {
+            // Open the income dialog
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/income-dialog.fxml"));
+            VBox dialogContent = loader.load();
+
+            IncomeDialogController dialogController = loader.getController();
+            dialogController.initializeWithDependencies(incomeService, businessId, currentTaxYear);
+
+            // Create and show dialog
+            Stage dialogStage = createDialogStage(dialogContent, "Add Income");
+            dialogController.setDialogStage(dialogStage);
+
+            // Set save callback to refresh dashboard
+            dialogController.setOnSaveCallback(income -> {
+                refresh();
+            });
+
+            dialogStage.showAndWait();
+
+        } catch (IOException e) {
+            System.err.println("Failed to open income dialog: " + e.getMessage());
+            // Fallback: navigate to Income view
+            if (onNavigateToIncome != null) {
+                onNavigateToIncome.run();
+            }
+        }
     }
 
     @FXML
     void handleAddExpense(ActionEvent event) {
-        // TODO: Navigate to Expenses view or open Add Expense dialog
-        System.out.println("Add Expense clicked");
+        if (expenseService == null || businessId == null || currentTaxYear == null) {
+            // If services not available, just navigate to Expenses view
+            if (onNavigateToExpenses != null) {
+                onNavigateToExpenses.run();
+            }
+            return;
+        }
+
+        try {
+            // Open the expense dialog
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/expense-dialog.fxml"));
+            VBox dialogContent = loader.load();
+
+            ExpenseDialogController dialogController = loader.getController();
+            dialogController.setExpenseService(expenseService);
+            dialogController.setBusinessId(businessId);
+            dialogController.setTaxYear(currentTaxYear);
+
+            // Set save callback to refresh dashboard
+            dialogController.setOnSave(expense -> {
+                refresh();
+            });
+
+            // Create and show dialog
+            Stage dialogStage = createDialogStage(dialogContent, "Add Expense");
+            dialogController.setOnClose(dialogStage::close);
+            dialogStage.showAndWait();
+
+        } catch (IOException e) {
+            System.err.println("Failed to open expense dialog: " + e.getMessage());
+            // Fallback: navigate to Expenses view
+            if (onNavigateToExpenses != null) {
+                onNavigateToExpenses.run();
+            }
+        }
     }
 
     @FXML
     void handleViewTax(ActionEvent event) {
-        // TODO: Navigate to Tax Summary view
-        System.out.println("View Tax clicked");
+        if (onNavigateToTax != null) {
+            onNavigateToTax.run();
+        }
     }
 
     @FXML
     void handleViewAllActivity(ActionEvent event) {
-        // TODO: Navigate to Activity view or expand activity section
-        System.out.println("View All Activity clicked");
+        // Navigate to Income view (shows all activity)
+        if (onNavigateToIncome != null) {
+            onNavigateToIncome.run();
+        }
+    }
+
+    private Stage createDialogStage(VBox dialogContent, String title) {
+        Stage dialogStage = new Stage();
+        dialogStage.initModality(Modality.APPLICATION_MODAL);
+        dialogStage.initStyle(StageStyle.UNDECORATED);
+        dialogStage.setTitle(title);
+
+        Scene scene = new Scene(dialogContent);
+        scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+        dialogStage.setScene(scene);
+
+        // Center on owner
+        Stage owner = (Stage) dashboardContainer.getScene().getWindow();
+        dialogStage.initOwner(owner);
+
+        return dialogStage;
     }
 
     // === TaxYearAware Implementation ===
 
     @Override
     public void setTaxYear(TaxYear taxYear) {
+        this.currentTaxYear = taxYear;
         viewModel.setCurrentTaxYear(taxYear);
+
+        // Reload data with new tax year
+        loadDashboardData();
     }
 
     /**
@@ -237,4 +395,7 @@ public class DashboardController implements Initializable, MainController.TaxYea
     public DashboardViewModel getViewModel() {
         return viewModel;
     }
+
+    // Expose dashboard container for dialog centering
+    @FXML private VBox dashboardContainer;
 }

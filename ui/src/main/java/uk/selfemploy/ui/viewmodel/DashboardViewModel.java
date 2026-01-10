@@ -3,15 +3,20 @@ package uk.selfemploy.ui.viewmodel;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * ViewModel for the Dashboard view.
@@ -263,6 +268,117 @@ public class DashboardViewModel {
         } else {
             return formatted + " this month";
         }
+    }
+
+    // === Data Loading (SE-207) ===
+
+    private static final int MAX_RECENT_ACTIVITY = 10;
+
+    /**
+     * Loads dashboard data from income and expense services.
+     * This integrates real data into the dashboard view.
+     *
+     * @param incomeService  the income service
+     * @param expenseService the expense service
+     * @param businessId     the current business ID
+     * @param taxYear        the tax year to load data for
+     */
+    public void loadData(IncomeService incomeService, ExpenseService expenseService,
+                         UUID businessId, TaxYear taxYear) {
+        if (incomeService == null || expenseService == null || businessId == null || taxYear == null) {
+            return;
+        }
+
+        // Update current tax year
+        setCurrentTaxYear(taxYear);
+
+        // Load totals
+        BigDecimal incomeTotal = incomeService.getTotalByTaxYear(businessId, taxYear);
+        BigDecimal expenseTotal = expenseService.getTotalByTaxYear(businessId, taxYear);
+
+        setTotalIncome(incomeTotal != null ? incomeTotal : BigDecimal.ZERO);
+        setTotalExpenses(expenseTotal != null ? expenseTotal : BigDecimal.ZERO);
+
+        // Calculate estimated tax
+        calculateEstimatedTax(taxYear);
+
+        // Load entries for monthly trends and activity
+        List<Income> incomes = incomeService.findByTaxYear(businessId, taxYear);
+        List<Expense> expenses = expenseService.findByTaxYear(businessId, taxYear);
+
+        // Calculate monthly trends
+        calculateMonthlyTrends(incomes, expenses);
+
+        // Load recent activity
+        loadRecentActivity(incomes, expenses);
+    }
+
+    private void calculateEstimatedTax(TaxYear taxYear) {
+        BigDecimal profit = getNetProfit();
+        if (profit == null || profit.compareTo(BigDecimal.ZERO) <= 0) {
+            setEstimatedTax(BigDecimal.ZERO);
+            return;
+        }
+
+        try {
+            TaxLiabilityCalculator calculator = new TaxLiabilityCalculator(taxYear.startYear());
+            var result = calculator.calculate(profit);
+            setEstimatedTax(result.totalLiability());
+        } catch (Exception e) {
+            // If tax calculation fails, set to zero
+            setEstimatedTax(BigDecimal.ZERO);
+        }
+    }
+
+    private void calculateMonthlyTrends(List<Income> incomes, List<Expense> expenses) {
+        YearMonth currentMonth = YearMonth.now();
+
+        // Calculate income this month
+        BigDecimal incomeThisMonthTotal = incomes.stream()
+            .filter(i -> YearMonth.from(i.date()).equals(currentMonth))
+            .map(Income::amount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate expenses this month
+        BigDecimal expensesThisMonthTotal = expenses.stream()
+            .filter(e -> YearMonth.from(e.date()).equals(currentMonth))
+            .map(Expense::amount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        setIncomeThisMonth(incomeThisMonthTotal);
+        setExpensesThisMonth(expensesThisMonthTotal);
+    }
+
+    private void loadRecentActivity(List<Income> incomes, List<Expense> expenses) {
+        List<ActivityItem> allActivity = new ArrayList<>();
+
+        // Convert incomes to activity items
+        for (Income income : incomes) {
+            allActivity.add(new ActivityItem(
+                income.date(),
+                income.description(),
+                income.amount(),
+                true // isIncome
+            ));
+        }
+
+        // Convert expenses to activity items
+        for (Expense expense : expenses) {
+            allActivity.add(new ActivityItem(
+                expense.date(),
+                expense.description(),
+                expense.amount(),
+                false // isIncome
+            ));
+        }
+
+        // Sort by date descending and limit to MAX_RECENT_ACTIVITY
+        List<ActivityItem> sortedActivity = allActivity.stream()
+            .sorted(Comparator.comparing(ActivityItem::date).reversed())
+            .limit(MAX_RECENT_ACTIVITY)
+            .collect(Collectors.toList());
+
+        recentActivity.setAll(sortedActivity);
     }
 
     /**

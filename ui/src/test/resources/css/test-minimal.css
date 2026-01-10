@@ -1,0 +1,266 @@
+/*
+ * Minimal CSS for E2E Testing
+ * Avoids complex lookups that can cause StackOverflow in TestFX
+ */
+
+/* ===== Root Variables - All direct values ===== */
+.root {
+    -fx-primary: #0066cc;
+    -fx-primary-dark: #004d99;
+    -fx-primary-light: #e6f0ff;
+    -fx-secondary: #6c757d;
+    -fx-success: #28a745;
+    -fx-warning: #ffc107;
+    -fx-danger: #dc3545;
+
+    -fx-bg-primary: #ffffff;
+    -fx-bg-secondary: #f8f9fa;
+    -fx-bg-tertiary: #e9ecef;
+
+    -fx-text-primary: #212529;
+    -fx-text-secondary: #6c757d;
+    -fx-text-muted: #adb5bd;
+
+    -fx-border-color: #dee2e6;
+}
+
+/* ===== Basic Layout ===== */
+.root-container {
+    -fx-background-color: #f8f9fa;
+}
+
+.header-bar {
+    -fx-background-color: #ffffff;
+    -fx-min-height: 60;
+    -fx-max-height: 60;
+}
+
+.sidebar {
+    -fx-background-color: #ffffff;
+}
+
+.content-pane {
+    -fx-background-color: #f8f9fa;
+}
+
+.status-bar {
+    -fx-background-color: #e9ecef;
+    -fx-min-height: 36;
+    -fx-max-height: 36;
+}
+
+/* ===== Navigation ===== */
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-padding: 12 16;
+}
+
+.nav-button:selected {
+    -fx-background-color: #e6f0ff;
+}
+
+/* ===== Cards ===== */
+.card, .metric-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+}
+
+/* ===== Labels - Direct colors instead of lookups ===== */
+.page-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.metric-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #adb5bd;
+}
+
+.metric-value {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.metric-trend {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6c757d;
+}
+
+.label-secondary {
+    -fx-text-fill: #6c757d;
+    -fx-font-size: 13px;
+}
+
+/* ===== Buttons ===== */
+.button-primary, .button-success {
+    -fx-background-color: #0066cc;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+}
+
+.button-secondary {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: #212529;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+}
+
+.button-warning {
+    -fx-background-color: #fd7e14;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+}
+
+.button-danger {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+}
+
+.action-button {
+    -fx-background-color: transparent;
+    -fx-padding: 12 16;
+    -fx-background-radius: 8;
+}
+
+.action-income {
+    -fx-text-fill: #28a745;
+}
+
+.action-expense {
+    -fx-text-fill: #fd7e14;
+}
+
+.action-tax {
+    -fx-text-fill: #0066cc;
+}
+
+/* ===== Tables ===== */
+.data-table, .table-view {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 12;
+}
+
+.status-badge {
+    -fx-padding: 4 12;
+    -fx-background-radius: 12;
+    -fx-font-size: 12px;
+}
+
+.status-paid {
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+}
+
+.status-unpaid {
+    -fx-background-color: #fff3cd;
+    -fx-text-fill: #856404;
+}
+
+/* ===== Dialog ===== */
+.dialog-container {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 12;
+}
+
+.dialog-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.form-input {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 16;
+}
+
+.field-error {
+    -fx-font-size: 12px;
+    -fx-text-fill: #dc3545;
+}
+
+/* ===== Other ===== */
+.tax-year-badge {
+    -fx-background-color: #e6f0ff;
+    -fx-text-fill: #0066cc;
+    -fx-padding: 6 12;
+    -fx-background-radius: 16;
+}
+
+.empty-state {
+    -fx-text-fill: #adb5bd;
+    -fx-font-size: 14px;
+}
+
+.link {
+    -fx-text-fill: #0066cc;
+}
+
+.year-progress {
+    -fx-pref-height: 12;
+}
+
+.dashboard-scroll, .page-scroll {
+    -fx-background-color: transparent;
+}
+
+.dashboard-container, .page-container {
+    -fx-background-color: #f8f9fa;
+}
+
+/* ===== Category Colors ===== */
+.category-dot {
+    -fx-min-width: 8;
+    -fx-min-height: 8;
+    -fx-max-width: 8;
+    -fx-max-height: 8;
+    -fx-background-radius: 4;
+}
+
+.deductible-badge {
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-background-radius: 12;
+    -fx-font-size: 12px;
+}
+
+.deductible-yes {
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+}
+
+.deductible-no {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: #6c757d;
+}
+
+/* Summary */
+.summary-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.text-success {
+    -fx-text-fill: #28a745;
+}
+
+.text-expense, .text-warning {
+    -fx-text-fill: #fd7e14;
+}

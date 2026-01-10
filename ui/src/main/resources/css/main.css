@@ -520,3 +520,565 @@
 .mb-20 { -fx-padding: 0 0 20 0; }
 .mt-10 { -fx-padding: 10 0 0 0; }
 .mt-20 { -fx-padding: 20 0 0 0; }
+
+/* ===== Page Scroll Container ===== */
+.page-scroll {
+    -fx-background-color: transparent;
+    -fx-background: -fx-bg-secondary;
+}
+
+.page-scroll > .viewport {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.page-container {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-max-width: 1200;
+}
+
+/* ===== Summary Cards (Income) ===== */
+.summary-item {
+    -fx-padding: 20;
+}
+
+.summary-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.summary-divider {
+    -fx-padding: 10 0;
+}
+
+.text-warning {
+    -fx-text-fill: #fd7e14;
+}
+
+/* ===== Filters Bar ===== */
+.filters-bar {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
+}
+
+.search-field {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+}
+
+.search-field:focused {
+    -fx-border-color: -fx-primary;
+    -fx-background-color: -fx-bg-primary;
+}
+
+/* ===== Data Table ===== */
+.data-table {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: transparent;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+}
+
+.data-table .column-header-background {
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+.data-table .column-header {
+    -fx-background-color: transparent;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 12 16;
+}
+
+.data-table .table-row-cell {
+    -fx-cell-size: 52px;
+    -fx-border-color: -fx-bg-tertiary;
+    -fx-border-width: 0 0 1 0;
+}
+
+.data-table .table-row-cell:odd {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.data-table .table-row-cell:even {
+    -fx-background-color: -fx-bg-primary;
+}
+
+.data-table .table-row-cell:hover {
+    -fx-background-color: -fx-primary-light;
+    -fx-cursor: hand;
+}
+
+.data-table .table-row-cell:selected {
+    -fx-background-color: derive(-fx-primary-light, -5%);
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 3;
+}
+
+.data-table .table-cell {
+    -fx-padding: 0 16;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Amount column - right aligned */
+.amount-cell {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-success;
+}
+
+/* Status badges */
+.status-badge {
+    -fx-padding: 4 12;
+    -fx-background-radius: 12;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.status-paid {
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+}
+
+.status-unpaid {
+    -fx-background-color: #fff3cd;
+    -fx-text-fill: #856404;
+}
+
+/* ===== Pagination ===== */
+.pagination-bar {
+    -fx-padding: 16 0;
+}
+
+/* ===== Empty State ===== */
+.empty-state-container {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 60;
+    -fx-min-height: 400;
+}
+
+.empty-state-icon {
+    -fx-font-size: 48px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.empty-state-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.empty-state-message {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-max-width: 400;
+    -fx-wrap-text: true;
+    -fx-text-alignment: CENTER;
+}
+
+.empty-table-message {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Dialog Container ===== */
+.dialog-container {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 32, 0, 0, 8);
+}
+
+/* ===== Dialog Header ===== */
+.dialog-header {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 0 0 1 0;
+}
+
+.dialog-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.close-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-size: 16px;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-background-radius: 16;
+    -fx-cursor: hand;
+}
+
+.close-button:hover {
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+/* ===== Dialog Content ===== */
+.dialog-content {
+    -fx-background-color: -fx-bg-primary;
+}
+
+/* ===== Form Fields ===== */
+.form-field {
+    -fx-padding: 0 0 16 0;
+}
+
+.field-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.required-indicator {
+    -fx-text-fill: -fx-danger;
+    -fx-font-weight: bold;
+}
+
+.optional-indicator {
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+
+.form-input {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 16;
+    -fx-font-size: 14px;
+    -fx-min-height: 44;
+}
+
+.form-input:focused {
+    -fx-border-color: -fx-primary;
+    -fx-background-color: -fx-bg-primary;
+}
+
+.field-error {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-danger;
+}
+
+/* ===== Currency Input ===== */
+.currency-input {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.currency-prefix {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-padding: 0 0 0 16;
+    -fx-min-height: 44;
+    -fx-alignment: CENTER;
+}
+
+.currency-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 10 16 10 8;
+}
+
+/* ===== Dialog Footer ===== */
+.dialog-footer {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ===== Danger Button ===== */
+.button-danger {
+    -fx-background-color: -fx-danger;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.button-danger:hover {
+    -fx-background-color: derive(-fx-danger, -10%);
+}
+
+/* ===== Disabled State ===== */
+.button-success:disabled {
+    -fx-background-color: #adb5bd;
+    -fx-cursor: default;
+}
+
+.button-primary:disabled {
+    -fx-background-color: #adb5bd;
+    -fx-cursor: default;
+}
+
+/* ===== Confirmation Dialog ===== */
+.confirmation-dialog {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 32, 0, 0, 8);
+    -fx-padding: 24;
+}
+
+.confirmation-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.confirmation-message {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.confirmation-detail {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.confirmation-warning {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-danger;
+    -fx-font-weight: 500;
+}
+
+/* ===== Expense-specific Styles ===== */
+
+/* Expense Colors */
+.text-expense {
+    -fx-text-fill: #fd7e14;
+}
+
+.text-muted {
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Warning Button (Orange) ===== */
+.button-warning {
+    -fx-background-color: #fd7e14;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.button-warning:hover {
+    -fx-background-color: derive(#fd7e14, -10%);
+}
+
+.button-warning:disabled {
+    -fx-background-color: #adb5bd;
+    -fx-cursor: default;
+}
+
+/* ===== Help Icon ===== */
+.help-icon {
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+.help-icon:hover {
+    -fx-text-fill: -fx-primary;
+}
+
+/* ===== Category Cell ===== */
+.category-cell {
+    -fx-padding: 0 12;
+}
+
+.category-badge {
+    -fx-padding: 4 10;
+    -fx-background-radius: 4;
+    -fx-font-size: 12px;
+}
+
+.category-dot {
+    -fx-min-width: 8;
+    -fx-min-height: 8;
+    -fx-max-width: 8;
+    -fx-max-height: 8;
+    -fx-background-radius: 4;
+}
+
+.category-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+/* Category colors */
+.category-cost-of-goods { -fx-background-color: #E91E63; }
+.category-subcontractor { -fx-background-color: #9C27B0; }
+.category-staff { -fx-background-color: #673AB7; }
+.category-travel { -fx-background-color: #3F51B5; }
+.category-premises { -fx-background-color: #2196F3; }
+.category-repairs { -fx-background-color: #00BCD4; }
+.category-office { -fx-background-color: #009688; }
+.category-advertising { -fx-background-color: #4CAF50; }
+.category-interest { -fx-background-color: #8BC34A; }
+.category-financial { -fx-background-color: #CDDC39; }
+.category-bad-debts { -fx-background-color: #FF9800; }
+.category-professional { -fx-background-color: #FF5722; }
+.category-depreciation { -fx-background-color: #795548; }
+.category-other { -fx-background-color: #607D8B; }
+.category-home-office { -fx-background-color: #00ACC1; }
+.category-entertainment { -fx-background-color: #E53935; }
+
+/* ===== Deductible Cell ===== */
+.deductible-cell {
+    -fx-alignment: CENTER;
+}
+
+.deductible-badge {
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-max-width: 24;
+    -fx-max-height: 24;
+    -fx-background-radius: 12;
+    -fx-alignment: CENTER;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.deductible-yes {
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+}
+
+.deductible-no {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: #6c757d;
+}
+
+/* ===== Expense Amount Cell ===== */
+.expense-amount-cell {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-font-weight: bold;
+    -fx-text-fill: #fd7e14;
+}
+
+/* ===== Category Help Box ===== */
+.category-help-box {
+    -fx-background-color: #f0f7ff;
+    -fx-border-color: #b8daff;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.category-help-box.warning {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: #ffc107;
+}
+
+.help-box-icon {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-primary;
+}
+
+.category-help-box.warning .help-box-icon {
+    -fx-text-fill: #856404;
+}
+
+.help-box-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+.category-help-box.warning .help-box-title {
+    -fx-text-fill: #856404;
+}
+
+.help-box-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.help-box-examples {
+    -fx-padding: 8 0 0 16;
+}
+
+.help-box-example {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Deductible Row ===== */
+.deductible-row {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.deductible-row.disabled {
+    -fx-opacity: 0.7;
+}
+
+.checkbox-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.checkbox-helper {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.checkbox-helper.warning {
+    -fx-text-fill: #856404;
+}
+
+/* ===== Category Combo Cell ===== */
+.category-combo-cell {
+    -fx-padding: 8 12;
+}
+
+.category-combo-cell .category-dot {
+    -fx-min-width: 10;
+    -fx-min-height: 10;
+    -fx-max-width: 10;
+    -fx-max-height: 10;
+    -fx-background-radius: 5;
+}
+
+.category-combo-cell .category-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.category-combo-cell .category-box {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Grouped Dropdown ===== */
+.category-group-header {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 8 12 4 12;
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+/* ===== TextArea ===== */
+.form-input.text-area {
+    -fx-padding: 10 16;
+}

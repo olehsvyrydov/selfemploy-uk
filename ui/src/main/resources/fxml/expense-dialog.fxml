@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="uk.selfemploy.ui.controller.ExpenseDialogController"
+      styleClass="dialog-container" prefWidth="520" maxWidth="640">
+
+    <!-- Dialog Header -->
+    <HBox styleClass="dialog-header" alignment="CENTER_LEFT" spacing="10">
+        <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+        <Label fx:id="dialogTitle" text="Add Expense" styleClass="dialog-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="closeBtn" text="X" styleClass="close-button"
+                onAction="#handleClose" accessibleText="Close dialog"/>
+    </HBox>
+
+    <!-- Form Content -->
+    <VBox styleClass="dialog-content" spacing="16">
+        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+        <!-- Date Field -->
+        <VBox styleClass="form-field" spacing="6">
+            <HBox alignment="CENTER_LEFT" spacing="4">
+                <Label text="Date" styleClass="field-label"/>
+                <Label text="*" styleClass="required-indicator"/>
+            </HBox>
+            <DatePicker fx:id="dateField" maxWidth="Infinity" styleClass="form-input"/>
+            <Label fx:id="dateError" styleClass="field-error" managed="false" visible="false"/>
+        </VBox>
+
+        <!-- Description Field -->
+        <VBox styleClass="form-field" spacing="6">
+            <HBox alignment="CENTER_LEFT" spacing="4">
+                <Label text="Description" styleClass="field-label"/>
+                <Label text="*" styleClass="required-indicator"/>
+            </HBox>
+            <TextField fx:id="descriptionField" promptText="e.g., Office supplies from Staples"
+                       styleClass="form-input"/>
+            <Label fx:id="descriptionError" styleClass="field-error" managed="false" visible="false"/>
+        </VBox>
+
+        <!-- Amount and Category Row -->
+        <HBox spacing="16">
+            <!-- Amount Field -->
+            <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="4">
+                    <Label text="Amount" styleClass="field-label"/>
+                    <Label text="*" styleClass="required-indicator"/>
+                </HBox>
+                <HBox styleClass="currency-input" spacing="0">
+                    <Label text="£" styleClass="currency-prefix"/>
+                    <TextField fx:id="amountField" promptText="0.00"
+                               styleClass="form-input, currency-field" HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <Label fx:id="amountError" styleClass="field-error" managed="false" visible="false"/>
+            </VBox>
+
+            <!-- Category Field -->
+            <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="4">
+                    <Label text="Category" styleClass="field-label"/>
+                    <Label text="*" styleClass="required-indicator"/>
+                </HBox>
+                <ComboBox fx:id="categoryField" maxWidth="Infinity" styleClass="form-input"
+                          promptText="Select category..."/>
+                <Label fx:id="categoryError" styleClass="field-error" managed="false" visible="false"/>
+            </VBox>
+        </HBox>
+
+        <!-- Category Help Box (dynamic) -->
+        <VBox fx:id="categoryHelpBox" styleClass="category-help-box" spacing="8"
+              managed="false" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label fx:id="categoryHelpIcon" text="[i]" styleClass="help-box-icon"/>
+                <Label fx:id="categoryHelpTitle" text="Category Help" styleClass="help-box-title"/>
+            </HBox>
+            <Label fx:id="categoryHelpText" styleClass="help-box-text" wrapText="true"/>
+            <VBox fx:id="categoryHelpExamples" styleClass="help-box-examples" spacing="4">
+                <!-- Populated dynamically -->
+            </VBox>
+        </VBox>
+
+        <!-- Deductible Checkbox -->
+        <HBox fx:id="deductibleRow" styleClass="deductible-row" alignment="CENTER_LEFT" spacing="12">
+            <CheckBox fx:id="deductibleCheckbox" selected="true"/>
+            <VBox spacing="2">
+                <Label fx:id="deductibleLabel" text="Tax Deductible" styleClass="checkbox-label"/>
+                <Label fx:id="deductibleHelper" text="This expense will reduce your taxable profit"
+                       styleClass="checkbox-helper"/>
+            </VBox>
+        </HBox>
+
+        <!-- Notes Field -->
+        <VBox styleClass="form-field" spacing="6">
+            <HBox alignment="CENTER_LEFT" spacing="4">
+                <Label text="Notes" styleClass="field-label"/>
+                <Label text="(Optional)" styleClass="optional-indicator"/>
+            </HBox>
+            <TextArea fx:id="notesField" promptText="Additional notes about this expense..."
+                      styleClass="form-input" prefRowCount="3" wrapText="true"/>
+        </VBox>
+
+    </VBox>
+
+    <!-- Dialog Footer -->
+    <HBox styleClass="dialog-footer" alignment="CENTER_RIGHT" spacing="12">
+        <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+
+        <Button fx:id="deleteBtn" text="Delete" styleClass="button-danger"
+                onAction="#handleDelete" managed="false" visible="false"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="cancelBtn" text="Cancel" styleClass="button-secondary"
+                onAction="#handleCancel"/>
+        <Button fx:id="saveBtn" text="Save Expense" styleClass="button-warning"
+                onAction="#handleSave" disable="true"/>
+    </HBox>
+
+</VBox>

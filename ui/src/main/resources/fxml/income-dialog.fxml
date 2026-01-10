@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="uk.selfemploy.ui.controller.IncomeDialogController"
+      styleClass="dialog-container" prefWidth="480">
+
+    <!-- Dialog Header -->
+    <HBox styleClass="dialog-header" alignment="CENTER_LEFT" spacing="10">
+        <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+        <Label fx:id="dialogTitle" text="Add Income" styleClass="dialog-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="closeBtn" text="X" styleClass="close-button"
+                onAction="#handleClose" accessibleText="Close dialog"/>
+    </HBox>
+
+    <!-- Form Content -->
+    <VBox styleClass="dialog-content" spacing="4">
+        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+        <!-- Date Field -->
+        <VBox styleClass="form-field" spacing="6">
+            <HBox spacing="2">
+                <Label text="Date" styleClass="field-label"/>
+                <Label text="*" styleClass="required-indicator"/>
+            </HBox>
+            <DatePicker fx:id="dateField" maxWidth="Infinity" styleClass="form-input"/>
+            <Label fx:id="dateError" styleClass="field-error" managed="false" visible="false"/>
+        </VBox>
+
+        <!-- Client Name Field -->
+        <VBox styleClass="form-field" spacing="6">
+            <HBox spacing="2">
+                <Label text="Client Name" styleClass="field-label"/>
+                <Label text="*" styleClass="required-indicator"/>
+            </HBox>
+            <TextField fx:id="clientNameField" promptText="e.g., Acme Corporation"
+                       styleClass="form-input"/>
+            <Label fx:id="clientNameError" styleClass="field-error" managed="false" visible="false"/>
+        </VBox>
+
+        <!-- Description Field -->
+        <VBox styleClass="form-field" spacing="6">
+            <HBox spacing="2">
+                <Label text="Description" styleClass="field-label"/>
+                <Label text="*" styleClass="required-indicator"/>
+            </HBox>
+            <TextField fx:id="descriptionField" promptText="e.g., Website design and development"
+                       styleClass="form-input"/>
+            <Label fx:id="descriptionError" styleClass="field-error" managed="false" visible="false"/>
+        </VBox>
+
+        <!-- Amount and Category Row -->
+        <HBox spacing="16">
+            <!-- Amount Field -->
+            <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
+                <HBox spacing="2">
+                    <Label text="Amount" styleClass="field-label"/>
+                    <Label text="*" styleClass="required-indicator"/>
+                </HBox>
+                <HBox styleClass="currency-input" spacing="0">
+                    <Label text="£" styleClass="currency-prefix"/>
+                    <TextField fx:id="amountField" promptText="0.00"
+                               styleClass="form-input, currency-field" HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <Label fx:id="amountError" styleClass="field-error" managed="false" visible="false"/>
+            </VBox>
+
+            <!-- Category Field -->
+            <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
+                <Label text="Category" styleClass="field-label"/>
+                <ComboBox fx:id="categoryField" maxWidth="Infinity" styleClass="form-input"/>
+            </VBox>
+        </HBox>
+
+        <!-- Status and Reference Row -->
+        <HBox spacing="16">
+            <!-- Status Field -->
+            <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
+                <Label text="Status" styleClass="field-label"/>
+                <ComboBox fx:id="statusField" maxWidth="Infinity" styleClass="form-input"/>
+            </VBox>
+
+            <!-- Reference Field -->
+            <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
+                <HBox spacing="4">
+                    <Label text="Reference" styleClass="field-label"/>
+                    <Label text="(Optional)" styleClass="optional-indicator"/>
+                </HBox>
+                <TextField fx:id="referenceField" promptText="e.g., INV-001"
+                           styleClass="form-input"/>
+                <Label fx:id="referenceError" styleClass="field-error" managed="false" visible="false"/>
+            </VBox>
+        </HBox>
+
+    </VBox>
+
+    <!-- Dialog Footer -->
+    <HBox styleClass="dialog-footer" alignment="CENTER_RIGHT" spacing="12">
+        <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+
+        <Button fx:id="deleteBtn" text="Delete" styleClass="button-danger"
+                onAction="#handleDelete" managed="false" visible="false"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="cancelBtn" text="Cancel" styleClass="button-secondary"
+                onAction="#handleCancel"/>
+        <Button fx:id="saveBtn" text="Save Income" styleClass="button-success"
+                onAction="#handleSave" disable="true"/>
+    </HBox>
+
+</VBox>

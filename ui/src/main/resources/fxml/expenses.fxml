@@ -4,10 +4,105 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1"
-      styleClass="card" spacing="20" alignment="CENTER">
-    <padding><Insets topRightBottomLeft="50"/></padding>
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.ExpenseController"
+            styleClass="page-scroll"
+            fitToWidth="true" hbarPolicy="NEVER">
 
-    <Label text="Expenses" styleClass="page-title"/>
-    <Label text="Coming soon - Track your expenses here" styleClass="page-subtitle"/>
-</VBox>
+    <VBox fx:id="expenseContainer" styleClass="page-container" spacing="24">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Page Header -->
+        <HBox alignment="CENTER_LEFT" spacing="15">
+            <Label text="Expenses" styleClass="page-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="addExpenseBtn" text="+ Add Expense"
+                    styleClass="button-warning" onAction="#handleAddExpense"/>
+        </HBox>
+
+        <!-- Summary Cards -->
+        <HBox styleClass="card" spacing="0">
+            <!-- Total Summary -->
+            <VBox styleClass="summary-item" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+                <Label text="TOTAL EXPENSES" styleClass="metric-label"/>
+                <Label fx:id="totalValue" text="£0.00" styleClass="summary-value, text-expense"/>
+                <Label fx:id="totalCount" text="0 entries" styleClass="label-secondary"/>
+            </VBox>
+
+            <Separator orientation="VERTICAL" styleClass="summary-divider"/>
+
+            <!-- Deductible Summary -->
+            <VBox styleClass="summary-item, summary-deductible" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <Label text="DEDUCTIBLE" styleClass="metric-label"/>
+                    <Label text="[?]" styleClass="help-icon">
+                        <tooltip><Tooltip text="Expenses that reduce your taxable profit"/></tooltip>
+                    </Label>
+                </HBox>
+                <Label fx:id="deductibleValue" text="£0.00" styleClass="summary-value, text-success"/>
+                <Label fx:id="deductibleCount" text="0 entries" styleClass="label-secondary"/>
+            </VBox>
+
+            <Separator orientation="VERTICAL" styleClass="summary-divider"/>
+
+            <!-- Non-Deductible Summary -->
+            <VBox styleClass="summary-item, summary-non-deductible" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <Label text="NON-DEDUCTIBLE" styleClass="metric-label"/>
+                    <Label text="[?]" styleClass="help-icon">
+                        <tooltip><Tooltip text="Expenses not allowed for tax relief (e.g., depreciation)"/></tooltip>
+                    </Label>
+                </HBox>
+                <Label fx:id="nonDeductibleValue" text="£0.00" styleClass="summary-value, text-muted"/>
+                <Label fx:id="nonDeductibleCount" text="0 entries" styleClass="label-secondary"/>
+            </VBox>
+        </HBox>
+
+        <!-- Filters Bar -->
+        <HBox styleClass="filters-bar" alignment="CENTER_LEFT" spacing="16">
+            <ComboBox fx:id="categoryFilter" promptText="All Categories" prefWidth="260"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <TextField fx:id="searchField" promptText="Search by description..."
+                       prefWidth="280" styleClass="search-field"/>
+        </HBox>
+
+        <!-- Expense Table -->
+        <TableView fx:id="expenseTable" styleClass="data-table" VBox.vgrow="ALWAYS" minHeight="300">
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            </columnResizePolicy>
+            <columns>
+                <TableColumn fx:id="dateColumn" text="DATE" prefWidth="100" minWidth="100"/>
+                <TableColumn fx:id="descriptionColumn" text="DESCRIPTION" prefWidth="260"/>
+                <TableColumn fx:id="categoryColumn" text="CATEGORY" prefWidth="180" minWidth="150"/>
+                <TableColumn fx:id="amountColumn" text="AMOUNT" prefWidth="100" minWidth="100"/>
+                <TableColumn fx:id="deductibleColumn" text="D" prefWidth="60" minWidth="60"/>
+            </columns>
+            <placeholder>
+                <Label text="No expense entries found" styleClass="empty-table-message"/>
+            </placeholder>
+        </TableView>
+
+        <!-- Pagination -->
+        <HBox fx:id="paginationBar" styleClass="pagination-bar" alignment="CENTER" spacing="20">
+            <Label fx:id="resultCount" text="Showing 0 entries" styleClass="label-secondary"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="prevBtn" text="&lt; Previous" styleClass="button-secondary"
+                    onAction="#handlePrevPage" disable="true"/>
+            <Button fx:id="nextBtn" text="Next &gt;" styleClass="button-secondary"
+                    onAction="#handleNextPage" disable="true"/>
+        </HBox>
+
+        <!-- Empty State -->
+        <VBox fx:id="emptyState" styleClass="empty-state-container"
+              alignment="CENTER" spacing="16" managed="false" visible="false">
+            <padding><Insets topRightBottomLeft="60"/></padding>
+            <Label text="[Receipt Icon]" styleClass="empty-state-icon"/>
+            <Label text="No Expenses Recorded" styleClass="empty-state-title"/>
+            <Label text="Start tracking your business costs by adding your first expense entry."
+                   styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
+            <Button text="+ Add Expense" styleClass="button-warning" onAction="#handleAddExpense"/>
+        </VBox>
+
+    </VBox>
+</ScrollPane>
