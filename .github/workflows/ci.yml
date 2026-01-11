@@ -44,8 +44,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Install Xvfb for JavaFX tests
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: Build and Test
-        run: mvn -B compile test -DexcludedGroups=e2e --no-transfer-progress
+        run: xvfb-run --auto-servernum mvn -B compile test -DexcludedGroups=e2e --no-transfer-progress -Dtestfx.robot=glass -Dtestfx.headless=true -Dprism.order=sw -Dprism.text=t2k -Djava.awt.headless=true
         env:
           # Ensure consistent builds
           MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
