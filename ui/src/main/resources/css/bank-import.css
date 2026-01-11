@@ -1,0 +1,702 @@
+/*
+ * Bank Import Wizard Styles - SE-601
+ * Based on /aura design specification
+ */
+
+/* ===== Wizard Container ===== */
+.wizard-container {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-max-width: 1000;
+}
+
+/* ===== Progress Indicator ===== */
+.wizard-progress {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-padding: 24 32;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+}
+
+.progress-step {
+    -fx-min-width: 100;
+}
+
+.step-circle {
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-max-width: 40;
+    -fx-max-height: 40;
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-background-radius: 20;
+    -fx-alignment: CENTER;
+}
+
+.progress-step.step-active .step-circle {
+    -fx-background-color: -fx-primary;
+}
+
+.progress-step.step-completed .step-circle {
+    -fx-background-color: -fx-success;
+}
+
+.step-number {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.progress-step.step-active .step-number,
+.progress-step.step-completed .step-number {
+    -fx-text-fill: white;
+}
+
+.step-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.progress-step.step-active .step-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.step-connector {
+    -fx-min-width: 60;
+    -fx-max-height: 2;
+    -fx-min-height: 2;
+    -fx-background-color: -fx-border-color;
+    -fx-translate-y: -12;
+}
+
+/* ===== Wizard Content ===== */
+.wizard-content {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+}
+
+/* ===== Drop Zone ===== */
+.drop-zone {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 2;
+    -fx-border-style: dashed;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 48 32;
+    -fx-cursor: hand;
+}
+
+.drop-zone:hover {
+    -fx-background-color: -fx-primary-light;
+    -fx-border-color: -fx-primary;
+}
+
+.drop-zone.drag-over {
+    -fx-background-color: derive(-fx-primary-light, -5%);
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 3;
+}
+
+.drop-zone-icon {
+    -fx-font-size: 48px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+    -fx-background-color: -fx-primary-light;
+    -fx-padding: 16 24;
+    -fx-background-radius: 8;
+}
+
+.drop-zone-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.drop-zone-separator {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.drop-zone-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== File Selected Box ===== */
+.file-selected-box {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.file-icon {
+    -fx-font-size: 32px;
+    -fx-text-fill: -fx-primary;
+    -fx-background-color: -fx-primary-light;
+    -fx-padding: 8 12;
+    -fx-background-radius: 8;
+}
+
+.file-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.file-meta {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.button-link {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-underline: true;
+}
+
+/* ===== Bank Detection Boxes ===== */
+.bank-detected-box {
+    -fx-background-color: #d4edda;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+}
+
+.detection-icon {
+    -fx-font-size: 18px;
+    -fx-text-fill: -fx-success;
+    -fx-font-weight: bold;
+}
+
+.detection-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #155724;
+}
+
+.detection-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: #155724;
+}
+
+.unknown-format-box {
+    -fx-background-color: #fff3cd;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+}
+
+.warning-icon {
+    -fx-font-size: 18px;
+    -fx-text-fill: #856404;
+    -fx-font-weight: bold;
+}
+
+.warning-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+}
+
+.warning-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: #856404;
+}
+
+/* ===== Supported Banks ===== */
+.supported-banks {
+    -fx-padding: 16 0 0 0;
+}
+
+.info-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.bank-chip {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-size: 12px;
+    -fx-padding: 4 10;
+    -fx-background-radius: 12;
+}
+
+/* ===== Wizard Footer ===== */
+.wizard-footer {
+    -fx-padding: 20 0 0 0;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ===== Info Banner ===== */
+.info-banner {
+    -fx-background-color: #e6f0ff;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 12 16;
+}
+
+.info-banner-icon {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+    -fx-background-color: white;
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-max-width: 24;
+    -fx-max-height: 24;
+    -fx-background-radius: 12;
+    -fx-alignment: CENTER;
+}
+
+.info-banner-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+.info-banner-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Column Mapping ===== */
+.csv-preview-box {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.csv-headers {
+    -fx-wrap: true;
+}
+
+.header-chip {
+    -fx-background-color: -fx-primary-light;
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 12;
+    -fx-background-radius: 6;
+}
+
+.mapping-form {
+    -fx-padding: 0;
+}
+
+.mapping-row {
+    -fx-padding: 12 0;
+    -fx-border-color: -fx-bg-tertiary;
+    -fx-border-width: 0 0 1 0;
+}
+
+.mapping-combo {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+}
+
+.mapping-combo:hover {
+    -fx-border-color: -fx-primary;
+}
+
+.mapping-combo-small {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+}
+
+.nested-mapping {
+    -fx-padding: 12 0 12 32;
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+}
+
+.section-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Preview Table ===== */
+.preview-table {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.sample-preview {
+    -fx-padding: 16 0 0 0;
+}
+
+/* ===== Import Stats ===== */
+.import-stats {
+    -fx-padding: 0;
+}
+
+.stat-box {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-padding: 20 24;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
+    -fx-min-width: 140;
+}
+
+.stat-box.stat-income {
+    -fx-border-color: -fx-success;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 12 12 0;
+}
+
+.stat-box.stat-expense {
+    -fx-border-color: #fd7e14;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 12 12 0;
+}
+
+.stat-box.stat-duplicate {
+    -fx-border-color: -fx-warning;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 12 12 0;
+}
+
+.stat-box.stat-uncategorized {
+    -fx-border-color: -fx-secondary;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 12 12 0;
+}
+
+.stat-value {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.stat-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.stat-amount {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.stat-box.stat-income .stat-amount {
+    -fx-text-fill: -fx-success;
+}
+
+.stat-box.stat-expense .stat-amount {
+    -fx-text-fill: #fd7e14;
+}
+
+.stat-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Warning Banner ===== */
+.warning-banner {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: -fx-warning;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+}
+
+.warning-banner-icon {
+    -fx-text-fill: #856404;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.warning-banner-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+}
+
+.warning-banner-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #856404;
+}
+
+/* ===== Preview Actions ===== */
+.preview-actions {
+    -fx-padding: 0;
+}
+
+.filter-combo {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+}
+
+/* ===== Import Table ===== */
+.import-table {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: transparent;
+    -fx-background-radius: 8;
+}
+
+.import-table .column-header-background {
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+.import-table .column-header {
+    -fx-background-color: transparent;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 12 8;
+}
+
+.import-table .table-row-cell {
+    -fx-cell-size: 48px;
+    -fx-border-color: -fx-bg-tertiary;
+    -fx-border-width: 0 0 1 0;
+}
+
+.import-table .table-row-cell:selected {
+    -fx-background-color: -fx-primary-light;
+}
+
+/* Row status icons */
+.row-status-ok {
+    -fx-text-fill: -fx-success;
+}
+
+.row-status-warning {
+    -fx-text-fill: -fx-warning;
+}
+
+.row-status-duplicate {
+    -fx-text-fill: -fx-danger;
+}
+
+/* Type badges in table */
+.type-badge-income {
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8;
+    -fx-background-radius: 4;
+}
+
+.type-badge-expense {
+    -fx-background-color: #ffe5d6;
+    -fx-text-fill: #fd7e14;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8;
+    -fx-background-radius: 4;
+}
+
+/* Confidence indicator */
+.confidence-high {
+    -fx-text-fill: -fx-success;
+}
+
+.confidence-medium {
+    -fx-text-fill: -fx-warning;
+}
+
+.confidence-low {
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Suggestion Panel ===== */
+.suggestion-panel {
+    -fx-background-color: #e6f0ff;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+}
+
+.suggestion-icon {
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 18px;
+}
+
+.suggestion-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-primary;
+}
+
+.suggestion-reason {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.button-success-small {
+    -fx-background-color: -fx-success;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.button-secondary-small {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+/* ===== Confirm Screen ===== */
+.confirm-header {
+    -fx-padding: 32 0;
+}
+
+.confirm-icon {
+    -fx-font-size: 48px;
+    -fx-text-fill: -fx-success;
+    -fx-background-color: #d4edda;
+    -fx-padding: 20;
+    -fx-background-radius: 40;
+}
+
+.confirm-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.confirm-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Summary Card ===== */
+.summary-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 24;
+}
+
+.summary-section {
+    -fx-padding: 0;
+}
+
+.summary-section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.summary-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.summary-value {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.summary-value.income {
+    -fx-text-fill: -fx-success;
+    -fx-font-weight: bold;
+}
+
+.summary-value.expense {
+    -fx-text-fill: #fd7e14;
+    -fx-font-weight: bold;
+}
+
+/* ===== Category Breakdown ===== */
+.category-breakdown {
+    -fx-padding: 8 0;
+}
+
+.category-name {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.category-count {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-min-width: 60;
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.category-amount {
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+    -fx-min-width: 100;
+    -fx-alignment: CENTER_RIGHT;
+}
+
+/* ===== Source Info ===== */
+.source-info {
+    -fx-padding: 16;
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+}
+
+.source-value {
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.source-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Large Primary Button ===== */
+.button-large {
+    -fx-padding: 16 48;
+    -fx-font-size: 16px;
+}
+
+/* ===== Import Progress ===== */
+.import-progress {
+    -fx-padding: 32;
+}
+
+.progress-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Info Icon and Text ===== */
+.info-icon {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-secondary;
+}
+
+.info-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}

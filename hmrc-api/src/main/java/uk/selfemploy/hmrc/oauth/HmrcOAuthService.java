@@ -18,6 +18,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * Service for managing OAuth2 authentication with HMRC.
  * Implements the Authorization Code flow with PKCE using a system browser
  * and localhost callback server.
+ *
+ * <p>Note: This class is NOT a CDI bean. It requires manual instantiation
+ * through a CDI producer because of its complex constructor dependencies.
+ * See OAuthProducer for CDI integration.</p>
  */
 public class HmrcOAuthService {
 

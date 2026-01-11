@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<!-- SE-502: Notification Panel - Flyout from right side -->
+<!-- Design: /aura UI Design Specification -->
+<VBox fx:id="notificationPanel" xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="uk.selfemploy.ui.controller.NotificationPanelController"
+      styleClass="notification-panel" spacing="0"
+      prefWidth="380" maxWidth="380" managed="false" visible="false">
+
+    <stylesheets>
+        <String fx:value="/css/main.css"/>
+        <String fx:value="/css/notifications.css"/>
+    </stylesheets>
+
+    <!-- Panel Header -->
+    <HBox styleClass="notification-panel-header" alignment="CENTER_LEFT" spacing="12">
+        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+        <Label text="Notifications" styleClass="panel-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="markAllReadBtn" text="Mark all read" styleClass="button-link"
+                onAction="#handleMarkAllRead"/>
+        <Button fx:id="settingsBtn" text="⚙" styleClass="settings-button"
+                onAction="#handleOpenSettings"/>
+    </HBox>
+
+    <!-- Filter Tabs -->
+    <HBox fx:id="filterTabs" styleClass="notification-filter-tabs" spacing="0">
+        <ToggleButton fx:id="allTab" text="All" styleClass="filter-tab" selected="true"
+                      onAction="#handleFilterAll"/>
+        <ToggleButton fx:id="unreadTab" text="Unread" styleClass="filter-tab"
+                      onAction="#handleFilterUnread"/>
+        <ToggleButton fx:id="deadlinesTab" text="Deadlines" styleClass="filter-tab"
+                      onAction="#handleFilterDeadlines"/>
+    </HBox>
+
+    <!-- Notification List -->
+    <ScrollPane fx:id="notificationScroll" styleClass="notification-scroll"
+                fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+        <VBox fx:id="notificationList" styleClass="notification-list" spacing="0">
+            <!-- Populated dynamically -->
+        </VBox>
+    </ScrollPane>
+
+    <!-- Empty State -->
+    <VBox fx:id="emptyState" styleClass="notification-empty" alignment="CENTER"
+          spacing="12" managed="false" visible="false">
+        <Label text="🔔" styleClass="empty-icon"/>
+        <Label text="No notifications" styleClass="empty-title"/>
+        <Label text="You're all caught up!" styleClass="empty-subtitle"/>
+    </VBox>
+
+    <!-- Panel Footer -->
+    <HBox styleClass="notification-panel-footer" alignment="CENTER">
+        <padding><Insets top="12" right="16" bottom="12" left="16"/></padding>
+        <Hyperlink text="View notification history" styleClass="link"
+                   onAction="#handleViewHistory"/>
+    </HBox>
+
+</VBox>

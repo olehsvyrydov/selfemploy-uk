@@ -1,0 +1,362 @@
+/*
+ * Notification System Styles - SE-502
+ * Based on /aura design specification
+ */
+
+/* ===== Notification Bell ===== */
+.notification-bell {
+    -fx-padding: 8;
+    -fx-cursor: hand;
+    -fx-background-radius: 6;
+}
+
+.notification-bell:hover {
+    -fx-background-color: derive(-fx-base, 20%);
+}
+
+.bell-icon {
+    -fx-font-size: 20px;
+    -fx-text-fill: #6c757d;
+}
+
+.notification-bell:hover .bell-icon {
+    -fx-text-fill: #2563eb;
+}
+
+/* Badge */
+.notification-badge {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 26;
+    -fx-max-height: 18;
+    -fx-background-radius: 9;
+    -fx-padding: 2 6;
+    -fx-alignment: CENTER;
+    -fx-translate-x: 8;
+    -fx-translate-y: -4;
+}
+
+/* Badge variants */
+.notification-badge.low-priority {
+    -fx-background-color: #6c757d;
+}
+
+.notification-badge.medium-priority {
+    -fx-background-color: #fd7e14;
+}
+
+.notification-badge.high-priority {
+    -fx-background-color: #dc3545;
+}
+
+/* ===== Notification Panel ===== */
+.notification-panel {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 24, 0, -4, 4);
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 0 0 0 1;
+}
+
+.notification-panel-header {
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 0 0 1 0;
+}
+
+.panel-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2937;
+}
+
+.button-link {
+    -fx-background-color: transparent;
+    -fx-text-fill: #2563eb;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-padding: 4 8;
+}
+
+.button-link:hover {
+    -fx-underline: true;
+}
+
+.settings-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6c757d;
+    -fx-font-size: 16px;
+    -fx-padding: 6 8;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.settings-button:hover {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #1f2937;
+}
+
+/* ===== Filter Tabs ===== */
+.notification-filter-tabs {
+    -fx-background-color: #f9fafb;
+    -fx-padding: 4 16;
+}
+
+.filter-tab {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6c757d;
+    -fx-padding: 8 16;
+    -fx-background-radius: 6;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.filter-tab:hover {
+    -fx-background-color: #e5e7eb;
+}
+
+.filter-tab:selected {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #2563eb;
+    -fx-font-weight: bold;
+}
+
+/* ===== Notification List ===== */
+.notification-scroll {
+    -fx-background-color: transparent;
+    -fx-background: white;
+}
+
+.notification-scroll > .viewport {
+    -fx-background-color: white;
+}
+
+.notification-list {
+    -fx-background-color: white;
+}
+
+/* ===== Notification Item ===== */
+.notification-item {
+    -fx-background-color: white;
+    -fx-padding: 16;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 0 0 1 0;
+    -fx-cursor: hand;
+}
+
+.notification-item:hover {
+    -fx-background-color: #f9fafb;
+}
+
+/* Priority-based left border */
+.notification-item.priority-low {
+    -fx-border-color: #6c757d #e5e7eb #e5e7eb #e5e7eb;
+    -fx-border-width: 0 0 1 4;
+}
+
+.notification-item.priority-medium {
+    -fx-border-color: #fd7e14 #e5e7eb #e5e7eb #e5e7eb;
+    -fx-border-width: 0 0 1 4;
+    -fx-background-color: #fff9f5;
+}
+
+.notification-item.priority-high {
+    -fx-border-color: #dc3545 #e5e7eb #e5e7eb #e5e7eb;
+    -fx-border-width: 0 0 1 4;
+    -fx-background-color: #fff5f5;
+}
+
+.notification-item.priority-critical {
+    -fx-border-color: #dc3545 #e5e7eb #e5e7eb #e5e7eb;
+    -fx-border-width: 0 0 1 4;
+    -fx-background-color: #f8d7da;
+}
+
+/* Unread state */
+.notification-item.unread {
+    -fx-background-color: #f0f7ff;
+}
+
+/* ===== Priority Indicator ===== */
+.priority-indicator {
+    -fx-min-width: 32;
+    -fx-padding: 4 0 0 0;
+}
+
+.priority-icon {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+    -fx-max-width: 28;
+    -fx-max-height: 28;
+    -fx-background-radius: 14;
+    -fx-alignment: CENTER;
+}
+
+.priority-low .priority-icon {
+    -fx-background-color: #e5e7eb;
+    -fx-text-fill: #6c757d;
+}
+
+.priority-medium .priority-icon {
+    -fx-background-color: #ffe5d6;
+    -fx-text-fill: #fd7e14;
+}
+
+.priority-high .priority-icon {
+    -fx-background-color: #f8d7da;
+    -fx-text-fill: #dc3545;
+}
+
+.priority-critical .priority-icon {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: white;
+}
+
+/* ===== Notification Content ===== */
+.notification-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2937;
+}
+
+.unread-dot {
+    -fx-min-width: 8;
+    -fx-min-height: 8;
+    -fx-max-width: 8;
+    -fx-max-height: 8;
+    -fx-background-color: #2563eb;
+    -fx-background-radius: 4;
+}
+
+.notification-message {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6c757d;
+}
+
+.notification-time {
+    -fx-font-size: 12px;
+    -fx-text-fill: #9ca3af;
+}
+
+/* ===== Notification Actions ===== */
+.notification-actions {
+    -fx-padding: 8 0 0 0;
+}
+
+.button-primary-small {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.button-primary-small:hover {
+    -fx-background-color: #1d4ed8;
+}
+
+.button-secondary-small {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6c757d;
+    -fx-font-size: 12px;
+    -fx-padding: 6 14;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.button-secondary-small:hover {
+    -fx-background-color: #f3f4f6;
+}
+
+/* ===== Dismiss Button ===== */
+.dismiss-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 14px;
+    -fx-padding: 4 8;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+    -fx-opacity: 0;
+}
+
+.notification-item:hover .dismiss-button {
+    -fx-opacity: 1;
+}
+
+.dismiss-button:hover {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #dc3545;
+}
+
+/* ===== Empty State ===== */
+.notification-empty {
+    -fx-padding: 48 24;
+}
+
+.empty-icon {
+    -fx-font-size: 48px;
+    -fx-text-fill: #9ca3af;
+}
+
+.empty-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2937;
+}
+
+.empty-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6c757d;
+}
+
+/* ===== Panel Footer ===== */
+.notification-panel-footer {
+    -fx-background-color: #f9fafb;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ===== Toggle Switch ===== */
+.toggle-switch {
+    -fx-background-color: #adb5bd;
+    -fx-background-radius: 12;
+    -fx-min-width: 48;
+    -fx-max-width: 48;
+    -fx-min-height: 24;
+    -fx-max-height: 24;
+    -fx-padding: 2;
+    -fx-cursor: hand;
+}
+
+.toggle-switch:selected {
+    -fx-background-color: #22c55e;
+}
+
+/* ===== Snooze Menu ===== */
+.snooze-menu {
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 2);
+}
+
+.snooze-option {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1f2937;
+    -fx-padding: 10 16;
+    -fx-cursor: hand;
+}
+
+.snooze-option:hover {
+    -fx-background-color: #f9fafb;
+}

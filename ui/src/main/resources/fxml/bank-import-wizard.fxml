@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="uk.selfemploy.ui.controller.BankImportWizardController"
+      styleClass="wizard-container" spacing="24" prefWidth="1000">
+    <stylesheets>
+        <String fx:value="/css/main.css"/>
+        <String fx:value="/css/bank-import.css"/>
+    </stylesheets>
+    <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+    <!-- Wizard Header -->
+    <VBox spacing="8">
+        <Label text="Import Bank Transactions" styleClass="page-title"/>
+        <Label text="Import your bank statement CSV to quickly add transactions"
+               styleClass="page-subtitle"/>
+    </VBox>
+
+    <!-- Progress Indicator -->
+    <HBox fx:id="progressIndicator" styleClass="wizard-progress" alignment="CENTER" spacing="0">
+        <VBox fx:id="step1Circle" styleClass="progress-step, step-active" alignment="CENTER" spacing="4">
+            <StackPane styleClass="step-circle">
+                <Label text="1" styleClass="step-number"/>
+            </StackPane>
+            <Label text="Select File" styleClass="step-label"/>
+        </VBox>
+        <HBox styleClass="step-connector"/>
+        <VBox fx:id="step2Circle" styleClass="progress-step" alignment="CENTER" spacing="4">
+            <StackPane styleClass="step-circle">
+                <Label text="2" styleClass="step-number"/>
+            </StackPane>
+            <Label text="Map Columns" styleClass="step-label"/>
+        </VBox>
+        <HBox styleClass="step-connector"/>
+        <VBox fx:id="step3Circle" styleClass="progress-step" alignment="CENTER" spacing="4">
+            <StackPane styleClass="step-circle">
+                <Label text="3" styleClass="step-number"/>
+            </StackPane>
+            <Label text="Preview" styleClass="step-label"/>
+        </VBox>
+        <HBox styleClass="step-connector"/>
+        <VBox fx:id="step4Circle" styleClass="progress-step" alignment="CENTER" spacing="4">
+            <StackPane styleClass="step-circle">
+                <Label text="4" styleClass="step-number"/>
+            </StackPane>
+            <Label text="Confirm" styleClass="step-label"/>
+        </VBox>
+    </HBox>
+
+    <!-- Step 1 Content: File Selection -->
+    <VBox fx:id="step1Content" styleClass="wizard-content" spacing="20" VBox.vgrow="ALWAYS">
+
+        <!-- Drag & Drop Zone -->
+        <VBox fx:id="dropZone" styleClass="drop-zone" alignment="CENTER" spacing="16"
+              onDragOver="#handleDragOver" onDragDropped="#handleDragDropped"
+              onDragExited="#handleDragExited">
+            <Label text="CSV" styleClass="drop-zone-icon"/>
+            <VBox alignment="CENTER" spacing="8">
+                <Label text="Drag and drop your CSV file here" styleClass="drop-zone-title"/>
+                <Label text="or" styleClass="drop-zone-separator"/>
+                <Button fx:id="browseBtn" text="Browse Files" styleClass="button-secondary"
+                        onAction="#handleBrowseFiles"/>
+            </VBox>
+            <Label text="Supported formats: CSV, TXT (comma or tab delimited)"
+                   styleClass="drop-zone-hint"/>
+        </VBox>
+
+        <!-- File Selected State (hidden initially) -->
+        <VBox fx:id="fileSelectedBox" styleClass="file-selected-box" spacing="12"
+              managed="false" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Label text="[CSV]" styleClass="file-icon"/>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="fileNameLabel" text="bank-statement.csv"
+                           styleClass="file-name"/>
+                    <Label fx:id="fileSizeLabel" text="245 KB - 142 rows detected"
+                           styleClass="file-meta"/>
+                </VBox>
+                <Button fx:id="changeFileBtn" text="Change" styleClass="button-link"
+                        onAction="#handleChangeFile"/>
+            </HBox>
+
+            <!-- Bank Format Detection -->
+            <HBox fx:id="bankDetectedBox" styleClass="bank-detected-box"
+                  alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
+                <Label text="[check]" styleClass="detection-icon"/>
+                <VBox spacing="2">
+                    <Label fx:id="bankNameLabel" text="Barclays format detected"
+                           styleClass="detection-title"/>
+                    <Label text="Column mapping will be applied automatically"
+                           styleClass="detection-hint"/>
+                </VBox>
+            </HBox>
+
+            <!-- Unknown Format Warning -->
+            <HBox fx:id="unknownFormatBox" styleClass="unknown-format-box"
+                  alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
+                <Label text="[?]" styleClass="warning-icon"/>
+                <VBox spacing="2">
+                    <Label text="Unknown bank format" styleClass="warning-title"/>
+                    <Label text="You'll need to map columns manually in the next step"
+                           styleClass="warning-hint"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Supported Banks Info -->
+        <VBox styleClass="supported-banks" spacing="8">
+            <Label text="Automatically detected bank formats:" styleClass="info-label"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="Barclays" styleClass="bank-chip"/>
+                <Label text="HSBC" styleClass="bank-chip"/>
+                <Label text="Lloyds" styleClass="bank-chip"/>
+                <Label text="Nationwide" styleClass="bank-chip"/>
+                <Label text="Starling" styleClass="bank-chip"/>
+                <Label text="Monzo" styleClass="bank-chip"/>
+            </HBox>
+        </VBox>
+
+    </VBox>
+
+    <!-- Step 2 Content: Column Mapping -->
+    <VBox fx:id="step2Content" styleClass="wizard-content" spacing="20"
+          managed="false" visible="false" VBox.vgrow="ALWAYS">
+
+        <!-- Instructions -->
+        <HBox styleClass="info-banner" alignment="CENTER_LEFT" spacing="12">
+            <Label text="i" styleClass="info-banner-icon"/>
+            <VBox spacing="2">
+                <Label text="Map your CSV columns to transaction fields"
+                       styleClass="info-banner-title"/>
+                <Label text="Select which column contains each piece of information"
+                       styleClass="info-banner-text"/>
+            </VBox>
+        </HBox>
+
+        <!-- Preview of CSV Headers -->
+        <VBox styleClass="csv-preview-box" spacing="8">
+            <Label text="CSV COLUMNS DETECTED" styleClass="section-label"/>
+            <HBox fx:id="csvHeadersPreview" styleClass="csv-headers" spacing="8">
+                <!-- Populated dynamically with column chips -->
+            </HBox>
+        </VBox>
+
+        <!-- Column Mapping Form -->
+        <VBox styleClass="mapping-form" spacing="16">
+            <Label text="FIELD MAPPING" styleClass="section-label"/>
+
+            <!-- Date Mapping -->
+            <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="4" minWidth="200">
+                    <HBox alignment="CENTER_LEFT" spacing="4">
+                        <Label text="Date" styleClass="field-label"/>
+                        <Label text="*" styleClass="required-indicator"/>
+                    </HBox>
+                    <Label text="Transaction date" styleClass="field-hint"/>
+                </VBox>
+                <ComboBox fx:id="dateColumnCombo" styleClass="mapping-combo"
+                          promptText="Select column..." prefWidth="250"/>
+                <VBox fx:id="dateFormatBox" spacing="4" managed="false" visible="false">
+                    <Label text="Date format:" styleClass="field-hint"/>
+                    <ComboBox fx:id="dateFormatCombo" styleClass="mapping-combo-small"
+                              prefWidth="150"/>
+                </VBox>
+            </HBox>
+
+            <!-- Description Mapping -->
+            <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="4" minWidth="200">
+                    <HBox alignment="CENTER_LEFT" spacing="4">
+                        <Label text="Description" styleClass="field-label"/>
+                        <Label text="*" styleClass="required-indicator"/>
+                    </HBox>
+                    <Label text="Transaction description or reference" styleClass="field-hint"/>
+                </VBox>
+                <ComboBox fx:id="descriptionColumnCombo" styleClass="mapping-combo"
+                          promptText="Select column..." prefWidth="250"/>
+            </HBox>
+
+            <!-- Amount Mapping -->
+            <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="4" minWidth="200">
+                    <HBox alignment="CENTER_LEFT" spacing="4">
+                        <Label text="Amount" styleClass="field-label"/>
+                        <Label text="*" styleClass="required-indicator"/>
+                    </HBox>
+                    <Label text="Transaction amount (positive = income)" styleClass="field-hint"/>
+                </VBox>
+                <ComboBox fx:id="amountColumnCombo" styleClass="mapping-combo"
+                          promptText="Select column..." prefWidth="250"/>
+                <CheckBox fx:id="separateColumnsCheckbox"
+                          text="Income and expenses in separate columns"/>
+            </HBox>
+
+            <!-- Separate Columns (conditional) -->
+            <VBox fx:id="separateColumnsBox" styleClass="nested-mapping" spacing="12"
+                  managed="false" visible="false">
+                <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" minWidth="200">
+                        <Label text="Income Column" styleClass="field-label"/>
+                        <Label text="Money in (credits)" styleClass="field-hint"/>
+                    </VBox>
+                    <ComboBox fx:id="incomeColumnCombo" styleClass="mapping-combo"
+                              promptText="Select column..." prefWidth="250"/>
+                </HBox>
+                <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" minWidth="200">
+                        <Label text="Expense Column" styleClass="field-label"/>
+                        <Label text="Money out (debits)" styleClass="field-hint"/>
+                    </VBox>
+                    <ComboBox fx:id="expenseColumnCombo" styleClass="mapping-combo"
+                              promptText="Select column..." prefWidth="250"/>
+                </HBox>
+            </VBox>
+
+            <!-- Category Mapping (Optional) -->
+            <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                <VBox spacing="4" minWidth="200">
+                    <HBox alignment="CENTER_LEFT" spacing="4">
+                        <Label text="Category" styleClass="field-label"/>
+                        <Label text="(Optional)" styleClass="optional-indicator"/>
+                    </HBox>
+                    <Label text="Pre-assigned category if available" styleClass="field-hint"/>
+                </VBox>
+                <ComboBox fx:id="categoryColumnCombo" styleClass="mapping-combo"
+                          promptText="None - Auto-categorize" prefWidth="250"/>
+            </HBox>
+        </VBox>
+
+        <!-- Sample Preview -->
+        <VBox styleClass="sample-preview" spacing="8">
+            <Label text="SAMPLE DATA PREVIEW" styleClass="section-label"/>
+            <TableView fx:id="samplePreviewTable" styleClass="preview-table"
+                       prefHeight="150" maxHeight="150">
+                <!-- Shows first 3 rows with mapped columns -->
+            </TableView>
+        </VBox>
+
+    </VBox>
+
+    <!-- Step 3 Content: Preview & Categorize -->
+    <VBox fx:id="step3Content" styleClass="wizard-content" spacing="20"
+          managed="false" visible="false" VBox.vgrow="ALWAYS">
+
+        <!-- Summary Stats -->
+        <HBox styleClass="import-stats" spacing="24" alignment="CENTER_LEFT">
+            <VBox styleClass="stat-box, stat-income" alignment="CENTER" spacing="4">
+                <Label fx:id="incomeCountLabel" text="0" styleClass="stat-value"/>
+                <Label text="Income" styleClass="stat-label"/>
+                <Label fx:id="incomeTotalLabel" text="£0.00" styleClass="stat-amount"/>
+            </VBox>
+            <VBox styleClass="stat-box, stat-expense" alignment="CENTER" spacing="4">
+                <Label fx:id="expenseCountLabel" text="0" styleClass="stat-value"/>
+                <Label text="Expenses" styleClass="stat-label"/>
+                <Label fx:id="expenseTotalLabel" text="£0.00" styleClass="stat-amount"/>
+            </VBox>
+            <VBox styleClass="stat-box, stat-duplicate" alignment="CENTER" spacing="4">
+                <Label fx:id="duplicateCountLabel" text="0" styleClass="stat-value"/>
+                <Label text="Duplicates" styleClass="stat-label"/>
+                <Label text="Will be skipped" styleClass="stat-hint"/>
+            </VBox>
+            <VBox styleClass="stat-box, stat-uncategorized" alignment="CENTER" spacing="4">
+                <Label fx:id="uncategorizedCountLabel" text="0" styleClass="stat-value"/>
+                <Label text="Need Category" styleClass="stat-label"/>
+                <Label text="Assign below" styleClass="stat-hint"/>
+            </VBox>
+        </HBox>
+
+        <!-- Duplicate Warning (conditional) -->
+        <HBox fx:id="duplicateWarning" styleClass="warning-banner"
+              alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
+            <Label text="!" styleClass="warning-banner-icon"/>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label fx:id="duplicateWarningTitle" text="3 potential duplicates found"
+                       styleClass="warning-banner-title"/>
+                <Label text="These transactions appear to already exist and will be skipped"
+                       styleClass="warning-banner-text"/>
+            </VBox>
+            <Button text="Review" styleClass="button-link" onAction="#handleReviewDuplicates"/>
+        </HBox>
+
+        <!-- Filter/Actions Bar -->
+        <HBox styleClass="preview-actions" alignment="CENTER_LEFT" spacing="12">
+            <ComboBox fx:id="filterCombo" styleClass="filter-combo" prefWidth="180"/>
+            <TextField fx:id="searchField" styleClass="search-field"
+                       promptText="Search transactions..." prefWidth="250"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="bulkCategoryBtn" text="Set Category for Selected"
+                    styleClass="button-secondary" onAction="#handleBulkCategory" disable="true"/>
+        </HBox>
+
+        <!-- Transactions Table -->
+        <TableView fx:id="transactionsTable" styleClass="import-table" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="selectColumn" prefWidth="40" sortable="false"/>
+                <TableColumn fx:id="statusColumn" text="" prefWidth="50" sortable="false"/>
+                <TableColumn fx:id="dateColumn" text="Date" prefWidth="100"/>
+                <TableColumn fx:id="descriptionColumn" text="Description" prefWidth="300"/>
+                <TableColumn fx:id="amountColumn" text="Amount" prefWidth="120"/>
+                <TableColumn fx:id="typeColumn" text="Type" prefWidth="80"/>
+                <TableColumn fx:id="categoryColumn" text="Category" prefWidth="180"/>
+                <TableColumn fx:id="confidenceColumn" text="Confidence" prefWidth="100"/>
+            </columns>
+            <placeholder>
+                <Label text="No transactions to display" styleClass="empty-table-message"/>
+            </placeholder>
+        </TableView>
+
+        <!-- Category Suggestion Panel (shows on row selection) -->
+        <HBox fx:id="suggestionPanel" styleClass="suggestion-panel"
+              alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
+            <Label text="[lightbulb]" styleClass="suggestion-icon"/>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label fx:id="suggestionText" text="Suggested: Office Supplies (85% confidence)"
+                       styleClass="suggestion-title"/>
+                <Label fx:id="suggestionReason" text="Based on description containing 'Staples'"
+                       styleClass="suggestion-reason"/>
+            </VBox>
+            <Button fx:id="acceptSuggestionBtn" text="Accept" styleClass="button-success-small"
+                    onAction="#handleAcceptSuggestion"/>
+            <Button fx:id="rejectSuggestionBtn" text="Different" styleClass="button-secondary-small"
+                    onAction="#handleRejectSuggestion"/>
+        </HBox>
+
+    </VBox>
+
+    <!-- Step 4 Content: Confirm & Import -->
+    <VBox fx:id="step4Content" styleClass="wizard-content" spacing="24"
+          managed="false" visible="false" VBox.vgrow="ALWAYS">
+
+        <!-- Success Pre-check -->
+        <VBox styleClass="confirm-header" alignment="CENTER" spacing="16">
+            <Label text="[checkmark]" styleClass="confirm-icon"/>
+            <Label text="Ready to Import" styleClass="confirm-title"/>
+            <Label text="Review the summary below and click Import to add these transactions"
+                   styleClass="confirm-subtitle"/>
+        </VBox>
+
+        <!-- Import Summary Card -->
+        <VBox styleClass="summary-card" spacing="16">
+            <Label text="IMPORT SUMMARY" styleClass="section-label"/>
+
+            <HBox spacing="24">
+                <!-- Income Summary -->
+                <VBox styleClass="summary-section" spacing="8" HBox.hgrow="ALWAYS">
+                    <Label text="Income" styleClass="summary-section-title"/>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Transactions:" styleClass="summary-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="confirmIncomeCount" text="0" styleClass="summary-value"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Total Amount:" styleClass="summary-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="confirmIncomeTotal" text="£0.00"
+                               styleClass="summary-value, income"/>
+                    </HBox>
+                </VBox>
+
+                <Separator orientation="VERTICAL"/>
+
+                <!-- Expense Summary -->
+                <VBox styleClass="summary-section" spacing="8" HBox.hgrow="ALWAYS">
+                    <Label text="Expenses" styleClass="summary-section-title"/>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Transactions:" styleClass="summary-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="confirmExpenseCount" text="0" styleClass="summary-value"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Total Amount:" styleClass="summary-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="confirmExpenseTotal" text="£0.00"
+                               styleClass="summary-value, expense"/>
+                    </HBox>
+                </VBox>
+            </HBox>
+
+            <Separator/>
+
+            <!-- Category Breakdown -->
+            <VBox spacing="8">
+                <Label text="Expense Categories" styleClass="summary-section-title"/>
+                <VBox fx:id="categoryBreakdown" styleClass="category-breakdown" spacing="4">
+                    <!-- Populated dynamically -->
+                </VBox>
+            </VBox>
+
+            <Separator/>
+
+            <!-- Skipped Items -->
+            <HBox fx:id="skippedSection" alignment="CENTER_LEFT" spacing="8">
+                <Label text="[info]" styleClass="info-icon"/>
+                <Label fx:id="skippedLabel" text="0 duplicate transactions will be skipped"
+                       styleClass="info-text"/>
+            </HBox>
+
+        </VBox>
+
+        <!-- Data Source Label -->
+        <HBox styleClass="source-info" alignment="CENTER_LEFT" spacing="8">
+            <Label text="Source:" styleClass="info-label"/>
+            <Label fx:id="sourceFileLabel" text="" styleClass="source-value"/>
+            <Label text="All transactions will be tagged with source: BANK_IMPORT"
+                   styleClass="source-hint"/>
+        </HBox>
+
+        <!-- Import Button -->
+        <HBox alignment="CENTER" spacing="16">
+            <Button fx:id="importBtn" text="Import Transactions"
+                    styleClass="button-primary, button-large"
+                    onAction="#handleImport"/>
+        </HBox>
+
+        <!-- Progress (shown during import) -->
+        <VBox fx:id="importProgress" styleClass="import-progress" alignment="CENTER" spacing="12"
+              managed="false" visible="false">
+            <ProgressIndicator fx:id="progressIndicatorSpinner" prefWidth="48" prefHeight="48"/>
+            <Label fx:id="progressLabel" text="Importing transactions..." styleClass="progress-text"/>
+            <ProgressBar fx:id="progressBar" prefWidth="300"/>
+        </VBox>
+
+    </VBox>
+
+    <!-- Wizard Footer -->
+    <HBox styleClass="wizard-footer" alignment="CENTER_RIGHT" spacing="12">
+        <Button fx:id="cancelBtn" text="Cancel" styleClass="button-secondary"
+                onAction="#handleCancel"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="backBtn" text="Back" styleClass="button-secondary"
+                onAction="#handleBack" visible="false" managed="false"/>
+        <Button fx:id="nextBtn" text="Next: Map Columns" styleClass="button-primary"
+                onAction="#handleNext" disable="true"/>
+    </HBox>
+
+</VBox>

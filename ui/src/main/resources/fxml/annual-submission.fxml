@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+
+<!--
+  Annual Self Assessment Submission View - SE-403
+
+  Multi-step submission UI with:
+  - Step 1: Review Summary
+  - Step 2: Calculate Tax
+  - Step 3: Review Calculation
+  - Step 4: Submit Declaration
+-->
+
+<ScrollPane fx:id="rootScroll" styleClass="annual-scroll" xmlns:fx="http://javafx.com/fxml">
+    <VBox styleClass="annual-container" spacing="24">
+        <padding>
+            <Insets top="24" right="24" bottom="24" left="24"/>
+        </padding>
+
+        <!-- Header -->
+        <VBox spacing="8">
+            <Label text="Annual Self Assessment" styleClass="page-title"/>
+            <Label fx:id="taxYearLabel" text="Tax Year 2025/26" styleClass="page-subtitle"/>
+        </VBox>
+
+        <!-- Progress Indicator -->
+        <HBox fx:id="progressIndicator" styleClass="progress-indicator" spacing="0">
+            <!-- Step 1 -->
+            <VBox fx:id="step1Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+                <HBox styleClass="step-header" alignment="CENTER">
+                    <Label fx:id="step1Number" text="1" styleClass="step-number"/>
+                </HBox>
+                <Label text="Review Summary" styleClass="step-label"/>
+            </VBox>
+
+            <!-- Connector 1-2 -->
+            <Region styleClass="step-connector" HBox.hgrow="ALWAYS"/>
+
+            <!-- Step 2 -->
+            <VBox fx:id="step2Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+                <HBox styleClass="step-header" alignment="CENTER">
+                    <Label fx:id="step2Number" text="2" styleClass="step-number"/>
+                </HBox>
+                <Label text="Calculate Tax" styleClass="step-label"/>
+            </VBox>
+
+            <!-- Connector 2-3 -->
+            <Region styleClass="step-connector" HBox.hgrow="ALWAYS"/>
+
+            <!-- Step 3 -->
+            <VBox fx:id="step3Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+                <HBox styleClass="step-header" alignment="CENTER">
+                    <Label fx:id="step3Number" text="3" styleClass="step-number"/>
+                </HBox>
+                <Label text="Review Calculation" styleClass="step-label"/>
+            </VBox>
+
+            <!-- Connector 3-4 -->
+            <Region styleClass="step-connector" HBox.hgrow="ALWAYS"/>
+
+            <!-- Step 4 -->
+            <VBox fx:id="step4Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+                <HBox styleClass="step-header" alignment="CENTER">
+                    <Label fx:id="step4Number" text="4" styleClass="step-number"/>
+                </HBox>
+                <Label text="Submit Declaration" styleClass="step-label"/>
+            </VBox>
+        </HBox>
+
+        <!-- Main Content Area -->
+        <HBox spacing="24">
+            <!-- Left Panel: Summary -->
+            <VBox fx:id="summaryPanel" styleClass="summary-panel" spacing="16" HBox.hgrow="ALWAYS">
+                <Label text="Financial Summary" styleClass="panel-title"/>
+
+                <!-- Income Section -->
+                <VBox spacing="8" styleClass="summary-section">
+                    <Label text="INCOME" styleClass="section-label"/>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Turnover (Box 15)" styleClass="item-label" HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="turnoverValue" text="£0.00" styleClass="item-value"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Expenses Section -->
+                <VBox spacing="8" styleClass="summary-section">
+                    <Label text="EXPENSES" styleClass="section-label"/>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Total Allowable Expenses" styleClass="item-label" HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="expensesValue" text="£0.00" styleClass="item-value expense"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Separator -->
+                <Separator/>
+
+                <!-- Net Profit -->
+                <VBox spacing="8">
+                    <Label text="NET PROFIT (Box 31)" styleClass="section-label"/>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Net Profit" styleClass="item-label-bold" HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="netProfitValue" text="£0.00" styleClass="item-value-large profit"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- Right Panel: Calculation (visible from Step 2) -->
+            <VBox fx:id="calculationPanel" styleClass="calculation-panel" spacing="16" HBox.hgrow="ALWAYS" visible="false" managed="false">
+                <Label text="Tax Calculation" styleClass="panel-title"/>
+
+                <!-- Loading Indicator -->
+                <VBox fx:id="loadingIndicator" styleClass="loading-container" alignment="CENTER" spacing="12" visible="false" managed="false">
+                    <ProgressIndicator/>
+                    <Label text="Calculating tax..." styleClass="loading-text"/>
+                </VBox>
+
+                <!-- Calculation Results -->
+                <VBox fx:id="calculationResults" spacing="12" visible="false" managed="false">
+                    <!-- Income Tax -->
+                    <VBox spacing="8" styleClass="summary-section">
+                        <Label text="INCOME TAX" styleClass="section-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label text="Total Income Tax" styleClass="item-label" HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="incomeTaxValue" text="£0.00" styleClass="item-value tax"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- National Insurance -->
+                    <VBox spacing="8" styleClass="summary-section">
+                        <Label text="NATIONAL INSURANCE (CLASS 4)" styleClass="section-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label text="Total NI Class 4" styleClass="item-label" HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="niValue" text="£0.00" styleClass="item-value tax"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Separator -->
+                    <Separator/>
+
+                    <!-- Total Due -->
+                    <VBox spacing="8">
+                        <Label text="TOTAL LIABILITY" styleClass="section-label"/>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label text="Total Tax Due" styleClass="item-label-bold" HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="totalTaxValue" text="£0.00" styleClass="item-value-large tax"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </VBox>
+        </HBox>
+
+        <!-- Error Panel -->
+        <VBox fx:id="errorPanel" styleClass="error-panel" spacing="8" visible="false" managed="false">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Label text="⚠" styleClass="error-icon"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Submission Error" styleClass="error-title"/>
+                    <Label fx:id="errorMessage" text="" styleClass="error-text" wrapText="true"/>
+                </VBox>
+            </HBox>
+            <HBox spacing="12">
+                <Button fx:id="retryButton" text="Retry" styleClass="button-warning" onAction="#handleRetry"/>
+                <Button text="Cancel" styleClass="button-secondary" onAction="#handleCancel"/>
+            </HBox>
+        </VBox>
+
+        <!-- Success Panel -->
+        <VBox fx:id="successPanel" styleClass="success-panel" spacing="12" visible="false" managed="false">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Label text="✓" styleClass="success-icon"/>
+                <VBox spacing="4">
+                    <Label text="Submission Successful" styleClass="success-title"/>
+                    <Label text="Your Annual Self Assessment has been submitted to HMRC." styleClass="success-text"/>
+                </VBox>
+            </HBox>
+            <HBox spacing="8">
+                <Label text="Reference:" styleClass="field-label"/>
+                <Label fx:id="submissionReference" text="" styleClass="reference-text"/>
+            </HBox>
+        </VBox>
+
+        <!-- Declaration Card (SE-506) - Displayed before submit button -->
+        <VBox fx:id="declarationCard" styleClass="declaration-card" spacing="16" visible="false" managed="false">
+
+            <!-- Section Header -->
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="!" styleClass="declaration-warning-icon"/>
+                <Label text="LEGAL DECLARATION" styleClass="declaration-title"/>
+            </HBox>
+
+            <!-- Checkbox with Declaration Text -->
+            <HBox alignment="TOP_LEFT" spacing="16">
+                <!-- Large Checkbox -->
+                <CheckBox fx:id="declarationCheckbox" styleClass="declaration-checkbox"
+                          onAction="#handleDeclarationChange"/>
+
+                <!-- Declaration Text -->
+                <VBox spacing="12" HBox.hgrow="ALWAYS">
+                    <!-- Main Declaration (AC-5: HMRC official text) -->
+                    <Label styleClass="declaration-text" wrapText="true">
+                        <text>I declare that the information I have given on this tax return and any supplementary pages is correct and complete to the best of my knowledge and belief.</text>
+                    </Label>
+
+                    <!-- Warning Statement -->
+                    <Label styleClass="declaration-warning-text" wrapText="true">
+                        <text>I understand that I may have to pay financial penalties and face prosecution if I give false information.</text>
+                    </Label>
+
+                    <!-- Timestamp (shown after checking) -->
+                    <HBox fx:id="timestampBox" styleClass="declaration-timestamp"
+                          alignment="CENTER_LEFT" spacing="8" managed="false" visible="false">
+                        <Label text="✓" styleClass="timestamp-icon"/>
+                        <Label fx:id="timestampLabel" text=""
+                               styleClass="timestamp-text"/>
+                    </HBox>
+                </VBox>
+            </HBox>
+
+        </VBox>
+
+        <!-- Action Bar -->
+        <HBox fx:id="actionBar" styleClass="action-bar" spacing="12" alignment="CENTER_RIGHT">
+            <Button fx:id="cancelButton" text="Cancel" styleClass="button-secondary" onAction="#handleCancel"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="calculateButton" text="Calculate Tax" styleClass="button-primary" onAction="#handleCalculate" visible="false" managed="false"/>
+            <Button fx:id="reviewButton" text="Review Calculation" styleClass="button-primary" onAction="#handleReview" visible="false" managed="false"/>
+            <!-- Submit Button with Declaration Binding (SE-506) -->
+            <VBox alignment="CENTER_RIGHT" spacing="4" visible="false" managed="false" fx:id="submitContainer">
+                <Button fx:id="submitButton" text="Submit to HMRC" styleClass="button-primary, button-submit-hmrc"
+                        onAction="#handleSubmit" disable="true"/>
+                <!-- Helper Text (AC-3) -->
+                <Label fx:id="submitHelperText" text="Please confirm the declaration above"
+                       styleClass="submit-helper-text"/>
+            </VBox>
+        </HBox>
+
+    </VBox>
+</ScrollPane>

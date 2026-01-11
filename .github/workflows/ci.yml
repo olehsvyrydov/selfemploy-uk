@@ -89,8 +89,8 @@ jobs:
       - name: Compile all modules
         run: mvn -B compile -DskipTests --no-transfer-progress
 
-      - name: Package artifacts
-        run: mvn -B package -DskipTests -Dquarkus.build.skip=true --no-transfer-progress
+      - name: Package artifacts (with Quarkus build)
+        run: mvn -B package -DskipTests --no-transfer-progress
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

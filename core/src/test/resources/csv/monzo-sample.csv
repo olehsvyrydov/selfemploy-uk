@@ -1,0 +1,7 @@
+Transaction ID,Date,Time,Type,Name,Emoji,Category,Amount,Currency,Notes,Address,Description
+tx_001a2b3c,15/06/2025,10:30:00,Payment,Business Client A,,,3200.00,GBP,Invoice payment,,"Invoice #123"
+tx_002d4e5f,16/06/2025,14:22:15,Card payment,Office Depot UK,,,-67.50,GBP,Stationery,123 High Street,"Office supplies"
+tx_003g6h7i,17/06/2025,09:45:30,Card payment,Uber,,,-15.80,GBP,Client meeting,London,"Transport"
+tx_004j8k9l,18/06/2025,16:00:00,Payment,Freelance Project X,,,1950.00,GBP,Milestone 2,,"Project work"
+tx_005m0n1o,19/06/2025,11:10:45,Card payment,Shell Garage,,,-42.00,GBP,Fuel,M1 Services,"Petrol"
+tx_006p2q3r,20/06/2025,08:30:00,Card payment,Google Cloud,,,-25.00,GBP,Monthly fee,,"Software"
