@@ -11,6 +11,7 @@ import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.testfx.framework.junit5.ApplicationTest;
@@ -37,6 +38,7 @@ import static org.testfx.matcher.base.NodeMatchers.*;
  *
  * @see docs/sprints/sprint-4/testing/rob-qa-SE-404.md
  */
+@Tag("e2e")
 @DisabledIfSystemProperty(named = "skipE2ETests", matches = "true")
 @DisplayName("SE-404 Submission History E2E Tests")
 class SubmissionHistoryE2ETest extends ApplicationTest {
