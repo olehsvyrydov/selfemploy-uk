@@ -4,15 +4,22 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Result of a combined tax liability calculation (Income Tax + NI Class 4).
+ * Result of a combined tax liability calculation (Income Tax + NI Class 4 + NI Class 2).
+ *
+ * This record contains all tax liability components:
+ * - Income Tax (based on taxable income bands)
+ * - NI Class 4 (percentage-based on profits above Lower Profits Limit £12,570)
+ * - NI Class 2 (flat rate based on weeks, mandatory if profits > Small Profits Threshold £6,845)
  */
 public record TaxLiabilityResult(
     BigDecimal grossProfit,
     BigDecimal incomeTax,
     BigDecimal niClass4,
+    BigDecimal niClass2,
     BigDecimal totalLiability,
     TaxCalculationResult incomeTaxDetails,
-    NICalculationResult niDetails
+    NICalculationResult niClass4Details,
+    Class2NICalculationResult niClass2Details
 ) {
     private static final BigDecimal POA_THRESHOLD = new BigDecimal("1000");
     private static final BigDecimal POA_DIVISOR = new BigDecimal("2");
@@ -53,5 +60,23 @@ public record TaxLiabilityResult(
             return BigDecimal.ZERO;
         }
         return totalLiability.divide(POA_DIVISOR, 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Returns total National Insurance (Class 2 + Class 4).
+     */
+    public BigDecimal totalNI() {
+        BigDecimal class2 = niClass2 != null ? niClass2 : BigDecimal.ZERO;
+        BigDecimal class4 = niClass4 != null ? niClass4 : BigDecimal.ZERO;
+        return class2.add(class4);
+    }
+
+    /**
+     * Backward compatibility accessor for NI Class 4 details.
+     * @deprecated Use {@link #niClass4Details()} instead
+     */
+    @Deprecated
+    public NICalculationResult niDetails() {
+        return niClass4Details;
     }
 }

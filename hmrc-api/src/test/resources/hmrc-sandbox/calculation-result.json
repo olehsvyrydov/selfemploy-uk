@@ -1,0 +1,30 @@
+{
+  "calculationId": "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1e",
+  "calculationType": "inYear",
+  "calculationTimestamp": "2025-12-15T14:30:00.000Z",
+  "taxYear": "2025-26",
+  "totalIncome": 45000.00,
+  "totalExpenses": 12500.00,
+  "netBusinessProfit": 32500.00,
+  "taxableIncome": 32500.00,
+  "incomeTax": {
+    "totalTaxDue": 4000.00,
+    "taxBands": [
+      {
+        "name": "basic-rate",
+        "rate": 20,
+        "income": 20000.00,
+        "taxAmount": 4000.00
+      }
+    ]
+  },
+  "nationalInsurance": {
+    "class2": 179.40,
+    "class4": 2000.00
+  },
+  "totalTaxDue": 6179.40,
+  "paymentOnAccount": {
+    "firstPayment": 3089.70,
+    "secondPayment": 3089.70
+  }
+}

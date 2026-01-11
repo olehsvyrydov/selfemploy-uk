@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+    SE-802: Bank Import Column Mapping Wizard
+    3-step wizard for mapping CSV columns and confirming amount interpretation
+
+    Step 1: Column Selection - Map Date, Description, Amount columns
+    Step 2: Amount Interpretation - Choose positive/negative meaning
+    Step 3: Summary & Confirmation - Review and confirm before import
+-->
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="uk.selfemploy.ui.controller.ColumnMappingController"
+      styleClass="wizard-container" spacing="0">
+
+    <!-- Wizard Header -->
+    <HBox styleClass="wizard-header" alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label fx:id="stepTitle" text="Step 1: Column Selection" styleClass="wizard-title"/>
+            <Label fx:id="stepSubtitle" text="Map your CSV columns to transaction fields"
+                   styleClass="wizard-subtitle"/>
+        </VBox>
+        <HBox fx:id="stepIndicators" styleClass="step-indicators" spacing="8" alignment="CENTER_RIGHT">
+            <VBox fx:id="step1Indicator" styleClass="step-indicator, step-active" alignment="CENTER">
+                <Label text="1" styleClass="step-number"/>
+            </VBox>
+            <Label text="---" styleClass="step-line"/>
+            <VBox fx:id="step2Indicator" styleClass="step-indicator" alignment="CENTER">
+                <Label text="2" styleClass="step-number"/>
+            </VBox>
+            <Label text="---" styleClass="step-line"/>
+            <VBox fx:id="step3Indicator" styleClass="step-indicator" alignment="CENTER">
+                <Label text="3" styleClass="step-number"/>
+            </VBox>
+        </HBox>
+    </HBox>
+
+    <!-- Step Content Container -->
+    <StackPane fx:id="stepContent" VBox.vgrow="ALWAYS" styleClass="wizard-content-container">
+
+        <!-- Step 1: Column Selection -->
+        <VBox fx:id="step1Content" styleClass="wizard-step" spacing="20" visible="true">
+            <padding><Insets top="24" right="24" bottom="24" left="24"/></padding>
+
+            <!-- Info Banner -->
+            <HBox styleClass="info-banner" alignment="CENTER_LEFT" spacing="12">
+                <Label text="i" styleClass="info-banner-icon"/>
+                <VBox spacing="2">
+                    <Label text="Map your CSV columns to transaction fields"
+                           styleClass="info-banner-title"/>
+                    <Label text="Review the preview below and select the correct column for each field"
+                           styleClass="info-banner-text"/>
+                </VBox>
+            </HBox>
+
+            <!-- Data Preview Table -->
+            <VBox styleClass="data-preview-section" spacing="8">
+                <Label text="DATA PREVIEW (First 5 Rows)" styleClass="section-label"/>
+                <TableView fx:id="previewTable" styleClass="preview-table, data-preview"
+                           prefHeight="200" maxHeight="200">
+                    <placeholder>
+                        <Label text="No data to preview" styleClass="empty-table-message"/>
+                    </placeholder>
+                </TableView>
+            </VBox>
+
+            <!-- Column Mapping Form -->
+            <VBox styleClass="mapping-form" spacing="16">
+                <Label text="COLUMN MAPPING" styleClass="section-label"/>
+
+                <!-- Date Mapping -->
+                <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" minWidth="180">
+                        <HBox alignment="CENTER_LEFT" spacing="4">
+                            <Label text="Date Column" styleClass="field-label"/>
+                            <Label text="*" styleClass="required-indicator"/>
+                        </HBox>
+                    </VBox>
+                    <ComboBox fx:id="dateColumnCombo" styleClass="mapping-combo"
+                              promptText="Select column..." prefWidth="300"
+                              onAction="#handleDateColumnChange"/>
+                    <VBox spacing="4">
+                        <Label text="Date Format:" styleClass="field-hint"/>
+                        <ComboBox fx:id="dateFormatCombo" styleClass="mapping-combo-small"
+                                  prefWidth="150" onAction="#handleDateFormatChange"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Description Mapping -->
+                <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" minWidth="180">
+                        <HBox alignment="CENTER_LEFT" spacing="4">
+                            <Label text="Description Column" styleClass="field-label"/>
+                            <Label text="*" styleClass="required-indicator"/>
+                        </HBox>
+                    </VBox>
+                    <ComboBox fx:id="descriptionColumnCombo" styleClass="mapping-combo"
+                              promptText="Select column..." prefWidth="300"
+                              onAction="#handleDescriptionColumnChange"/>
+                </HBox>
+
+                <!-- Amount Mapping -->
+                <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" minWidth="180">
+                        <HBox alignment="CENTER_LEFT" spacing="4">
+                            <Label text="Amount Column" styleClass="field-label"/>
+                            <Label text="*" styleClass="required-indicator"/>
+                        </HBox>
+                    </VBox>
+                    <ComboBox fx:id="amountColumnCombo" styleClass="mapping-combo"
+                              promptText="Select column..." prefWidth="300"
+                              onAction="#handleAmountColumnChange"/>
+                </HBox>
+
+                <!-- Category Mapping (Optional) -->
+                <HBox styleClass="mapping-row" alignment="CENTER_LEFT" spacing="16">
+                    <VBox spacing="4" minWidth="180">
+                        <HBox alignment="CENTER_LEFT" spacing="4">
+                            <Label text="Category Column" styleClass="field-label"/>
+                            <Label text="(Optional)" styleClass="optional-indicator"/>
+                        </HBox>
+                    </VBox>
+                    <ComboBox fx:id="categoryColumnCombo" styleClass="mapping-combo"
+                              promptText="None - Auto-categorize" prefWidth="300"
+                              onAction="#handleCategoryColumnChange"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Step 2: Amount Interpretation -->
+        <VBox fx:id="step2Content" styleClass="wizard-step" spacing="20" visible="false" managed="false">
+            <padding><Insets top="24" right="24" bottom="24" left="24"/></padding>
+
+            <!-- Amount Interpretation Section -->
+            <VBox styleClass="interpretation-section" spacing="12">
+                <Label text="AMOUNT INTERPRETATION" styleClass="section-label"/>
+                <Label text="How should we interpret the Amount column?"
+                       styleClass="interpretation-subtitle"/>
+
+                <VBox styleClass="radio-options" spacing="8">
+                    <!-- Standard Option -->
+                    <VBox styleClass="radio-option" spacing="4">
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <RadioButton fx:id="standardRadio" styleClass="radio-button"
+                                         selected="true" onAction="#handleInterpretationChange">
+                                <toggleGroup><ToggleGroup fx:id="interpretationToggle"/></toggleGroup>
+                            </RadioButton>
+                            <Label text="STANDARD: Positive = Income, Negative = Expense"
+                                   styleClass="radio-label"/>
+                        </HBox>
+                        <HBox fx:id="standardExamples" styleClass="radio-examples" spacing="16">
+                            <Label fx:id="positiveExampleStandard" text="+£1,250.00 -> INCOME"
+                                   styleClass="example-income"/>
+                            <Label fx:id="negativeExampleStandard" text="-£45.99 -> EXPENSE"
+                                   styleClass="example-expense"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Inverted Option -->
+                    <VBox styleClass="radio-option" spacing="4">
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <RadioButton fx:id="invertedRadio" styleClass="radio-button"
+                                         onAction="#handleInterpretationChange">
+                                <toggleGroup><fx:reference source="interpretationToggle"/></toggleGroup>
+                            </RadioButton>
+                            <Label text="INVERTED: Positive = Expense, Negative = Income"
+                                   styleClass="radio-label"/>
+                        </HBox>
+                        <Label text="Some banks show credits as negative values"
+                               styleClass="radio-hint"/>
+                    </VBox>
+
+                    <!-- Separate Columns Option -->
+                    <VBox styleClass="radio-option" spacing="8">
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <RadioButton fx:id="separateRadio" styleClass="radio-button"
+                                         onAction="#handleInterpretationChange">
+                                <toggleGroup><fx:reference source="interpretationToggle"/></toggleGroup>
+                            </RadioButton>
+                            <Label text="SEPARATE COLUMNS: Income and Expense in different columns"
+                                   styleClass="radio-label"/>
+                        </HBox>
+                        <HBox fx:id="separateColumnsInputs" styleClass="nested-inputs" spacing="16"
+                              managed="false" visible="false">
+                            <VBox spacing="4">
+                                <Label text="Income Column:" styleClass="field-hint"/>
+                                <ComboBox fx:id="incomeColumnCombo" styleClass="mapping-combo-small"
+                                          prefWidth="200" promptText="Select..."
+                                          onAction="#handleIncomeColumnChange"/>
+                            </VBox>
+                            <VBox spacing="4">
+                                <Label text="Expense Column:" styleClass="field-hint"/>
+                                <ComboBox fx:id="expenseColumnCombo" styleClass="mapping-combo-small"
+                                          prefWidth="200" promptText="Select..."
+                                          onAction="#handleExpenseColumnChange"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </VBox>
+        </VBox>
+
+        <!-- Step 3: Summary & Confirmation -->
+        <VBox fx:id="step3Content" styleClass="wizard-step" spacing="20" visible="false" managed="false">
+            <padding><Insets top="24" right="24" bottom="24" left="24"/></padding>
+
+            <!-- Mapping Summary -->
+            <VBox styleClass="mapping-summary" spacing="16">
+                <Label text="MAPPING SUMMARY" styleClass="section-label"/>
+                <Label text="Based on your mapping, here's what we found:"
+                       styleClass="summary-subtitle"/>
+
+                <HBox styleClass="summary-cards" spacing="16">
+                    <!-- Income Summary Card -->
+                    <VBox styleClass="summary-card, summary-income" alignment="CENTER"
+                          spacing="8" HBox.hgrow="ALWAYS">
+                        <Label text="[+]" styleClass="summary-icon, icon-income"/>
+                        <Label text="INCOME" styleClass="summary-type"/>
+                        <Label fx:id="incomeTransactionCount" text="0 transactions"
+                               styleClass="summary-count"/>
+                        <Label fx:id="incomeTotalAmount" text="£0.00"
+                               styleClass="summary-amount, amount-income"/>
+                    </VBox>
+
+                    <!-- Expense Summary Card -->
+                    <VBox styleClass="summary-card, summary-expense" alignment="CENTER"
+                          spacing="8" HBox.hgrow="ALWAYS">
+                        <Label text="[-]" styleClass="summary-icon, icon-expense"/>
+                        <Label text="EXPENSES" styleClass="summary-type"/>
+                        <Label fx:id="expenseTransactionCount" text="0 transactions"
+                               styleClass="summary-count"/>
+                        <Label fx:id="expenseTotalAmount" text="£0.00"
+                               styleClass="summary-amount, amount-expense"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Verification Warning -->
+                <HBox styleClass="verification-warning" alignment="CENTER_LEFT" spacing="12">
+                    <Label text="!" styleClass="warning-icon"/>
+                    <Label text="Does this look correct? If income/expenses seem swapped, go back and change the Amount Interpretation setting."
+                           styleClass="warning-text" wrapText="true"/>
+                </HBox>
+
+                <!-- Save Mapping Preference -->
+                <HBox styleClass="save-preference" alignment="CENTER_LEFT" spacing="8">
+                    <CheckBox fx:id="saveMappingCheckbox" onAction="#handleSavePreferenceChange"/>
+                    <Label text="Save this mapping for future imports from this bank"
+                           styleClass="preference-label"/>
+                </HBox>
+
+                <!-- Confirm Mapping Button -->
+                <HBox alignment="CENTER">
+                    <Button fx:id="confirmMappingBtn" text="Confirm Mapping"
+                            styleClass="button-primary" onAction="#handleConfirmMapping"
+                            prefWidth="200"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </StackPane>
+
+    <!-- Wizard Footer with Navigation -->
+    <HBox styleClass="wizard-footer" alignment="CENTER_RIGHT" spacing="12">
+        <padding><Insets top="16" right="24" bottom="16" left="24"/></padding>
+
+        <Button fx:id="cancelBtn" text="Cancel" styleClass="button-secondary"
+                onAction="#handleCancel"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="backBtn" text="Back" styleClass="button-secondary"
+                onAction="#handleBack" visible="false" managed="false"/>
+        <Button fx:id="nextBtn" text="Next: Amount Interpretation" styleClass="button-primary"
+                onAction="#handleNext" disable="true"/>
+    </HBox>
+</VBox>

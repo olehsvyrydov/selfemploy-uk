@@ -1,0 +1,18 @@
+{
+  "code": "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+  "message": "An empty or non-matching body was submitted",
+  "errors": [
+    {
+      "code": "FORMAT_VALUE",
+      "message": "The value must be between 0 and 99999999999.99",
+      "paths": [
+        "/periodIncome/turnover"
+      ]
+    },
+    {
+      "code": "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+      "message": "An empty or non-matching body was submitted",
+      "paths": []
+    }
+  ]
+}

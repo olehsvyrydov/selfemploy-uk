@@ -12,6 +12,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
 import java.io.File;
@@ -42,6 +43,10 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
     // Draft Banner
     @FXML private HBox draftBanner;
+
+    // Disclaimer Banner (SE-509)
+    @FXML private HBox taxDisclaimerBanner;
+    @FXML private Label taxDisclaimerText;
 
     // Tax At A Glance
     @FXML private Label netProfitValue;
@@ -122,6 +127,22 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             viewModel = new TaxSummaryViewModel();
         }
         setupBindings();
+        initializeDisclaimers();
+    }
+
+    /**
+     * Initializes the disclaimer text from centralized legal constants (SE-509).
+     * AC-4: Disclaimer cannot be dismissed permanently.
+     */
+    private void initializeDisclaimers() {
+        if (taxDisclaimerText != null) {
+            taxDisclaimerText.setText(Disclaimers.TAX_SUMMARY_DISCLAIMER);
+        }
+        // AC-4: Disclaimer banner is always visible - no dismiss functionality
+        if (taxDisclaimerBanner != null) {
+            taxDisclaimerBanner.setVisible(true);
+            taxDisclaimerBanner.setManaged(true);
+        }
     }
 
     @Override

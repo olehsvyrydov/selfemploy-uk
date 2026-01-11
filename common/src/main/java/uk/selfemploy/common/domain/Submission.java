@@ -27,7 +27,9 @@ public record Submission(
     String hmrcReference,
     String errorMessage,
     Instant submittedAt,
-    Instant updatedAt
+    Instant updatedAt,
+    Instant declarationAcceptedAt,
+    String declarationTextHash
 ) {
 
     /**
@@ -89,7 +91,52 @@ public record Submission(
             null,
             null,
             Instant.now(),
-            Instant.now()
+            Instant.now(),
+            null,  // declarationAcceptedAt - must be set before submission
+            null   // declarationTextHash - must be set before submission
+        );
+    }
+
+    /**
+     * Creates a new pending submission for a quarterly update with declaration.
+     *
+     * @param businessId            the business ID
+     * @param taxYear               the tax year
+     * @param quarter               the quarter
+     * @param totalIncome           total income for the period
+     * @param totalExpenses         total expenses for the period
+     * @param declarationAcceptedAt when the user accepted the declaration (UTC)
+     * @param declarationTextHash   SHA-256 hash of the declaration text
+     * @return a new pending submission with declaration info
+     */
+    public static Submission createQuarterlyWithDeclaration(
+            UUID businessId, TaxYear taxYear, Quarter quarter,
+            BigDecimal totalIncome, BigDecimal totalExpenses,
+            Instant declarationAcceptedAt, String declarationTextHash) {
+        SubmissionType type = switch (quarter) {
+            case Q1 -> SubmissionType.QUARTERLY_Q1;
+            case Q2 -> SubmissionType.QUARTERLY_Q2;
+            case Q3 -> SubmissionType.QUARTERLY_Q3;
+            case Q4 -> SubmissionType.QUARTERLY_Q4;
+        };
+
+        return new Submission(
+            UUID.randomUUID(),
+            businessId,
+            type,
+            taxYear,
+            quarter.getStartDate(taxYear),
+            quarter.getEndDate(taxYear),
+            totalIncome,
+            totalExpenses,
+            totalIncome.subtract(totalExpenses),
+            SubmissionStatus.PENDING,
+            null,
+            null,
+            Instant.now(),
+            Instant.now(),
+            declarationAcceptedAt,
+            declarationTextHash
         );
     }
 
@@ -112,7 +159,44 @@ public record Submission(
             null,
             null,
             Instant.now(),
-            Instant.now()
+            Instant.now(),
+            null,  // declarationAcceptedAt - must be set before submission
+            null   // declarationTextHash - must be set before submission
+        );
+    }
+
+    /**
+     * Creates a new pending submission for annual self-assessment with declaration.
+     *
+     * @param businessId            the business ID
+     * @param taxYear               the tax year
+     * @param totalIncome           total income for the year
+     * @param totalExpenses         total expenses for the year
+     * @param declarationAcceptedAt when the user accepted the declaration (UTC)
+     * @param declarationTextHash   SHA-256 hash of the declaration text
+     * @return a new pending submission with declaration info
+     */
+    public static Submission createAnnualWithDeclaration(
+            UUID businessId, TaxYear taxYear,
+            BigDecimal totalIncome, BigDecimal totalExpenses,
+            Instant declarationAcceptedAt, String declarationTextHash) {
+        return new Submission(
+            UUID.randomUUID(),
+            businessId,
+            SubmissionType.ANNUAL,
+            taxYear,
+            taxYear.startDate(),
+            taxYear.endDate(),
+            totalIncome,
+            totalExpenses,
+            totalIncome.subtract(totalExpenses),
+            SubmissionStatus.PENDING,
+            null,
+            null,
+            Instant.now(),
+            Instant.now(),
+            declarationAcceptedAt,
+            declarationTextHash
         );
     }
 
@@ -127,7 +211,9 @@ public record Submission(
             hmrcReference,
             null,
             submittedAt,
-            Instant.now()
+            Instant.now(),
+            declarationAcceptedAt,
+            declarationTextHash
         );
     }
 
@@ -142,7 +228,9 @@ public record Submission(
             hmrcReference,
             null,
             submittedAt,
-            Instant.now()
+            Instant.now(),
+            declarationAcceptedAt,
+            declarationTextHash
         );
     }
 
@@ -157,7 +245,30 @@ public record Submission(
             null,
             errorMessage,
             submittedAt,
-            Instant.now()
+            Instant.now(),
+            declarationAcceptedAt,
+            declarationTextHash
+        );
+    }
+
+    /**
+     * Returns a copy with declaration information.
+     *
+     * @param declarationAcceptedAt when the declaration was accepted (UTC)
+     * @param declarationTextHash   SHA-256 hash of the declaration text
+     * @return a new Submission with declaration info set
+     */
+    public Submission withDeclaration(Instant declarationAcceptedAt, String declarationTextHash) {
+        return new Submission(
+            id, businessId, type, taxYear, periodStart, periodEnd,
+            totalIncome, totalExpenses, netProfit,
+            status,
+            hmrcReference,
+            errorMessage,
+            submittedAt,
+            Instant.now(),
+            declarationAcceptedAt,
+            declarationTextHash
         );
     }
 
@@ -173,6 +284,15 @@ public record Submission(
      */
     public boolean isSuccessful() {
         return status.isSuccessful();
+    }
+
+    /**
+     * Checks if this submission has a valid declaration.
+     *
+     * @return true if both declarationAcceptedAt and declarationTextHash are set
+     */
+    public boolean hasDeclaration() {
+        return declarationAcceptedAt != null && declarationTextHash != null && !declarationTextHash.isBlank();
     }
 
     /**

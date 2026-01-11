@@ -1,0 +1,96 @@
+<testsuites id="" name="" tests="46" failures="0" skipped="0" errors="0" time="6.806619">
+<testsuite name="landing-page.spec.ts" timestamp="2026-01-11T22:20:46.547Z" hostname="chromium" tests="46" failures="0" skipped="0" time="40.06" errors="0">
+<testcase name="1. Page Structure and Loading (AC-1) › TC-001: Page loads successfully [P0]" classname="landing-page.spec.ts" time="1.011">
+</testcase>
+<testcase name="1. Page Structure and Loading (AC-1) › TC-002: All page sections present [P0]" classname="landing-page.spec.ts" time="1.039">
+</testcase>
+<testcase name="1. Page Structure and Loading (AC-1) › TC-003: Favicon loads correctly [P0]" classname="landing-page.spec.ts" time="1.045">
+</testcase>
+<testcase name="1. Page Structure and Loading (AC-1) › TC-004: CSS stylesheet loaded [P0]" classname="landing-page.spec.ts" time="1.039">
+</testcase>
+<testcase name="1. Page Structure and Loading (AC-1) › TC-005: JavaScript loads without errors [P0]" classname="landing-page.spec.ts" time="1.376">
+</testcase>
+<testcase name="2. Hero Section (AC-2) › TC-006: Hero headline displays correctly [P0]" classname="landing-page.spec.ts" time="1.035">
+</testcase>
+<testcase name="2. Hero Section (AC-2) › TC-007: Hero subtitle displays [P0]" classname="landing-page.spec.ts" time="0.97">
+</testcase>
+<testcase name="2. Hero Section (AC-2) › TC-008: Hero CTA buttons present [P0]" classname="landing-page.spec.ts" time="1.096">
+</testcase>
+<testcase name="3. Features Section (AC-3) › TC-011: Features section headline [P0]" classname="landing-page.spec.ts" time="0.86">
+</testcase>
+<testcase name="3. Features Section (AC-3) › TC-012: Four feature cards displayed [P0]" classname="landing-page.spec.ts" time="0.867">
+</testcase>
+<testcase name="3. Features Section (AC-3) › TC-013: &quot;100% Free&quot; feature card [P0]" classname="landing-page.spec.ts" time="0.853">
+</testcase>
+<testcase name="3. Features Section (AC-3) › TC-014: &quot;Privacy-First&quot; feature card [P0]" classname="landing-page.spec.ts" time="0.902">
+</testcase>
+<testcase name="3. Features Section (AC-3) › TC-015: &quot;Open Source&quot; feature card [P0]" classname="landing-page.spec.ts" time="0.937">
+</testcase>
+<testcase name="3. Features Section (AC-3) › TC-016: &quot;HMRC MTD Ready&quot; feature card [P0]" classname="landing-page.spec.ts" time="0.838">
+</testcase>
+<testcase name="4. Download Section (AC-4) › TC-019: Download section headline [P0]" classname="landing-page.spec.ts" time="0.876">
+</testcase>
+<testcase name="4. Download Section (AC-4) › TC-020: Three download cards present [P0]" classname="landing-page.spec.ts" time="0.745">
+</testcase>
+<testcase name="4. Download Section (AC-4) › TC-021: Windows download card [P0]" classname="landing-page.spec.ts" time="0.818">
+</testcase>
+<testcase name="4. Download Section (AC-4) › TC-022: macOS download card [P0]" classname="landing-page.spec.ts" time="0.808">
+</testcase>
+<testcase name="4. Download Section (AC-4) › TC-023: Linux download card [P0]" classname="landing-page.spec.ts" time="0.86">
+</testcase>
+<testcase name="5. Demo Section (AC-5) › TC-030: Demo section present [P0]" classname="landing-page.spec.ts" time="0.835">
+</testcase>
+<testcase name="5. Demo Section (AC-5) › TC-031: Demo screenshot image [P0]" classname="landing-page.spec.ts" time="0.834">
+</testcase>
+<testcase name="6. FAQ Section (AC-6) › TC-034: FAQ section headline [P0]" classname="landing-page.spec.ts" time="0.796">
+</testcase>
+<testcase name="6. FAQ Section (AC-6) › TC-035: Eight FAQ items present [P0]" classname="landing-page.spec.ts" time="0.844">
+</testcase>
+<testcase name="6. FAQ Section (AC-6) › TC-036: First FAQ item open by default [P0]" classname="landing-page.spec.ts" time="0.798">
+</testcase>
+<testcase name="6. FAQ Section (AC-6) › TC-037: FAQ item 1 content - &quot;Is this software really free?&quot; [P0]" classname="landing-page.spec.ts" time="0.858">
+</testcase>
+<testcase name="6. FAQ Section (AC-6) › TC-042: FAQ accordion expand/collapse [P0]" classname="landing-page.spec.ts" time="1.147">
+</testcase>
+<testcase name="7. GitHub Links (AC-7) › TC-047: GitHub link in navigation [P0]" classname="landing-page.spec.ts" time="0.85">
+</testcase>
+<testcase name="7. GitHub Links (AC-7) › TC-048: GitHub link in hero [P0]" classname="landing-page.spec.ts" time="0.885">
+</testcase>
+<testcase name="7. GitHub Links (AC-7) › TC-049: GitHub link in footer [P0]" classname="landing-page.spec.ts" time="0.831">
+</testcase>
+<testcase name="8. Responsive Design (AC-8) › TC-053: Desktop layout (1024px+) [P0]" classname="landing-page.spec.ts" time="0.964">
+</testcase>
+<testcase name="8. Responsive Design (AC-8) › TC-054: Tablet layout (768px-1024px) [P0]" classname="landing-page.spec.ts" time="0.805">
+</testcase>
+<testcase name="8. Responsive Design (AC-8) › TC-055: Mobile layout (&lt;768px) [P0]" classname="landing-page.spec.ts" time="0.717">
+</testcase>
+<testcase name="8. Responsive Design (AC-8) › TC-056: Small mobile layout (&lt;480px) [P0]" classname="landing-page.spec.ts" time="0.526">
+</testcase>
+<testcase name="8. Responsive Design (AC-8) › TC-057: Mobile navigation toggle visible [P0]" classname="landing-page.spec.ts" time="0.604">
+</testcase>
+<testcase name="8. Responsive Design (AC-8) › TC-058: Mobile menu opens on click [P0]" classname="landing-page.spec.ts" time="0.714">
+</testcase>
+<testcase name="8. Responsive Design (AC-8) › TC-059: Mobile menu closes on link click [P0]" classname="landing-page.spec.ts" time="1.169">
+</testcase>
+<testcase name="9. Navigation and Links › TC-071: Skip link functionality [P0]" classname="landing-page.spec.ts" time="0.871">
+</testcase>
+<testcase name="9. Navigation and Links › TC-072: Navigation internal links work [P0]" classname="landing-page.spec.ts" time="1.081">
+</testcase>
+<testcase name="9. Navigation and Links › TC-074: Legal page links in footer [P0]" classname="landing-page.spec.ts" time="0.866">
+</testcase>
+<testcase name="9. Navigation and Links › TC-075: External links open in new tab [P0]" classname="landing-page.spec.ts" time="0.891">
+</testcase>
+<testcase name="10. Legal Pages › TC-078: Privacy page loads [P0]" classname="landing-page.spec.ts" time="0.691">
+</testcase>
+<testcase name="10. Legal Pages › TC-079: Terms page loads [P0]" classname="landing-page.spec.ts" time="0.775">
+</testcase>
+<testcase name="10. Legal Pages › TC-080: Disclaimer page loads [P0]" classname="landing-page.spec.ts" time="0.769">
+</testcase>
+<testcase name="11. Accessibility › TC-082: Proper heading hierarchy [P0]" classname="landing-page.spec.ts" time="0.707">
+</testcase>
+<testcase name="11. Accessibility › TC-083: ARIA labels present [P0]" classname="landing-page.spec.ts" time="0.647">
+</testcase>
+<testcase name="11. Accessibility › TC-084: Images have alt text [P0]" classname="landing-page.spec.ts" time="0.61">
+</testcase>
+</testsuite>
+</testsuites>

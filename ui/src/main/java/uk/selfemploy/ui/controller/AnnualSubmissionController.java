@@ -7,6 +7,7 @@ import javafx.scene.layout.*;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
 import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 
 import java.math.BigDecimal;
@@ -73,6 +74,10 @@ public class AnnualSubmissionController {
     @FXML private VBox successPanel;
     @FXML private Label submissionReference;
 
+    // Submission Disclaimer Banner (SE-509)
+    @FXML private HBox submissionDisclaimerBanner;
+    @FXML private Label submissionDisclaimerText;
+
     // Declaration Card (SE-506)
     @FXML private VBox declarationCard;
     @FXML private CheckBox declarationCheckbox;
@@ -105,6 +110,17 @@ public class AnnualSubmissionController {
         viewModel = new AnnualSubmissionViewModel();
         setupBindings();
         setupListeners();
+        initializeDisclaimers();
+    }
+
+    /**
+     * Initializes the submission disclaimer text from centralized legal constants (SE-509).
+     * AC-4: Disclaimer cannot be dismissed permanently.
+     */
+    private void initializeDisclaimers() {
+        if (submissionDisclaimerText != null) {
+            submissionDisclaimerText.setText(Disclaimers.HMRC_SUBMISSION_DISCLAIMER);
+        }
     }
 
     /**
@@ -340,7 +356,7 @@ public class AnnualSubmissionController {
     }
 
     private void updateActionButtons(int currentStep) {
-        // Hide all buttons and declaration card first
+        // Hide all buttons, disclaimer banner, and declaration card first
         calculateButton.setVisible(false);
         calculateButton.setManaged(false);
         reviewButton.setVisible(false);
@@ -349,6 +365,11 @@ public class AnnualSubmissionController {
         submitContainer.setManaged(false);
         declarationCard.setVisible(false);
         declarationCard.setManaged(false);
+        // SE-509: Hide submission disclaimer when not in submission step
+        if (submissionDisclaimerBanner != null) {
+            submissionDisclaimerBanner.setVisible(false);
+            submissionDisclaimerBanner.setManaged(false);
+        }
 
         // Show appropriate button based on step
         switch (currentStep) {
@@ -362,6 +383,12 @@ public class AnnualSubmissionController {
                 reviewButton.setDisable(true); // Disable until calculation completes
             }
             case 3 -> {
+                // SE-509: Show submission disclaimer banner (AC-2)
+                // AC-4: Disclaimer cannot be dismissed
+                if (submissionDisclaimerBanner != null) {
+                    submissionDisclaimerBanner.setVisible(true);
+                    submissionDisclaimerBanner.setManaged(true);
+                }
                 // Show declaration card and submit container (SE-506, AC-1)
                 declarationCard.setVisible(true);
                 declarationCard.setManaged(true);

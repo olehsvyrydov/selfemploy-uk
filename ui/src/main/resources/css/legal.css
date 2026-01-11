@@ -1,0 +1,653 @@
+/*
+ * Legal Documents Styles - SE-507, SE-508
+ * Privacy Notice and Terms of Service
+ *
+ * Design: /aura (Senior UI/UX Design Architect)
+ * Legal content: /alex (Senior UK Legal Counsel)
+ */
+
+/* ===== Privacy Notice Container ===== */
+.privacy-notice-container {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 32, 0, 0, 8);
+}
+
+/* ===== Privacy Header ===== */
+.privacy-header {
+    -fx-background-color: -fx-primary-light;
+    -fx-background-radius: 8;
+    -fx-padding: 24;
+}
+
+.privacy-icon {
+    -fx-font-size: 48px;
+    -fx-text-fill: -fx-primary;
+    -fx-background-color: -fx-bg-primary;
+    -fx-padding: 16;
+    -fx-background-radius: 40;
+}
+
+.privacy-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.privacy-version {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-weight: bold;
+}
+
+.privacy-separator {
+    -fx-text-fill: -fx-text-muted;
+}
+
+.privacy-effective-date {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Privacy Content Scroll ===== */
+.privacy-content-scroll {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-height: 300;
+    -fx-max-height: 400;
+}
+
+.privacy-content-scroll > .viewport {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.privacy-content {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+/* ===== Privacy Sections ===== */
+.privacy-section {
+    -fx-padding: 0 0 16 0;
+}
+
+.privacy-section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.privacy-subsection-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+    -fx-padding: 8 0 4 0;
+}
+
+.privacy-section-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-line-spacing: 2;
+}
+
+.privacy-section-text.privacy-important {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+.privacy-section-text.privacy-storage {
+    -fx-font-style: italic;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.privacy-section-text.privacy-retention {
+    -fx-font-style: italic;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.privacy-section-text.privacy-compliance {
+    -fx-font-style: italic;
+    -fx-text-fill: -fx-success;
+}
+
+.privacy-list {
+    -fx-padding: 8 0 0 16;
+}
+
+.privacy-list-item {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Privacy Summary Section ===== */
+.privacy-summary {
+    -fx-background-color: -fx-primary-light;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+/* ===== Privacy Link ===== */
+.privacy-link-container {
+    -fx-padding: 16 0;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+.privacy-full-link {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-primary;
+    -fx-font-weight: bold;
+}
+
+.privacy-full-link:hover {
+    -fx-underline: true;
+}
+
+/* ===== Acknowledgment Row ===== */
+.acknowledgment-row {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.acknowledgment-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+/* ===== Terms of Service Specific Styles ===== */
+/* (For SE-508 - Terms of Service UI) */
+/* Design: /aura - SE-508 Design Specification */
+
+.tos-container {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 32, 0, 0, 8);
+}
+
+/* ===== ToS Header ===== */
+.tos-header {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-background-radius: 8;
+    -fx-padding: 20;
+}
+
+.tos-icon {
+    -fx-font-size: 40px;
+    -fx-text-fill: -fx-secondary;
+    -fx-background-color: -fx-bg-primary;
+    -fx-padding: 12;
+    -fx-background-radius: 8;
+}
+
+.tos-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.tos-version {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-weight: bold;
+}
+
+.tos-separator {
+    -fx-text-fill: -fx-text-muted;
+}
+
+.tos-updated-date {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Table of Contents ===== */
+.tos-toc {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.toc-header {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.toc-links {
+    -fx-padding: 8 0 0 0;
+}
+
+.toc-link {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-padding: 6 0;
+}
+
+.toc-link:hover {
+    -fx-text-fill: -fx-primary;
+}
+
+.toc-link.active {
+    -fx-text-fill: -fx-primary;
+    -fx-font-weight: bold;
+}
+
+/* ===== ToS Content Scroll ===== */
+.tos-content-scroll {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.tos-content-scroll > .viewport {
+    -fx-background-color: -fx-bg-primary;
+}
+
+.tos-content {
+    -fx-background-color: -fx-bg-primary;
+}
+
+/* ===== ToS Sections ===== */
+.tos-section {
+    -fx-padding: 0 0 16 0;
+    -fx-border-color: -fx-bg-tertiary;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tos-section-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.tos-section-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-line-spacing: 3;
+}
+
+.tos-section-text.tos-important {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.tos-section-text.tos-important-header {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-danger;
+}
+
+.tos-section-text.tos-bold {
+    -fx-font-weight: bold;
+}
+
+.tos-list {
+    -fx-padding: 8 0 0 16;
+}
+
+.tos-list-item {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Important Badge ===== */
+.tos-important-badge {
+    -fx-background-color: -fx-danger;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8;
+    -fx-background-radius: 4;
+}
+
+/* ===== Highlight Box (Important Sections) ===== */
+.tos-highlight-box {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: -fx-warning;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+.tos-highlight-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #856404;
+    -fx-line-spacing: 2;
+}
+
+/* ===== Important Notice ===== */
+.tos-important-notice {
+    -fx-background-color: #f8d7da;
+    -fx-border-color: -fx-danger;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+/* ===== End Marker ===== */
+.tos-end-marker {
+    -fx-padding: 24 0;
+}
+
+.tos-end-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-style: italic;
+}
+
+/* ===== Final Declaration ===== */
+.tos-final-declaration {
+    -fx-background-color: -fx-primary-light;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+}
+
+/* ===== Compliance Footer ===== */
+.tos-compliance-footer {
+    -fx-padding: 16 0 0 0;
+}
+
+.tos-compliance-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-style: italic;
+}
+
+/* ===== Scroll Progress Section ===== */
+.scroll-progress-section {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+}
+
+.scroll-progress-bar {
+    -fx-pref-height: 8;
+    -fx-min-height: 8;
+    -fx-max-height: 8;
+}
+
+.scroll-progress-bar > .track {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-background-radius: 4;
+}
+
+.scroll-progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, -fx-warning, -fx-success);
+    -fx-background-radius: 4;
+    -fx-background-insets: 0;
+}
+
+.scroll-progress-bar.complete > .bar {
+    -fx-background-color: -fx-success;
+}
+
+.scroll-percent {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-min-width: 40;
+}
+
+.scroll-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.scroll-hint.complete {
+    -fx-text-fill: -fx-success;
+}
+
+/* ===== ToS Footer ===== */
+.tos-footer {
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+.tos-scroll-indicator {
+    -fx-background-color: -fx-warning;
+    -fx-text-fill: #856404;
+    -fx-padding: 8 16;
+    -fx-background-radius: 4;
+    -fx-font-size: 13px;
+}
+
+/* ===== Important Notice Boxes ===== */
+.legal-notice-box {
+    -fx-background-color: #f0f7ff;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+.legal-warning-box {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: -fx-warning;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+.legal-danger-box {
+    -fx-background-color: #f8d7da;
+    -fx-border-color: -fx-danger;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+/* ===== Scroll Progress Indicator ===== */
+.scroll-progress {
+    -fx-pref-height: 4;
+    -fx-accent: -fx-primary;
+}
+
+.scroll-progress > .track {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-background-radius: 2;
+}
+
+.scroll-progress > .bar {
+    -fx-background-color: -fx-primary;
+    -fx-background-radius: 2;
+}
+
+/* ===== Decline Button (ToS specific) ===== */
+.button-decline {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+}
+
+.button-decline:hover {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-border-color: -fx-text-secondary;
+}
+
+/* ===== Accept Button (ToS specific) ===== */
+.button-accept {
+    -fx-background-color: -fx-success;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.button-accept:hover {
+    -fx-background-color: derive(-fx-success, -10%);
+}
+
+.button-accept:disabled {
+    -fx-background-color: #adb5bd;
+    -fx-cursor: default;
+}
+
+/* ===== Checkbox Styling for Legal Documents ===== */
+.legal-checkbox {
+    -fx-padding: 4;
+}
+
+.legal-checkbox > .box {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 2;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+}
+
+.legal-checkbox:selected > .box {
+    -fx-background-color: -fx-primary;
+    -fx-border-color: -fx-primary;
+}
+
+.legal-checkbox:selected > .box > .mark {
+    -fx-background-color: white;
+}
+
+/* ===== Legal Document Footer ===== */
+.legal-footer {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 16 24;
+}
+
+/* ===== Version Badge ===== */
+.version-badge {
+    -fx-background-color: -fx-primary-light;
+    -fx-text-fill: -fx-primary;
+    -fx-padding: 4 10;
+    -fx-background-radius: 12;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Legal Timestamp ===== */
+.legal-timestamp {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-style: italic;
+}
+
+/* ===== Disclaimer Banners - SE-509 ===== */
+/* Design: /aura (Senior UI/UX Design Architect) */
+/* Legal content: /alex (Senior UK Legal Counsel) */
+
+/* Tax Summary Disclaimer Banner (AC-1) */
+.disclaimer-banner {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: #ffc107;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+.disclaimer-banner-icon {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+    -fx-background-color: rgba(133, 100, 4, 0.15);
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-alignment: center;
+}
+
+.disclaimer-banner-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #856404;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 2;
+}
+
+.disclaimer-banner-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+}
+
+/* HMRC Submission Disclaimer (AC-2) */
+.submission-disclaimer {
+    -fx-background-color: #f0f7ff;
+    -fx-border-color: #0d6efd;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+.submission-disclaimer-icon {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0d6efd;
+    -fx-background-color: rgba(13, 110, 253, 0.15);
+    -fx-background-radius: 50;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-alignment: center;
+}
+
+.submission-disclaimer-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #084298;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 2;
+}
+
+.submission-disclaimer-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #084298;
+}
+
+/* Persistent Info Banner - cannot be dismissed (AC-4) */
+.disclaimer-persistent {
+    -fx-opacity: 1.0;
+    /* No close button, cannot be dismissed */
+}
+
+/* ===== Responsive Adjustments ===== */
+/* For smaller screens, reduce padding and font sizes */
+@media (max-width: 500px) {
+    .privacy-header {
+        -fx-padding: 16;
+    }
+
+    .privacy-title {
+        -fx-font-size: 20px;
+    }
+
+    .privacy-section-title {
+        -fx-font-size: 14px;
+    }
+
+    .privacy-section-text {
+        -fx-font-size: 13px;
+    }
+
+    .acknowledgment-row {
+        -fx-padding: 12;
+    }
+}

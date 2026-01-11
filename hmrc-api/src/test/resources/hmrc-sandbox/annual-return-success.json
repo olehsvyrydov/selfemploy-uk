@@ -1,0 +1,13 @@
+{
+  "chargeReference": "XA123456789012",
+  "declarationTimestamp": "2026-01-31T12:00:00.000Z",
+  "calculationId": "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1e",
+  "taxYear": "2025-26",
+  "links": [
+    {
+      "href": "/individuals/declarations/self-assessment/AA000001A/2025-26",
+      "method": "GET",
+      "rel": "self"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
@@ -16,6 +17,10 @@
 -->
 
 <ScrollPane fx:id="rootScroll" styleClass="annual-scroll" xmlns:fx="http://javafx.com/fxml">
+    <stylesheets>
+        <String fx:value="/css/annual-submission.css"/>
+        <String fx:value="/css/legal.css"/>
+    </stylesheets>
     <VBox styleClass="annual-container" spacing="24">
         <padding>
             <Insets top="24" right="24" bottom="24" left="24"/>
@@ -182,6 +187,19 @@
                 <Label fx:id="submissionReference" text="" styleClass="reference-text"/>
             </HBox>
         </VBox>
+
+        <!-- HMRC Submission Disclaimer (SE-509, AC-2) -->
+        <!-- IMPORTANT: This disclaimer cannot be dismissed (AC-4) -->
+        <HBox fx:id="submissionDisclaimerBanner" styleClass="submission-disclaimer, disclaimer-persistent"
+              alignment="TOP_LEFT" spacing="12" visible="false" managed="false">
+            <Label text="i" styleClass="submission-disclaimer-icon"/>
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="IMPORTANT NOTICE" styleClass="submission-disclaimer-title"/>
+                <Label fx:id="submissionDisclaimerText"
+                       text="By submitting this data to HMRC, you confirm that the information provided is accurate and complete to the best of your knowledge. You are solely responsible for the accuracy of all submitted data."
+                       styleClass="submission-disclaimer-text" wrapText="true"/>
+            </VBox>
+        </HBox>
 
         <!-- Declaration Card (SE-506) - Displayed before submit button -->
         <VBox fx:id="declarationCard" styleClass="declaration-card" spacing="16" visible="false" managed="false">

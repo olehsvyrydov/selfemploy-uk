@@ -12,6 +12,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.SubmissionStatus;
 import uk.selfemploy.common.enums.SubmissionType;
+import uk.selfemploy.core.calculator.Class2NICalculationResult;
 import uk.selfemploy.core.calculator.NICalculationResult;
 import uk.selfemploy.core.calculator.TaxCalculationResult;
 import uk.selfemploy.core.calculator.TaxLiabilityResult;
@@ -264,7 +265,9 @@ class PdfContentVerificationTest {
                 null, // No HMRC reference
                 null,
                 SUBMISSION_TIME,
-                SUBMISSION_TIME
+                SUBMISSION_TIME,
+                SUBMISSION_TIME, // declarationAcceptedAt
+                "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9" // declarationTextHash
             );
             TaxLiabilityResult taxResult = createTaxResult();
             Path outputPath = tempDir.resolve("confirmation.pdf");
@@ -582,7 +585,9 @@ class PdfContentVerificationTest {
             HMRC_REFERENCE,
             null,
             SUBMISSION_TIME,
-            SUBMISSION_TIME
+            SUBMISSION_TIME,
+            SUBMISSION_TIME, // declarationAcceptedAt
+            "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9" // declarationTextHash
         );
     }
 
@@ -601,7 +606,9 @@ class PdfContentVerificationTest {
             null,
             "Validation error",
             SUBMISSION_TIME,
-            SUBMISSION_TIME
+            SUBMISSION_TIME,
+            null, // declarationAcceptedAt
+            null  // declarationTextHash
         );
     }
 
@@ -619,24 +626,36 @@ class PdfContentVerificationTest {
             new BigDecimal("5486.00")   // totalTax
         );
 
-        NICalculationResult niDetails = new NICalculationResult(
+        NICalculationResult niClass4Details = new NICalculationResult(
             new BigDecimal("40000.00"), // grossProfit
             new BigDecimal("12570.00"), // lowerProfitsLimit
             new BigDecimal("27430.00"), // profitSubjectToNI
             new BigDecimal("27430.00"), // mainRateAmount
-            new BigDecimal("2468.70"),  // mainRateNI (9%)
+            new BigDecimal("1645.80"),  // mainRateNI (6%)
             BigDecimal.ZERO,            // additionalRateAmount
             BigDecimal.ZERO,            // additionalRateNI
-            new BigDecimal("2468.70")   // totalNI
+            new BigDecimal("1645.80")   // totalNI
+        );
+
+        Class2NICalculationResult niClass2Details = new Class2NICalculationResult(
+            new BigDecimal("40000.00"), // grossProfit
+            new BigDecimal("6845"),     // smallProfitsThreshold
+            new BigDecimal("3.50"),     // weeklyRate
+            52,                         // weeksLiable
+            new BigDecimal("182.00"),   // totalNI
+            true,                       // isMandatory
+            false                       // isVoluntary
         );
 
         return new TaxLiabilityResult(
             new BigDecimal("40000.00"), // grossProfit
             new BigDecimal("5486.00"),  // incomeTax
-            new BigDecimal("2468.70"),  // niClass4
-            new BigDecimal("7954.70"),  // totalLiability
+            new BigDecimal("1645.80"),  // niClass4
+            new BigDecimal("182.00"),   // niClass2
+            new BigDecimal("7313.80"),  // totalLiability (5486 + 1645.80 + 182)
             incomeTaxDetails,
-            niDetails
+            niClass4Details,
+            niClass2Details
         );
     }
 

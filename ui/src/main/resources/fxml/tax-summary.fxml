@@ -11,6 +11,7 @@
             fitToWidth="true" hbarPolicy="NEVER">
     <stylesheets>
         <String fx:value="/css/tax-summary.css"/>
+        <String fx:value="/css/legal.css"/>
     </stylesheets>
 
     <VBox fx:id="taxSummaryContainer" styleClass="tax-summary-container" spacing="20">
@@ -29,6 +30,19 @@
             <Label text="!" styleClass="draft-banner-icon"/>
             <Label text="DRAFT - This calculation has not been submitted to HMRC"
                    styleClass="draft-banner-text"/>
+        </HBox>
+
+        <!-- Tax Summary Disclaimer Banner (SE-509, AC-1) -->
+        <!-- IMPORTANT: This disclaimer cannot be dismissed (AC-4) -->
+        <HBox fx:id="taxDisclaimerBanner" styleClass="disclaimer-banner, disclaimer-persistent"
+              alignment="TOP_LEFT" spacing="12" managed="true" visible="true">
+            <Label text="!" styleClass="disclaimer-banner-icon"/>
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="IMPORTANT" styleClass="disclaimer-banner-title"/>
+                <Label fx:id="taxDisclaimerText"
+                       text="This tax calculation is an estimate only and may not reflect your actual tax liability. You should verify all figures with a qualified accountant or tax advisor before making any financial decisions."
+                       styleClass="disclaimer-banner-text" wrapText="true"/>
+            </VBox>
         </HBox>
 
         <!-- Tax At A Glance -->

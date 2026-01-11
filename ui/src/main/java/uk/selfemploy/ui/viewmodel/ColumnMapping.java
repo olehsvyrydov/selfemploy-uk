@@ -1,15 +1,13 @@
 package uk.selfemploy.ui.viewmodel;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
 
 /**
  * Holds the column mapping configuration for CSV import.
  * Tracks which CSV columns map to which transaction fields.
  *
  * SE-601: CSV Bank Import Wizard
+ * SE-802: Added AmountInterpretation for correct income/expense classification
  */
 public class ColumnMapping {
 
@@ -23,6 +21,10 @@ public class ColumnMapping {
     private final StringProperty amountColumn = new SimpleStringProperty();
     private final StringProperty incomeColumn = new SimpleStringProperty();
     private final StringProperty expenseColumn = new SimpleStringProperty();
+
+    // SE-802: Amount interpretation for correct income/expense classification
+    private final ObjectProperty<AmountInterpretation> amountInterpretation =
+            new SimpleObjectProperty<>(AmountInterpretation.STANDARD);
 
     // Optional fields
     private final StringProperty categoryColumn = new SimpleStringProperty();
@@ -123,6 +125,7 @@ public class ColumnMapping {
         amountColumn.set(null);
         incomeColumn.set(null);
         expenseColumn.set(null);
+        amountInterpretation.set(AmountInterpretation.STANDARD);
         categoryColumn.set(null);
         referenceColumn.set(null);
     }
@@ -235,6 +238,24 @@ public class ColumnMapping {
 
     public StringProperty referenceColumnProperty() {
         return referenceColumn;
+    }
+
+    // SE-802: Amount interpretation getters/setters
+
+    public AmountInterpretation getAmountInterpretation() {
+        return amountInterpretation.get();
+    }
+
+    public void setAmountInterpretation(AmountInterpretation value) {
+        amountInterpretation.set(value);
+        // Update separateAmountColumns based on interpretation
+        if (value == AmountInterpretation.SEPARATE_COLUMNS) {
+            separateAmountColumns.set(true);
+        }
+    }
+
+    public ObjectProperty<AmountInterpretation> amountInterpretationProperty() {
+        return amountInterpretation;
     }
 
     private boolean isBlank(String value) {

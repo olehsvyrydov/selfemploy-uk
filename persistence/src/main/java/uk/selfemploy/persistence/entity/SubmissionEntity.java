@@ -18,7 +18,8 @@ import java.util.UUID;
 @Table(name = "submissions", indexes = {
     @Index(name = "idx_submissions_business_id", columnList = "business_id"),
     @Index(name = "idx_submissions_tax_year", columnList = "tax_year_start"),
-    @Index(name = "idx_submissions_type_status", columnList = "type, status")
+    @Index(name = "idx_submissions_type_status", columnList = "type, status"),
+    @Index(name = "idx_submissions_declaration_at", columnList = "declaration_accepted_at")
 })
 public class SubmissionEntity {
 
@@ -66,6 +67,20 @@ public class SubmissionEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /**
+     * UTC timestamp when the user accepted the HMRC declaration.
+     * Required for audit trail compliance.
+     */
+    @Column(name = "declaration_accepted_at")
+    private Instant declarationAcceptedAt;
+
+    /**
+     * SHA-256 hash of the declaration text for version tracking.
+     * 64 lowercase hex characters.
+     */
+    @Column(name = "declaration_text_hash", length = 64)
+    private String declarationTextHash;
+
     // Default constructor for JPA
     public SubmissionEntity() {}
 
@@ -88,6 +103,8 @@ public class SubmissionEntity {
         entity.errorMessage = submission.errorMessage();
         entity.submittedAt = submission.submittedAt();
         entity.updatedAt = submission.updatedAt();
+        entity.declarationAcceptedAt = submission.declarationAcceptedAt();
+        entity.declarationTextHash = submission.declarationTextHash();
         return entity;
     }
 
@@ -109,7 +126,9 @@ public class SubmissionEntity {
             hmrcReference,
             errorMessage,
             submittedAt,
-            updatedAt
+            updatedAt,
+            declarationAcceptedAt,
+            declarationTextHash
         );
     }
 
@@ -155,4 +174,10 @@ public class SubmissionEntity {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public Instant getDeclarationAcceptedAt() { return declarationAcceptedAt; }
+    public void setDeclarationAcceptedAt(Instant declarationAcceptedAt) { this.declarationAcceptedAt = declarationAcceptedAt; }
+
+    public String getDeclarationTextHash() { return declarationTextHash; }
+    public void setDeclarationTextHash(String declarationTextHash) { this.declarationTextHash = declarationTextHash; }
 }

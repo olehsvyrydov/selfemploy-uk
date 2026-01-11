@@ -31,6 +31,7 @@ import uk.selfemploy.persistence.repository.IncomeRepository;
 import uk.selfemploy.persistence.repository.SubmissionRepository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -724,6 +725,90 @@ class QuarterlySubmissionServiceTest {
                         assertThat(tokenEx.getError()).isEqualTo(TokenException.TokenError.REFRESH_FAILED);
                         assertThat(tokenEx.getUserMessage()).contains("re-authenticate");
                     });
+        }
+    }
+
+    @Nested
+    @DisplayName("AC-6: Declaration Validation (SE-803)")
+    class DeclarationValidationTests {
+
+        @Test
+        @DisplayName("should reject submission without declaration timestamp")
+        void shouldRejectSubmissionWithoutDeclarationTimestamp() {
+            // Given - no declaration timestamp set (no stubbing needed - validation happens first)
+
+            // When/Then
+            assertThatThrownBy(() -> service.submitQuarter(businessId, nino, taxYear2025, Quarter.Q1, null, null))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("declaration");
+        }
+
+        @Test
+        @DisplayName("should reject submission without declaration hash")
+        void shouldRejectSubmissionWithoutDeclarationHash() {
+            // Given - declaration timestamp but no hash (no stubbing needed - validation happens first)
+
+            // When/Then
+            assertThatThrownBy(() -> service.submitQuarter(businessId, nino, taxYear2025, Quarter.Q1,
+                    Instant.now(), null))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("declaration");
+        }
+
+        @Test
+        @DisplayName("should accept submission with valid declaration")
+        void shouldAcceptSubmissionWithValidDeclaration() {
+            // Given
+            Instant declarationTime = Instant.now();
+            String declarationHash = "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9";
+
+            when(incomeRepository.findByDateRange(eq(businessId), any(), any()))
+                    .thenReturn(List.of(createIncome(new BigDecimal("1000.00"), LocalDate.of(2025, 5, 1))));
+            when(expenseRepository.findByDateRange(eq(businessId), any(), any()))
+                    .thenReturn(List.of());
+            when(submissionRepository.existsQuarterlySubmission(any(), any(), any()))
+                    .thenReturn(false);
+            when(mtdClient.submitPeriodicUpdate(any(), any(), any(), any()))
+                    .thenReturn(new HmrcSubmissionResponse("REF123", "ACCEPTED"));
+            when(submissionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            Submission submission = service.submitQuarter(businessId, nino, taxYear2025, Quarter.Q1,
+                    declarationTime, declarationHash);
+
+            // Then
+            assertThat(submission.status()).isEqualTo(SubmissionStatus.ACCEPTED);
+            assertThat(submission.declarationAcceptedAt()).isEqualTo(declarationTime);
+            assertThat(submission.declarationTextHash()).isEqualTo(declarationHash);
+        }
+
+        @Test
+        @DisplayName("should store declaration timestamp in saved submission")
+        void shouldStoreDeclarationTimestampInSavedSubmission() {
+            // Given
+            Instant declarationTime = Instant.now();
+            String declarationHash = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2";
+
+            when(incomeRepository.findByDateRange(eq(businessId), any(), any()))
+                    .thenReturn(List.of(createIncome(new BigDecimal("1000.00"), LocalDate.of(2025, 5, 1))));
+            when(expenseRepository.findByDateRange(eq(businessId), any(), any()))
+                    .thenReturn(List.of());
+            when(submissionRepository.existsQuarterlySubmission(any(), any(), any()))
+                    .thenReturn(false);
+            when(mtdClient.submitPeriodicUpdate(any(), any(), any(), any()))
+                    .thenReturn(new HmrcSubmissionResponse("REF123", "ACCEPTED"));
+            when(submissionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            service.submitQuarter(businessId, nino, taxYear2025, Quarter.Q1, declarationTime, declarationHash);
+
+            // Then
+            ArgumentCaptor<Submission> captor = ArgumentCaptor.forClass(Submission.class);
+            verify(submissionRepository).save(captor.capture());
+
+            Submission saved = captor.getValue();
+            assertThat(saved.declarationAcceptedAt()).isEqualTo(declarationTime);
+            assertThat(saved.declarationTextHash()).isEqualTo(declarationHash);
         }
     }
 

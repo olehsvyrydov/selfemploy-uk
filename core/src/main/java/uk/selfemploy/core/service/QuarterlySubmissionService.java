@@ -68,10 +68,10 @@ public class QuarterlySubmissionService {
     }
 
     /**
-     * Submits a quarterly update to HMRC.
+     * Submits a quarterly update to HMRC (legacy method without declaration).
      *
-     * <p>Calculates cumulative totals from tax year start to quarter end,
-     * builds the PeriodicUpdate, submits to HMRC, and saves the submission record.</p>
+     * <p>Note: This method is deprecated. Use {@link #submitQuarter(UUID, String, TaxYear, Quarter, Instant, String)}
+     * which requires declaration acceptance for compliance.</p>
      *
      * @param businessId The business ID
      * @param nino       National Insurance Number
@@ -80,10 +80,47 @@ public class QuarterlySubmissionService {
      * @return The submission record with HMRC reference
      * @throws ValidationException   if validation fails
      * @throws SubmissionException   if the submission fails
+     * @deprecated Use {@link #submitQuarter(UUID, String, TaxYear, Quarter, Instant, String)} instead
      */
+    @Deprecated(since = "1.6.0", forRemoval = true)
     public Submission submitQuarter(UUID businessId, String nino, TaxYear taxYear, Quarter quarter) {
-        // Validate inputs
+        // Legacy method - allows null declaration for backward compatibility during transition
+        log.warn("DEPRECATED: submitQuarter called without declaration. Please use the new method with declaration parameters.");
+        return submitQuarterInternalLegacy(businessId, nino, taxYear, quarter);
+    }
+
+    /**
+     * Submits a quarterly update to HMRC with declaration acceptance.
+     *
+     * <p>Calculates cumulative totals from tax year start to quarter end,
+     * builds the PeriodicUpdate, submits to HMRC, and saves the submission record
+     * with declaration audit trail.</p>
+     *
+     * <p>AC-6: Cannot submit without declaration timestamp being set.</p>
+     *
+     * @param businessId            The business ID
+     * @param nino                  National Insurance Number
+     * @param taxYear               The tax year
+     * @param quarter               The quarter to submit
+     * @param declarationAcceptedAt UTC timestamp when user accepted the declaration (required)
+     * @param declarationTextHash   SHA-256 hash of the declaration text (required)
+     * @return The submission record with HMRC reference and declaration info
+     * @throws ValidationException   if validation fails (including missing declaration)
+     * @throws SubmissionException   if the submission fails
+     */
+    public Submission submitQuarter(UUID businessId, String nino, TaxYear taxYear, Quarter quarter,
+                                    Instant declarationAcceptedAt, String declarationTextHash) {
+        return submitQuarterInternal(businessId, nino, taxYear, quarter, declarationAcceptedAt, declarationTextHash);
+    }
+
+    /**
+     * Internal implementation of quarterly submission.
+     */
+    private Submission submitQuarterInternal(UUID businessId, String nino, TaxYear taxYear, Quarter quarter,
+                                             Instant declarationAcceptedAt, String declarationTextHash) {
+        // Validate inputs including declaration (AC-6)
         validateInputs(businessId, nino, taxYear, quarter);
+        validateDeclaration(declarationAcceptedAt, declarationTextHash);
 
         // Check for duplicate submission
         if (submissionRepository.existsQuarterlySubmission(businessId, taxYear, quarter)) {
@@ -118,7 +155,92 @@ public class QuarterlySubmissionService {
         String bearerToken = tokenProvider.getValidToken();
         log.debug("Retrieved valid OAuth token for HMRC API call");
 
-        // Create pending submission
+        // Create pending submission with declaration info
+        Submission submission = Submission.createQuarterlyWithDeclaration(
+                businessId, taxYear, quarter, totalIncome, totalExpenses,
+                declarationAcceptedAt, declarationTextHash);
+
+        try {
+            // Submit to HMRC
+            log.info("Submitting {} {} to HMRC for NINO {}****{}",
+                    quarter, taxYear.label(),
+                    nino.substring(0, 2), nino.substring(nino.length() - 1));
+
+            HmrcSubmissionResponse response = mtdClient.submitPeriodicUpdate(
+                    nino, businessId.toString(), bearerToken, periodicUpdate);
+
+            // Update submission with success
+            Submission acceptedSubmission = submission.withAccepted(response.hmrcReference());
+            submissionRepository.save(acceptedSubmission);
+
+            log.info("Successfully submitted {} {} with HMRC reference: {} (declaration at: {})",
+                    quarter, taxYear.label(), response.hmrcReference(), declarationAcceptedAt);
+
+            return acceptedSubmission;
+
+        } catch (HmrcValidationException e) {
+            // HMRC validation error - save as rejected
+            log.warn("HMRC validation error for {} {}: {} - {}",
+                    quarter, taxYear.label(), e.getErrorCode(), e.getMessage());
+
+            Submission rejectedSubmission = submission.withRejected(
+                    String.format("%s: %s", e.getErrorCode(), e.getMessage()));
+            submissionRepository.save(rejectedSubmission);
+
+            throw new SubmissionException("HMRC validation failed: " + e.getMessage(), e);
+
+        } catch (HmrcApiException e) {
+            // Other HMRC error - save as rejected
+            log.error("HMRC API error for {} {}: {}", quarter, taxYear.label(), e.getMessage());
+
+            Submission rejectedSubmission = submission.withRejected(e.getMessage());
+            submissionRepository.save(rejectedSubmission);
+
+            throw new SubmissionException("HMRC submission failed: " + e.getMessage(), e, e.isRetryable());
+        }
+    }
+
+    /**
+     * Legacy internal implementation without declaration validation.
+     * Used by deprecated method for backward compatibility.
+     */
+    private Submission submitQuarterInternalLegacy(UUID businessId, String nino, TaxYear taxYear, Quarter quarter) {
+        // Validate inputs (without declaration)
+        validateInputs(businessId, nino, taxYear, quarter);
+
+        // Check for duplicate submission
+        if (submissionRepository.existsQuarterlySubmission(businessId, taxYear, quarter)) {
+            throw new SubmissionException(String.format(
+                    "%s %s has already been submitted. Use amendment flow to update.",
+                    quarter, taxYear.label()));
+        }
+
+        log.info("Preparing quarterly submission for {} {} business {} (legacy - no declaration)",
+                quarter, taxYear.label(), businessId);
+
+        // Calculate cumulative totals from tax year start to quarter end
+        LocalDate periodStart = quarter.getStartDate(taxYear);
+        LocalDate periodEnd = quarter.getEndDate(taxYear);
+
+        // Get cumulative data from tax year start
+        List<Income> incomes = incomeRepository.findByDateRange(
+                businessId, taxYear.startDate(), periodEnd);
+        List<Expense> expenses = expenseRepository.findByDateRange(
+                businessId, taxYear.startDate(), periodEnd);
+
+        // Calculate totals
+        BigDecimal totalIncome = calculateTotalIncome(incomes);
+        BigDecimal totalExpenses = calculateTotalExpenses(expenses);
+
+        // Build PeriodicUpdate DTO
+        PeriodicUpdate periodicUpdate = buildPeriodicUpdate(
+                periodStart, periodEnd, incomes, expenses);
+
+        // Get valid OAuth token before making API call
+        String bearerToken = tokenProvider.getValidToken();
+        log.debug("Retrieved valid OAuth token for HMRC API call");
+
+        // Create pending submission (without declaration)
         Submission submission = Submission.createQuarterly(
                 businessId, taxYear, quarter, totalIncome, totalExpenses);
 
@@ -174,6 +296,29 @@ public class QuarterlySubmissionService {
         }
         if (quarter == null) {
             throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+    }
+
+    /**
+     * Validates declaration information (AC-6: Cannot submit without declaration timestamp being set).
+     *
+     * @param declarationAcceptedAt the declaration acceptance timestamp
+     * @param declarationTextHash   the declaration text hash
+     * @throws ValidationException if declaration information is missing or invalid
+     */
+    private void validateDeclaration(Instant declarationAcceptedAt, String declarationTextHash) {
+        if (declarationAcceptedAt == null) {
+            throw new ValidationException("declarationAcceptedAt",
+                    "Declaration acceptance timestamp is required. User must accept the declaration before submission.");
+        }
+        if (declarationTextHash == null || declarationTextHash.isBlank()) {
+            throw new ValidationException("declarationTextHash",
+                    "Declaration text hash is required. User must accept the declaration before submission.");
+        }
+        // Validate hash format (64 lowercase hex chars for SHA-256)
+        if (!declarationTextHash.matches("[a-f0-9]{64}")) {
+            throw new ValidationException("declarationTextHash",
+                    "Invalid declaration text hash format. Expected SHA-256 hash (64 hex characters).");
         }
     }
 

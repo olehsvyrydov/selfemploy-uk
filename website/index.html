@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Primary Meta Tags -->
+    <title>UK Self-Employment Manager - Free Tax Software for Self-Employed</title>
+    <meta name="title" content="UK Self-Employment Manager - Free Tax Software for Self-Employed">
+    <meta name="description" content="Free, open-source tax management software for UK self-employed professionals. Track income, calculate tax, and submit to HMRC. Privacy-first, runs locally.">
+    <meta name="keywords" content="self-employed tax UK, self assessment software, HMRC submission, free tax software, open source accounting, MTD, Making Tax Digital">
+    <meta name="author" content="UK Self-Employment Manager Contributors">
+    <meta name="robots" content="index, follow">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://selfemploy.uk/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://selfemploy.uk/">
+    <meta property="og:title" content="UK Self-Employment Manager - Your Tax. Your Data. Your Freedom.">
+    <meta property="og:description" content="Free, open-source tax management software for UK self-employed professionals. Track income, calculate tax, and submit directly to HMRC.">
+    <meta property="og:image" content="https://selfemploy.uk/images/og-image.png">
+    <meta property="og:locale" content="en_GB">
+    <meta property="og:site_name" content="UK Self-Employment Manager">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://selfemploy.uk/">
+    <meta name="twitter:title" content="UK Self-Employment Manager - Your Tax. Your Data. Your Freedom.">
+    <meta name="twitter:description" content="Free, open-source tax management software for UK self-employed professionals. Privacy-first, runs locally.">
+    <meta name="twitter:image" content="https://selfemploy.uk/images/og-image.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0066CC">
+    <meta name="msapplication-TileColor" content="#0066CC">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "UK Self-Employment Manager",
+        "description": "Free, open-source tax management software for UK self-employed professionals",
+        "url": "https://selfemploy.uk",
+        "operatingSystem": "Windows, macOS, Linux",
+        "applicationCategory": "FinanceApplication",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "GBP"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "UK Self-Employment Manager Contributors"
+        },
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "softwareVersion": "1.0.0",
+        "downloadUrl": "https://github.com/selfemploy-uk/self-employment/releases",
+        "featureList": [
+            "Track income and expenses",
+            "Automatic tax calculations",
+            "HMRC MTD integration",
+            "Local data storage",
+            "Open source"
+        ]
+    }
+    </script>
+</head>
+<body>
+    <!-- Skip to main content for accessibility -->
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation Header -->
+    <nav class="nav-header" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="/" class="nav-logo" aria-label="UK Self-Employment Manager - Home">
+                <span class="logo-icon" aria-hidden="true">SE</span>
+                <span class="logo-text">UK Self-Employment Manager</span>
+            </a>
+
+            <div class="nav-links" id="nav-links">
+                <a href="#features">Features</a>
+                <a href="#download">Download</a>
+                <a href="#faq">FAQ</a>
+                <a href="https://github.com/selfemploy-uk/self-employment"
+                   class="nav-github"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    <svg class="github-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a>
+            </div>
+
+            <button class="nav-mobile-toggle"
+                    id="mobile-menu-toggle"
+                    aria-label="Toggle navigation menu"
+                    aria-expanded="false"
+                    aria-controls="nav-links">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+        </div>
+    </nav>
+
+    <main id="main">
+        <!-- Hero Section -->
+        <section class="hero" aria-labelledby="hero-heading">
+            <div class="container hero-container">
+                <div class="hero-content">
+                    <h1 id="hero-heading">Your Tax. Your Data. Your Freedom.</h1>
+                    <p class="hero-subtitle">
+                        Free, open-source tax management for UK self-employed professionals.
+                        Track income, calculate tax, and submit to HMRC - all from your desktop.
+                    </p>
+                    <div class="hero-cta">
+                        <a href="#download" class="btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                                <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                            </svg>
+                            Download for Free
+                        </a>
+                        <a href="https://github.com/selfemploy-uk/self-employment"
+                           class="btn-secondary"
+                           target="_blank"
+                           rel="noopener noreferrer">
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                                <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                            </svg>
+                            View on GitHub
+                        </a>
+                    </div>
+                    <div class="hero-badges">
+                        <span class="badge badge-free">100% Free</span>
+                        <span class="badge badge-opensource">Open Source</span>
+                        <span class="badge badge-privacy">Privacy First</span>
+                    </div>
+                </div>
+                <div class="hero-illustration">
+                    <div class="hero-screenshot-wrapper">
+                        <img src="images/app-screenshot.png"
+                             alt="UK Self-Employment Manager dashboard showing income tracking and tax calculations"
+                             class="hero-screenshot"
+                             width="600"
+                             height="400"
+                             loading="eager">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features" id="features" aria-labelledby="features-heading">
+            <div class="container">
+                <h2 id="features-heading">Why Choose Us?</h2>
+                <p class="section-subtitle">Built for self-employed professionals who value simplicity, privacy, and freedom.</p>
+
+                <div class="feature-grid">
+                    <article class="feature-card">
+                        <div class="feature-icon feature-icon-free" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="32" height="32">
+                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/>
+                            </svg>
+                        </div>
+                        <h3>100% Free</h3>
+                        <p>No hidden fees, no subscriptions, no premium tiers. Everything included, forever free for everyone.</p>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon feature-icon-privacy" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="32" height="32">
+                                <path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                            </svg>
+                        </div>
+                        <h3>Privacy-First</h3>
+                        <p>Your financial data stays on your device. No cloud storage, no tracking, no ads. You own your data.</p>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon feature-icon-opensource" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="32" height="32">
+                                <path fill="currentColor" d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+                            </svg>
+                        </div>
+                        <h3>Open Source</h3>
+                        <p>Transparent, auditable code licensed under Apache 2.0. Community-driven development you can trust.</p>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon feature-icon-hmrc" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="32" height="32">
+                                <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                            </svg>
+                        </div>
+                        <h3>HMRC MTD Ready</h3>
+                        <p>Submit your Self Assessment directly to HMRC using the official Making Tax Digital API integration.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="how-it-works" aria-labelledby="how-it-works-heading">
+            <div class="container">
+                <h2 id="how-it-works-heading">How It Works</h2>
+                <p class="section-subtitle">Three simple steps to manage your self-employment taxes.</p>
+
+                <div class="steps">
+                    <article class="step">
+                        <div class="step-number" aria-hidden="true">1</div>
+                        <h3>Track Income & Expenses</h3>
+                        <p>Log your business income and expenses throughout the year. Import from bank statements or enter manually.</p>
+                    </article>
+
+                    <div class="step-connector" aria-hidden="true"></div>
+
+                    <article class="step">
+                        <div class="step-number" aria-hidden="true">2</div>
+                        <h3>Calculate Tax Automatically</h3>
+                        <p>Real-time tax calculations including Income Tax, National Insurance Class 2 and Class 4 contributions.</p>
+                    </article>
+
+                    <div class="step-connector" aria-hidden="true"></div>
+
+                    <article class="step">
+                        <div class="step-number" aria-hidden="true">3</div>
+                        <h3>Submit to HMRC</h3>
+                        <p>When you're ready, submit your Self Assessment return directly to HMRC with a single click.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screenshot/Demo Section -->
+        <section class="demo" aria-labelledby="demo-heading">
+            <div class="container">
+                <h2 id="demo-heading" class="visually-hidden">Application Preview</h2>
+                <div class="demo-container">
+                    <div class="demo-screenshot-wrapper">
+                        <img src="images/app-dashboard.png"
+                             alt="UK Self-Employment Manager showing the main dashboard with income summary, expense breakdown, and tax calculations"
+                             class="demo-screenshot"
+                             width="1000"
+                             height="600"
+                             loading="lazy">
+                    </div>
+                </div>
+                <p class="demo-caption">
+                    Simple, clean interface designed for self-employed UK taxpayers.
+                    <br>No accounting degree required.
+                </p>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section class="download" id="download" aria-labelledby="download-heading">
+            <div class="container">
+                <h2 id="download-heading">Download</h2>
+                <p class="section-subtitle">Available for Windows, macOS, and Linux. Always free.</p>
+
+                <div class="download-grid">
+                    <a href="https://github.com/selfemploy-uk/self-employment/releases/latest/download/SelfEmploy-Setup.msi"
+                       class="download-card"
+                       aria-label="Download for Windows">
+                        <div class="download-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path fill="#0078D6" d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+                            </svg>
+                        </div>
+                        <h3>Windows</h3>
+                        <p>Windows 10 or later</p>
+                        <span class="download-format">Download .msi</span>
+                        <span class="download-size">~85 MB</span>
+                    </a>
+
+                    <a href="https://github.com/selfemploy-uk/self-employment/releases/latest/download/SelfEmploy.dmg"
+                       class="download-card"
+                       aria-label="Download for macOS">
+                        <div class="download-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path fill="#555555" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                            </svg>
+                        </div>
+                        <h3>macOS</h3>
+                        <p>macOS 12 Monterey or later</p>
+                        <span class="download-format">Download .dmg</span>
+                        <span class="download-size">~90 MB</span>
+                    </a>
+
+                    <a href="https://github.com/selfemploy-uk/self-employment/releases/latest/download/selfemploy_amd64.deb"
+                       class="download-card"
+                       aria-label="Download for Linux">
+                        <div class="download-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path fill="#FCC624" d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489.117.779.567 1.563 1.182 2.114.267.24.598.398.938.503.34.111.708.185 1.078.239.842.127 1.79.148 2.657.148 1.152 0 2.324-.073 3.32-.231 1.032-.161 2.007-.453 2.662-.934.655-.48 1.07-1.148 1.07-2.063 0-.474-.116-.904-.3-1.29-.185-.387-.42-.722-.665-1.025-.49-.606-1.02-1.073-1.382-1.606-.18-.266-.31-.555-.376-.867-.067-.312-.065-.638.006-.96.073-.32.198-.635.364-.94.165-.305.37-.596.594-.871.448-.55.958-1.023 1.37-1.518.205-.248.378-.503.485-.765.107-.262.151-.521.094-.763-.057-.241-.188-.453-.361-.617-.173-.164-.38-.28-.598-.357-.434-.153-.93-.174-1.396-.158-.467.015-.914.069-1.27.14-.355.072-.638.162-.756.217-.117.056-.208.095-.32.095-.111 0-.221-.049-.32-.14-.199-.182-.341-.453-.458-.748-.117-.295-.205-.622-.284-.956-.079-.334-.142-.684-.175-1.012-.033-.328-.036-.616-.015-.864.02-.248.064-.449.136-.597.072-.148.165-.22.295-.22.13 0 .295.08.505.234.21.154.46.38.737.645.556.53 1.23 1.165 1.855 1.557.312.195.612.337.873.397.261.06.47.04.594-.047.124-.088.164-.24.174-.42.011-.18 0-.402-.023-.657-.046-.51-.131-1.144-.206-1.737-.075-.593-.142-1.147-.155-1.573-.013-.425.022-.692.122-.784.1-.092.25-.068.417.015.168.083.356.227.56.42.406.385.867.943 1.328 1.503.461.559.916 1.11 1.315 1.462.2.177.387.31.57.396.181.085.371.114.534.087.164-.027.295-.121.381-.268.086-.148.128-.344.128-.565 0-.44-.082-.94-.201-1.376-.118-.435-.272-.816-.385-1.034-.114-.218-.189-.296-.189-.407 0-.11.076-.205.218-.285.141-.08.348-.149.595-.218.493-.137 1.137-.269 1.688-.493.55-.224 1.003-.551 1.083-1.057.079-.507-.165-1.194-.672-1.858-.507-.664-1.274-1.312-2.2-1.736-.926-.425-2.018-.629-3.217-.621z"/>
+                            </svg>
+                        </div>
+                        <h3>Linux</h3>
+                        <p>Ubuntu 22.04+ / Fedora 38+</p>
+                        <span class="download-format">Download .deb / .rpm</span>
+                        <span class="download-size">~80 MB</span>
+                    </a>
+                </div>
+
+                <div class="download-info">
+                    <p class="download-requirements">
+                        <strong>Requires:</strong> Java 21 or later (bundled with installer)
+                    </p>
+                    <p class="download-version">
+                        <span class="version-tag">v1.0.0</span>
+                        <span class="version-date">Released January 2026</span>
+                    </p>
+                    <p class="download-links">
+                        <a href="https://github.com/selfemploy-uk/self-employment/releases">All releases</a>
+                        <span class="separator">|</span>
+                        <a href="https://github.com/selfemploy-uk/self-employment/blob/main/docs/INSTALLATION.md">Installation guide</a>
+                        <span class="separator">|</span>
+                        <a href="https://github.com/selfemploy-uk/self-employment/blob/main/CHANGELOG.md">Changelog</a>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq" id="faq" aria-labelledby="faq-heading">
+            <div class="container">
+                <h2 id="faq-heading">Frequently Asked Questions</h2>
+                <p class="section-subtitle">Got questions? We have answers.</p>
+
+                <div class="faq-list">
+                    <details class="faq-item" open>
+                        <summary>Is this software really free?</summary>
+                        <div class="faq-answer">
+                            <p>Yes! UK Self-Employment Manager is completely free to download and use.
+                            There are no hidden fees, no premium tiers, no subscriptions, and no in-app purchases.
+                            The software is open-source under the Apache 2.0 License, meaning the code is publicly
+                            available and the software will remain free forever.</p>
+                        </div>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Is my data secure?</summary>
+                        <div class="faq-answer">
+                            <p>Your data security is our top priority. All your financial information is stored
+                            locally on your computer in an encrypted database. We never have access to your data -
+                            there are no cloud servers, no data collection, and no tracking. When you submit to HMRC,
+                            your data is sent directly to HMRC's official servers using their secure MTD API, never
+                            through our systems.</p>
+                        </div>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Can I submit directly to HMRC?</summary>
+                        <div class="faq-answer">
+                            <p>Yes! The software integrates directly with HMRC's Making Tax Digital (MTD) API,
+                            allowing you to submit your Self Assessment return without leaving the application.
+                            You'll authenticate securely through the HMRC Government Gateway, and your submission
+                            will be sent directly to HMRC. You'll receive confirmation and a receipt for your records.</p>
+                        </div>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Who is this software for?</summary>
+                        <div class="faq-answer">
+                            <p>This software is designed for UK self-employed individuals and sole traders who need
+                            to file Self Assessment tax returns. It's ideal for:</p>
+                            <ul>
+                                <li>Freelancers and contractors</li>
+                                <li>Small business owners</li>
+                                <li>Gig economy workers</li>
+                                <li>Anyone who wants to manage their taxes independently</li>
+                            </ul>
+                            <p>If you're employed and only need to file a simple tax return, or if you're a limited
+                            company, this software may not be the best fit for you.</p>
+                        </div>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Do I need to be tech-savvy to use this?</summary>
+                        <div class="faq-answer">
+                            <p>Not at all! We've designed the software to be simple and intuitive, with no accounting
+                            or technical knowledge required. The interface guides you through each step, and helpful
+                            tooltips explain everything in plain English. If you can use a spreadsheet, you can use
+                            this software.</p>
+                        </div>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Can I trust the tax calculations?</summary>
+                        <div class="faq-answer">
+                            <p>Our tax calculations are verified against HMRC guidelines and updated for each tax year.
+                            The software calculates Income Tax bands, Personal Allowance, National Insurance Class 2
+                            and Class 4 contributions according to current UK tax law. However, we always recommend
+                            consulting with a qualified accountant for complex tax situations. The software includes
+                            a disclaimer that it provides guidance but not professional tax advice.</p>
+                        </div>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>How do I report bugs or request features?</summary>
+                        <div class="faq-answer">
+                            <p>We welcome community feedback! Please open an issue on our
+                            <a href="https://github.com/selfemploy-uk/self-employment/issues">GitHub repository</a>.
+                            For bug reports, please include steps to reproduce the issue and any error messages.
+                            For feature requests, describe the use case and how it would help you. We also accept
+                            code contributions - see our
+                            <a href="https://github.com/selfemploy-uk/self-employment/blob/main/CONTRIBUTING.md">contribution guidelines</a>.</p>
+                        </div>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>What tax years are supported?</summary>
+                        <div class="faq-answer">
+                            <p>The software currently supports the 2024/25 and 2025/26 tax years, with tax rates and
+                            thresholds updated for each year. We release updates before each new tax year to ensure
+                            you always have accurate calculations. Previous tax year support is maintained for
+                            historical reference and late submissions.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta" aria-labelledby="cta-heading">
+            <div class="container">
+                <h2 id="cta-heading">Ready to Take Control of Your Taxes?</h2>
+                <p>Join thousands of UK self-employed professionals who've simplified their tax management.</p>
+                <div class="cta-buttons">
+                    <a href="#download" class="btn-primary btn-large">
+                        <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                            <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                        Download Free
+                    </a>
+                    <a href="https://github.com/selfemploy-uk/self-employment"
+                       class="btn-secondary"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        Star on GitHub
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span class="logo-icon" aria-hidden="true">SE</span>
+                        <span class="logo-text">UK Self-Employment Manager</span>
+                    </div>
+                    <p class="footer-description">
+                        Free, open-source tax management for UK self-employed professionals.
+                        Your data stays on your device.
+                    </p>
+                    <div class="footer-badges">
+                        <a href="https://github.com/selfemploy-uk/self-employment"
+                           class="github-badge"
+                           target="_blank"
+                           rel="noopener noreferrer">
+                            <img src="https://img.shields.io/github/stars/selfemploy-uk/self-employment?style=social"
+                                 alt="GitHub stars"
+                                 loading="lazy">
+                        </a>
+                    </div>
+                </div>
+
+                <nav class="footer-links" aria-label="Product links">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#download">Download</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                        <li><a href="https://github.com/selfemploy-uk/self-employment/releases">Releases</a></li>
+                    </ul>
+                </nav>
+
+                <nav class="footer-links" aria-label="Legal links">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="/privacy">Privacy Policy</a></li>
+                        <li><a href="/terms">Terms of Service</a></li>
+                        <li><a href="/disclaimer">Disclaimer</a></li>
+                        <li><a href="https://github.com/selfemploy-uk/self-employment/blob/main/LICENSE">License (Apache 2.0)</a></li>
+                    </ul>
+                </nav>
+
+                <nav class="footer-links" aria-label="Community links">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="https://github.com/selfemploy-uk/self-employment" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                        <li><a href="https://github.com/selfemploy-uk/self-employment/issues" target="_blank" rel="noopener noreferrer">Report Issue</a></li>
+                        <li><a href="https://github.com/selfemploy-uk/self-employment/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contribute</a></li>
+                        <li><a href="https://github.com/selfemploy-uk/self-employment/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+            <div class="footer-bottom">
+                <p>
+                    Made with care in the UK
+                    <span class="separator">|</span>
+                    <a href="https://github.com/selfemploy-uk/self-employment/blob/main/LICENSE">Apache 2.0 License</a>
+                    <span class="separator">|</span>
+                    &copy; 2026 UK Self-Employment Manager Contributors
+                </p>
+                <p class="footer-disclaimer">
+                    This software provides guidance only and does not constitute professional tax advice.
+                    Always consult a qualified accountant for complex tax situations.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/main.js" defer></script>
+</body>
+</html>

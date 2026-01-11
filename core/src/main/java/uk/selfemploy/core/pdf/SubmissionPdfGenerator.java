@@ -17,6 +17,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import uk.selfemploy.common.domain.Submission;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.core.calculator.Class2NICalculationResult;
 import uk.selfemploy.core.calculator.NICalculationResult;
 import uk.selfemploy.core.calculator.TaxCalculationResult;
 import uk.selfemploy.core.calculator.TaxLiabilityResult;
@@ -62,11 +64,14 @@ public class SubmissionPdfGenerator {
     private static final Font SMALL_FONT = FontFactory.getFont(FontFactory.HELVETICA, 8, Color.GRAY);
     private static final Font BOLD_FONT = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
     private static final Font WARNING_FONT = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, new Color(139, 0, 0));
+    private static final Font DISCLAIMER_FONT = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9, new Color(100, 100, 100));
 
     // Colors
     private static final Color TABLE_HEADER_BG = new Color(236, 240, 241);
     private static final Color WARNING_BG_COLOR = new Color(255, 235, 238);
     private static final Color WARNING_BORDER_COLOR = new Color(198, 40, 40);
+    private static final Color DISCLAIMER_BG_COLOR = new Color(248, 249, 250);
+    private static final Color DISCLAIMER_BORDER_COLOR = new Color(200, 200, 200);
 
     // Formatters
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMMM yyyy");
@@ -205,6 +210,7 @@ public class SubmissionPdfGenerator {
             addExpenseSummary(document, expenses);
             addTaxCalculation(document, taxResult);
             addPaymentDeadlineWarning(document, submission.taxYear());
+            addDisclaimer(document);  // SE-509, AC-3
             addFooter(document, submission);
 
         } catch (DocumentException e) {
@@ -392,16 +398,33 @@ public class SubmissionPdfGenerator {
 
         // NI Class 4 section
         addSectionHeader(table, "National Insurance Class 4");
-        NICalculationResult niDetails = taxResult.niDetails();
-        addTableRow(table, "Profit Subject to NI", formatCurrency(niDetails.profitSubjectToNI()));
+        NICalculationResult niClass4Details = taxResult.niClass4Details();
+        addTableRow(table, "Profit Subject to NI", formatCurrency(niClass4Details.profitSubjectToNI()));
 
-        if (niDetails.mainRateNI().compareTo(BigDecimal.ZERO) > 0) {
-            addTableRow(table, "Main Rate (9%)", formatCurrency(niDetails.mainRateNI()));
+        if (niClass4Details.mainRateNI().compareTo(BigDecimal.ZERO) > 0) {
+            addTableRow(table, "Main Rate (6%)", formatCurrency(niClass4Details.mainRateNI()));
         }
-        if (niDetails.additionalRateNI().compareTo(BigDecimal.ZERO) > 0) {
-            addTableRow(table, "Additional Rate (2%)", formatCurrency(niDetails.additionalRateNI()));
+        if (niClass4Details.additionalRateNI().compareTo(BigDecimal.ZERO) > 0) {
+            addTableRow(table, "Additional Rate (2%)", formatCurrency(niClass4Details.additionalRateNI()));
         }
         addBoldRow(table, "Total NI Class 4", formatCurrency(taxResult.niClass4()));
+
+        // NI Class 2 section
+        addSectionHeader(table, "National Insurance Class 2");
+        Class2NICalculationResult niClass2Details = taxResult.niClass2Details();
+        if (niClass2Details.isApplicable()) {
+            String class2Status = niClass2Details.isMandatory() ? "Mandatory" : "Voluntary";
+            addTableRow(table, "Status", class2Status);
+            addTableRow(table, "Weekly Rate", formatCurrency(niClass2Details.weeklyRate()));
+            addTableRow(table, "Weeks Liable", String.valueOf(niClass2Details.weeksLiable()));
+            addBoldRow(table, "Total NI Class 2", formatCurrency(taxResult.niClass2()));
+        } else {
+            addTableRow(table, "Status", "Not Applicable (below threshold)");
+            addBoldRow(table, "Total NI Class 2", formatCurrency(BigDecimal.ZERO));
+        }
+
+        // Total NI
+        addBoldRow(table, "Total National Insurance", formatCurrency(taxResult.totalNI()));
 
         // Total Liability
         PdfPCell totalLabelCell = new PdfPCell(new Phrase("TOTAL TAX LIABILITY", HEADER_FONT));
@@ -461,11 +484,59 @@ public class SubmissionPdfGenerator {
         document.add(warningTable);
     }
 
+    /**
+     * Adds the legal disclaimer section to the PDF document (SE-509, AC-3).
+     *
+     * <p>This disclaimer is required on all PDF confirmation documents and
+     * cannot be omitted. The text is sourced from the centralized
+     * {@link Disclaimers#PDF_CONFIRMATION_DISCLAIMER} constant.
+     *
+     * @param document the PDF document to add the disclaimer to
+     * @throws DocumentException if adding the disclaimer fails
+     */
+    private void addDisclaimer(Document document) throws DocumentException {
+        PdfPTable disclaimerTable = new PdfPTable(1);
+        disclaimerTable.setWidthPercentage(100);
+        disclaimerTable.setSpacingBefore(20);
+
+        PdfPCell disclaimerCell = new PdfPCell();
+        disclaimerCell.setBorder(Rectangle.BOX);
+        disclaimerCell.setBorderColor(DISCLAIMER_BORDER_COLOR);
+        disclaimerCell.setBorderWidth(1);
+        disclaimerCell.setBackgroundColor(DISCLAIMER_BG_COLOR);
+        disclaimerCell.setPadding(12);
+
+        // Use the centralized disclaimer text from Disclaimers constants (AC-5)
+        Paragraph disclaimerPara = new Paragraph(Disclaimers.PDF_CONFIRMATION_DISCLAIMER, DISCLAIMER_FONT);
+        disclaimerPara.setAlignment(Element.ALIGN_JUSTIFIED);
+
+        disclaimerCell.addElement(disclaimerPara);
+        disclaimerTable.addCell(disclaimerCell);
+
+        document.add(disclaimerTable);
+    }
+
     private void addFooter(Document document, Submission submission) throws DocumentException {
         Paragraph footer = new Paragraph();
         footer.setSpacingBefore(30);
 
         footer.add(new Chunk("Declaration", SUBHEADER_FONT));
+        footer.add(Chunk.NEWLINE);
+
+        // Add declaration acceptance timestamp if available (AC-5: SE-803)
+        if (submission.declarationAcceptedAt() != null) {
+            String declarationTime = submission.declarationAcceptedAt()
+                    .atZone(ZoneId.systemDefault())
+                    .format(DATETIME_FORMATTER);
+            footer.add(new Chunk("Declaration accepted: " + declarationTime + " (UTC)", BOLD_FONT));
+            footer.add(Chunk.NEWLINE);
+            footer.add(Chunk.NEWLINE);
+        }
+
+        footer.add(new Chunk("I declare that the information I have given on this return is correct and complete ", NORMAL_FONT));
+        footer.add(new Chunk("to the best of my knowledge and belief. I understand that I may have to pay financial ", NORMAL_FONT));
+        footer.add(new Chunk("penalties and face prosecution if I give false information.", NORMAL_FONT));
+        footer.add(Chunk.NEWLINE);
         footer.add(Chunk.NEWLINE);
         footer.add(new Chunk("This document confirms your Self Assessment submission to HMRC. ", NORMAL_FONT));
         footer.add(new Chunk("Keep this confirmation for your records.", NORMAL_FONT));
@@ -476,6 +547,12 @@ public class SubmissionPdfGenerator {
         footer.add(new Chunk("Generated: " + generatedAt, SMALL_FONT));
         footer.add(Chunk.NEWLINE);
         footer.add(new Chunk("Reference ID: " + submission.id().toString(), SMALL_FONT));
+
+        // Include declaration hash for audit purposes if available
+        if (submission.declarationTextHash() != null) {
+            footer.add(Chunk.NEWLINE);
+            footer.add(new Chunk("Declaration Hash: " + submission.declarationTextHash().substring(0, 16) + "...", SMALL_FONT));
+        }
 
         document.add(footer);
     }

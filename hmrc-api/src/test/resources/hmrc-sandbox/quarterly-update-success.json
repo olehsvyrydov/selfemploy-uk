@@ -1,0 +1,13 @@
+{
+  "id": "QTR-2025-Q1-ABC123DEF456",
+  "status": "ACCEPTED",
+  "periodFromDate": "2025-04-06",
+  "periodToDate": "2025-07-05",
+  "links": [
+    {
+      "href": "/individuals/business/self-employment/AA000001A/XAIS12345678901/period/QTR-2025-Q1-ABC123DEF456",
+      "method": "GET",
+      "rel": "self"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "access_token": "new_access_token_abcdefghijklmnopqrstuvwxyz",
+  "token_type": "Bearer",
+  "expires_in": 14400,
+  "refresh_token": "new_refresh_token_zyxwvutsrqponmlkjihgfedcba",
+  "scope": "read:self-assessment write:self-assessment"
+}

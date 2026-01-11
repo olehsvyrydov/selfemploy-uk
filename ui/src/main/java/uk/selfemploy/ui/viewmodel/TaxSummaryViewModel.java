@@ -9,6 +9,7 @@ import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
 import uk.selfemploy.core.calculator.TaxLiabilityResult;
 import uk.selfemploy.core.calculator.TaxCalculationResult;
 import uk.selfemploy.core.calculator.NICalculationResult;
+import uk.selfemploy.core.calculator.Class2NICalculationResult;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -55,6 +56,15 @@ public class TaxSummaryViewModel {
     private final ObjectProperty<BigDecimal> niMainRateTax = new SimpleObjectProperty<>(BigDecimal.ZERO);
     private final ObjectProperty<BigDecimal> niAdditionalRateAmount = new SimpleObjectProperty<>(BigDecimal.ZERO);
     private final ObjectProperty<BigDecimal> niAdditionalRateTax = new SimpleObjectProperty<>(BigDecimal.ZERO);
+
+    // === NI Class 2 Properties ===
+
+    private final ObjectProperty<BigDecimal> niClass2 = new SimpleObjectProperty<>(BigDecimal.ZERO);
+    private final ObjectProperty<BigDecimal> niClass2WeeklyRate = new SimpleObjectProperty<>(BigDecimal.ZERO);
+    private final IntegerProperty niClass2WeeksLiable = new SimpleIntegerProperty(0);
+    private final BooleanProperty niClass2Mandatory = new SimpleBooleanProperty(false);
+    private final BooleanProperty niClass2Voluntary = new SimpleBooleanProperty(false);
+    private final ObjectProperty<BigDecimal> totalNI = new SimpleObjectProperty<>(BigDecimal.ZERO);
 
     // === Payment on Account ===
 
@@ -257,6 +267,66 @@ public class TaxSummaryViewModel {
         return niAdditionalRateTax;
     }
 
+    // === NI Class 2 ===
+
+    public BigDecimal getNiClass2() {
+        return niClass2.get();
+    }
+
+    public ObjectProperty<BigDecimal> niClass2Property() {
+        return niClass2;
+    }
+
+    public String getFormattedNiClass2() {
+        return formatCurrency(getNiClass2());
+    }
+
+    public BigDecimal getNiClass2WeeklyRate() {
+        return niClass2WeeklyRate.get();
+    }
+
+    public ObjectProperty<BigDecimal> niClass2WeeklyRateProperty() {
+        return niClass2WeeklyRate;
+    }
+
+    public int getNiClass2WeeksLiable() {
+        return niClass2WeeksLiable.get();
+    }
+
+    public IntegerProperty niClass2WeeksLiableProperty() {
+        return niClass2WeeksLiable;
+    }
+
+    public boolean isNiClass2Mandatory() {
+        return niClass2Mandatory.get();
+    }
+
+    public BooleanProperty niClass2MandatoryProperty() {
+        return niClass2Mandatory;
+    }
+
+    public boolean isNiClass2Voluntary() {
+        return niClass2Voluntary.get();
+    }
+
+    public BooleanProperty niClass2VoluntaryProperty() {
+        return niClass2Voluntary;
+    }
+
+    // === Total NI (Class 2 + Class 4) ===
+
+    public BigDecimal getTotalNI() {
+        return totalNI.get();
+    }
+
+    public ObjectProperty<BigDecimal> totalNIProperty() {
+        return totalNI;
+    }
+
+    public String getFormattedTotalNI() {
+        return formatCurrency(getTotalNI());
+    }
+
     // === Total Tax ===
 
     public BigDecimal getTotalTax() {
@@ -438,12 +508,23 @@ public class TaxSummaryViewModel {
             additionalRateTax.set(itResult.additionalRateTax());
 
             // Update NI Class 4 values
-            NICalculationResult niResult = result.niDetails();
+            NICalculationResult niClass4Result = result.niClass4Details();
             niClass4.set(result.niClass4());
-            niMainRateAmount.set(niResult.mainRateAmount());
-            niMainRateTax.set(niResult.mainRateNI());
-            niAdditionalRateAmount.set(niResult.additionalRateAmount());
-            niAdditionalRateTax.set(niResult.additionalRateNI());
+            niMainRateAmount.set(niClass4Result.mainRateAmount());
+            niMainRateTax.set(niClass4Result.mainRateNI());
+            niAdditionalRateAmount.set(niClass4Result.additionalRateAmount());
+            niAdditionalRateTax.set(niClass4Result.additionalRateNI());
+
+            // Update NI Class 2 values
+            Class2NICalculationResult niClass2Result = result.niClass2Details();
+            niClass2.set(result.niClass2());
+            niClass2WeeklyRate.set(niClass2Result.weeklyRate());
+            niClass2WeeksLiable.set(niClass2Result.weeksLiable());
+            niClass2Mandatory.set(niClass2Result.isMandatory());
+            niClass2Voluntary.set(niClass2Result.isVoluntary());
+
+            // Update total NI (Class 2 + Class 4)
+            totalNI.set(result.totalNI());
 
             // Update totals
             totalTax.set(result.totalLiability());
@@ -505,6 +586,14 @@ public class TaxSummaryViewModel {
         niMainRateTax.set(BigDecimal.ZERO);
         niAdditionalRateAmount.set(BigDecimal.ZERO);
         niAdditionalRateTax.set(BigDecimal.ZERO);
+        // Reset Class 2 NI values
+        niClass2.set(BigDecimal.ZERO);
+        niClass2WeeklyRate.set(BigDecimal.ZERO);
+        niClass2WeeksLiable.set(0);
+        niClass2Mandatory.set(false);
+        niClass2Voluntary.set(false);
+        totalNI.set(BigDecimal.ZERO);
+        // Reset POA
         requiresPaymentOnAccount.set(false);
         paymentOnAccountAmount.set(BigDecimal.ZERO);
         lastCalculationResult = null;
