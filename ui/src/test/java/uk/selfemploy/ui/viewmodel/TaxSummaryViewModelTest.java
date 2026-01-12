@@ -162,7 +162,9 @@ class TaxSummaryViewModelTest {
             assertThat(viewModel.getNiClass4())
                 .isGreaterThan(BigDecimal.ZERO);
             assertThat(viewModel.getTotalTax())
-                .isEqualByComparingTo(viewModel.getIncomeTax().add(viewModel.getNiClass4()));
+                .isEqualByComparingTo(viewModel.getIncomeTax()
+                    .add(viewModel.getNiClass4())
+                    .add(viewModel.getNiClass2()));
         }
 
         @Test
