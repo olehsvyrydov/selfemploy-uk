@@ -1,21 +1,25 @@
 package uk.selfemploy.core.calculator;
 
+import uk.selfemploy.core.config.IncomeTaxRates;
+import uk.selfemploy.core.config.TaxRateConfiguration;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
  * Calculator for UK Income Tax.
  *
- * Supports multiple tax years with different rates.
+ * Supports multiple tax years with different rates loaded from YAML configuration.
+ * Falls back to default rates if YAML is not available.
  */
 public class IncomeTaxCalculator {
 
     private final int taxYear;
-    private final TaxRates rates;
+    private final IncomeTaxRates rates;
 
     public IncomeTaxCalculator(int taxYear) {
         this.taxYear = taxYear;
-        this.rates = TaxRates.forYear(taxYear);
+        this.rates = TaxRateConfiguration.getInstance().getIncomeTaxRates(taxYear);
     }
 
     /**
@@ -122,28 +126,16 @@ public class IncomeTaxCalculator {
     }
 
     /**
-     * Tax rates for different years.
+     * Returns the tax year this calculator is configured for.
      */
-    public record TaxRates(
-        BigDecimal personalAllowance,
-        BigDecimal basicRateUpperLimit,
-        BigDecimal higherRateUpperLimit,
-        BigDecimal taperThreshold,
-        BigDecimal basicRate,
-        BigDecimal higherRate,
-        BigDecimal additionalRate
-    ) {
-        public static TaxRates forYear(int year) {
-            // 2024/25 and 2025/26 have the same rates (frozen)
-            return new TaxRates(
-                new BigDecimal("12570"),   // Personal Allowance
-                new BigDecimal("50270"),   // Basic rate upper limit
-                new BigDecimal("125140"),  // Higher rate upper limit
-                new BigDecimal("100000"),  // Taper threshold
-                new BigDecimal("0.20"),    // Basic rate 20%
-                new BigDecimal("0.40"),    // Higher rate 40%
-                new BigDecimal("0.45")     // Additional rate 45%
-            );
-        }
+    public int getTaxYear() {
+        return taxYear;
+    }
+
+    /**
+     * Returns the loaded income tax rates.
+     */
+    public IncomeTaxRates getRates() {
+        return rates;
     }
 }

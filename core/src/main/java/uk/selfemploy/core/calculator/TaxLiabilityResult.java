@@ -10,6 +10,10 @@ import java.math.RoundingMode;
  * - Income Tax (based on taxable income bands)
  * - NI Class 4 (percentage-based on profits above Lower Profits Limit £12,570)
  * - NI Class 2 (flat rate based on weeks, mandatory if profits > Small Profits Threshold £6,845)
+ *
+ * SE-808: Now includes State Pension Age exemption status for Class 4 NI.
+ * People who have reached State Pension Age (currently 66) before the start
+ * of the tax year are exempt from Class 4 NI contributions.
  */
 public record TaxLiabilityResult(
     BigDecimal grossProfit,
@@ -78,5 +82,24 @@ public record TaxLiabilityResult(
     @Deprecated
     public NICalculationResult niDetails() {
         return niClass4Details;
+    }
+
+    /**
+     * SE-808: Returns true if the person is exempt from Class 4 NI
+     * due to reaching State Pension Age.
+     *
+     * @return true if exempt from Class 4 NI, false otherwise
+     */
+    public boolean isClass4NIExempt() {
+        return niClass4Details != null && niClass4Details.isExempt();
+    }
+
+    /**
+     * SE-808: Returns the reason for Class 4 NI exemption, if applicable.
+     *
+     * @return exemption reason, or null if not exempt
+     */
+    public String class4ExemptionReason() {
+        return niClass4Details != null ? niClass4Details.exemptionReason() : null;
     }
 }

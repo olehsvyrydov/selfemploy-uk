@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -162,6 +163,147 @@ class NationalInsuranceCalculatorTest {
             assertThat(result.profitSubjectToNI()).isEqualByComparingTo(new BigDecimal("47430.00")); // 60000 - 12570
             assertThat(result.mainRateAmount()).isEqualByComparingTo(new BigDecimal("37700.00"));
             assertThat(result.additionalRateAmount()).isEqualByComparingTo(new BigDecimal("9730.00"));
+        }
+    }
+
+    /**
+     * SE-808: State Pension Age Exemption Tests
+     *
+     * People above State Pension Age (currently 66) are exempt from Class 4 NI contributions.
+     * The exemption applies if the person reaches pension age BEFORE the start of the tax year.
+     *
+     * Tax year 2025/26 starts on 6 April 2025.
+     * To be exempt, the person must be 66 or older on 6 April 2025.
+     * So they must be born on or before 6 April 1959.
+     */
+    @Nested
+    @DisplayName("State Pension Age Exemption (SE-808)")
+    class StatePensionAgeExemption {
+
+        @Test
+        @DisplayName("person aged 65 at tax year start should NOT be exempt")
+        void personAged65AtTaxYearStartShouldNotBeExempt() {
+            LocalDate dateOfBirth = LocalDate.of(1959, 4, 7);
+            BigDecimal profit = new BigDecimal("60000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isFalse();
+            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("2456.60"));
+            assertThat(result.exemptionReason()).isNull();
+        }
+
+        @Test
+        @DisplayName("person aged 66 at tax year start should be exempt")
+        void personAged66AtTaxYearStartShouldBeExempt() {
+            LocalDate dateOfBirth = LocalDate.of(1959, 4, 6);
+            BigDecimal profit = new BigDecimal("60000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isTrue();
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.exemptionReason()).isEqualTo("State Pension Age reached before tax year start");
+        }
+
+        @Test
+        @DisplayName("person aged 67 at tax year start should be exempt")
+        void personAged67AtTaxYearStartShouldBeExempt() {
+            LocalDate dateOfBirth = LocalDate.of(1958, 1, 1);
+            BigDecimal profit = new BigDecimal("100000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isTrue();
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.exemptionReason()).isEqualTo("State Pension Age reached before tax year start");
+        }
+
+        @Test
+        @DisplayName("person turning 66 during tax year should NOT be exempt")
+        void personTurning66DuringTaxYearShouldNotBeExempt() {
+            LocalDate dateOfBirth = LocalDate.of(1959, 7, 1);
+            BigDecimal profit = new BigDecimal("30000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isFalse();
+            assertThat(result.totalNI()).isGreaterThan(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("null date of birth should NOT be exempt (default behavior)")
+        void nullDateOfBirthShouldNotBeExempt() {
+            BigDecimal profit = new BigDecimal("60000");
+
+            NICalculationResult result = calculator.calculate(profit, null);
+
+            assertThat(result.isExempt()).isFalse();
+            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("2456.60"));
+        }
+
+        @Test
+        @DisplayName("exempt person should have zero NI for all profit levels")
+        void exemptPersonShouldHaveZeroNiForAllProfitLevels() {
+            LocalDate dateOfBirth = LocalDate.of(1950, 1, 1);
+
+            assertThat(calculator.calculate(new BigDecimal("20000"), dateOfBirth).totalNI())
+                .isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(calculator.calculate(new BigDecimal("50000"), dateOfBirth).totalNI())
+                .isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(calculator.calculate(new BigDecimal("100000"), dateOfBirth).totalNI())
+                .isEqualByComparingTo(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("exempt result should include breakdown showing exemption")
+        void exemptResultShouldIncludeBreakdownShowingExemption() {
+            LocalDate dateOfBirth = LocalDate.of(1958, 6, 15);
+            BigDecimal profit = new BigDecimal("60000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isTrue();
+            assertThat(result.grossProfit()).isEqualByComparingTo(profit);
+            assertThat(result.profitSubjectToNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.mainRateNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.additionalRateNI()).isEqualByComparingTo(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("young person should calculate normal NI")
+        void youngPersonShouldCalculateNormalNi() {
+            LocalDate dateOfBirth = LocalDate.of(1990, 6, 15);
+            BigDecimal profit = new BigDecimal("60000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isFalse();
+            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("2456.60"));
+        }
+
+        @Test
+        @DisplayName("person born exactly on tax year start boundary should be exempt")
+        void personBornExactlyOnTaxYearStartBoundaryShouldBeExempt() {
+            LocalDate dateOfBirth = LocalDate.of(1959, 4, 6);
+            BigDecimal profit = new BigDecimal("50000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isTrue();
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("person born one day after boundary should NOT be exempt")
+        void personBornOneDayAfterBoundaryShouldNotBeExempt() {
+            LocalDate dateOfBirth = LocalDate.of(1959, 4, 7);
+            BigDecimal profit = new BigDecimal("50000");
+
+            NICalculationResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.isExempt()).isFalse();
+            assertThat(result.totalNI()).isGreaterThan(BigDecimal.ZERO);
         }
     }
 }

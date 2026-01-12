@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -213,6 +214,98 @@ class TaxLiabilityCalculatorTest {
 
             // Deprecated niDetails() should return same as niClass4Details()
             assertThat(result.niDetails()).isEqualTo(result.niClass4Details());
+        }
+    }
+
+    /**
+     * SE-808: State Pension Age Exemption Tests for TaxLiabilityCalculator
+     *
+     * People above State Pension Age (66) are exempt from Class 4 NI.
+     * They still pay Income Tax and may pay Class 2 NI voluntarily.
+     */
+    @Nested
+    @DisplayName("State Pension Age Exemption (SE-808)")
+    class StatePensionAgeExemption {
+
+        @Test
+        @DisplayName("should exempt pensioner from Class 4 NI but not Income Tax")
+        void shouldExemptPensionerFromClass4NiButNotIncomeTax() {
+            // Born 1958 - will be 67 at tax year start 2025
+            LocalDate dateOfBirth = LocalDate.of(1958, 1, 1);
+            BigDecimal profit = new BigDecimal("60000");
+
+            TaxLiabilityResult result = calculator.calculate(profit, dateOfBirth);
+
+            // Income Tax still applies: 11,432.00
+            assertThat(result.incomeTax()).isEqualByComparingTo(new BigDecimal("11432.00"));
+
+            // NI Class 4 is exempt
+            assertThat(result.niClass4()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.isClass4NIExempt()).isTrue();
+            assertThat(result.class4ExemptionReason()).isEqualTo("State Pension Age reached before tax year start");
+
+            // NI Class 2 still applies (mandatory for profits above threshold)
+            assertThat(result.niClass2()).isEqualByComparingTo(new BigDecimal("182.00"));
+
+            // Total should be Income Tax + Class 2 only
+            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("11614.00"));
+        }
+
+        @Test
+        @DisplayName("should not exempt young person from Class 4 NI")
+        void shouldNotExemptYoungPersonFromClass4Ni() {
+            // Born 1990 - will be 35 at tax year start 2025
+            LocalDate dateOfBirth = LocalDate.of(1990, 6, 15);
+            BigDecimal profit = new BigDecimal("60000");
+
+            TaxLiabilityResult result = calculator.calculate(profit, dateOfBirth);
+
+            assertThat(result.niClass4()).isEqualByComparingTo(new BigDecimal("2456.60"));
+            assertThat(result.isClass4NIExempt()).isFalse();
+            assertThat(result.class4ExemptionReason()).isNull();
+        }
+
+        @Test
+        @DisplayName("should calculate higher net profit for pensioners due to no Class 4 NI")
+        void shouldCalculateHigherNetProfitForPensioners() {
+            BigDecimal profit = new BigDecimal("60000");
+
+            // Non-pensioner
+            LocalDate youngPerson = LocalDate.of(1990, 6, 15);
+            TaxLiabilityResult youngResult = calculator.calculate(profit, youngPerson);
+
+            // Pensioner
+            LocalDate pensioner = LocalDate.of(1958, 1, 1);
+            TaxLiabilityResult pensionerResult = calculator.calculate(profit, pensioner);
+
+            // Pensioner should keep more money (Class 4 NI savings)
+            assertThat(pensionerResult.netProfitAfterTax())
+                .isGreaterThan(youngResult.netProfitAfterTax());
+
+            // The difference should be exactly the Class 4 NI amount
+            BigDecimal savings = pensionerResult.netProfitAfterTax()
+                .subtract(youngResult.netProfitAfterTax());
+            assertThat(savings).isEqualByComparingTo(youngResult.niClass4());
+        }
+
+        @Test
+        @DisplayName("should calculate combined tax with date of birth and voluntary Class 2")
+        void shouldCalculateCombinedTaxWithDateOfBirthAndVoluntaryClass2() {
+            // Pensioner with low income opting for voluntary Class 2 NI
+            LocalDate pensioner = LocalDate.of(1958, 1, 1);
+            BigDecimal profit = new BigDecimal("5000"); // Below SPT threshold
+
+            TaxLiabilityResult result = calculator.calculate(profit, true, pensioner);
+
+            // Income Tax: 0 (below personal allowance)
+            assertThat(result.incomeTax()).isEqualByComparingTo(BigDecimal.ZERO);
+
+            // NI Class 4: 0 (exempt due to pension age)
+            assertThat(result.niClass4()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.isClass4NIExempt()).isTrue();
+
+            // NI Class 2: 182.00 (voluntary)
+            assertThat(result.niClass2()).isEqualByComparingTo(new BigDecimal("182.00"));
         }
     }
 }

@@ -1,0 +1,340 @@
+/*
+ * Onboarding Wizard Styles - SE-702
+ * Based on /aura design specification
+ */
+
+/* ===== Onboarding Container ===== */
+.onboarding-container {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-alignment: CENTER;
+}
+
+.onboarding-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 24, 0, 0, 8);
+}
+
+/* ===== Onboarding Icon (Welcome Screen) ===== */
+.onboarding-icon {
+    -fx-font-size: 64px;
+    -fx-text-fill: -fx-primary;
+    -fx-background-color: -fx-primary-light;
+    -fx-padding: 24;
+    -fx-background-radius: 16;
+}
+
+/* ===== Title and Subtitle ===== */
+.onboarding-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.onboarding-subtitle {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-max-width: 500;
+}
+
+/* ===== Step Title ===== */
+.step-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.step-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Privacy Assurance Box ===== */
+.privacy-assurance-box {
+    -fx-background-color: #e8f5e9;
+    -fx-border-color: -fx-success;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 20;
+}
+
+.privacy-icon {
+    -fx-font-size: 20px;
+    -fx-text-fill: #2e7d32;
+    -fx-font-weight: bold;
+}
+
+.privacy-assurance-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1b5e20;
+}
+
+.privacy-assurance-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #2e7d32;
+    -fx-wrap-text: true;
+}
+
+/* ===== Progress Indicator ===== */
+.onboarding-progress {
+    -fx-background-color: -fx-bg-primary;
+    -fx-padding: 24 48;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 0 0 1 0;
+}
+
+.progress-step {
+    -fx-min-width: 80;
+}
+
+.step-circle {
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-max-width: 40;
+    -fx-max-height: 40;
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-background-radius: 20;
+    -fx-alignment: CENTER;
+}
+
+.progress-step.step-active .step-circle {
+    -fx-background-color: -fx-primary;
+}
+
+.progress-step.step-completed .step-circle {
+    -fx-background-color: -fx-success;
+}
+
+.step-number {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.progress-step.step-active .step-number,
+.progress-step.step-completed .step-number {
+    -fx-text-fill: white;
+}
+
+.step-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.progress-step.step-active .step-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.step-connector {
+    -fx-min-width: 40;
+    -fx-max-height: 2;
+    -fx-min-height: 2;
+    -fx-background-color: -fx-border-color;
+    -fx-translate-y: -12;
+}
+
+/* ===== Step Content ===== */
+.step-content {
+    -fx-background-color: -fx-bg-primary;
+}
+
+/* ===== Form Field Hints ===== */
+.field-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Segmented Input (UTR) ===== */
+.segmented-input {
+    -fx-spacing: 8;
+}
+
+.segment-field {
+    -fx-max-width: 70;
+    -fx-min-width: 60;
+    -fx-alignment: CENTER;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12;
+}
+
+.segment-field:focused {
+    -fx-border-color: -fx-primary;
+    -fx-background-color: -fx-bg-primary;
+}
+
+.segment-separator {
+    -fx-font-size: 18px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Skip Link ===== */
+.skip-link {
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 13px;
+    -fx-underline: false;
+}
+
+.skip-link:hover {
+    -fx-underline: true;
+}
+
+/* ===== Selection Cards ===== */
+.selection-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+    -fx-cursor: hand;
+}
+
+.selection-card:hover {
+    -fx-border-color: -fx-primary;
+    -fx-background-color: -fx-primary-light;
+}
+
+.selection-card.selected {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 3;
+    -fx-background-color: -fx-primary-light;
+}
+
+.selection-card.disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+.selection-card.disabled:hover {
+    -fx-border-color: -fx-border-color;
+    -fx-background-color: -fx-bg-primary;
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.card-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.card-description {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 4 0 0 52;
+}
+
+.card-icon {
+    -fx-font-size: 24px;
+    -fx-text-fill: -fx-primary;
+    -fx-background-color: -fx-primary-light;
+    -fx-padding: 12;
+    -fx-background-radius: 8;
+}
+
+/* ===== Badges ===== */
+.recommended-badge {
+    -fx-background-color: -fx-success;
+    -fx-text-fill: white;
+    -fx-padding: 4 10;
+    -fx-background-radius: 12;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.coming-soon-badge {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 4 10;
+    -fx-background-radius: 12;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Info Box ===== */
+.info-box {
+    -fx-background-color: #e6f0ff;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 12 16;
+}
+
+.info-icon {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-primary;
+    -fx-font-weight: bold;
+}
+
+.info-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Completion Screen ===== */
+.completion-icon {
+    -fx-font-size: 80px;
+    -fx-text-fill: -fx-success;
+    -fx-background-color: #d4edda;
+    -fx-padding: 32;
+    -fx-background-radius: 50;
+}
+
+.completion-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.completion-subtitle {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== What's Next Box ===== */
+.whats-next-box {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+}
+
+.whats-next-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.next-step-link {
+    -fx-font-size: 15px;
+    -fx-text-fill: -fx-primary;
+    -fx-cursor: hand;
+}
+
+.next-step-link:hover {
+    -fx-underline: true;
+}
+
+/* ===== Footer ===== */
+.onboarding-footer {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-padding: 20 48;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ===== Large Button ===== */
+.button-large {
+    -fx-padding: 16 48;
+    -fx-font-size: 16px;
+}
