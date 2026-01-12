@@ -58,6 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @see docs/screenshots/CAPTURE-GUIDE.md
  */
+@Tag("e2e")
 @Tag("screenshot")
 @DisplayName("SE-1001: Screenshot Capture Utility")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
