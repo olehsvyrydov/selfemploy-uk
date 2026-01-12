@@ -80,6 +80,9 @@ public class SubmissionHistoryController implements Initializable {
 
     private SubmissionHistoryViewModel viewModel;
 
+    /** Guard flag to prevent infinite recursion when updating tax year filter programmatically */
+    private boolean updatingTaxYearFilter = false;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         viewModel = new SubmissionHistoryViewModel();
@@ -107,6 +110,10 @@ public class SubmissionHistoryController implements Initializable {
     private void setupTaxYearFilter() {
         taxYearFilter.setValue("All Years");
         taxYearFilter.valueProperty().addListener((obs, oldVal, newVal) -> {
+            // Skip if we're programmatically updating (prevents infinite recursion)
+            if (updatingTaxYearFilter) {
+                return;
+            }
             if (viewModel != null && newVal != null) {
                 viewModel.setSelectedTaxYear(newVal);
                 updateView();
@@ -162,13 +169,19 @@ public class SubmissionHistoryController implements Initializable {
         List<String> taxYears = viewModel.getAvailableTaxYears();
         String currentSelection = taxYearFilter.getValue();
 
-        taxYearFilter.getItems().clear();
-        taxYearFilter.getItems().addAll(taxYears);
+        // Set guard flag to prevent listener from triggering updateView recursively
+        updatingTaxYearFilter = true;
+        try {
+            taxYearFilter.getItems().clear();
+            taxYearFilter.getItems().addAll(taxYears);
 
-        if (taxYears.contains(currentSelection)) {
-            taxYearFilter.setValue(currentSelection);
-        } else {
-            taxYearFilter.setValue("All Years");
+            if (taxYears.contains(currentSelection)) {
+                taxYearFilter.setValue(currentSelection);
+            } else {
+                taxYearFilter.setValue("All Years");
+            }
+        } finally {
+            updatingTaxYearFilter = false;
         }
     }
 
@@ -356,6 +369,10 @@ public class SubmissionHistoryController implements Initializable {
 
     @FXML
     void handleTaxYearFilter(ActionEvent event) {
+        // Skip if we're programmatically updating (prevents infinite recursion)
+        if (updatingTaxYearFilter) {
+            return;
+        }
         String selectedYear = taxYearFilter.getValue();
         if (viewModel != null && selectedYear != null) {
             viewModel.setSelectedTaxYear(selectedYear);

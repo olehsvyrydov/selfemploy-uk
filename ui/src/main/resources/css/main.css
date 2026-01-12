@@ -192,7 +192,7 @@
 /* ===== Dashboard Specific ===== */
 .dashboard-scroll {
     -fx-background-color: transparent;
-    -fx-background: -fx-bg-secondary;
+    -fx-background-color: -fx-bg-secondary;
 }
 
 .dashboard-scroll > .viewport {
@@ -524,7 +524,7 @@
 /* ===== Page Scroll Container ===== */
 .page-scroll {
     -fx-background-color: transparent;
-    -fx-background: -fx-bg-secondary;
+    -fx-background-color: -fx-bg-secondary;
 }
 
 .page-scroll > .viewport {

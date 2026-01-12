@@ -5,8 +5,7 @@
 
 /* ===== Tax Summary Page Container ===== */
 .tax-summary-scroll {
-    -fx-background-color: transparent;
-    -fx-background: -fx-bg-secondary;
+    -fx-background-color: -fx-bg-secondary;
 }
 
 .tax-summary-scroll > .viewport {

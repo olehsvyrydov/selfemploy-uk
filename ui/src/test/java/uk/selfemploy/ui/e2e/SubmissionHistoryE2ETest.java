@@ -64,9 +64,13 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         Parent root = loader.load();
         controller = loader.getController();
 
+        // Clear stylesheets from FXML root element to avoid CSS lookup recursion in TestFX
+        // The FXML has <stylesheets> embedded in the ScrollPane root element
+        root.getStylesheets().clear();
+
         Scene scene = new Scene(root, 900, 700);
 
-        // Apply minimal test CSS to avoid issues
+        // Apply minimal test CSS with direct values (no lookups)
         try {
             String testCss = getClass().getResource("/css/test-minimal.css").toExternalForm();
             scene.getStylesheets().add(testCss);
@@ -90,8 +94,7 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         @DisplayName("E2E-404-001: Empty state shows 'No Submissions Yet' message")
         void emptyStateDisplaysMessage() {
             // Given - no submissions
-            viewModel.clearAll();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> viewModel.clearAll());
 
             // Then
             verifyThat("#emptyState", isVisible());
@@ -103,9 +106,10 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         void singleSubmissionDisplaysOneCard() {
             // Given
             SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
-            viewModel.setSubmissions(List.of(submission));
-            controller.refreshData();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                controller.refreshData();
+            });
 
             // Then
             verifyThat("#submissionsList", isVisible());
@@ -126,9 +130,10 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createQ4Submission(SubmissionStatus.REJECTED),
                     createAnnualSubmission(SubmissionStatus.ACCEPTED)
             );
-            viewModel.setSubmissions(submissions);
-            controller.refreshData();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(submissions);
+                controller.refreshData();
+            });
 
             // Then
             VBox submissionsList = lookup("#submissionsList").query();
@@ -146,9 +151,10 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createQ4Submission(SubmissionStatus.ACCEPTED),
                     createAnnualSubmission(SubmissionStatus.ACCEPTED)
             );
-            viewModel.setSubmissions(submissions);
-            controller.refreshData();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(submissions);
+                controller.refreshData();
+            });
 
             // Then - all 5 submissions should be displayed
             VBox submissionsList = lookup("#submissionsList").query();
@@ -177,9 +183,10 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     .netProfit(new BigDecimal("8000.00"))
                     .build();
 
-            viewModel.setSubmissions(List.of(submission));
-            controller.refreshData();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                controller.refreshData();
+            });
 
             // Then - verify date formatting
             assertThat(submission.getFormattedDate()).isEqualTo("24 Jan 2026");
@@ -213,9 +220,10 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         void taxYearDisplayedCorrectly() {
             // Given
             SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
-            viewModel.setSubmissions(List.of(submission));
-            controller.refreshData();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                controller.refreshData();
+            });
 
             // Then
             assertThat(submission.taxYear()).isEqualTo("2025/26");
@@ -312,9 +320,10 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createSubmission(SubmissionType.QUARTERLY_Q2, "2025/26", SubmissionStatus.ACCEPTED),
                     createSubmission(SubmissionType.QUARTERLY_Q1, "2024/25", SubmissionStatus.ACCEPTED)
             );
-            viewModel.setSubmissions(submissions);
-            controller.refreshData();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(submissions);
+                controller.refreshData();
+            });
 
             // Then
             List<String> availableYears = viewModel.getAvailableTaxYears();
@@ -330,11 +339,11 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createSubmission(SubmissionType.QUARTERLY_Q2, "2025/26", SubmissionStatus.ACCEPTED),
                     createSubmission(SubmissionType.QUARTERLY_Q1, "2024/25", SubmissionStatus.ACCEPTED)
             );
-            viewModel.setSubmissions(submissions);
-
-            // When - filter to 2025/26
-            viewModel.setSelectedTaxYear("2025/26");
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(submissions);
+                // When - filter to 2025/26
+                viewModel.setSelectedTaxYear("2025/26");
+            });
 
             // Then
             List<SubmissionTableRow> filtered = viewModel.getFilteredSubmissions();
@@ -351,11 +360,11 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createSubmission(SubmissionType.QUARTERLY_Q2, "2025/26", SubmissionStatus.ACCEPTED),
                     createSubmission(SubmissionType.QUARTERLY_Q1, "2024/25", SubmissionStatus.ACCEPTED)
             );
-            viewModel.setSubmissions(submissions);
-
-            // When - filter to All Years
-            viewModel.setSelectedTaxYear("All Years");
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(submissions);
+                // When - filter to All Years
+                viewModel.setSelectedTaxYear("All Years");
+            });
 
             // Then
             List<SubmissionTableRow> filtered = viewModel.getFilteredSubmissions();
@@ -378,8 +387,7 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createSubmissionWithDate(older, "REF-OLDER"),
                     createSubmissionWithDate(newer, "REF-NEWER")
             );
-            viewModel.setSubmissions(submissions);
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> viewModel.setSubmissions(submissions));
 
             // Then - filtered submissions should be sorted newest first
             List<SubmissionTableRow> sorted = viewModel.getFilteredSubmissions();
@@ -397,13 +405,13 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         void clickingCardSelectsSubmission() {
             // Given
             SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
-            viewModel.setSubmissions(List.of(submission));
-            controller.refreshData();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                controller.refreshData();
+            });
 
             // When
-            viewModel.selectSubmission(submission);
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> viewModel.selectSubmission(submission));
 
             // Then
             assertThat(viewModel.hasSelection()).isTrue();
@@ -475,13 +483,13 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         void backButtonClearsSelection() {
             // Given
             SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
-            viewModel.setSubmissions(List.of(submission));
-            viewModel.selectSubmission(submission);
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                viewModel.selectSubmission(submission);
+            });
 
             // When
-            viewModel.clearSelection();
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> viewModel.clearSelection());
 
             // Then
             assertThat(viewModel.hasSelection()).isFalse();
@@ -543,8 +551,7 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createQ4Submission(SubmissionStatus.REJECTED),
                     createAnnualSubmission(SubmissionStatus.REJECTED)
             );
-            viewModel.setSubmissions(submissions);
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> viewModel.setSubmissions(submissions));
 
             // Then
             assertThat(viewModel.getTotalCount()).isEqualTo(5);
@@ -562,11 +569,11 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
                     createSubmission(SubmissionType.QUARTERLY_Q2, "2025/26", SubmissionStatus.REJECTED),
                     createSubmission(SubmissionType.QUARTERLY_Q1, "2024/25", SubmissionStatus.ACCEPTED)
             );
-            viewModel.setSubmissions(submissions);
-
-            // When - filter to 2025/26
-            viewModel.setSelectedTaxYear("2025/26");
-            WaitForAsyncUtils.waitForFxEvents();
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(submissions);
+                // When - filter to 2025/26
+                viewModel.setSelectedTaxYear("2025/26");
+            });
 
             // Then - filtered stats
             assertThat(viewModel.getFilteredTotalCount()).isEqualTo(2);
@@ -604,6 +611,14 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
     }
 
     // === Helper Methods ===
+
+    /**
+     * Runs the given action on the FX application thread and waits for completion.
+     * Required for modifying ViewModel/Controller state in tests.
+     */
+    private void runOnFxThread(Runnable action) {
+        interact(action);
+    }
 
     private SubmissionTableRow createQ1Submission(SubmissionStatus status) {
         return createSubmission(SubmissionType.QUARTERLY_Q1, "2025/26", status);

@@ -6,8 +6,7 @@
 
 /* ===== Page Container ===== */
 .annual-scroll {
-    -fx-background-color: transparent;
-    -fx-background: -fx-bg-secondary;
+    -fx-background-color: -fx-bg-secondary;
 }
 
 .annual-scroll > .viewport {
