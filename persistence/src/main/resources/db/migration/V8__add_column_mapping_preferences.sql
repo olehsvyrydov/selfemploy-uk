@@ -29,8 +29,8 @@ CREATE TABLE column_mapping_preferences (
     amount_interpretation VARCHAR(20) NOT NULL DEFAULT 'STANDARD',
 
     -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    last_used_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    last_used_at TIMESTAMP NOT NULL,
     use_count INTEGER NOT NULL DEFAULT 0,
 
     -- Foreign key constraint
@@ -54,9 +54,3 @@ CREATE INDEX idx_mapping_pref_last_used ON column_mapping_preferences(business_i
 -- Unique constraint: one mapping per bank identifier per business
 CREATE UNIQUE INDEX idx_mapping_pref_unique
     ON column_mapping_preferences(business_id, bank_identifier);
-
--- Comments for documentation
-COMMENT ON TABLE column_mapping_preferences IS 'Stores user preferences for CSV column mappings during bank statement import';
-COMMENT ON COLUMN column_mapping_preferences.bank_identifier IS 'Bank format name (e.g., BARCLAYS) or SHA-256 hash of CSV headers for unknown formats';
-COMMENT ON COLUMN column_mapping_preferences.amount_interpretation IS 'How to interpret amount signs: STANDARD (positive=income), INVERTED (positive=expense), SEPARATE_COLUMNS';
-COMMENT ON COLUMN column_mapping_preferences.use_count IS 'Number of times this mapping has been used for imports';
