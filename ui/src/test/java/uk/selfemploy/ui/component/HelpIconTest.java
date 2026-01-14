@@ -5,6 +5,7 @@ import javafx.scene.input.MouseEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testfx.framework.junit5.ApplicationExtension;
@@ -19,9 +20,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p>HelpIcon is a reusable "?" icon that shows contextual help
  * via tooltip or popup.</p>
+ *
+ * <p>Tagged as "e2e" to exclude from CI headless environment -
+ * requires JavaFX platform with display.</p>
  */
 @DisplayName("SE-701: HelpIcon")
 @ExtendWith(ApplicationExtension.class)
+@Tag("e2e")
 class HelpIconTest {
 
     private HelpIcon helpIcon;
