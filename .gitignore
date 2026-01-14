@@ -98,17 +98,53 @@ data/
 *.h2.db
 *.mv.db
 
-# Secrets and credentials
+# =============================================================================
+# Secrets and Credentials - NEVER COMMIT THESE
+# =============================================================================
+# These patterns protect sensitive data from accidental commits.
+# See SECURITY.md for details on HMRC credential handling.
+
+# Environment files containing secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+*.env
+!.env.example
+
+# Certificate and key files
 *.pem
 *.key
 *.p12
 *.jks
-secrets.properties
-credentials.json
+*.keystore
+*.truststore
 
-# HMRC tokens
+# Generic secrets files
+secrets.properties
+secrets.yaml
+secrets.yml
+credentials.json
+credentials.yaml
+credentials.yml
+*-credentials.*
+*-secrets.*
+
+# HMRC-specific sensitive files
+# OAuth tokens and refresh tokens
 hmrc-tokens.json
 oauth-tokens/
+tokens.json
+*.tokens
+
+# HMRC API credentials (if accidentally saved as files)
+hmrc-credentials.*
+hmrc-config.local.*
+client-secret*
+
+# Encrypted token storage (user-specific)
+.selfemploy/
 
 # Drafts and temporary files
 drafts/

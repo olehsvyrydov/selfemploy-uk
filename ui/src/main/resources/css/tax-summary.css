@@ -329,3 +329,153 @@
     -fx-background-color: #adb5bd;
     -fx-cursor: default;
 }
+
+/*
+ * ===== Class 2 NI Card (SE-810) =====
+ * Educational info card explaining Class 2 NI and State Pension benefits.
+ * Designed by /aura - SE-810 UI Design Specification.
+ */
+
+.class2-ni-card {
+    -fx-background-color: #f0f7ff;
+    -fx-border-color: #0066cc;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 20;
+}
+
+.class2-ni-header {
+    -fx-padding: 0 0 12 0;
+}
+
+.class2-ni-icon {
+    -fx-background-color: #0066cc;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-max-width: 24;
+    -fx-max-height: 24;
+    -fx-background-radius: 12;
+    -fx-alignment: center;
+}
+
+.class2-ni-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.class2-ni-title-badge {
+    -fx-background-color: #6366f1;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+}
+
+.class2-ni-body {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 3;
+}
+
+/* Rates Box */
+.class2-rates-box {
+    -fx-background-color: white;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 16;
+}
+
+.class2-rates-row {
+    -fx-padding: 4 0;
+}
+
+.class2-rates-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.class2-rates-value {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0066cc;
+    -fx-font-family: monospace;
+}
+
+/* Pension Insight Box */
+.pension-insight-box {
+    -fx-padding: 12 0 0 0;
+}
+
+.pension-insight-header {
+    -fx-padding: 0 0 8 0;
+}
+
+.pension-insight-icon {
+    -fx-text-fill: #f59e0b;
+    -fx-font-size: 16px;
+}
+
+.pension-insight-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #92400e;
+}
+
+.pension-insight-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #78716c;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 2;
+}
+
+/* External Link */
+.class2-external-link {
+    -fx-text-fill: #0066cc;
+    -fx-font-size: 13px;
+    -fx-padding: 12 0 0 0;
+}
+
+.class2-external-link:hover {
+    -fx-underline: true;
+}
+
+/* Voluntary Badge */
+.voluntary-badge {
+    -fx-background-color: #e0e7ff;
+    -fx-text-fill: #4338ca;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 3 8;
+    -fx-background-radius: 12;
+}
+
+/* Help Button */
+.help-icon-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #0066cc;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-max-width: 24;
+    -fx-max-height: 24;
+    -fx-background-radius: 12;
+    -fx-border-color: #0066cc;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-cursor: hand;
+}
+
+.help-icon-btn:hover {
+    -fx-background-color: #0066cc;
+    -fx-text-fill: white;
+}

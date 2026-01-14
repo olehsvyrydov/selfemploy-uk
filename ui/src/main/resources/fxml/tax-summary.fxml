@@ -170,6 +170,57 @@
             </VBox>
         </VBox>
 
+        <!-- Class 2 NI Credit Clarification (SE-810) -->
+        <VBox fx:id="class2NiCard" styleClass="class2-ni-card" spacing="12"
+              managed="false" visible="false">
+
+            <!-- Header -->
+            <HBox styleClass="class2-ni-header" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="class2-ni-icon">
+                    <Label text="i"/>
+                </StackPane>
+                <Label fx:id="class2Title" text="Class 2 NI Credits" styleClass="class2-ni-title"/>
+                <Label fx:id="voluntaryBadge" text="VOLUNTARY" styleClass="voluntary-badge"
+                       managed="false" visible="false"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="class2HelpBtn" text="?" styleClass="help-icon-btn"
+                        onAction="#handleShowClass2Help"/>
+            </HBox>
+
+            <!-- Body Text -->
+            <Label fx:id="class2BodyText" styleClass="class2-ni-body" wrapText="true"/>
+
+            <!-- Rates Box -->
+            <VBox styleClass="class2-rates-box" spacing="8">
+                <HBox styleClass="class2-rates-row" alignment="CENTER_LEFT">
+                    <Label fx:id="class2WeeklyLabel" text="Weekly rate (2025/26):" styleClass="class2-rates-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="class2WeeklyValue" text="£3.45" styleClass="class2-rates-value"/>
+                </HBox>
+                <HBox styleClass="class2-rates-row" alignment="CENTER_LEFT">
+                    <Label text="Annual amount (52 weeks):" styleClass="class2-rates-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="class2AnnualValue" text="£179.40" styleClass="class2-rates-value"/>
+                </HBox>
+            </VBox>
+
+            <!-- Pension Insight -->
+            <VBox styleClass="pension-insight-box" spacing="4">
+                <HBox styleClass="pension-insight-header" alignment="CENTER_LEFT" spacing="8">
+                    <Label text="[*]" styleClass="pension-insight-icon"/>
+                    <Label text="Why this matters for your pension" styleClass="pension-insight-title"/>
+                </HBox>
+                <Label fx:id="pensionInsightText" styleClass="pension-insight-text" wrapText="true"/>
+            </VBox>
+
+            <!-- External Link -->
+            <Hyperlink fx:id="statePensionLink"
+                       text="Check your State Pension forecast at gov.uk"
+                       styleClass="class2-external-link"
+                       onAction="#handleStatePensionLink"/>
+
+        </VBox>
+
         <!-- Payments on Account Section (conditional) -->
         <VBox fx:id="poaSection" styleClass="section-card" managed="false" visible="false">
             <HBox styleClass="section-header" alignment="CENTER_LEFT"

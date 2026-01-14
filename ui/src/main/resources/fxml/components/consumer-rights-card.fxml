@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Consumer Rights Disclaimer Card - SE-513
+
+  A reusable legal disclaimer explaining software accuracy limitations
+  under the Consumer Rights Act 2015. This is static legal content
+  that cannot be dismissed.
+
+  Usage: Include in Settings/About page via fx:include.
+  Content from uk.selfemploy.common.legal.Disclaimers class.
+-->
+
+<VBox styleClass="consumer-rights-card" spacing="12"
+      xmlns:fx="http://javafx.com/fxml">
+
+    <!-- Header -->
+    <HBox styleClass="consumer-rights-header" alignment="CENTER_LEFT" spacing="12">
+        <StackPane styleClass="consumer-rights-icon">
+            <Label text="[=]" styleClass="consumer-rights-icon-text"/>
+        </StackPane>
+        <Label fx:id="consumerRightsTitle" text="Software Accuracy &amp; Your Rights"
+               styleClass="consumer-rights-title"/>
+    </HBox>
+
+    <!-- Body Paragraphs -->
+    <VBox spacing="12">
+        <Label fx:id="consumerRightsParagraph1" styleClass="consumer-rights-body" wrapText="true">
+            <text>This software provides tax calculation tools based on published
+                  HMRC rates and thresholds. While we strive for accuracy,
+                  you are responsible for verifying all calculations before
+                  submission to HMRC.</text>
+        </Label>
+
+        <Label fx:id="consumerRightsParagraph2" styleClass="consumer-rights-body" wrapText="true">
+            <text>Under the Consumer Rights Act 2015, digital content must be of
+                  satisfactory quality. As this is free, open-source software
+                  provided under the Apache License 2.0, the statutory remedies
+                  for defects differ from paid software.</text>
+        </Label>
+    </VBox>
+
+    <!-- Recommendations -->
+    <VBox spacing="4">
+        <Label text="We strongly recommend:" styleClass="consumer-rights-body, consumer-rights-emphasis"/>
+        <VBox styleClass="consumer-rights-list" spacing="4">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="*" styleClass="consumer-rights-bullet"/>
+                <Label text="Reviewing all calculations before submission"
+                       styleClass="consumer-rights-list-item"/>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="*" styleClass="consumer-rights-bullet"/>
+                <Label text="Keeping your own records to verify figures"
+                       styleClass="consumer-rights-list-item"/>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="*" styleClass="consumer-rights-bullet"/>
+                <Label text="Consulting a qualified accountant for complex situations"
+                       styleClass="consumer-rights-list-item"/>
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <!-- Acknowledgment Statement -->
+    <Label fx:id="consumerRightsAcknowledgment" styleClass="consumer-rights-acknowledgment" wrapText="true">
+        <text>By using this software, you acknowledge that tax calculations are
+              estimates and that you bear responsibility for the accuracy of
+              any submissions made to HMRC.</text>
+    </Label>
+
+    <!-- Footer Links -->
+    <HBox styleClass="consumer-rights-footer" spacing="24">
+        <Hyperlink fx:id="viewTermsLink" text="View Terms of Service"
+                   styleClass="consumer-rights-link"/>
+        <Hyperlink fx:id="viewPrivacyLink" text="View Privacy Notice"
+                   styleClass="consumer-rights-link"/>
+    </HBox>
+
+</VBox>

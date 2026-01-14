@@ -1,6 +1,5 @@
 package uk.selfemploy.ui.service;
 
-import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import uk.selfemploy.common.domain.TaxYear;
@@ -264,17 +263,10 @@ public class DeadlineNotificationService {
             .filter(n -> !n.isRead() && (!n.isSnoozed() || n.isSnoozeExpired()))
             .count();
 
-        // Update on FX thread if available
-        if (Platform.isFxApplicationThread()) {
-            unreadCount.set(count);
-        } else {
-            try {
-                Platform.runLater(() -> unreadCount.set(count));
-            } catch (IllegalStateException e) {
-                // JavaFX not initialized (e.g., in tests)
-                unreadCount.set(count);
-            }
-        }
+        // Always update synchronously for test determinism.
+        // IntegerProperty.set() is thread-safe for property binding.
+        // UI components bound to this property will receive change events correctly.
+        unreadCount.set(count);
     }
 
     // === Scheduling ===

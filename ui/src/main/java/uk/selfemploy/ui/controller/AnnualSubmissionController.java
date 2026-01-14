@@ -9,9 +9,11 @@ import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
+import uk.selfemploy.ui.viewmodel.SubmissionDeclarationViewModel;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -78,11 +80,26 @@ public class AnnualSubmissionController {
     @FXML private HBox submissionDisclaimerBanner;
     @FXML private Label submissionDisclaimerText;
 
-    // Declaration Card (SE-506)
+    // 6-Checkbox Declaration Card (SE-512)
     @FXML private VBox declarationCard;
-    @FXML private CheckBox declarationCheckbox;
-    @FXML private HBox timestampBox;
+    @FXML private VBox declarationRows;
+    @FXML private HBox decl1Row;
+    @FXML private HBox decl2Row;
+    @FXML private HBox decl3Row;
+    @FXML private HBox decl4Row;
+    @FXML private HBox decl5Row;
+    @FXML private HBox decl6Row;
+    @FXML private CheckBox decl1Checkbox;
+    @FXML private CheckBox decl2Checkbox;
+    @FXML private CheckBox decl3Checkbox;
+    @FXML private CheckBox decl4Checkbox;
+    @FXML private CheckBox decl5Checkbox;
+    @FXML private CheckBox decl6Checkbox;
+    @FXML private HBox progressSection;
+    @FXML private Label progressLabel;
+    @FXML private VBox timestampSection;
     @FXML private Label timestampLabel;
+    @FXML private Label declarationIdLabel;
 
     // Action Bar
     @FXML private HBox actionBar;
@@ -97,9 +114,10 @@ public class AnnualSubmissionController {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMMM yyyy");
 
-    // === ViewModel ===
+    // === ViewModels ===
 
     private AnnualSubmissionViewModel viewModel;
+    private SubmissionDeclarationViewModel declarationViewModel;
 
     /**
      * Initializes the controller after FXML injection.
@@ -111,6 +129,90 @@ public class AnnualSubmissionController {
         setupBindings();
         setupListeners();
         initializeDisclaimers();
+    }
+
+    /**
+     * Initializes the 6-checkbox declaration ViewModel for a specific tax year (SE-512).
+     *
+     * @param taxYear the tax year label (e.g., "2025-26")
+     */
+    private void initializeDeclarationViewModel(String taxYear) {
+        declarationViewModel = new SubmissionDeclarationViewModel(Clock.systemUTC(), taxYear);
+        setupDeclarationBindings();
+    }
+
+    /**
+     * Sets up bindings between the 6 checkboxes and the SubmissionDeclarationViewModel.
+     */
+    private void setupDeclarationBindings() {
+        if (declarationViewModel == null) {
+            return;
+        }
+
+        // Bind checkboxes to ViewModel properties (bidirectional)
+        decl1Checkbox.selectedProperty().bindBidirectional(declarationViewModel.accuracyStatementProperty());
+        decl2Checkbox.selectedProperty().bindBidirectional(declarationViewModel.penaltiesWarningProperty());
+        decl3Checkbox.selectedProperty().bindBidirectional(declarationViewModel.recordKeepingProperty());
+        decl4Checkbox.selectedProperty().bindBidirectional(declarationViewModel.calculationVerificationProperty());
+        decl5Checkbox.selectedProperty().bindBidirectional(declarationViewModel.legalEffectProperty());
+        decl6Checkbox.selectedProperty().bindBidirectional(declarationViewModel.identityConfirmationProperty());
+
+        // Bind progress label
+        progressLabel.textProperty().bind(declarationViewModel.progressTextProperty());
+
+        // Bind timestamp section visibility
+        timestampSection.visibleProperty().bind(declarationViewModel.showTimestampSectionProperty());
+        timestampSection.managedProperty().bind(declarationViewModel.showTimestampSectionProperty());
+
+        // Bind submit button to completion state
+        submitButton.disableProperty().bind(declarationViewModel.isCompleteProperty().not());
+
+        // Update submit helper text based on completion
+        declarationViewModel.isCompleteProperty().addListener((obs, wasComplete, isComplete) -> {
+            if (isComplete) {
+                submitHelperText.setText("Ready to submit");
+                submitHelperText.getStyleClass().add("ready");
+                submitButton.getStyleClass().add("ready");
+
+                // Update timestamp display
+                timestampLabel.setText("Timestamp: " + declarationViewModel.getTimestampDisplay());
+                declarationIdLabel.setText("Declaration ID: " + declarationViewModel.getDeclarationIdDisplay());
+            } else {
+                submitHelperText.setText("Please confirm all declarations above");
+                submitHelperText.getStyleClass().remove("ready");
+                submitButton.getStyleClass().remove("ready");
+            }
+        });
+
+        // Add checked style to rows when checkbox is selected
+        setupRowStyleBindings();
+    }
+
+    /**
+     * Sets up style bindings for declaration rows (checked state).
+     */
+    private void setupRowStyleBindings() {
+        bindRowCheckedStyle(decl1Row, decl1Checkbox);
+        bindRowCheckedStyle(decl2Row, decl2Checkbox);
+        bindRowCheckedStyle(decl3Row, decl3Checkbox);
+        bindRowCheckedStyle(decl4Row, decl4Checkbox);
+        bindRowCheckedStyle(decl5Row, decl5Checkbox);
+        bindRowCheckedStyle(decl6Row, decl6Checkbox);
+    }
+
+    /**
+     * Binds the "checked" style class to a row based on checkbox selection.
+     */
+    private void bindRowCheckedStyle(HBox row, CheckBox checkbox) {
+        checkbox.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            if (isSelected) {
+                if (!row.getStyleClass().contains("checked")) {
+                    row.getStyleClass().add("checked");
+                }
+            } else {
+                row.getStyleClass().remove("checked");
+            }
+        });
     }
 
     /**
@@ -137,6 +239,9 @@ public class AnnualSubmissionController {
         viewModel.setTotalExpenses(totalExpenses);
         viewModel.setNetProfit(netProfit);
         viewModel.startSubmission(taxYear);
+
+        // Initialize the 6-checkbox declaration ViewModel (SE-512)
+        initializeDeclarationViewModel(taxYear.label());
     }
 
     /**
@@ -144,6 +249,13 @@ public class AnnualSubmissionController {
      */
     public AnnualSubmissionViewModel getViewModel() {
         return viewModel;
+    }
+
+    /**
+     * Gets the declaration ViewModel for testing purposes (SE-512).
+     */
+    public SubmissionDeclarationViewModel getDeclarationViewModel() {
+        return declarationViewModel;
     }
 
     // === Event Handlers ===
@@ -207,57 +319,17 @@ public class AnnualSubmissionController {
     }
 
     /**
-     * Handles declaration checkbox state change (SE-506).
-     * Updates the ViewModel and UI elements based on checkbox state.
+     * Handles declaration checkbox state change (SE-512).
+     * This method is called from FXML when any of the 6 checkboxes change.
+     * The actual state updates are handled by the ViewModel bindings.
      */
     @FXML
     private void handleDeclarationChange() {
-        boolean isChecked = declarationCheckbox.isSelected();
+        // The checkbox bindings automatically update the ViewModel
+        // This method exists for any additional UI updates needed on checkbox change
 
-        // Update ViewModel - this will automatically record timestamp (AC-4)
-        viewModel.setDeclarationConfirmed(isChecked);
-
-        // Update UI elements
-        updateDeclarationUI(isChecked);
-    }
-
-    /**
-     * Updates the declaration UI based on checkbox state.
-     *
-     * @param isChecked whether the declaration checkbox is checked
-     */
-    private void updateDeclarationUI(boolean isChecked) {
-        if (isChecked) {
-            // Show timestamp (AC-4)
-            Instant timestamp = viewModel.getDeclarationTimestamp();
-            if (timestamp != null) {
-                String timeStr = timestamp.atZone(ZoneId.systemDefault()).format(TIME_FORMATTER);
-                String dateStr = timestamp.atZone(ZoneId.systemDefault()).format(DATE_FORMATTER);
-                timestampLabel.setText(String.format("Declaration confirmed at %s on %s", timeStr, dateStr));
-            }
-            timestampBox.setVisible(true);
-            timestampBox.setManaged(true);
-
-            // Update helper text (AC-3)
-            submitHelperText.setText("Ready to submit");
-            submitHelperText.getStyleClass().add("ready");
-
-            // Enable submit button and change to green style
-            submitButton.setDisable(false);
-            submitButton.getStyleClass().add("ready");
-        } else {
-            // Hide timestamp
-            timestampBox.setVisible(false);
-            timestampBox.setManaged(false);
-
-            // Update helper text (AC-3)
-            submitHelperText.setText("Please confirm the declaration above");
-            submitHelperText.getStyleClass().remove("ready");
-
-            // Disable submit button and remove green style
-            submitButton.setDisable(true);
-            submitButton.getStyleClass().remove("ready");
-        }
+        // Note: Row style updates, progress updates, and timestamp section visibility
+        // are all handled by the setupDeclarationBindings() method
     }
 
     // === Private Methods ===
@@ -389,14 +461,15 @@ public class AnnualSubmissionController {
                     submissionDisclaimerBanner.setVisible(true);
                     submissionDisclaimerBanner.setManaged(true);
                 }
-                // Show declaration card and submit container (SE-506, AC-1)
+                // Show declaration card and submit container (SE-512)
                 declarationCard.setVisible(true);
                 declarationCard.setManaged(true);
                 submitContainer.setVisible(true);
                 submitContainer.setManaged(true);
-                // Reset declaration checkbox state
-                declarationCheckbox.setSelected(false);
-                updateDeclarationUI(false);
+                // Reset all 6 declaration checkboxes (SE-512)
+                if (declarationViewModel != null) {
+                    declarationViewModel.reset();
+                }
             }
         }
     }
@@ -429,8 +502,16 @@ public class AnnualSubmissionController {
                 calculateButton.setDisable(true);
                 reviewButton.setDisable(true);
                 submitButton.setDisable(true);
-                // Disable declaration checkbox during submission (SE-506)
-                declarationCheckbox.setDisable(true);
+                // Disable all 6 declaration checkboxes during submission (SE-512)
+                if (declarationViewModel != null) {
+                    declarationViewModel.disabledProperty().set(true);
+                }
+                decl1Checkbox.setDisable(true);
+                decl2Checkbox.setDisable(true);
+                decl3Checkbox.setDisable(true);
+                decl4Checkbox.setDisable(true);
+                decl5Checkbox.setDisable(true);
+                decl6Checkbox.setDisable(true);
             }
             case COMPLETED -> {
                 successPanel.setVisible(true);

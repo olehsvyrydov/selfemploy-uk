@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Employment Income Warning Banner - SE-809
+
+  A reusable warning banner that appears when employment income (PAYE)
+  is detected. This app is designed for self-employment only.
+
+  Usage: Include this component in pages where the warning should appear.
+  Controller must provide EmploymentIncomeWarningViewModel binding.
+-->
+
+<HBox fx:id="employmentWarningBanner" styleClass="employment-warning-banner"
+      alignment="TOP_LEFT" spacing="16" managed="false" visible="false"
+      xmlns:fx="http://javafx.com/fxml">
+
+    <!-- Warning Icon -->
+    <StackPane styleClass="employment-warning-icon">
+        <Label text="!" styleClass="employment-warning-icon-text"/>
+    </StackPane>
+
+    <!-- Content -->
+    <VBox spacing="8" HBox.hgrow="ALWAYS">
+
+        <!-- Title -->
+        <Label fx:id="warningTitle" text="Employment Income Detected"
+               styleClass="employment-warning-title"/>
+
+        <!-- Body -->
+        <VBox spacing="4">
+            <Label fx:id="warningParagraph1" styleClass="employment-warning-text" wrapText="true">
+                <text>This application is designed for SELF-EMPLOYMENT income only.
+                      If you receive income from employment (PAYE), you'll need to
+                      report that separately through HMRC's Self Assessment portal.</text>
+            </Label>
+            <Label fx:id="warningParagraph2" styleClass="employment-warning-text" wrapText="true">
+                <text>Your employer should provide a P60 showing your employment
+                      income and tax paid, which you'll need for your tax return.</text>
+            </Label>
+        </VBox>
+
+        <!-- Actions -->
+        <HBox styleClass="employment-warning-actions" spacing="24" alignment="CENTER_LEFT">
+            <Hyperlink fx:id="hmrcGuidanceLink"
+                       text="View HMRC guidance on mixed income"
+                       styleClass="employment-warning-link"/>
+            <Hyperlink fx:id="dismissLink"
+                       text="I understand, dismiss"
+                       styleClass="employment-warning-dismiss"/>
+        </HBox>
+
+    </VBox>
+</HBox>

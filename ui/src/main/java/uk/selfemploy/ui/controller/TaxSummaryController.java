@@ -13,6 +13,7 @@ import javafx.stage.FileChooser;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
 import java.io.File;
@@ -85,6 +86,18 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     @FXML private Label niTotalLabel;
     @FXML private VBox niContent;
 
+    // Class 2 NI Section (SE-810)
+    @FXML private VBox class2NiCard;
+    @FXML private Label class2Title;
+    @FXML private Label voluntaryBadge;
+    @FXML private Button class2HelpBtn;
+    @FXML private Label class2BodyText;
+    @FXML private Label class2WeeklyLabel;
+    @FXML private Label class2WeeklyValue;
+    @FXML private Label class2AnnualValue;
+    @FXML private Label pensionInsightText;
+    @FXML private Hyperlink statePensionLink;
+
     // POA Section
     @FXML private VBox poaSection;
     @FXML private Label poaToggle;
@@ -112,6 +125,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     // === State ===
 
     private TaxSummaryViewModel viewModel;
+    private Class2NIClarificationViewModel class2ViewModel;
     private TaxYear taxYear;
 
     // Section expansion state
@@ -126,8 +140,12 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         if (viewModel == null) {
             viewModel = new TaxSummaryViewModel();
         }
+        if (class2ViewModel == null) {
+            class2ViewModel = new Class2NIClarificationViewModel();
+        }
         setupBindings();
         initializeDisclaimers();
+        initializeClass2Section();
     }
 
     /**
@@ -143,6 +161,63 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             taxDisclaimerBanner.setVisible(true);
             taxDisclaimerBanner.setManaged(true);
         }
+    }
+
+    /**
+     * Initializes the Class 2 NI clarification section (SE-810).
+     * Sets up static content and binds dynamic properties to the ViewModel.
+     */
+    private void initializeClass2Section() {
+        if (class2ViewModel == null) {
+            return;
+        }
+
+        // Bind visibility
+        if (class2NiCard != null) {
+            class2NiCard.visibleProperty().bind(class2ViewModel.visibleProperty());
+            class2NiCard.managedProperty().bind(class2ViewModel.visibleProperty());
+        }
+
+        // Bind voluntary badge
+        if (voluntaryBadge != null) {
+            voluntaryBadge.visibleProperty().bind(class2ViewModel.showVoluntaryBadgeProperty());
+            voluntaryBadge.managedProperty().bind(class2ViewModel.showVoluntaryBadgeProperty());
+        }
+
+        // Bind text content
+        if (class2Title != null) {
+            class2Title.textProperty().bind(class2ViewModel.titleTextProperty());
+        }
+        if (class2BodyText != null) {
+            class2BodyText.textProperty().bind(class2ViewModel.bodyTextProperty());
+        }
+        if (pensionInsightText != null) {
+            pensionInsightText.textProperty().bind(class2ViewModel.pensionInsightTextProperty());
+        }
+
+        // Set static rate information
+        if (class2WeeklyLabel != null) {
+            class2WeeklyLabel.setText(class2ViewModel.getWeeklyRateLabel());
+        }
+        if (class2WeeklyValue != null) {
+            class2WeeklyValue.setText(class2ViewModel.getFormattedWeeklyRate());
+        }
+        if (class2AnnualValue != null) {
+            class2AnnualValue.setText(class2ViewModel.getFormattedAnnualAmount());
+        }
+    }
+
+    /**
+     * Updates the Class 2 NI section based on the current net profit.
+     */
+    private void updateClass2Section() {
+        if (class2ViewModel == null || viewModel == null) {
+            return;
+        }
+
+        // Update the ViewModel based on net profit
+        BigDecimal netProfit = viewModel.getNetProfit();
+        class2ViewModel.updateForProfit(netProfit);
     }
 
     @Override
@@ -473,6 +548,30 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         );
     }
 
+    @FXML
+    void handleShowClass2Help(ActionEvent event) {
+        showInfo("About Class 2 National Insurance",
+            "Class 2 National Insurance is a flat-rate contribution paid by " +
+            "self-employed people.\n\n" +
+            "Key points:\n" +
+            "• It's a fixed weekly amount (not based on profits)\n" +
+            "• Contributes to your State Pension entitlement\n" +
+            "• You need 35 qualifying years for the full State Pension\n" +
+            "• Each year you pay counts as a qualifying year\n\n" +
+            "Small Profits Threshold (SPT):\n" +
+            "If your profits are below £6,725, Class 2 NI is voluntary. " +
+            "However, you may still want to pay to protect your State Pension.\n\n" +
+            "Full State Pension (2025/26): £221.20 per week (£11,502/year)"
+        );
+    }
+
+    @FXML
+    void handleStatePensionLink(ActionEvent event) {
+        if (class2ViewModel != null) {
+            openUrl(class2ViewModel.getStatePensionForecastUrl());
+        }
+    }
+
     // === Private Helper Methods ===
 
     private void setupBindings() {
@@ -562,6 +661,9 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
         // Update POA section
         updatePoaSection();
+
+        // Update Class 2 NI section (SE-810)
+        updateClass2Section();
 
         // Update total due card
         if (taxYearDueLabel != null && taxYear != null) {
@@ -766,6 +868,17 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    private void openUrl(String url) {
+        try {
+            java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+            if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+                desktop.browse(new java.net.URI(url));
+            }
+        } catch (Exception e) {
+            showError("Unable to Open Link", "Could not open the link in your browser.\n\nURL: " + url);
+        }
     }
 
     private String formatCurrency(BigDecimal amount) {

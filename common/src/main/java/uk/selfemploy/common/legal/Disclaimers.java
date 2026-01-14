@@ -44,6 +44,11 @@ public final class Disclaimers {
     public static final String PDF_CONFIRMATION_ID = "PDF_CONFIRMATION_V1";
 
     /**
+     * Version identifier for the consumer rights disclaimer (SE-513).
+     */
+    public static final String CONSUMER_RIGHTS_ID = "CONSUMER_RIGHTS_V1";
+
+    /**
      * Tax Summary Disclaimer (AC-1).
      *
      * <p>Displayed prominently on the tax summary view to inform users that
@@ -94,6 +99,63 @@ public final class Disclaimers {
         "DISCLAIMER: This software does not constitute professional tax, legal, or financial advice. " +
         "The calculations shown are estimates based on the data you have provided. " +
         "Always consult a qualified professional for advice specific to your circumstances.";
+
+    // === Consumer Rights Act 2015 Disclaimers (SE-513) ===
+
+    /**
+     * Consumer Rights Disclaimer Title.
+     *
+     * <p>SE-513: Displayed in the Settings/About section.
+     */
+    public static final String CONSUMER_RIGHTS_TITLE = "Software Accuracy & Your Rights";
+
+    /**
+     * Consumer Rights Disclaimer - First Paragraph.
+     *
+     * <p>SE-513: Explains the software's purpose and user responsibility.
+     */
+    public static final String CONSUMER_RIGHTS_PARAGRAPH_1 =
+        "This software provides tax calculation tools based on published HMRC rates and thresholds. " +
+        "While we strive for accuracy, you are responsible for verifying all calculations before submission to HMRC.";
+
+    /**
+     * Consumer Rights Disclaimer - Second Paragraph.
+     *
+     * <p>SE-513: Addresses Consumer Rights Act 2015 and open-source nature.
+     */
+    public static final String CONSUMER_RIGHTS_PARAGRAPH_2 =
+        "Under the Consumer Rights Act 2015, digital content must be of satisfactory quality. " +
+        "As this is free, open-source software provided under the Apache License 2.0, " +
+        "the statutory remedies for defects differ from paid software.";
+
+    /**
+     * Consumer Rights Disclaimer - Recommendations Header.
+     */
+    public static final String CONSUMER_RIGHTS_RECOMMENDATIONS_HEADER = "We strongly recommend:";
+
+    /**
+     * Consumer Rights Disclaimer - First Recommendation.
+     */
+    public static final String CONSUMER_RIGHTS_RECOMMENDATION_1 = "Reviewing all calculations before submission";
+
+    /**
+     * Consumer Rights Disclaimer - Second Recommendation.
+     */
+    public static final String CONSUMER_RIGHTS_RECOMMENDATION_2 = "Keeping your own records to verify figures";
+
+    /**
+     * Consumer Rights Disclaimer - Third Recommendation.
+     */
+    public static final String CONSUMER_RIGHTS_RECOMMENDATION_3 = "Consulting a qualified accountant for complex situations";
+
+    /**
+     * Consumer Rights Disclaimer - Acknowledgment Statement.
+     *
+     * <p>SE-513: Final statement about user responsibility.
+     */
+    public static final String CONSUMER_RIGHTS_ACKNOWLEDGMENT =
+        "By using this software, you acknowledge that tax calculations are estimates " +
+        "and that you bear responsibility for the accuracy of any submissions made to HMRC.";
 
     /**
      * Private constructor to prevent instantiation.

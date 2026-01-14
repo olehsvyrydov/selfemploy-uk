@@ -1128,3 +1128,100 @@
     -fx-border-color: -fx-danger;
     -fx-border-width: 0 0 0 4;
 }
+
+/*
+ * ===== Employment Income Warning (SE-809) =====
+ * Warning banner for users with PAYE income alongside self-employment.
+ * Designed by /aura - SE-809 UI Design Specification.
+ */
+
+.employment-warning-banner {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: #ffc107;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 20;
+}
+
+.employment-warning-icon {
+    -fx-background-color: rgba(255, 193, 7, 0.2);
+    -fx-background-radius: 16;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-alignment: center;
+}
+
+.employment-warning-icon-text {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+}
+
+.employment-warning-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+}
+
+.employment-warning-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6d5206;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 3;
+}
+
+.employment-warning-text-emphasis {
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+}
+
+.employment-warning-actions {
+    -fx-padding: 12 0 0 0;
+}
+
+.employment-warning-link {
+    -fx-text-fill: #0066cc;
+    -fx-font-size: 13px;
+}
+
+.employment-warning-link:hover {
+    -fx-underline: true;
+}
+
+.employment-warning-dismiss {
+    -fx-text-fill: #6d5206;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.employment-warning-dismiss:hover {
+    -fx-text-fill: #856404;
+    -fx-underline: true;
+}
+
+/* Non-dismissable variant (Annual Submission) */
+.employment-warning-banner.critical {
+    -fx-border-color: #fd7e14;
+    -fx-background-color: #ffe5d6;
+}
+
+.employment-warning-banner.critical .employment-warning-title,
+.employment-warning-banner.critical .employment-warning-icon-text {
+    -fx-text-fill: #9a4e00;
+}
+
+.employment-warning-banner.critical .employment-warning-text {
+    -fx-text-fill: #7a3e00;
+}
+
+/* Compact variant for limited space */
+.employment-warning-banner.compact {
+    -fx-padding: 12 16;
+}
+
+.employment-warning-banner.compact .employment-warning-title {
+    -fx-font-size: 14px;
+}

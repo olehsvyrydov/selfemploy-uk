@@ -651,3 +651,101 @@
         -fx-padding: 12;
     }
 }
+
+/*
+ * ===== Consumer Rights Disclaimer Card (SE-513) =====
+ * Design: /aura - SE-513 UI Design Specification
+ * Legal content: /alex (Senior UK Legal Counsel)
+ * Consumer Rights Act 2015 compliance
+ */
+
+.consumer-rights-card {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+}
+
+.consumer-rights-header {
+    -fx-padding: 0 0 16 0;
+}
+
+.consumer-rights-icon {
+    -fx-background-color: #e6f0ff;
+    -fx-background-radius: 16;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-alignment: center;
+}
+
+.consumer-rights-icon-text {
+    -fx-font-size: 16px;
+    -fx-text-fill: #0066cc;
+}
+
+.consumer-rights-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.consumer-rights-body {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6c757d;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 4;
+}
+
+.consumer-rights-emphasis {
+    -fx-font-weight: bold;
+    -fx-text-fill: #495057;
+}
+
+/* Recommendation List */
+.consumer-rights-list {
+    -fx-padding: 8 0 8 16;
+}
+
+.consumer-rights-list-item {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6c757d;
+    -fx-padding: 4 0;
+}
+
+.consumer-rights-bullet {
+    -fx-text-fill: #0066cc;
+    -fx-font-size: 14px;
+    -fx-min-width: 20;
+}
+
+/* Acknowledgment Statement */
+.consumer-rights-acknowledgment {
+    -fx-background-color: #fff8e6;
+    -fx-border-color: #ffc107;
+    -fx-border-width: 0 0 0 3;
+    -fx-background-radius: 0 6 6 0;
+    -fx-padding: 12 16;
+    -fx-font-size: 13px;
+    -fx-text-fill: #856404;
+    -fx-font-style: italic;
+}
+
+/* Footer Links */
+.consumer-rights-footer {
+    -fx-padding: 16 0 0 0;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 1 0 0 0;
+}
+
+.consumer-rights-link {
+    -fx-text-fill: #0066cc;
+    -fx-font-size: 13px;
+}
+
+.consumer-rights-link:hover {
+    -fx-underline: true;
+}

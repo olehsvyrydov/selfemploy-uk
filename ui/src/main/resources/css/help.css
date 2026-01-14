@@ -1,0 +1,361 @@
+/*
+ * SE-701: In-App Help System Styles
+ *
+ * Design: /aura (Senior UI/UX Design Architect)
+ * Implementation: /james
+ *
+ * This stylesheet provides consistent styling for help components
+ * throughout the application.
+ */
+
+/* ===== Root Variables ===== */
+.root {
+    -fx-help-icon-size: 18;
+    -fx-help-tooltip-bg: #1e293b;
+    -fx-help-tooltip-text: white;
+    -fx-help-link-color: #93c5fd;
+    -fx-help-link-hover: #bfdbfe;
+    -fx-help-banner-bg: #f0f9ff;
+    -fx-help-banner-border: #0284c7;
+}
+
+/* ===== Help Icon Button ===== */
+.help-icon-btn {
+    -fx-background-color: transparent;
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-max-width: 20;
+    -fx-max-height: 20;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.help-icon-btn:focused {
+    -fx-background-color: transparent;
+}
+
+/* Help Icon Circle */
+.help-icon-circle {
+    -fx-background-color: transparent;
+    -fx-border-color: #adb5bd;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
+    -fx-alignment: center;
+}
+
+.help-icon-circle:hover,
+.help-icon-btn:hover .help-icon-circle {
+    -fx-border-color: #0066cc;
+    -fx-background-color: #e6f0ff;
+}
+
+.help-icon-btn:focused .help-icon-circle {
+    -fx-border-color: #0066cc;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.3), 4, 0, 0, 0);
+}
+
+/* Help Icon Text (the "?" character) */
+.help-icon-text {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #adb5bd;
+}
+
+.help-icon-circle:hover .help-icon-text,
+.help-icon-btn:hover .help-icon-text {
+    -fx-text-fill: #0066cc;
+}
+
+.help-icon-btn:focused .help-icon-text {
+    -fx-text-fill: #0066cc;
+}
+
+/* ===== Custom Tooltip Styling ===== */
+.custom-tooltip {
+    -fx-background-color: #1e293b;
+    -fx-text-fill: white;
+    -fx-padding: 12 16;
+    -fx-background-radius: 8;
+    -fx-font-size: 13px;
+    -fx-max-width: 300;
+    -fx-wrap-text: true;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 12, 0, 0, 4);
+}
+
+.tooltip-container {
+    -fx-spacing: 8;
+}
+
+.tooltip-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-text-fill: white;
+    -fx-padding: 0 0 4 0;
+}
+
+.tooltip-body {
+    -fx-font-size: 13px;
+    -fx-text-fill: #e2e8f0;
+    -fx-line-spacing: 2;
+    -fx-wrap-text: true;
+}
+
+.tooltip-link {
+    -fx-text-fill: #93c5fd;
+    -fx-font-size: 12px;
+    -fx-padding: 8 0 0 0;
+    -fx-cursor: hand;
+}
+
+.tooltip-link:hover {
+    -fx-underline: true;
+    -fx-text-fill: #bfdbfe;
+}
+
+/* ===== Expandable Help Section ===== */
+.expandable-help {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #0066cc;
+    -fx-border-width: 0 0 0 3;
+    -fx-padding: 16;
+    -fx-background-radius: 0 8 8 0;
+}
+
+.expandable-help-header {
+    -fx-cursor: hand;
+    -fx-padding: 8 0;
+    -fx-spacing: 8;
+}
+
+.expandable-help-toggle {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0066cc;
+}
+
+.expandable-help-toggle:hover {
+    -fx-underline: true;
+}
+
+.expandable-help-icon {
+    -fx-font-size: 12px;
+    -fx-text-fill: #0066cc;
+}
+
+.expandable-help-content {
+    -fx-padding: 12 0 0 0;
+    -fx-spacing: 12;
+}
+
+.expandable-help-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #374151;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 3;
+}
+
+/* Calculation/Example Box within Help */
+.help-calculation-box {
+    -fx-background-color: white;
+    -fx-padding: 12;
+    -fx-background-radius: 6;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-size: 13px;
+}
+
+.help-calculation-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+    -fx-padding: 0 0 8 0;
+}
+
+.help-calculation-row {
+    -fx-spacing: 16;
+    -fx-padding: 2 0;
+}
+
+.help-calculation-label {
+    -fx-min-width: 150;
+    -fx-text-fill: #374151;
+}
+
+.help-calculation-value {
+    -fx-text-fill: #111827;
+    -fx-font-weight: bold;
+}
+
+.help-calculation-result {
+    -fx-text-fill: #059669;
+    -fx-font-weight: bold;
+}
+
+/* ===== External Link Styling ===== */
+.help-external-link {
+    -fx-text-fill: #0066cc;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-padding: 4 0;
+}
+
+.help-external-link:hover {
+    -fx-underline: true;
+}
+
+.help-external-link-icon {
+    -fx-font-size: 10px;
+    -fx-text-fill: #6b7280;
+    -fx-padding: 0 0 0 4;
+}
+
+/* ===== Info Banner (Help Context) ===== */
+.info-banner-help {
+    -fx-background-color: #f0f9ff;
+    -fx-border-color: #0284c7;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+    -fx-spacing: 12;
+}
+
+.info-banner-help-header {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.info-banner-icon {
+    -fx-background-color: #0284c7;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-min-width: 24;
+    -fx-min-height: 24;
+    -fx-max-width: 24;
+    -fx-max-height: 24;
+    -fx-background-radius: 12;
+    -fx-alignment: center;
+}
+
+.info-banner-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0c4a6e;
+}
+
+.info-banner-body {
+    -fx-font-size: 14px;
+    -fx-text-fill: #334155;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 2;
+}
+
+/* ===== Field-Level Help Text ===== */
+.field-help-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+    -fx-padding: 4 0 0 0;
+    -fx-wrap-text: true;
+}
+
+/* ===== Label with Help Icon Container ===== */
+.label-with-help {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.label-with-help .label {
+    -fx-font-weight: normal;
+}
+
+/* ===== Section Header with Help ===== */
+.section-header-with-help {
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+    -fx-padding: 0 0 8 0;
+}
+
+.section-header-with-help .section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827;
+}
+
+/* ===== Help Modal/Popup ===== */
+.help-popup {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 20, 0, 0, 8);
+    -fx-max-width: 400;
+}
+
+.help-popup-header {
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+    -fx-padding: 0 0 16 0;
+    -fx-border-color: transparent transparent #e5e7eb transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.help-popup-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827;
+}
+
+.help-popup-close {
+    -fx-background-color: transparent;
+    -fx-font-size: 18px;
+    -fx-text-fill: #6b7280;
+    -fx-cursor: hand;
+    -fx-padding: 4 8;
+}
+
+.help-popup-close:hover {
+    -fx-text-fill: #111827;
+    -fx-background-color: #f3f4f6;
+    -fx-background-radius: 4;
+}
+
+.help-popup-body {
+    -fx-padding: 16 0;
+    -fx-spacing: 12;
+}
+
+.help-popup-footer {
+    -fx-padding: 16 0 0 0;
+    -fx-border-color: #e5e7eb transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-alignment: center-right;
+}
+
+/* ===== Keyboard Hints ===== */
+.keyboard-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: #9ca3af;
+    -fx-padding: 4 0 0 0;
+}
+
+.keyboard-key {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #374151;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6;
+    -fx-background-radius: 3;
+    -fx-border-color: #d1d5db;
+    -fx-border-width: 1;
+    -fx-border-radius: 3;
+}

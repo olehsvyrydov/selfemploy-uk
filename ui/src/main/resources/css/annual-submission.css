@@ -449,3 +449,113 @@
 .button-submit-hmrc.ready:hover {
     -fx-background-color: derive(#28a745, -10%);
 }
+
+/*
+ * ===== 6-Checkbox Declaration Card (SE-512) =====
+ * Implements the 6 HMRC-required confirmations for annual submission.
+ * Designed by /aura - SE-512 UI Design Specification.
+ */
+
+/* ===== Declaration Card 6-Box ===== */
+.declaration-card-6box {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: #ffc107;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 12 12 0;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+}
+
+.declaration-header {
+    -fx-padding: 0 0 16 0;
+}
+
+.declaration-instruction {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-padding: 0 0 8 0;
+}
+
+/* ===== Declaration Rows ===== */
+.declaration-row {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+
+.declaration-row:hover {
+    -fx-background-color: derive(-fx-bg-secondary, -3%);
+    -fx-cursor: hand;
+}
+
+.declaration-row.checked {
+    -fx-border-color: #28a745;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-background-color: #f8fdf9;
+}
+
+/* Row 1 and 2 are HMRC official - slightly emphasized */
+.declaration-row.hmrc-official {
+    -fx-background-color: #fffbf0;
+}
+
+.declaration-row.hmrc-official:hover {
+    -fx-background-color: derive(#fffbf0, -3%);
+}
+
+.declaration-row.hmrc-official.checked {
+    -fx-background-color: #f8fdf9;
+}
+
+/* ===== Progress Counter ===== */
+.declaration-progress {
+    -fx-padding: 16 0;
+}
+
+.declaration-progress-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.declaration-progress-text.complete {
+    -fx-text-fill: #28a745;
+    -fx-font-weight: bold;
+}
+
+/* ===== Timestamp Section ===== */
+.declaration-timestamp-section {
+    -fx-background-color: #d4edda;
+    -fx-border-color: #28a745;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16;
+}
+
+.declaration-timestamp-icon {
+    -fx-text-fill: #28a745;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.declaration-timestamp-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #155724;
+}
+
+.declaration-timestamp-details {
+    -fx-font-size: 13px;
+    -fx-text-fill: #155724;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+}
+
+.declaration-timestamp-note {
+    -fx-font-size: 12px;
+    -fx-text-fill: #2e7d32;
+    -fx-font-style: italic;
+}

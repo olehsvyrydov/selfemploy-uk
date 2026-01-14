@@ -201,42 +201,94 @@
             </VBox>
         </HBox>
 
-        <!-- Declaration Card (SE-506) - Displayed before submit button -->
-        <VBox fx:id="declarationCard" styleClass="declaration-card" spacing="16" visible="false" managed="false">
+        <!-- 6-Checkbox Declaration Card (SE-512) -->
+        <VBox fx:id="declarationCard" styleClass="declaration-card-6box" spacing="12" visible="false" managed="false">
 
-            <!-- Section Header -->
-            <HBox alignment="CENTER_LEFT" spacing="8">
+            <!-- Header -->
+            <HBox styleClass="declaration-header" alignment="CENTER_LEFT" spacing="12">
                 <Label text="!" styleClass="declaration-warning-icon"/>
                 <Label text="LEGAL DECLARATION" styleClass="declaration-title"/>
             </HBox>
 
-            <!-- Checkbox with Declaration Text -->
-            <HBox alignment="TOP_LEFT" spacing="16">
-                <!-- Large Checkbox -->
-                <CheckBox fx:id="declarationCheckbox" styleClass="declaration-checkbox"
-                          onAction="#handleDeclarationChange"/>
+            <Label text="Please confirm each of the following statements:" styleClass="declaration-instruction"/>
 
-                <!-- Declaration Text -->
-                <VBox spacing="12" HBox.hgrow="ALWAYS">
-                    <!-- Main Declaration (AC-5: HMRC official text) -->
-                    <Label styleClass="declaration-text" wrapText="true">
+            <!-- Declaration Rows Container -->
+            <VBox fx:id="declarationRows" spacing="12">
+
+                <!-- Row 1: Accuracy Statement (HMRC Official) -->
+                <HBox fx:id="decl1Row" styleClass="declaration-row, hmrc-official" alignment="TOP_LEFT" spacing="16">
+                    <CheckBox fx:id="decl1Checkbox" styleClass="declaration-checkbox"
+                              onAction="#handleDeclarationChange"/>
+                    <Label fx:id="decl1Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
                         <text>I declare that the information I have given on this tax return and any supplementary pages is correct and complete to the best of my knowledge and belief.</text>
                     </Label>
+                </HBox>
 
-                    <!-- Warning Statement -->
-                    <Label styleClass="declaration-warning-text" wrapText="true">
+                <!-- Row 2: Penalties Warning (HMRC Official) -->
+                <HBox fx:id="decl2Row" styleClass="declaration-row, hmrc-official" alignment="TOP_LEFT" spacing="16">
+                    <CheckBox fx:id="decl2Checkbox" styleClass="declaration-checkbox"
+                              onAction="#handleDeclarationChange"/>
+                    <Label fx:id="decl2Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
                         <text>I understand that I may have to pay financial penalties and face prosecution if I give false information.</text>
                     </Label>
+                </HBox>
 
-                    <!-- Timestamp (shown after checking) -->
-                    <HBox fx:id="timestampBox" styleClass="declaration-timestamp"
-                          alignment="CENTER_LEFT" spacing="8" managed="false" visible="false">
-                        <Label text="✓" styleClass="timestamp-icon"/>
-                        <Label fx:id="timestampLabel" text=""
-                               styleClass="timestamp-text"/>
-                    </HBox>
-                </VBox>
+                <!-- Row 3: Record Keeping -->
+                <HBox fx:id="decl3Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
+                    <CheckBox fx:id="decl3Checkbox" styleClass="declaration-checkbox"
+                              onAction="#handleDeclarationChange"/>
+                    <Label fx:id="decl3Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
+                        <text>I confirm that I have kept records to support the entries in this return and will retain them for at least 5 years from the filing deadline.</text>
+                    </Label>
+                </HBox>
+
+                <!-- Row 4: Calculation Verification -->
+                <HBox fx:id="decl4Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
+                    <CheckBox fx:id="decl4Checkbox" styleClass="declaration-checkbox"
+                              onAction="#handleDeclarationChange"/>
+                    <Label fx:id="decl4Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
+                        <text>I have reviewed the tax calculation and believe it to be accurate based on the information I have provided.</text>
+                    </Label>
+                </HBox>
+
+                <!-- Row 5: Legal Effect -->
+                <HBox fx:id="decl5Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
+                    <CheckBox fx:id="decl5Checkbox" styleClass="declaration-checkbox"
+                              onAction="#handleDeclarationChange"/>
+                    <Label fx:id="decl5Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
+                        <text>I understand that submitting this return to HMRC is a legal act and has the same effect as signing a paper return.</text>
+                    </Label>
+                </HBox>
+
+                <!-- Row 6: Identity Confirmation -->
+                <HBox fx:id="decl6Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
+                    <CheckBox fx:id="decl6Checkbox" styleClass="declaration-checkbox"
+                              onAction="#handleDeclarationChange"/>
+                    <Label fx:id="decl6Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
+                        <text>I confirm that I am the person whose details appear on this return, or I am authorised to submit on their behalf.</text>
+                    </Label>
+                </HBox>
+
+            </VBox>
+
+            <!-- Progress Counter -->
+            <HBox fx:id="progressSection" styleClass="declaration-progress" alignment="CENTER">
+                <Label fx:id="progressLabel" text="0 of 6 confirmations completed"
+                       styleClass="declaration-progress-text"/>
             </HBox>
+
+            <!-- Timestamp Section (hidden initially) -->
+            <VBox fx:id="timestampSection" styleClass="declaration-timestamp-section"
+                  managed="false" visible="false" spacing="8">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="✓" styleClass="declaration-timestamp-icon"/>
+                    <Label text="All declarations confirmed" styleClass="declaration-timestamp-title"/>
+                </HBox>
+                <Label fx:id="timestampLabel" text="" styleClass="declaration-timestamp-details"/>
+                <Label fx:id="declarationIdLabel" text="" styleClass="declaration-timestamp-details"/>
+                <Label text="This timestamp will be included in your HMRC submission."
+                       styleClass="declaration-timestamp-note"/>
+            </VBox>
 
         </VBox>
 
