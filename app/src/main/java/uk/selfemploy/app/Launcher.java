@@ -27,8 +27,25 @@ public class Launcher extends Application {
         // Create the scene
         Scene scene = new Scene(root, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
-        // Load CSS stylesheet
-        scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+        // Load all CSS stylesheets (loaded here to avoid JPMS issues with FXML)
+        String[] stylesheets = {
+            "/css/main.css",
+            "/css/tax-summary.css",
+            "/css/legal.css",
+            "/css/annual-submission.css",
+            "/css/submission-history.css",
+            "/css/onboarding.css",
+            "/css/bank-import.css",
+            "/css/notifications.css",
+            "/css/receipt-attachment.css",
+            "/css/help.css"
+        };
+        for (String css : stylesheets) {
+            var resource = getClass().getResource(css);
+            if (resource != null) {
+                scene.getStylesheets().add(resource.toExternalForm());
+            }
+        }
 
         // Configure the stage
         primaryStage.setTitle(APP_TITLE);

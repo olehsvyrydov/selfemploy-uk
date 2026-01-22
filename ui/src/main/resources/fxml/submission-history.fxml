@@ -6,14 +6,11 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.collections.FXCollections?>
 
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <ScrollPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="uk.selfemploy.ui.controller.SubmissionHistoryController"
             styleClass="history-scroll"
             fitToWidth="true" hbarPolicy="NEVER">
-    <stylesheets>
-        <String fx:value="/css/main.css"/>
-        <String fx:value="/css/submission-history.css"/>
-    </stylesheets>
 
     <VBox fx:id="historyContainer" styleClass="history-container" spacing="20">
         <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>

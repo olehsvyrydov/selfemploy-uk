@@ -7,16 +7,12 @@
 
 <!-- SE-502: Notification Panel - Flyout from right side -->
 <!-- Design: /aura UI Design Specification -->
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox fx:id="notificationPanel" xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.NotificationPanelController"
       styleClass="notification-panel" spacing="0"
       prefWidth="380" maxWidth="380" managed="false" visible="false">
-
-    <stylesheets>
-        <String fx:value="/css/main.css"/>
-        <String fx:value="/css/notifications.css"/>
-    </stylesheets>
 
     <!-- Panel Header -->
     <HBox styleClass="notification-panel-header" alignment="CENTER_LEFT" spacing="12">

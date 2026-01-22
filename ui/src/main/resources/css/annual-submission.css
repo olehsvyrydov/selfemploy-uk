@@ -83,7 +83,7 @@
 }
 
 .step-connector {
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 0 0 2 0;
     -fx-min-height: 2;
     -fx-max-height: 2;
@@ -262,7 +262,7 @@
     -fx-text-fill: -fx-text-secondary;
     -fx-font-size: 14px;
     -fx-padding: 10 20;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -299,7 +299,7 @@
 }
 
 .separator .line {
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -347,7 +347,7 @@
 
 .declaration-checkbox > .box {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 2;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -481,7 +481,7 @@
     -fx-background-color: -fx-bg-secondary;
     -fx-background-radius: 8;
     -fx-padding: 16;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 8;
 }

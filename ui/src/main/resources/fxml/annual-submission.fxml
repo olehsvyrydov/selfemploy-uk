@@ -16,11 +16,8 @@
   - Step 4: Submit Declaration
 -->
 
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <ScrollPane fx:id="rootScroll" styleClass="annual-scroll" xmlns:fx="http://javafx.com/fxml">
-    <stylesheets>
-        <String fx:value="/css/annual-submission.css"/>
-        <String fx:value="/css/legal.css"/>
-    </stylesheets>
     <VBox styleClass="annual-container" spacing="24">
         <padding>
             <Insets top="24" right="24" bottom="24" left="24"/>

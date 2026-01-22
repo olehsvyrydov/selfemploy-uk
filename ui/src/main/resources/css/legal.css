@@ -52,7 +52,7 @@
 /* ===== Privacy Content Scroll ===== */
 .privacy-content-scroll {
     -fx-background-color: transparent;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -131,7 +131,7 @@
 /* ===== Privacy Link ===== */
 .privacy-link-container {
     -fx-padding: 16 0;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -238,7 +238,7 @@
 /* ===== ToS Content Scroll ===== */
 .tos-content-scroll {
     -fx-background-color: transparent;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -408,7 +408,7 @@
 
 /* ===== ToS Footer ===== */
 .tos-footer {
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -465,7 +465,7 @@
 .button-decline {
     -fx-background-color: transparent;
     -fx-text-fill: -fx-text-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-padding: 10 20;
     -fx-background-radius: 6;
@@ -504,7 +504,7 @@
 
 .legal-checkbox > .box {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 2;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -524,7 +524,7 @@
 /* ===== Legal Document Footer ===== */
 .legal-footer {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
     -fx-padding: 16 24;
 }

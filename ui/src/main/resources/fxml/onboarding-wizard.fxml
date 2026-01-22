@@ -5,13 +5,10 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.OnboardingController"
       styleClass="onboarding-container" spacing="0" alignment="CENTER">
-    <stylesheets>
-        <String fx:value="/css/main.css"/>
-        <String fx:value="/css/onboarding.css"/>
-    </stylesheets>
 
     <!-- Main Wizard Card -->
     <VBox styleClass="onboarding-card" maxWidth="700" spacing="0">

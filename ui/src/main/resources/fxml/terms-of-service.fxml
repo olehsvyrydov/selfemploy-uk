@@ -17,13 +17,10 @@
     - Progress bar showing scroll completion
     - Decline flow with confirmation dialog
 -->
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.TermsOfServiceController"
       styleClass="tos-container" prefWidth="900" maxHeight="750">
-    <stylesheets>
-        <String fx:value="/css/main.css"/>
-        <String fx:value="/css/legal.css"/>
-    </stylesheets>
 
     <!-- Header -->
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT">

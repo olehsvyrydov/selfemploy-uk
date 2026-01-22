@@ -17,7 +17,7 @@
 /* ===== Drop Zone ===== */
 .receipt-dropzone {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 2;
     -fx-border-style: dashed;
     -fx-border-radius: 8;
@@ -50,7 +50,7 @@
 /* ===== Attach Button ===== */
 .button-attach {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -66,7 +66,7 @@
 /* ===== Receipt Grid ===== */
 .receipt-grid {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -78,7 +78,7 @@
 /* ===== Receipt Thumbnail ===== */
 .receipt-thumbnail {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -154,7 +154,7 @@
 /* ===== Add Button in Grid ===== */
 .receipt-add-button {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 2;
     -fx-border-style: dashed;
     -fx-border-radius: 8;
@@ -183,7 +183,7 @@
 /* ===== Upload Progress ===== */
 .receipt-uploading {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;

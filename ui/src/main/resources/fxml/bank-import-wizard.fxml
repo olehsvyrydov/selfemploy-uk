@@ -5,13 +5,10 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.BankImportWizardController"
       styleClass="wizard-container" spacing="24" prefWidth="1000">
-    <stylesheets>
-        <String fx:value="/css/main.css"/>
-        <String fx:value="/css/bank-import.css"/>
-    </stylesheets>
     <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
 
     <!-- Wizard Header -->

@@ -11,13 +11,10 @@
     Design specification: /aura
     Legal content: /alex (Version 1.0)
 -->
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.PrivacyNoticeController"
       styleClass="privacy-notice-container" prefWidth="600" maxHeight="700">
-    <stylesheets>
-        <String fx:value="/css/main.css"/>
-        <String fx:value="/css/legal.css"/>
-    </stylesheets>
 
     <!-- Header -->
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT">

@@ -79,7 +79,7 @@
 /* ===== Drop Zone ===== */
 .drop-zone {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 2;
     -fx-border-style: dashed;
     -fx-border-radius: 12;
@@ -226,7 +226,7 @@
 /* ===== Wizard Footer ===== */
 .wizard-footer {
     -fx-padding: 20 0 0 0;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -296,7 +296,7 @@
 
 .mapping-combo {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 8 12;
@@ -308,7 +308,7 @@
 
 .mapping-combo-small {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 6 10;
@@ -330,7 +330,7 @@
 /* ===== Preview Table ===== */
 .preview-table {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
 }
@@ -439,7 +439,7 @@
 
 .filter-combo {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 8 12;
@@ -559,7 +559,7 @@
     -fx-text-fill: -fx-text-secondary;
     -fx-font-size: 12px;
     -fx-padding: 6 14;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -593,7 +593,7 @@
 /* ===== Summary Card ===== */
 .summary-card {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 12;
     -fx-background-radius: 12;

@@ -5,14 +5,11 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
+<!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <ScrollPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="uk.selfemploy.ui.controller.TaxSummaryController"
             styleClass="tax-summary-scroll"
             fitToWidth="true" hbarPolicy="NEVER">
-    <stylesheets>
-        <String fx:value="/css/tax-summary.css"/>
-        <String fx:value="/css/legal.css"/>
-    </stylesheets>
 
     <VBox fx:id="taxSummaryContainer" styleClass="tax-summary-container" spacing="20">
         <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>

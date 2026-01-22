@@ -69,7 +69,7 @@
 
 .tax-year-selector {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
 }
@@ -77,7 +77,7 @@
 /* ===== Sidebar ===== */
 .sidebar {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 0 1 0 0;
 }
 
@@ -146,7 +146,7 @@
 /* ===== Status Bar ===== */
 .status-bar {
     -fx-background-color: -fx-bg-tertiary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
     -fx-min-height: 36;
     -fx-max-height: 36;
@@ -313,7 +313,7 @@
 /* Action Buttons */
 .action-button {
     -fx-background-color: transparent;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -471,7 +471,7 @@
 /* ===== Forms ===== */
 .text-field, .text-area {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 10;
@@ -493,7 +493,7 @@
 /* ===== Tables ===== */
 .table-view {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
 }
@@ -565,7 +565,7 @@
 
 .search-field {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 8 12;
@@ -699,7 +699,7 @@
 /* ===== Dialog Header ===== */
 .dialog-header {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 0 0 1 0;
 }
 
@@ -752,7 +752,7 @@
 
 .form-input {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 10 16;
@@ -773,7 +773,7 @@
 /* ===== Currency Input ===== */
 .currency-input {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
 }
@@ -796,7 +796,7 @@
 /* ===== Dialog Footer ===== */
 .dialog-footer {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: -fx-border-color;
+    -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
 }
 
