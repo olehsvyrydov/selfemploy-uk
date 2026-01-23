@@ -4,10 +4,107 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1"
-      styleClass="card" spacing="20" alignment="CENTER">
-    <padding><Insets topRightBottomLeft="50"/></padding>
+<!--
+    HMRC Submission Hub - Navigation to submission features
+    - Annual Self Assessment
+    - Quarterly Updates (MTD)
+    - Submission History
+-->
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.HmrcSubmissionController"
+            styleClass="hmrc-scroll" fitToWidth="true" hbarPolicy="NEVER">
 
-    <Label text="HMRC Submission" styleClass="page-title"/>
-    <Label text="Coming soon - Submit your annual return to HMRC" styleClass="page-subtitle"/>
-</VBox>
+    <VBox styleClass="hmrc-container" spacing="24">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Page Header -->
+        <VBox spacing="8">
+            <Label text="HMRC Submission" styleClass="page-title"/>
+            <Label text="Submit your tax returns to HMRC via Making Tax Digital" styleClass="page-subtitle"/>
+        </VBox>
+
+        <!-- HMRC Connection Status -->
+        <HBox fx:id="connectionStatus" styleClass="status-banner" alignment="CENTER_LEFT" spacing="12">
+            <Label fx:id="statusIcon" text="●" styleClass="status-icon"/>
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label fx:id="statusTitle" text="HMRC Connection" styleClass="status-title"/>
+                <Label fx:id="statusMessage" text="Not connected - Click 'Connect' to authorize with HMRC" styleClass="status-message"/>
+            </VBox>
+            <VBox spacing="8">
+                <Button fx:id="connectButton" text="Connect to HMRC" styleClass="button-primary" onAction="#handleConnect"/>
+                <Button fx:id="testButton" text="Test API Connection" styleClass="button-secondary" onAction="#handleTestConnection"/>
+            </VBox>
+        </HBox>
+
+        <!-- Submission Options -->
+        <VBox spacing="16">
+            <Label text="Submission Options" styleClass="section-title"/>
+
+            <!-- Annual Self Assessment Card -->
+            <VBox fx:id="annualCard" styleClass="feature-card" spacing="12"
+                  focusTraversable="true"
+                  onMouseClicked="#handleAnnualSubmission"
+                  onKeyPressed="#handleAnnualSubmissionKey"
+                  accessibleText="Annual Self Assessment - Submit your annual tax return">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="📋" styleClass="feature-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Annual Self Assessment" styleClass="feature-title"/>
+                        <Label text="Submit your annual tax return (SA100/SA103)" styleClass="feature-description"/>
+                    </VBox>
+                    <Label text="›" styleClass="feature-arrow"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label fx:id="annualDeadlineLabel" text="Deadline: 31 January 2027" styleClass="deadline-label"/>
+                </HBox>
+            </VBox>
+
+            <!-- Quarterly Updates Card (MTD) -->
+            <VBox fx:id="quarterlyCard" styleClass="feature-card" spacing="12"
+                  focusTraversable="true"
+                  onMouseClicked="#handleQuarterlySubmission"
+                  onKeyPressed="#handleQuarterlySubmissionKey"
+                  accessibleText="Quarterly Updates - Submit quarterly income and expense updates for Making Tax Digital">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="📅" styleClass="feature-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Quarterly Updates" styleClass="feature-title"/>
+                        <Label text="Submit quarterly income/expense updates (MTD)" styleClass="feature-description"/>
+                    </VBox>
+                    <Label text="›" styleClass="feature-arrow"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label fx:id="quarterlyStatusLabel" text="Next quarter due: Q4 (Jan-Mar)" styleClass="deadline-label"/>
+                </HBox>
+            </VBox>
+
+            <!-- Submission History Card -->
+            <VBox fx:id="historyCard" styleClass="feature-card" spacing="12"
+                  focusTraversable="true"
+                  onMouseClicked="#handleSubmissionHistory"
+                  onKeyPressed="#handleSubmissionHistoryKey"
+                  accessibleText="Submission History - View past submissions and their status">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="📜" styleClass="feature-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Submission History" styleClass="feature-title"/>
+                        <Label text="View past submissions and their status" styleClass="feature-description"/>
+                    </VBox>
+                    <Label text="›" styleClass="feature-arrow"/>
+                </HBox>
+                <HBox spacing="8">
+                    <Label fx:id="historyCountLabel" text="0 submissions on record" styleClass="info-label"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- Important Information -->
+        <VBox styleClass="info-box" spacing="8">
+            <Label text="ℹ Important Information" styleClass="info-title"/>
+            <Label text="• Your data is submitted directly to HMRC via secure MTD APIs" styleClass="info-text" wrapText="true"/>
+            <Label text="• All calculations are estimates - verify with a qualified accountant" styleClass="info-text" wrapText="true"/>
+            <Label text="• You are responsible for the accuracy of submitted information" styleClass="info-text" wrapText="true"/>
+        </VBox>
+
+    </VBox>
+</ScrollPane>

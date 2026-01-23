@@ -6,7 +6,8 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.ExpenseDialogController"
-      styleClass="dialog-container" prefWidth="520" maxWidth="640">
+      styleClass="dialog-container" prefWidth="520" maxWidth="640" minHeight="500"
+      onMouseClicked="#handleContainerClick" focusTraversable="true">
 
     <!-- Dialog Header -->
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT" spacing="10">
@@ -17,8 +18,10 @@
                 onAction="#handleClose" accessibleText="Close dialog"/>
     </HBox>
 
-    <!-- Form Content -->
-    <VBox styleClass="dialog-content" spacing="16">
+    <!-- Scrollable Form Content -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
+                styleClass="dialog-scroll-pane" minHeight="300">
+    <VBox styleClass="dialog-content" spacing="16" onMouseClicked="#handleContainerClick" minHeight="400">
         <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
         <!-- Date Field -->
@@ -65,7 +68,7 @@
                     <Label text="*" styleClass="required-indicator"/>
                 </HBox>
                 <ComboBox fx:id="categoryField" maxWidth="Infinity" styleClass="form-input"
-                          promptText="Select category..."/>
+                          promptText="Select category..." minHeight="44"/>
                 <Label fx:id="categoryError" styleClass="field-error" managed="false" visible="false"/>
             </VBox>
         </HBox>
@@ -100,7 +103,7 @@
                 <Label text="(Optional)" styleClass="optional-indicator"/>
             </HBox>
             <TextArea fx:id="notesField" promptText="Additional notes about this expense..."
-                      styleClass="form-input" prefRowCount="3" wrapText="true"/>
+                      styleClass="form-input" prefRowCount="3" wrapText="true" minHeight="80"/>
         </VBox>
 
         <!-- Receipt Section (SE-308) -->
@@ -147,9 +150,10 @@
         </VBox>
 
     </VBox>
+    </ScrollPane>
 
     <!-- Dialog Footer -->
-    <HBox styleClass="dialog-footer" alignment="CENTER_RIGHT" spacing="12">
+    <HBox styleClass="dialog-footer" alignment="CENTER_RIGHT" spacing="12" minHeight="60">
         <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
 
         <Button fx:id="deleteBtn" text="Delete" styleClass="button-danger"

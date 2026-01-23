@@ -4,30 +4,32 @@ import jakarta.inject.Inject;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.ReceiptStorageService;
+import uk.selfemploy.ui.help.HelpContent;
+import uk.selfemploy.ui.help.HelpService;
+import uk.selfemploy.ui.help.HelpTopic;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.viewmodel.ExpenseListViewModel;
 import uk.selfemploy.ui.viewmodel.ExpenseTableRow;
 
-import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
@@ -37,7 +39,7 @@ import java.util.UUID;
  * Controller for the Expense List view.
  * Manages display of expenses, filtering, pagination, and dialog opening.
  */
-public class ExpenseController implements Initializable, MainController.TaxYearAware {
+public class ExpenseController implements Initializable, MainController.TaxYearAware, Refreshable {
 
     // Summary labels
     @FXML private Label totalValue;
@@ -46,6 +48,10 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     @FXML private Label deductibleCount;
     @FXML private Label nonDeductibleValue;
     @FXML private Label nonDeductibleCount;
+
+    // Help icons
+    @FXML private Label deductibleHelpIcon;
+    @FXML private Label nonDeductibleHelpIcon;
 
     // Filters
     @FXML private ComboBox<ExpenseCategory> categoryFilter;
@@ -57,6 +63,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     @FXML private TableColumn<ExpenseTableRow, String> descriptionColumn;
     @FXML private TableColumn<ExpenseTableRow, ExpenseCategory> categoryColumn;
     @FXML private TableColumn<ExpenseTableRow, String> amountColumn;
+    @FXML private TableColumn<ExpenseTableRow, Integer> receiptColumn;
     @FXML private TableColumn<ExpenseTableRow, Boolean> deductibleColumn;
 
     // Pagination
@@ -68,6 +75,9 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     // Empty state
     @FXML private VBox emptyState;
 
+    // Container (for dialog owner)
+    @FXML private VBox expenseContainer;
+
     // Buttons
     @FXML private Button addExpenseBtn;
 
@@ -76,6 +86,11 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
 
     @Inject
     private ExpenseService expenseService;
+
+    private ReceiptStorageService receiptStorageService;
+
+    // Help service
+    private final HelpService helpService = new HelpService();
 
     // Business context - would normally come from a session/context service
     private UUID businessId;
@@ -86,7 +101,17 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     public void initialize(URL location, ResourceBundle resources) {
         // Initialize business ID (in real app, this would come from session)
         if (businessId == null) {
-            businessId = UUID.randomUUID(); // Placeholder
+            businessId = CoreServiceFactory.getDefaultBusinessId();
+        }
+
+        // Get expense service from CDI or fallback to CoreServiceFactory
+        if (expenseService == null) {
+            expenseService = CoreServiceFactory.getExpenseService();
+        }
+
+        // Get receipt storage service
+        if (receiptStorageService == null) {
+            receiptStorageService = CoreServiceFactory.getReceiptStorageService();
         }
 
         // Initialize ViewModel
@@ -94,6 +119,9 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
             viewModel = new ExpenseListViewModel(expenseService);
             viewModel.setBusinessId(businessId);
             viewModel.setCisBusiness(cisBusiness);
+            if (receiptStorageService != null) {
+                viewModel.setReceiptStorageService(receiptStorageService);
+            }
         }
 
         setupCategoryFilter();
@@ -164,8 +192,9 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     }
 
     private void setupTableColumns() {
-        // Date column
-        dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        // Date column - use lambda for record accessors
+        dateColumn.setCellValueFactory(cellData ->
+            new SimpleObjectProperty<>(cellData.getValue().date()));
         dateColumn.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(LocalDate date, boolean empty) {
@@ -181,11 +210,13 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
             }
         });
 
-        // Description column
-        descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+        // Description column - use lambda for record accessors
+        descriptionColumn.setCellValueFactory(cellData ->
+            new SimpleStringProperty(cellData.getValue().description()));
 
-        // Category column with color dot
-        categoryColumn.setCellValueFactory(new PropertyValueFactory<>("category"));
+        // Category column with color dot - use lambda for record accessors
+        categoryColumn.setCellValueFactory(cellData ->
+            new SimpleObjectProperty<>(cellData.getValue().category()));
         categoryColumn.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(ExpenseCategory category, boolean empty) {
@@ -203,8 +234,8 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                         Label dot = new Label();
                         dot.getStyleClass().addAll("category-dot", row.getCategoryStyleClass());
 
-                        // Category text
-                        Label text = new Label(row.getCategoryShortName() + " (" + category.getSa103Box() + ")");
+                        // Category text - show short display name
+                        Label text = new Label(category.getShortDisplayName() + " (Box " + category.getSa103Box() + ")");
                         text.getStyleClass().add("category-text");
 
                         container.getChildren().addAll(dot, text);
@@ -215,13 +246,71 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
             }
         });
 
-        // Amount column
+        // Amount column - right-aligned for easier scanning
         amountColumn.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getFormattedAmount()));
+        amountColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String amount, boolean empty) {
+                super.updateItem(amount, empty);
+                if (empty || amount == null) {
+                    setText(null);
+                } else {
+                    setText(amount);
+                    setAlignment(Pos.CENTER_RIGHT);
+                    getStyleClass().add("amount-cell");
+                }
+            }
+        });
         amountColumn.getStyleClass().add("expense-amount-cell");
 
-        // Deductible column
-        deductibleColumn.setCellValueFactory(new PropertyValueFactory<>("deductible"));
+        // Receipt column - shows clickable paperclip icon with badge count
+        receiptColumn.setCellValueFactory(cellData ->
+            new SimpleIntegerProperty(cellData.getValue().receiptCount()).asObject());
+        receiptColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Integer count, boolean empty) {
+                super.updateItem(count, empty);
+                if (empty || count == null || count == 0) {
+                    setText(null);
+                    setGraphic(null);
+                    setOnMouseClicked(null);
+                    getStyleClass().remove("receipt-cell-clickable");
+                } else {
+                    // Paperclip icon with badge count
+                    HBox container = new HBox(2);
+                    container.setAlignment(Pos.CENTER);
+
+                    Label clipIcon = new Label("📎");
+                    clipIcon.getStyleClass().add("receipt-icon");
+
+                    Label badge = new Label(String.valueOf(count));
+                    badge.getStyleClass().add("receipt-badge");
+
+                    container.getChildren().addAll(clipIcon, badge);
+
+                    Tooltip tooltip = new Tooltip("Click to view " + count + " receipt" + (count > 1 ? "s" : ""));
+                    Tooltip.install(container, tooltip);
+
+                    setGraphic(container);
+                    setText(null);
+                    setAlignment(Pos.CENTER);
+                    getStyleClass().add("receipt-cell-clickable");
+
+                    // Make clickable to view receipts
+                    setOnMouseClicked(event -> {
+                        ExpenseTableRow row = getTableRow().getItem();
+                        if (row != null) {
+                            handleViewReceipts(row);
+                        }
+                    });
+                }
+            }
+        });
+
+        // Deductible column - use checkmark/cross icons
+        deductibleColumn.setCellValueFactory(cellData ->
+            new SimpleBooleanProperty(cellData.getValue().deductible()).asObject());
         deductibleColumn.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(Boolean deductible, boolean empty) {
@@ -230,12 +319,13 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     setText(null);
                     setGraphic(null);
                 } else {
-                    Label badge = new Label(deductible ? "Y" : "N");
+                    // Use checkmark for yes, X for no
+                    Label badge = new Label(deductible ? "✓" : "✗");
                     badge.getStyleClass().addAll("deductible-badge",
                         deductible ? "deductible-yes" : "deductible-no");
 
                     Tooltip tooltip = new Tooltip(deductible ?
-                        "Tax deductible" : "Not tax deductible");
+                        "Tax deductible - reduces your tax bill" : "Not tax deductible");
                     Tooltip.install(badge, tooltip);
 
                     setGraphic(badge);
@@ -374,6 +464,41 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
         }
     }
 
+    @FXML
+    void handleDeductibleHelp(MouseEvent event) {
+        showHelpDialog(HelpTopic.ALLOWABLE_EXPENSES);
+    }
+
+    @FXML
+    void handleNonDeductibleHelp(MouseEvent event) {
+        showHelpDialog(HelpTopic.NON_DEDUCTIBLE_EXPENSES);
+    }
+
+    private void showHelpDialog(HelpTopic topic) {
+        helpService.getHelp(topic).ifPresent(content -> {
+            Alert helpDialog = new Alert(Alert.AlertType.INFORMATION);
+            helpDialog.setTitle("Help");
+            helpDialog.setHeaderText(content.title());
+            helpDialog.setContentText(content.body());
+
+            // Add "Learn More" link button if available
+            if (content.hmrcLink() != null && !content.hmrcLink().isBlank()) {
+                ButtonType learnMore = new ButtonType(content.linkText() != null ?
+                        content.linkText() : "Learn More");
+                ButtonType close = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+                helpDialog.getButtonTypes().setAll(learnMore, close);
+
+                helpDialog.showAndWait().ifPresent(result -> {
+                    if (result == learnMore) {
+                        helpService.openExternalLink(content.hmrcLink());
+                    }
+                });
+            } else {
+                helpDialog.showAndWait();
+            }
+        });
+    }
+
     private void handleEditExpense(ExpenseTableRow row) {
         if (expenseService == null) return;
 
@@ -381,6 +506,69 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
         expenseService.findById(row.id()).ifPresent(expense -> {
             openExpenseDialog(expense);
         });
+    }
+
+    private void handleViewReceipts(ExpenseTableRow row) {
+        if (receiptStorageService == null) return;
+
+        var receipts = receiptStorageService.listReceipts(row.id());
+        if (receipts.isEmpty()) return;
+
+        if (receipts.size() == 1) {
+            // Single receipt - open directly
+            openReceipt(receipts.get(0));
+        } else {
+            // Multiple receipts - show selection dialog
+            ChoiceDialog<String> dialog = new ChoiceDialog<>();
+            dialog.setTitle("View Receipt");
+            dialog.setHeaderText("Select a receipt to view");
+            dialog.setContentText("Receipt:");
+
+            for (var receipt : receipts) {
+                dialog.getItems().add(receipt.originalFilename());
+            }
+            dialog.setSelectedItem(dialog.getItems().get(0));
+
+            dialog.showAndWait().ifPresent(selected -> {
+                receipts.stream()
+                    .filter(r -> r.originalFilename().equals(selected))
+                    .findFirst()
+                    .ifPresent(this::openReceipt);
+            });
+        }
+    }
+
+    private void openReceipt(uk.selfemploy.core.service.ReceiptMetadata receipt) {
+        if (receipt == null || receipt.storagePath() == null) return;
+
+        java.io.File file = receipt.storagePath().toFile();
+        if (!file.exists()) return;
+
+        // Run on background thread to avoid blocking JavaFX Application Thread
+        new Thread(() -> {
+            try {
+                String os = System.getProperty("os.name").toLowerCase();
+                if (os.contains("linux")) {
+                    // Use xdg-open on Linux for better window handling
+                    new ProcessBuilder("xdg-open", file.getAbsolutePath()).start();
+                } else if (os.contains("mac")) {
+                    new ProcessBuilder("open", file.getAbsolutePath()).start();
+                } else if (os.contains("win")) {
+                    new ProcessBuilder("cmd", "/c", "start", "", file.getAbsolutePath()).start();
+                } else if (java.awt.Desktop.isDesktopSupported()) {
+                    java.awt.Desktop.getDesktop().open(file);
+                }
+            } catch (java.io.IOException e) {
+                // Show error on JavaFX thread
+                javafx.application.Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Error");
+                    alert.setHeaderText("Could not open receipt");
+                    alert.setContentText(e.getMessage());
+                    alert.showAndWait();
+                });
+            }
+        }).start();
     }
 
     private void handleDeleteExpense(ExpenseTableRow row) {
@@ -404,53 +592,27 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     }
 
     private void openExpenseDialog(Expense expense) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/expense-dialog.fxml"));
-            VBox dialogContent = loader.load();
+        javafx.stage.Window owner = expenseContainer.getScene().getWindow();
 
-            ExpenseDialogController dialogController = loader.getController();
-            dialogController.setExpenseService(expenseService);
-            dialogController.setBusinessId(businessId);
-            dialogController.setTaxYear(taxYear);
-            dialogController.setCisBusiness(cisBusiness);
+        boolean success = uk.selfemploy.ui.util.ExpenseDialogHelper.openDialog(
+                owner,
+                expenseService,
+                businessId,
+                taxYear,
+                cisBusiness,
+                expense,
+                savedExpense -> {
+                    showToast(expense != null ? "Expense updated successfully" : "Expense saved successfully");
+                    refreshData();
+                },
+                () -> {
+                    showToast("Expense deleted successfully");
+                    refreshData();
+                }
+        );
 
-            if (expense != null) {
-                dialogController.setEditMode(expense);
-            } else {
-                dialogController.setAddMode();
-            }
-
-            // Create dialog stage
-            Stage dialogStage = new Stage();
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
-            dialogStage.initStyle(StageStyle.UNDECORATED);
-            dialogStage.setTitle(expense != null ? "Edit Expense" : "Add Expense");
-
-            Scene scene = new Scene(dialogContent);
-            scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
-            scene.getStylesheets().add(getClass().getResource("/css/receipt-attachment.css").toExternalForm());
-            dialogStage.setScene(scene);
-
-            // Set callbacks
-            dialogController.setOnSave(savedExpense -> {
-                dialogStage.close();
-                showToast(expense != null ? "Expense updated successfully" : "Expense saved successfully");
-                refreshData();
-            });
-
-            dialogController.setOnDelete(() -> {
-                dialogStage.close();
-                showToast("Expense deleted successfully");
-                refreshData();
-            });
-
-            dialogController.setOnClose(dialogStage::close);
-            dialogController.setDialogStage(dialogStage);
-
-            dialogStage.showAndWait();
-
-        } catch (IOException e) {
-            showError("Failed to open expense dialog", e);
+        if (!success) {
+            showError("Failed to open expense dialog", null);
         }
     }
 

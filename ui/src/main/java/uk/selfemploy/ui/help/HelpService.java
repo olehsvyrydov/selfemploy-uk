@@ -203,6 +203,23 @@ public class HelpService {
                 .linkText("Read HMRC guidance on allowable expenses")
                 .build());
 
+        helpContent.put(HelpTopic.NON_DEDUCTIBLE_EXPENSES, HelpContent.builder()
+                .title("Non-Deductible Expenses")
+                .body("Some business expenses cannot be claimed for tax relief. " +
+                        "You should still record them for accurate accounting, " +
+                        "but they won't reduce your tax bill.\n\n" +
+                        "Common non-deductible expenses:\n" +
+                        "• Business entertainment (client meals, hospitality)\n" +
+                        "• Depreciation (use Capital Allowances instead)\n" +
+                        "• Fines and penalties\n" +
+                        "• Personal expenses\n" +
+                        "• Political donations\n\n" +
+                        "Note: Some expenses may be partially deductible " +
+                        "if they have a genuine business portion.")
+                .hmrcLink(HmrcLinkTopic.ALLOWABLE_EXPENSES.getUrl())
+                .linkText("Read HMRC guidance on expenses")
+                .build());
+
         // === Submission Topics ===
 
         helpContent.put(HelpTopic.DECLARATION, HelpContent.builder()

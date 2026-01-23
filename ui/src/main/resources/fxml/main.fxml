@@ -32,9 +32,9 @@
             </HBox>
 
             <!-- Notification Bell (SE-309) -->
-            <StackPane fx:id="notificationBell" styleClass="notification-bell" onMouseClicked="#handleNotifications">
+            <StackPane fx:id="notificationBell" styleClass="notification-bell" onMouseClicked="#handleNotificationsClick">
                 <Button fx:id="notificationButton" styleClass="header-button"
-                        text="B" onAction="#handleNotifications" accessibleText="Notifications"/>
+                        text="&#x1F514;" onAction="#handleNotificationsAction" accessibleText="Notifications"/>
                 <Label fx:id="notificationBadge" styleClass="notification-badge"
                        text="0" visible="false" managed="false"
                        StackPane.alignment="TOP_RIGHT"/>
@@ -42,9 +42,9 @@
 
             <!-- Action Buttons -->
             <Button fx:id="helpButton" styleClass="header-button"
-                    text="?" onAction="#handleHelp" accessibleText="Help"/>
+                    text="&#x2753;" onAction="#handleHelp" accessibleText="Help"/>
             <Button fx:id="settingsButton" styleClass="header-button"
-                    text="Settings" onAction="#handleSettings"/>
+                    text="&#x2699;" onAction="#handleSettings" accessibleText="Settings"/>
         </HBox>
     </top>
 

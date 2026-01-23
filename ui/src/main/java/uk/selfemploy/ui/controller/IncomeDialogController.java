@@ -138,6 +138,10 @@ public class IncomeDialogController implements Initializable {
         // Set default date to today
         dateField.setValue(LocalDate.now());
 
+        // Make date picker editable and add style class
+        dateField.setEditable(true);
+        dateField.getStyleClass().add("date-picker");
+
         // Restrict to tax year bounds
         dateField.setDayCellFactory(picker -> new DateCell() {
             @Override

@@ -17,7 +17,8 @@
 -->
 
 <!-- Stylesheets loaded programmatically to avoid JPMS issues -->
-<ScrollPane fx:id="rootScroll" styleClass="annual-scroll" xmlns:fx="http://javafx.com/fxml">
+<ScrollPane fx:id="rootScroll" styleClass="annual-scroll" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="uk.selfemploy.ui.controller.AnnualSubmissionController">
     <VBox styleClass="annual-container" spacing="24">
         <padding>
             <Insets top="24" right="24" bottom="24" left="24"/>

@@ -1,7 +1,5 @@
 package uk.selfemploy.hmrc.oauth;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import uk.selfemploy.hmrc.config.HmrcConfig;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException.OAuthError;
@@ -25,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class HmrcOAuthService {
 
-    private static final Logger log = LoggerFactory.getLogger(HmrcOAuthService.class);
+    private static final java.util.logging.Logger LOG = java.util.logging.Logger.getLogger(HmrcOAuthService.class.getName());
     private static final int STATE_BYTES = 24; // 24 bytes = 32 chars in Base64
 
     private final HmrcConfig config;
@@ -56,24 +54,37 @@ public class HmrcOAuthService {
      * @throws HmrcOAuthException if authentication fails
      */
     public CompletableFuture<OAuthTokens> authenticate() {
+        LOG.info("Starting authenticate()");
+
         // Validate configuration
+        LOG.info("Validating configuration...");
         validateConfiguration();
+        LOG.info("Configuration valid");
 
         // Generate secure state for CSRF protection
+        LOG.info("Generating state...");
         String state = generateSecureState();
+        LOG.info("State generated");
 
         // Build authorization URL
+        LOG.info("Building auth URL...");
         String authUrl = buildAuthorizationUrl(state);
+        LOG.info("Auth URL built (length=" + authUrl.length() + ")");
 
-        log.info("Starting OAuth2 authentication flow");
+        LOG.info("Starting OAuth2 authentication flow");
 
         // Start callback server and await callback
+        LOG.info("Starting callback server on port " + config.callbackPort() + "...");
         CompletableFuture<String> callbackFuture = callbackServer.startAndAwaitCallback(state);
+        LOG.info("Callback server started");
 
         // Open browser with authorization URL
+        LOG.info("Opening browser...");
         try {
             browserLauncher.openUrl(authUrl);
+            LOG.info("Browser opened successfully");
         } catch (HmrcOAuthException e) {
+            LOG.severe("Browser failed: " + e.getMessage());
             callbackServer.stop();
             return CompletableFuture.failedFuture(e);
         }
@@ -81,11 +92,11 @@ public class HmrcOAuthService {
         // Process the callback and exchange code for tokens
         return callbackFuture
             .thenCompose(authCode -> {
-                log.debug("Received authorization code, exchanging for tokens");
+                LOG.fine("Received authorization code, exchanging for tokens");
                 return tokenExchangeClient.exchangeCodeForTokens(authCode);
             })
             .thenApply(tokens -> {
-                log.info("OAuth2 authentication completed successfully");
+                LOG.info("OAuth2 authentication completed successfully");
                 currentTokens.set(tokens);
                 return tokens;
             })
@@ -93,7 +104,7 @@ public class HmrcOAuthService {
                 // Always stop the callback server
                 callbackServer.stop();
                 if (error != null) {
-                    log.error("OAuth2 authentication failed", error);
+                    LOG.severe("OAuth2 authentication failed: " + error.getMessage());
                 }
             });
     }
@@ -175,10 +186,10 @@ public class HmrcOAuthService {
             );
         }
 
-        log.info("Refreshing access token");
+        LOG.info("Refreshing access token");
         return tokenExchangeClient.refreshTokens(current.refreshToken())
             .thenApply(tokens -> {
-                log.info("Access token refreshed successfully");
+                LOG.info("Access token refreshed successfully");
                 currentTokens.set(tokens);
                 return tokens;
             });
@@ -188,7 +199,7 @@ public class HmrcOAuthService {
      * Disconnects from HMRC by clearing stored tokens.
      */
     public void disconnect() {
-        log.info("Disconnecting from HMRC");
+        LOG.info("Disconnecting from HMRC");
         currentTokens.set(null);
     }
 

@@ -20,7 +20,7 @@
 
     -fx-text-primary: #212529;
     -fx-text-secondary: #6c757d;
-    -fx-text-muted: #adb5bd;
+    -fx-text-muted: #868e96;  /* Darkened for WCAG AA contrast compliance */
 
     -fx-border-color: #dee2e6;
     -fx-shadow: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
@@ -57,14 +57,22 @@
 .header-button {
     -fx-background-color: transparent;
     -fx-text-fill: -fx-text-secondary;
-    -fx-padding: 8 14;
-    -fx-background-radius: 6;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-max-width: 40;
+    -fx-max-height: 40;
+    -fx-background-radius: 20;
     -fx-cursor: hand;
-    -fx-font-size: 13px;
+    -fx-font-size: 18px;
+    -fx-alignment: CENTER;
 }
 
 .header-button:hover {
-    -fx-background-color: -fx-bg-tertiary;
+    -fx-background-color: rgba(0, 0, 0, 0.08);
+}
+
+.header-button:pressed {
+    -fx-background-color: rgba(0, 0, 0, 0.12);
 }
 
 .tax-year-selector {
@@ -452,7 +460,7 @@
 }
 
 .button-secondary:hover {
-    -fx-background-color: -fx-border-color;
+    -fx-background-color: #dee2e6;
 }
 
 .button-success {
@@ -536,7 +544,7 @@
     -fx-max-width: 1200;
 }
 
-/* ===== Summary Cards (Income) ===== */
+/* ===== Summary Cards (Income/Expense) ===== */
 .summary-item {
     -fx-padding: 20;
 }
@@ -553,6 +561,57 @@
 
 .text-warning {
     -fx-text-fill: #fd7e14;
+}
+
+/* ===== Bento Summary Cards ===== */
+.summary-cards-container {
+    -fx-spacing: 16;
+}
+
+.summary-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #e9ecef;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);
+}
+
+.summary-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 12, 0, 0, 4);
+}
+
+.summary-card-total {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #fd7e14;
+}
+
+.summary-card-deductible {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #28a745;
+}
+
+.summary-card-nondeductible {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #6c757d;
+}
+
+.summary-card-value {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+}
+
+.summary-card-value-total {
+    -fx-text-fill: #fd7e14;
+}
+
+.summary-card-value-deductible {
+    -fx-text-fill: #28a745;
+}
+
+.summary-card-value-nondeductible {
+    -fx-text-fill: #6c757d;
 }
 
 /* ===== Filters Bar ===== */
@@ -619,6 +678,12 @@
     -fx-background-color: derive(-fx-primary-light, -5%);
     -fx-border-color: -fx-primary;
     -fx-border-width: 0 0 0 3;
+}
+
+/* Hide empty table rows */
+.data-table .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
 
 .data-table .table-cell {
@@ -765,6 +830,165 @@
     -fx-background-color: -fx-bg-primary;
 }
 
+/* ===== ComboBox Styling ===== */
+.combo-box.form-input {
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-max-height: 44;
+    -fx-padding: 0;
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.combo-box.form-input .list-cell {
+    -fx-padding: 0 12;
+    -fx-font-size: 14px;
+    -fx-text-fill: #212529;
+    -fx-background-color: transparent;
+    -fx-pref-height: 42;
+}
+
+.combo-box.form-input .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 8 0 0;
+}
+
+.combo-box.form-input .arrow-button .arrow {
+    -fx-background-color: #6c757d;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-max-height: 300;
+}
+
+/* ===== DatePicker Styling ===== */
+.date-picker.form-input {
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-max-height: 44;
+    -fx-padding: 0;
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.date-picker.form-input .text-field {
+    -fx-padding: 0 12;
+    -fx-font-size: 14px;
+    -fx-background-color: transparent;
+}
+
+.date-picker.form-input .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 12 0 0;
+    -fx-cursor: hand;
+}
+
+.date-picker.form-input .arrow-button .arrow {
+    -fx-background-color: #6c757d;
+}
+
+.date-picker-popup {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 2);
+}
+
+.date-picker-popup .month-year-pane {
+    -fx-background-color: -fx-primary;
+    -fx-background-radius: 8 8 0 0;
+}
+
+.date-picker-popup .spinner-label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.date-picker-popup .left-button,
+.date-picker-popup .right-button {
+    -fx-cursor: hand;
+}
+
+.date-picker-popup .left-button .left-arrow,
+.date-picker-popup .right-button .right-arrow {
+    -fx-background-color: white;
+}
+
+.date-picker-popup .day-cell {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+}
+
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+.date-picker-popup .selected {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+}
+
+.date-picker-popup .today {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 1;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-padding: 12 14;
+    -fx-font-size: 14px;
+    -fx-background-color: white;
+    -fx-min-height: 36;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #f8f9fa;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: -fx-text-primary;
+}
+
+/* ===== Dialog ScrollPane ===== */
+.dialog-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-width: 0;
+}
+
+.dialog-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.dialog-scroll-pane .scroll-bar:vertical {
+    -fx-pref-width: 8;
+}
+
+.dialog-scroll-pane .scroll-bar:vertical .track {
+    -fx-background-color: #f0f0f0;
+    -fx-background-radius: 4;
+}
+
+.dialog-scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: #c0c0c0;
+    -fx-background-radius: 4;
+}
+
+.dialog-scroll-pane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #a0a0a0;
+}
+
 .field-error {
     -fx-font-size: 12px;
     -fx-text-fill: -fx-danger;
@@ -909,11 +1133,11 @@
 }
 
 .category-dot {
-    -fx-min-width: 8;
-    -fx-min-height: 8;
-    -fx-max-width: 8;
-    -fx-max-height: 8;
-    -fx-background-radius: 4;
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
+    -fx-background-radius: 6;
 }
 
 .category-text {
@@ -945,13 +1169,13 @@
 }
 
 .deductible-badge {
-    -fx-min-width: 24;
-    -fx-min-height: 24;
-    -fx-max-width: 24;
-    -fx-max-height: 24;
-    -fx-background-radius: 12;
+    -fx-min-width: 26;
+    -fx-min-height: 26;
+    -fx-max-width: 26;
+    -fx-max-height: 26;
+    -fx-background-radius: 13;
     -fx-alignment: CENTER;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
 
@@ -961,8 +1185,8 @@
 }
 
 .deductible-no {
-    -fx-background-color: #e9ecef;
-    -fx-text-fill: #6c757d;
+    -fx-background-color: #f8d7da;
+    -fx-text-fill: #721c24;
 }
 
 /* ===== Expense Amount Cell ===== */
@@ -970,6 +1194,64 @@
     -fx-alignment: CENTER_RIGHT;
     -fx-font-weight: bold;
     -fx-text-fill: #fd7e14;
+}
+
+.amount-cell {
+    -fx-padding: 0 12 0 0;
+}
+
+/* ===== Receipt Cell ===== */
+.receipt-cell-clickable {
+    -fx-cursor: hand;
+}
+
+.receipt-icon {
+    -fx-font-size: 14px;
+}
+
+.receipt-badge {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+    -fx-background-radius: 8;
+    -fx-alignment: CENTER;
+}
+
+/* ===== Circular Info Icon ===== */
+.info-icon-circle {
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
+    -fx-background-color: #e7f1ff;
+    -fx-background-radius: 9;
+    -fx-text-fill: #0d6efd;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+    -fx-cursor: hand;
+}
+
+.info-icon-circle:hover {
+    -fx-background-color: #0d6efd;
+    -fx-text-fill: white;
+}
+
+/* Legacy alias for backwards compatibility */
+.help-icon-info {
+    -fx-text-fill: #0d6efd;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.help-icon-info:hover {
+    -fx-text-fill: #0a58ca;
 }
 
 /* ===== Category Help Box ===== */
@@ -1079,8 +1361,20 @@
 }
 
 /* ===== TextArea ===== */
-.form-input.text-area {
-    -fx-padding: 10 16;
+.text-area.form-input {
+    -fx-padding: 0;
+    -fx-min-height: 80;
+    -fx-pref-height: 100;
+}
+
+.text-area.form-input .content {
+    -fx-padding: 10 14;
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+}
+
+.text-area.form-input:focused .content {
+    -fx-background-color: -fx-bg-primary;
 }
 
 /* ===== Notification Bell (SE-309) ===== */
@@ -1224,4 +1518,207 @@
 
 .employment-warning-banner.compact .employment-warning-title {
     -fx-font-size: 14px;
+}
+
+/* ===== Settings Page ===== */
+.settings-scroll {
+    -fx-background-color: transparent;
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.settings-scroll > .viewport {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.settings-container {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-max-width: 800;
+}
+
+.settings-section {
+    -fx-padding: 0;
+}
+
+.settings-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 20;
+}
+
+.settings-card-row {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 16 20;
+    -fx-cursor: hand;
+}
+
+.settings-card-row:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 0, 4);
+}
+
+.settings-icon {
+    -fx-font-size: 24px;
+}
+
+.settings-label {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.settings-value {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.settings-description {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.settings-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-style: italic;
+}
+
+.about-logo {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-color: -fx-primary;
+    -fx-padding: 10 14;
+    -fx-background-radius: 8;
+}
+
+.about-link {
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 13px;
+}
+
+.settings-disclaimer {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: #ffc107;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16 20;
+}
+
+.disclaimer-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #856404;
+}
+
+.disclaimer-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #856404;
+}
+
+/* ===== HMRC Submission Hub ===== */
+.hmrc-scroll {
+    -fx-background-color: transparent;
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.hmrc-scroll > .viewport {
+    -fx-background-color: -fx-bg-secondary;
+}
+
+.hmrc-container {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-max-width: 900;
+}
+
+.status-banner {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 20;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+
+.status-icon {
+    -fx-font-size: 24px;
+}
+
+.status-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.status-message {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.feature-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 20;
+    -fx-cursor: hand;
+}
+
+.feature-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0, 0, 4);
+    -fx-background-color: -fx-primary-light;
+}
+
+.feature-card:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+    -fx-background-color: -fx-primary-light;
+}
+
+.feature-icon {
+    -fx-font-size: 28px;
+}
+
+.feature-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.feature-description {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.feature-arrow {
+    -fx-font-size: 24px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.info-box {
+    -fx-background-color: #e6f0ff;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16 20;
+}
+
+.info-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-primary;
+}
+
+.info-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.info-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
 }

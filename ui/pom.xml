@@ -24,11 +24,22 @@
             <groupId>uk.selfemploy</groupId>
             <artifactId>self-employment-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-hmrc-api</artifactId>
+        </dependency>
 
         <!-- Quarkus Arc (CDI) -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
+        </dependency>
+
+        <!-- SQLite for local data persistence -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.45.1.0</version>
         </dependency>
 
         <!-- JavaFX -->

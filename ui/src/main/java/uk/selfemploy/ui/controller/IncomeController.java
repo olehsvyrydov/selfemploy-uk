@@ -7,17 +7,12 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
@@ -26,10 +21,10 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.viewmodel.IncomeListViewModel;
 import uk.selfemploy.ui.viewmodel.IncomeTableRow;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -39,7 +34,7 @@ import java.util.UUID;
  * Controller for the Income List View.
  * Manages the income list display, filtering, pagination, and actions.
  */
-public class IncomeController implements Initializable, MainController.TaxYearAware {
+public class IncomeController implements Initializable, MainController.TaxYearAware, Refreshable {
 
     private static final Logger LOG = LoggerFactory.getLogger(IncomeController.class);
 
@@ -71,6 +66,9 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
 
     // Empty state
     @FXML private VBox emptyState;
+
+    // Container (for dialog owner)
+    @FXML private VBox incomeContainer;
 
     // Add button
     @FXML private Button addIncomeBtn;
@@ -388,51 +386,57 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     }
 
     private void openIncomeDialog(IncomeTableRow editRow) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/income-dialog.fxml"));
-            VBox dialogContent = loader.load();
+        javafx.stage.Window owner = incomeContainer.getScene().getWindow();
 
-            IncomeDialogController dialogController = loader.getController();
-            dialogController.initializeWithDependencies(incomeService, businessId, currentTaxYear);
-
-            if (editRow != null) {
-                // Edit mode - need to fetch the full Income from service
-                if (incomeService != null) {
-                    incomeService.findById(editRow.id()).ifPresent(income ->
-                        dialogController.setEditMode(income, editRow.clientName(), editRow.status())
-                    );
-                }
+        boolean success;
+        if (editRow != null) {
+            // Edit mode - need to fetch the full Income from service
+            Income income = null;
+            if (incomeService != null) {
+                income = incomeService.findById(editRow.id()).orElse(null);
             }
 
-            // Set up callbacks
-            dialogController.setOnSaveCallback(income -> {
-                viewModel.refresh();
-                updateTable();
-                showSuccessToast(editRow == null ? "Income saved successfully" : "Changes saved");
-            });
+            if (income == null) {
+                showError("Failed to load income for editing", null);
+                return;
+            }
 
-            dialogController.setOnDeleteCallback(() -> {
-                viewModel.refresh();
-                updateTable();
-                showSuccessToast("Income deleted");
-            });
+            success = uk.selfemploy.ui.util.IncomeDialogHelper.openEditDialog(
+                    owner,
+                    incomeService,
+                    businessId,
+                    currentTaxYear,
+                    income,
+                    editRow.clientName(),
+                    editRow.status(),
+                    savedIncome -> {
+                        viewModel.refresh();
+                        updateTable();
+                        showSuccessToast("Changes saved");
+                    },
+                    () -> {
+                        viewModel.refresh();
+                        updateTable();
+                        showSuccessToast("Income deleted");
+                    }
+            );
+        } else {
+            // Add mode
+            success = uk.selfemploy.ui.util.IncomeDialogHelper.openAddDialog(
+                    owner,
+                    incomeService,
+                    businessId,
+                    currentTaxYear,
+                    savedIncome -> {
+                        viewModel.refresh();
+                        updateTable();
+                        showSuccessToast("Income saved successfully");
+                    }
+            );
+        }
 
-            // Create and show dialog stage
-            Stage dialogStage = new Stage();
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
-            dialogStage.initStyle(StageStyle.UNDECORATED);
-            dialogStage.setTitle(editRow == null ? "Add Income" : "Edit Income");
-
-            Scene scene = new Scene(dialogContent);
-            scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
-            dialogStage.setScene(scene);
-
-            dialogController.setDialogStage(dialogStage);
-
-            dialogStage.showAndWait();
-
-        } catch (IOException e) {
-            showError("Failed to open income dialog", e);
+        if (!success) {
+            showError("Failed to open income dialog", null);
         }
     }
 
@@ -481,6 +485,15 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     @Override
     public void setTaxYear(TaxYear taxYear) {
         this.currentTaxYear = taxYear;
+
+        // Fallback to CoreServiceFactory if not initialized via CDI
+        if (incomeService == null) {
+            incomeService = CoreServiceFactory.getIncomeService();
+        }
+        if (businessId == null) {
+            businessId = CoreServiceFactory.getDefaultBusinessId();
+        }
+
         if (incomeService != null && businessId != null) {
             viewModel = new IncomeListViewModel(incomeService, businessId);
             setupBindings();

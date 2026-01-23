@@ -4,10 +4,175 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1"
-      styleClass="card" spacing="20" alignment="CENTER">
-    <padding><Insets topRightBottomLeft="50"/></padding>
+<!--
+    Help Page - SE-701: In-App Help System
+    Provides access to help content and HMRC links.
+-->
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.HelpController"
+            styleClass="help-scroll" fitToWidth="true" hbarPolicy="NEVER">
 
-    <Label text="Help &amp; Support" styleClass="page-title"/>
-    <Label text="Coming soon - Get help using the application" styleClass="page-subtitle"/>
-</VBox>
+    <VBox styleClass="help-container" spacing="24">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Page Header -->
+        <VBox spacing="8">
+            <Label text="Help &amp; Support" styleClass="page-title"/>
+            <Label text="Find answers to common questions about UK self-employment taxes" styleClass="page-subtitle"/>
+        </VBox>
+
+        <!-- Quick Links Section -->
+        <VBox styleClass="help-section" spacing="16">
+            <Label text="Quick Links to HMRC" styleClass="section-title"/>
+            <Label text="Official HMRC guidance and resources" styleClass="section-subtitle"/>
+
+            <FlowPane hgap="12" vgap="12">
+                <Button text="📊 Income Tax Rates" styleClass="help-link-button" onAction="#handleTaxRatesLink"/>
+                <Button text="📋 SA103 Form" styleClass="help-link-button" onAction="#handleSa103Link"/>
+                <Button text="📅 Filing Deadlines" styleClass="help-link-button" onAction="#handleFilingDeadlinesLink"/>
+                <Button text="💷 Allowable Expenses" styleClass="help-link-button" onAction="#handleAllowableExpensesLink"/>
+                <Button text="🔢 NI Rates" styleClass="help-link-button" onAction="#handleNiRatesLink"/>
+                <Button text="📈 State Pension" styleClass="help-link-button" onAction="#handleStatePensionLink"/>
+            </FlowPane>
+        </VBox>
+
+        <!-- Help Topics Section -->
+        <VBox styleClass="help-section" spacing="16">
+            <Label text="Help Topics" styleClass="section-title"/>
+
+            <!-- Tax & Calculation Category -->
+            <VBox styleClass="help-category" spacing="8">
+                <Label text="Tax &amp; Calculation" styleClass="help-category-title"/>
+                <VBox spacing="4">
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="📈" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Net Profit (Box 31)" styleClass="help-topic-label"/>
+                            <Label text="Understanding your taxable profit calculation" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="💰" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Income Tax" styleClass="help-topic-label"/>
+                            <Label text="Tax bands and rates for 2025/26" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="🛡" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Personal Allowance" styleClass="help-topic-label"/>
+                            <Label text="Tax-free allowance and high earner taper" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="🏥" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="National Insurance" styleClass="help-topic-label"/>
+                            <Label text="Class 2 and Class 4 contributions" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="📊" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Payments on Account" styleClass="help-topic-label"/>
+                            <Label text="Advance payments towards next year's tax" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- Expenses Category -->
+            <VBox styleClass="help-category" spacing="8">
+                <Label text="Expenses" styleClass="help-category-title"/>
+                <VBox spacing="4">
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="📋" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Expense Categories" styleClass="help-topic-label"/>
+                            <Label text="SA103 box mapping and category guide" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="✅" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Allowable Expenses" styleClass="help-topic-label"/>
+                            <Label text="What you can and cannot claim" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- HMRC Submission Category -->
+            <VBox styleClass="help-category" spacing="8">
+                <Label text="HMRC Submission" styleClass="help-category-title"/>
+                <VBox spacing="4">
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="✍" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Declaration" styleClass="help-topic-label"/>
+                            <Label text="Understanding your legal responsibilities" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="📤" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Submitting to HMRC" styleClass="help-topic-label"/>
+                            <Label text="How the MTD submission process works" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- General Category -->
+            <VBox styleClass="help-category" spacing="8">
+                <Label text="General" styleClass="help-category-title"/>
+                <VBox spacing="4">
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="📅" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="Tax Year" styleClass="help-topic-label"/>
+                            <Label text="Key dates and deadlines" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
+                        <Label text="📄" styleClass="help-topic-icon"/>
+                        <VBox spacing="2" HBox.hgrow="ALWAYS">
+                            <Label text="SA103 Form" styleClass="help-topic-label"/>
+                            <Label text="About the self-employment supplementary pages" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-arrow"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+        </VBox>
+
+        <!-- Contact & Support -->
+        <VBox styleClass="help-support-section" spacing="12">
+            <Label text="Need More Help?" styleClass="section-title"/>
+            <Label text="This application is open-source. For bugs or feature requests:" styleClass="help-support-text" wrapText="true"/>
+            <HBox spacing="16">
+                <Hyperlink text="GitHub Issues" styleClass="help-support-link" onAction="#handleGitHubIssuesLink"/>
+                <Hyperlink text="Documentation" styleClass="help-support-link" onAction="#handleDocumentationLink"/>
+            </HBox>
+        </VBox>
+
+        <!-- Disclaimer -->
+        <VBox styleClass="help-disclaimer" spacing="8">
+            <Label text="⚠ Important Disclaimer" styleClass="disclaimer-title"/>
+            <Label text="This application provides tax estimates only. The information provided in the help system is for guidance purposes and may not reflect the latest HMRC rules. Always verify calculations with a qualified accountant and refer to official HMRC guidance before submitting your tax return."
+                   styleClass="disclaimer-text" wrapText="true"/>
+        </VBox>
+
+    </VBox>
+</ScrollPane>

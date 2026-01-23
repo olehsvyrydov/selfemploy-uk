@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class IncomeListViewModel {
 
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final IncomeService incomeService;
     private final UUID businessId;

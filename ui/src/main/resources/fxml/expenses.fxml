@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.Cursor?>
 <?import javafx.geometry.Insets?>
 
 <ScrollPane xmlns:fx="http://javafx.com/fxml/1"
@@ -20,40 +21,40 @@
                     styleClass="button-warning" onAction="#handleAddExpense"/>
         </HBox>
 
-        <!-- Summary Cards -->
-        <HBox styleClass="card" spacing="0">
-            <!-- Total Summary -->
-            <VBox styleClass="summary-item" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+        <!-- Summary Cards - Bento Grid Layout -->
+        <HBox styleClass="summary-cards-container" spacing="16">
+            <!-- Total Expenses Card -->
+            <VBox styleClass="summary-card, summary-card-total" HBox.hgrow="ALWAYS" spacing="8">
                 <Label text="TOTAL EXPENSES" styleClass="metric-label"/>
-                <Label fx:id="totalValue" text="£0.00" styleClass="summary-value, text-expense"/>
+                <Label fx:id="totalValue" text="£0.00" styleClass="summary-card-value, summary-card-value-total"/>
                 <Label fx:id="totalCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <Separator orientation="VERTICAL" styleClass="summary-divider"/>
-
-            <!-- Deductible Summary -->
-            <VBox styleClass="summary-item, summary-deductible" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+            <!-- Deductible Card -->
+            <VBox styleClass="summary-card, summary-card-deductible" HBox.hgrow="ALWAYS" spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label text="DEDUCTIBLE" styleClass="metric-label"/>
-                    <Label text="[?]" styleClass="help-icon">
-                        <tooltip><Tooltip text="Expenses that reduce your taxable profit"/></tooltip>
+                    <Label fx:id="deductibleHelpIcon" text="i" styleClass="info-icon-circle"
+                           onMouseClicked="#handleDeductibleHelp">
+                        <cursor><Cursor fx:constant="HAND"/></cursor>
+                        <tooltip><Tooltip text="Click to learn more about deductible expenses"/></tooltip>
                     </Label>
                 </HBox>
-                <Label fx:id="deductibleValue" text="£0.00" styleClass="summary-value, text-success"/>
+                <Label fx:id="deductibleValue" text="£0.00" styleClass="summary-card-value, summary-card-value-deductible"/>
                 <Label fx:id="deductibleCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <Separator orientation="VERTICAL" styleClass="summary-divider"/>
-
-            <!-- Non-Deductible Summary -->
-            <VBox styleClass="summary-item, summary-non-deductible" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+            <!-- Non-Deductible Card -->
+            <VBox styleClass="summary-card, summary-card-nondeductible" HBox.hgrow="ALWAYS" spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label text="NON-DEDUCTIBLE" styleClass="metric-label"/>
-                    <Label text="[?]" styleClass="help-icon">
-                        <tooltip><Tooltip text="Expenses not allowed for tax relief (e.g., depreciation)"/></tooltip>
+                    <Label fx:id="nonDeductibleHelpIcon" text="i" styleClass="info-icon-circle"
+                           onMouseClicked="#handleNonDeductibleHelp">
+                        <cursor><Cursor fx:constant="HAND"/></cursor>
+                        <tooltip><Tooltip text="Click to learn more about non-deductible expenses"/></tooltip>
                     </Label>
                 </HBox>
-                <Label fx:id="nonDeductibleValue" text="£0.00" styleClass="summary-value, text-muted"/>
+                <Label fx:id="nonDeductibleValue" text="£0.00" styleClass="summary-card-value, summary-card-value-nondeductible"/>
                 <Label fx:id="nonDeductibleCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
         </HBox>
@@ -73,10 +74,11 @@
             </columnResizePolicy>
             <columns>
                 <TableColumn fx:id="dateColumn" text="DATE" prefWidth="100" minWidth="100"/>
-                <TableColumn fx:id="descriptionColumn" text="DESCRIPTION" prefWidth="260"/>
-                <TableColumn fx:id="categoryColumn" text="CATEGORY" prefWidth="180" minWidth="150"/>
+                <TableColumn fx:id="descriptionColumn" text="DESCRIPTION" prefWidth="220"/>
+                <TableColumn fx:id="categoryColumn" text="CATEGORY" prefWidth="160" minWidth="140"/>
                 <TableColumn fx:id="amountColumn" text="AMOUNT" prefWidth="100" minWidth="100"/>
-                <TableColumn fx:id="deductibleColumn" text="D" prefWidth="60" minWidth="60"/>
+                <TableColumn fx:id="receiptColumn" text="RCPT" prefWidth="60" minWidth="60"/>
+                <TableColumn fx:id="deductibleColumn" text="TAX" prefWidth="50" minWidth="50"/>
             </columns>
             <placeholder>
                 <Label text="No expense entries found" styleClass="empty-table-message"/>
@@ -97,11 +99,9 @@
         <VBox fx:id="emptyState" styleClass="empty-state-container"
               alignment="CENTER" spacing="16" managed="false" visible="false">
             <padding><Insets topRightBottomLeft="60"/></padding>
-            <Label text="[Receipt Icon]" styleClass="empty-state-icon"/>
             <Label text="No Expenses Recorded" styleClass="empty-state-title"/>
             <Label text="Start tracking your business costs by adding your first expense entry."
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
-            <Button text="+ Add Expense" styleClass="button-warning" onAction="#handleAddExpense"/>
         </VBox>
 
     </VBox>

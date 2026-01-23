@@ -54,6 +54,11 @@ public enum HelpTopic {
      */
     ALLOWABLE_EXPENSES,
 
+    /**
+     * Help about non-deductible expenses.
+     */
+    NON_DEDUCTIBLE_EXPENSES,
+
     // === Submission Topics ===
 
     /**

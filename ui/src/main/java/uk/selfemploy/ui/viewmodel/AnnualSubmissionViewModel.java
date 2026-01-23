@@ -65,14 +65,14 @@ public class AnnualSubmissionViewModel {
 
     // === Financial Summary Data ===
 
-    private final ObjectProperty<BigDecimal> totalIncome = new SimpleObjectProperty<>();
-    private final ObjectProperty<BigDecimal> totalExpenses = new SimpleObjectProperty<>();
-    private final ObjectProperty<BigDecimal> netProfit = new SimpleObjectProperty<>();
+    private final ObjectProperty<BigDecimal> totalIncome = new SimpleObjectProperty<>(BigDecimal.ZERO);
+    private final ObjectProperty<BigDecimal> totalExpenses = new SimpleObjectProperty<>(BigDecimal.ZERO);
+    private final ObjectProperty<BigDecimal> netProfit = new SimpleObjectProperty<>(BigDecimal.ZERO);
 
     // === Tax Calculation Data ===
 
-    private final ObjectProperty<BigDecimal> taxDue = new SimpleObjectProperty<>();
-    private final ObjectProperty<BigDecimal> nationalInsurance = new SimpleObjectProperty<>();
+    private final ObjectProperty<BigDecimal> taxDue = new SimpleObjectProperty<>(BigDecimal.ZERO);
+    private final ObjectProperty<BigDecimal> nationalInsurance = new SimpleObjectProperty<>(BigDecimal.ZERO);
 
     // === Tax Year ===
 

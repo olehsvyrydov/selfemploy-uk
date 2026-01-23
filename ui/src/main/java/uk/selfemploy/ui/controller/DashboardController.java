@@ -2,25 +2,19 @@ package uk.selfemploy.ui.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Scene;
-import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel.ActivityItem;
 import uk.selfemploy.ui.viewmodel.Deadline;
 
-import java.io.IOException;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
@@ -30,7 +24,7 @@ import java.util.UUID;
  * Controller for the Dashboard view.
  * Binds UI elements to DashboardViewModel and handles user actions.
  */
-public class DashboardController implements Initializable, MainController.TaxYearAware {
+public class DashboardController implements Initializable, MainController.TaxYearAware, Refreshable {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy");
 
@@ -171,6 +165,9 @@ public class DashboardController implements Initializable, MainController.TaxYea
     }
 
     private void populateActivity() {
+        // Skip if FXML elements not initialized (unit test scenario)
+        if (activityList == null) return;
+
         activityList.getChildren().clear();
 
         if (viewModel.getRecentActivity().isEmpty()) {
@@ -279,31 +276,19 @@ public class DashboardController implements Initializable, MainController.TaxYea
             return;
         }
 
-        try {
-            // Open the income dialog
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/income-dialog.fxml"));
-            VBox dialogContent = loader.load();
+        // Use the shared IncomeDialogHelper for consistent behavior
+        javafx.stage.Window owner = dashboardContainer.getScene().getWindow();
+        boolean success = uk.selfemploy.ui.util.IncomeDialogHelper.openAddDialog(
+                owner,
+                incomeService,
+                businessId,
+                currentTaxYear,
+                income -> refresh()
+        );
 
-            IncomeDialogController dialogController = loader.getController();
-            dialogController.initializeWithDependencies(incomeService, businessId, currentTaxYear);
-
-            // Create and show dialog
-            Stage dialogStage = createDialogStage(dialogContent, "Add Income");
-            dialogController.setDialogStage(dialogStage);
-
-            // Set save callback to refresh dashboard
-            dialogController.setOnSaveCallback(income -> {
-                refresh();
-            });
-
-            dialogStage.showAndWait();
-
-        } catch (IOException e) {
-            System.err.println("Failed to open income dialog: " + e.getMessage());
+        if (!success && onNavigateToIncome != null) {
             // Fallback: navigate to Income view
-            if (onNavigateToIncome != null) {
-                onNavigateToIncome.run();
-            }
+            onNavigateToIncome.run();
         }
     }
 
@@ -317,32 +302,19 @@ public class DashboardController implements Initializable, MainController.TaxYea
             return;
         }
 
-        try {
-            // Open the expense dialog
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/expense-dialog.fxml"));
-            VBox dialogContent = loader.load();
+        // Use the shared ExpenseDialogHelper for consistent behavior
+        javafx.stage.Window owner = dashboardContainer.getScene().getWindow();
+        boolean success = uk.selfemploy.ui.util.ExpenseDialogHelper.openAddDialog(
+                owner,
+                expenseService,
+                businessId,
+                currentTaxYear,
+                expense -> refresh()
+        );
 
-            ExpenseDialogController dialogController = loader.getController();
-            dialogController.setExpenseService(expenseService);
-            dialogController.setBusinessId(businessId);
-            dialogController.setTaxYear(currentTaxYear);
-
-            // Set save callback to refresh dashboard
-            dialogController.setOnSave(expense -> {
-                refresh();
-            });
-
-            // Create and show dialog
-            Stage dialogStage = createDialogStage(dialogContent, "Add Expense");
-            dialogController.setOnClose(dialogStage::close);
-            dialogStage.showAndWait();
-
-        } catch (IOException e) {
-            System.err.println("Failed to open expense dialog: " + e.getMessage());
+        if (!success && onNavigateToExpenses != null) {
             // Fallback: navigate to Expenses view
-            if (onNavigateToExpenses != null) {
-                onNavigateToExpenses.run();
-            }
+            onNavigateToExpenses.run();
         }
     }
 
@@ -361,29 +333,23 @@ public class DashboardController implements Initializable, MainController.TaxYea
         }
     }
 
-    private Stage createDialogStage(VBox dialogContent, String title) {
-        Stage dialogStage = new Stage();
-        dialogStage.initModality(Modality.APPLICATION_MODAL);
-        dialogStage.initStyle(StageStyle.UNDECORATED);
-        dialogStage.setTitle(title);
-
-        Scene scene = new Scene(dialogContent);
-        scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
-        dialogStage.setScene(scene);
-
-        // Center on owner
-        Stage owner = (Stage) dashboardContainer.getScene().getWindow();
-        dialogStage.initOwner(owner);
-
-        return dialogStage;
-    }
-
     // === TaxYearAware Implementation ===
 
     @Override
     public void setTaxYear(TaxYear taxYear) {
         this.currentTaxYear = taxYear;
         viewModel.setCurrentTaxYear(taxYear);
+
+        // Fallback to CoreServiceFactory if not initialized via CDI
+        if (incomeService == null) {
+            incomeService = CoreServiceFactory.getIncomeService();
+        }
+        if (expenseService == null) {
+            expenseService = CoreServiceFactory.getExpenseService();
+        }
+        if (businessId == null) {
+            businessId = CoreServiceFactory.getDefaultBusinessId();
+        }
 
         // Reload data with new tax year
         loadDashboardData();
@@ -398,4 +364,11 @@ public class DashboardController implements Initializable, MainController.TaxYea
 
     // Expose dashboard container for dialog centering
     @FXML private VBox dashboardContainer;
+
+    // === Refreshable Implementation ===
+
+    @Override
+    public void refreshData() {
+        loadDashboardData();
+    }
 }

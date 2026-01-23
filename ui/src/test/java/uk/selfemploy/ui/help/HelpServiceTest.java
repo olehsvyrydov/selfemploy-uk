@@ -104,6 +104,18 @@ class HelpServiceTest {
             assertThat(help.get().title()).contains("Allowable");
             assertThat(help.get().body()).contains("wholly and exclusively");
         }
+
+        @Test
+        @DisplayName("should provide non-deductible expenses help")
+        void shouldProvideNonDeductibleExpensesHelp() {
+            Optional<HelpContent> help = helpService.getHelp(HelpTopic.NON_DEDUCTIBLE_EXPENSES);
+
+            assertThat(help).isPresent();
+            assertThat(help.get().title()).contains("Non-Deductible");
+            assertThat(help.get().body()).contains("cannot be claimed");
+            assertThat(help.get().body()).contains("entertainment");
+            assertThat(help.get().hasLink()).isTrue();
+        }
     }
 
     @Nested

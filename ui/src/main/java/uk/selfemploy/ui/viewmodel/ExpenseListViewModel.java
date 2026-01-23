@@ -7,6 +7,7 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.ReceiptStorageService;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -20,9 +21,10 @@ import java.util.stream.Collectors;
 public class ExpenseListViewModel {
 
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
-    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final ExpenseService expenseService;
+    private ReceiptStorageService receiptStorageService;
 
     // Business context
     private UUID businessId;
@@ -78,7 +80,13 @@ public class ExpenseListViewModel {
 
             // Convert to table rows and sort by date descending
             List<ExpenseTableRow> rows = expenses.stream()
-                .map(ExpenseTableRow::fromExpense)
+                .map(expense -> {
+                    int receiptCount = 0;
+                    if (receiptStorageService != null) {
+                        receiptCount = receiptStorageService.listReceipts(expense.id()).size();
+                    }
+                    return ExpenseTableRow.fromExpense(expense, receiptCount);
+                })
                 .sorted(Comparator.comparing(ExpenseTableRow::date).reversed())
                 .toList();
 
@@ -283,6 +291,10 @@ public class ExpenseListViewModel {
 
     public void setCisBusiness(boolean cisBusiness) {
         this.cisBusiness = cisBusiness;
+    }
+
+    public void setReceiptStorageService(ReceiptStorageService receiptStorageService) {
+        this.receiptStorageService = receiptStorageService;
     }
 
     public ObservableList<ExpenseTableRow> getExpenseItems() {

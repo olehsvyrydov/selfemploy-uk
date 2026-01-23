@@ -49,6 +49,7 @@ public class MainController implements Initializable {
 
     private final NavigationViewModel navigationViewModel = new NavigationViewModel();
     private final Map<View, Node> viewCache = new HashMap<>();
+    private final Map<View, Object> controllerCache = new HashMap<>();
     private final DeadlineNotificationService notificationService = new DeadlineNotificationService();
 
     @Override
@@ -146,13 +147,18 @@ public class MainController implements Initializable {
         navigationViewModel.navigateTo(view);
 
         Node viewNode = viewCache.get(view);
+        Object controller = controllerCache.get(view);
+
         if (viewNode == null) {
             try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource(view.getFxmlPath()));
                 viewNode = loader.load();
 
+                // Get and cache controller
+                controller = loader.getController();
+                controllerCache.put(view, controller);
+
                 // Pass tax year to controller if it supports it
-                Object controller = loader.getController();
                 if (controller instanceof TaxYearAware taxYearAware) {
                     taxYearAware.setTaxYear(navigationViewModel.getSelectedTaxYear());
                 }
@@ -162,6 +168,11 @@ public class MainController implements Initializable {
                 showError("Failed to load view: " + view.getTitle(), e);
                 return;
             }
+        } else {
+            // Refresh data when loading from cache
+            if (controller instanceof Refreshable refreshable) {
+                refreshable.refreshData();
+            }
         }
 
         contentPane.getChildren().setAll(viewNode);
@@ -170,6 +181,7 @@ public class MainController implements Initializable {
     private void refreshCurrentView() {
         View currentView = navigationViewModel.getCurrentView();
         viewCache.remove(currentView);
+        controllerCache.remove(currentView);
         loadView(currentView);
     }
 
@@ -219,12 +231,12 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    void handleNotifications(ActionEvent event) {
+    void handleNotificationsAction(ActionEvent event) {
         showNotificationPanel();
     }
 
     @FXML
-    void handleNotifications(MouseEvent event) {
+    void handleNotificationsClick(MouseEvent event) {
         showNotificationPanel();
     }
 

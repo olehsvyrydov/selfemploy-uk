@@ -5,6 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import uk.selfemploy.common.util.EnvLoader;
 
 /**
  * Main application launcher for UK Self-Employment Manager.
@@ -67,6 +68,8 @@ public class Launcher extends Application {
      * @param args command line arguments
      */
     public static void main(String[] args) {
+        // Load .env file before starting the application
+        EnvLoader.loadFromDefaultLocations();
         launch(args);
     }
 }

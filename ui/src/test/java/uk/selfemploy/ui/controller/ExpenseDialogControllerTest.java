@@ -574,6 +574,83 @@ class ExpenseDialogControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("Category Dropdown Population")
+    class CategoryDropdownPopulation {
+
+        @Test
+        @DisplayName("should have categories available after initialization")
+        void shouldHaveCategoriesAvailableAfterInitialization() {
+            // This tests the fix: categories should be populated when ViewModel is created with service
+            assertThat(viewModel.getAvailableCategories()).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("should include all SA103 expense categories for non-CIS business")
+        void shouldIncludeAllSa103ExpenseCategoriesForNonCisBusiness() {
+            viewModel.setCisBusiness(false);
+
+            var categories = viewModel.getAvailableCategories();
+
+            // Should have 16 categories (17 total minus 1 CIS-only)
+            assertThat(categories).hasSize(16);
+            assertThat(categories).contains(
+                ExpenseCategory.COST_OF_GOODS,
+                ExpenseCategory.STAFF_COSTS,
+                ExpenseCategory.TRAVEL,
+                ExpenseCategory.TRAVEL_MILEAGE,
+                ExpenseCategory.PREMISES,
+                ExpenseCategory.REPAIRS,
+                ExpenseCategory.OFFICE_COSTS,
+                ExpenseCategory.ADVERTISING,
+                ExpenseCategory.INTEREST,
+                ExpenseCategory.FINANCIAL_CHARGES,
+                ExpenseCategory.BAD_DEBTS,
+                ExpenseCategory.PROFESSIONAL_FEES,
+                ExpenseCategory.DEPRECIATION,
+                ExpenseCategory.OTHER_EXPENSES,
+                ExpenseCategory.HOME_OFFICE_SIMPLIFIED,
+                ExpenseCategory.BUSINESS_ENTERTAINMENT
+            );
+        }
+
+        @Test
+        @DisplayName("should include all 17 categories for CIS business")
+        void shouldIncludeAll17CategoriesForCisBusiness() {
+            viewModel.setCisBusiness(true);
+
+            var categories = viewModel.getAvailableCategories();
+
+            assertThat(categories).hasSize(17);
+            assertThat(categories).containsExactlyInAnyOrder(ExpenseCategory.values());
+        }
+
+        @Test
+        @DisplayName("should have categories with SA103 box numbers")
+        void shouldHaveCategoriesWithSa103BoxNumbers() {
+            var categories = viewModel.getAvailableCategories();
+
+            // All categories should have SA103 box numbers (returned as String)
+            for (ExpenseCategory category : categories) {
+                assertThat(category.getSa103Box())
+                    .as("Category %s should have SA103 box number", category.name())
+                    .isNotBlank();
+            }
+        }
+
+        @Test
+        @DisplayName("should have categories with display names")
+        void shouldHaveCategoriesWithDisplayNames() {
+            var categories = viewModel.getAvailableCategories();
+
+            for (ExpenseCategory category : categories) {
+                assertThat(category.getDisplayName())
+                    .as("Category %s should have display name", category.name())
+                    .isNotBlank();
+            }
+        }
+    }
+
     // =====================================================================
     // SE-308: Receipt Attachment Tests
     // =====================================================================

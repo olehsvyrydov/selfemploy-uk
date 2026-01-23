@@ -335,36 +335,36 @@ public class AnnualSubmissionController {
     // === Private Methods ===
 
     private void setupBindings() {
-        // Bind financial summary values
+        // Bind financial summary values (with null-safe formatting)
         turnoverValue.textProperty().bind(
             Bindings.createStringBinding(
-                () -> CURRENCY_FORMAT.format(viewModel.totalIncomeProperty().get()),
+                () -> formatCurrency(viewModel.totalIncomeProperty().get()),
                 viewModel.totalIncomeProperty()
             )
         );
         expensesValue.textProperty().bind(
             Bindings.createStringBinding(
-                () -> CURRENCY_FORMAT.format(viewModel.totalExpensesProperty().get()),
+                () -> formatCurrency(viewModel.totalExpensesProperty().get()),
                 viewModel.totalExpensesProperty()
             )
         );
         netProfitValue.textProperty().bind(
             Bindings.createStringBinding(
-                () -> CURRENCY_FORMAT.format(viewModel.netProfitProperty().get()),
+                () -> formatCurrency(viewModel.netProfitProperty().get()),
                 viewModel.netProfitProperty()
             )
         );
 
-        // Bind tax calculation values
+        // Bind tax calculation values (with null-safe formatting)
         incomeTaxValue.textProperty().bind(
             Bindings.createStringBinding(
-                () -> CURRENCY_FORMAT.format(viewModel.taxDueProperty().get()),
+                () -> formatCurrency(viewModel.taxDueProperty().get()),
                 viewModel.taxDueProperty()
             )
         );
         niValue.textProperty().bind(
             Bindings.createStringBinding(
-                () -> CURRENCY_FORMAT.format(viewModel.nationalInsuranceProperty().get()),
+                () -> formatCurrency(viewModel.nationalInsuranceProperty().get()),
                 viewModel.nationalInsuranceProperty()
             )
         );

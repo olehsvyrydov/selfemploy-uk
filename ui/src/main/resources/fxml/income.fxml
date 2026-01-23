@@ -23,27 +23,25 @@
         <!-- Summary Cards -->
         <HBox styleClass="card" spacing="0">
             <!-- Total Summary -->
-            <VBox styleClass="summary-item" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT">
-                <Label text="TOTAL" styleClass="metric-label"/>
+            <VBox styleClass="summary-item" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+                <Label text="TOTAL INCOME" styleClass="metric-label"/>
                 <Label fx:id="totalValue" text="£0.00" styleClass="summary-value"/>
                 <Label fx:id="totalCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <!-- Divider -->
             <Separator orientation="VERTICAL" styleClass="summary-divider"/>
 
             <!-- Paid Summary -->
-            <VBox styleClass="summary-item, summary-paid" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT">
+            <VBox styleClass="summary-item, summary-paid" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
                 <Label text="PAID" styleClass="metric-label"/>
                 <Label fx:id="paidValue" text="£0.00" styleClass="summary-value, text-success"/>
                 <Label fx:id="paidCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <!-- Divider -->
             <Separator orientation="VERTICAL" styleClass="summary-divider"/>
 
             <!-- Unpaid Summary -->
-            <VBox styleClass="summary-item, summary-unpaid" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT">
+            <VBox styleClass="summary-item, summary-unpaid" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
                 <Label text="UNPAID" styleClass="metric-label"/>
                 <Label fx:id="unpaidValue" text="£0.00" styleClass="summary-value, text-warning"/>
                 <Label fx:id="unpaidCount" text="0 entries" styleClass="label-secondary"/>
@@ -59,7 +57,7 @@
         </HBox>
 
         <!-- Income Table -->
-        <TableView fx:id="incomeTable" styleClass="data-table" VBox.vgrow="ALWAYS">
+        <TableView fx:id="incomeTable" styleClass="data-table" VBox.vgrow="ALWAYS" minHeight="300">
             <columnResizePolicy>
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
             </columnResizePolicy>
@@ -85,13 +83,13 @@
                     onAction="#handleNextPage" disable="true"/>
         </HBox>
 
-        <!-- Empty State (shown when no data) -->
+        <!-- Empty State -->
         <VBox fx:id="emptyState" styleClass="empty-state-container"
               alignment="CENTER" spacing="16" managed="false" visible="false">
+            <padding><Insets topRightBottomLeft="60"/></padding>
             <Label text="No Income Recorded" styleClass="empty-state-title"/>
             <Label text="Start tracking your earnings by adding your first income entry."
-                   styleClass="empty-state-message" wrapText="true" textAlignment="CENTER"/>
-            <Button text="+ Add Income" styleClass="button-success" onAction="#handleAddIncome"/>
+                   styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
         </VBox>
 
     </VBox>

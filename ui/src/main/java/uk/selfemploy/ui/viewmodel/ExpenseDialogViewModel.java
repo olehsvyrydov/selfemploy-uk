@@ -37,6 +37,7 @@ public class ExpenseDialogViewModel {
     // Mode tracking
     private final BooleanProperty editMode = new SimpleBooleanProperty(false);
     private UUID existingExpenseId;
+    private UUID tempExpenseIdForReceipts; // Used when attaching receipts to a new (unsaved) expense
 
     // Form fields
     private final ObjectProperty<LocalDate> date = new SimpleObjectProperty<>(LocalDate.now());
@@ -167,6 +168,7 @@ public class ExpenseDialogViewModel {
         ignoreChanges = true;
         try {
             existingExpenseId = null;
+            tempExpenseIdForReceipts = null;
             editMode.set(false);
 
             date.set(LocalDate.now());
@@ -460,7 +462,7 @@ public class ExpenseDialogViewModel {
                 amountValue,
                 description.get(),
                 category.get(),
-                null, // receiptPath - not implemented in this dialog
+                null, // receiptPath - managed by ReceiptStorageService
                 notes.get().isBlank() ? null : notes.get()
             );
         } else {
@@ -470,9 +472,15 @@ public class ExpenseDialogViewModel {
                 amountValue,
                 description.get(),
                 category.get(),
-                null, // receiptPath
+                null, // receiptPath - managed by ReceiptStorageService
                 notes.get().isBlank() ? null : notes.get()
             );
+
+            // Reassociate receipts from temp ID to the actual expense ID
+            if (tempExpenseIdForReceipts != null && receiptStorageService != null) {
+                receiptStorageService.reassociateReceipts(tempExpenseIdForReceipts, savedExpense.id());
+                tempExpenseIdForReceipts = null;
+            }
         }
 
         if (onSave != null) {
@@ -749,7 +757,17 @@ public class ExpenseDialogViewModel {
         }
 
         try {
-            UUID expenseId = existingExpenseId != null ? existingExpenseId : UUID.randomUUID();
+            UUID expenseId;
+            if (existingExpenseId != null) {
+                // Editing existing expense - use the real ID
+                expenseId = existingExpenseId;
+            } else {
+                // New expense - use or create a temp ID
+                if (tempExpenseIdForReceipts == null) {
+                    tempExpenseIdForReceipts = UUID.randomUUID();
+                }
+                expenseId = tempExpenseIdForReceipts;
+            }
             ReceiptMetadata metadata = receiptStorageService.storeReceipt(
                 expenseId, file.toPath(), file.getName());
             receipts.add(metadata);

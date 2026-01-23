@@ -21,7 +21,8 @@ public record ExpenseTableRow(
     ExpenseCategory category,
     BigDecimal amount,
     boolean deductible,
-    String notes
+    String notes,
+    int receiptCount
 ) {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM ''yy");
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
@@ -30,6 +31,13 @@ public record ExpenseTableRow(
      * Creates an ExpenseTableRow from an Expense domain object.
      */
     public static ExpenseTableRow fromExpense(Expense expense) {
+        return fromExpense(expense, 0);
+    }
+
+    /**
+     * Creates an ExpenseTableRow from an Expense domain object with receipt count.
+     */
+    public static ExpenseTableRow fromExpense(Expense expense, int receiptCount) {
         return new ExpenseTableRow(
             expense.id(),
             expense.date(),
@@ -37,7 +45,8 @@ public record ExpenseTableRow(
             expense.category(),
             expense.amount(),
             expense.isAllowable(),
-            expense.notes()
+            expense.notes(),
+            receiptCount
         );
     }
 

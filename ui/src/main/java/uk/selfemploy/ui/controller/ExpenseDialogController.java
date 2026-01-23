@@ -9,6 +9,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -17,6 +18,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
@@ -40,6 +43,8 @@ import java.util.function.Consumer;
  * Manages form interaction, validation display, and dialog actions.
  */
 public class ExpenseDialogController implements Initializable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ExpenseDialogController.class);
 
     // Header
     @FXML private Label dialogTitle;
@@ -113,12 +118,17 @@ public class ExpenseDialogController implements Initializable {
     }
 
     private void initializeViewModel() {
-        if (expenseService == null) return;
+        LOG.debug("initializeViewModel called, expenseService={}", expenseService);
+        if (expenseService == null) {
+            LOG.warn("expenseService is NULL - returning early!");
+            return;
+        }
 
         viewModel = new ExpenseDialogViewModel(expenseService);
         viewModel.setBusinessId(businessId);
         viewModel.setTaxYear(taxYear);
         viewModel.setCisBusiness(cisBusiness);
+        LOG.debug("ViewModel created, cisBusiness={}", cisBusiness);
 
         // Set receipt storage service if available
         if (receiptStorageService != null) {
@@ -145,6 +155,10 @@ public class ExpenseDialogController implements Initializable {
 
     private void setupDatePicker() {
         dateField.setValue(LocalDate.now());
+
+        // Make date picker editable and add style class
+        dateField.setEditable(true);
+        dateField.getStyleClass().add("date-picker");
 
         // Configure date picker to restrict to tax year
         dateField.setDayCellFactory(picker -> new DateCell() {
@@ -182,13 +196,21 @@ public class ExpenseDialogController implements Initializable {
     }
 
     private void setupCategoryDropdown() {
-        if (viewModel == null) return;
+        LOG.debug("setupCategoryDropdown called, viewModel={}", viewModel);
+        if (viewModel == null) {
+            LOG.warn("viewModel is NULL - returning early!");
+            return;
+        }
+
+        var categories = viewModel.getAvailableCategories();
+        LOG.debug("Available categories count: {}", categories.size());
 
         categoryField.getItems().clear();
-        categoryField.getItems().addAll(viewModel.getAvailableCategories());
+        categoryField.getItems().addAll(categories);
+        LOG.debug("categoryField items count after add: {}", categoryField.getItems().size());
 
-        // Custom cell factory for display
-        categoryField.setConverter(new StringConverter<>() {
+        // Simple string converter - this is all that's needed for display
+        StringConverter<ExpenseCategory> converter = new StringConverter<>() {
             @Override
             public String toString(ExpenseCategory category) {
                 if (category == null) return "";
@@ -199,21 +221,29 @@ public class ExpenseDialogController implements Initializable {
             public ExpenseCategory fromString(String string) {
                 return null;
             }
+        };
+
+        categoryField.setConverter(converter);
+
+        // Use the same converter for both the button cell and dropdown cells
+        categoryField.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(ExpenseCategory item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : converter.toString(item));
+            }
         });
 
-        categoryField.setCellFactory(param -> new ListCell<>() {
+        categoryField.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(ExpenseCategory item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setGraphic(null);
                 } else {
-                    setText(item.getDisplayName() + " (Box " + item.getSa103Box() + ")");
-
-                    // Add warning indicator for non-allowable categories
+                    setText(converter.toString(item));
+                    // Warning style for non-allowable
                     if (!item.isAllowable()) {
-                        setText(getText() + " [!]");
                         setStyle("-fx-text-fill: #856404;");
                     } else {
                         setStyle("");
@@ -496,13 +526,18 @@ public class ExpenseDialogController implements Initializable {
     private void handleViewReceipt(ReceiptMetadata receipt) {
         if (receipt == null || receipt.storagePath() == null) return;
 
-        try {
-            File file = receipt.storagePath().toFile();
-            if (file.exists() && Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().open(file);
-            }
-        } catch (IOException e) {
-            showReceiptErrorAlert("Could not open receipt", e.getMessage());
+        File file = receipt.storagePath().toFile();
+        if (file.exists() && Desktop.isDesktopSupported()) {
+            // Run on background thread to avoid blocking JavaFX Application Thread
+            new Thread(() -> {
+                try {
+                    Desktop.getDesktop().open(file);
+                } catch (IOException e) {
+                    // Show error on JavaFX thread
+                    javafx.application.Platform.runLater(() ->
+                        showReceiptErrorAlert("Could not open receipt", e.getMessage()));
+                }
+            }).start();
         }
     }
 
@@ -600,6 +635,14 @@ public class ExpenseDialogController implements Initializable {
     void handleDismissReceiptError(ActionEvent event) {
         if (viewModel != null) {
             viewModel.clearReceiptError();
+        }
+    }
+
+    @FXML
+    void handleContainerClick(MouseEvent event) {
+        // Clear focus from any field when clicking the container background
+        if (event.getTarget() instanceof VBox) {
+            ((VBox) event.getTarget()).requestFocus();
         }
     }
 

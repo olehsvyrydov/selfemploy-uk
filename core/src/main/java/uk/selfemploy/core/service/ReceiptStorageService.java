@@ -54,9 +54,10 @@ public class ReceiptStorageService {
     }
 
     /**
-     * Constructor for testing with explicit storage path.
+     * Constructor with explicit storage path.
+     * Useful for standalone mode or testing.
      */
-    ReceiptStorageService(Path storageDirectory) {
+    public ReceiptStorageService(Path storageDirectory) {
         this.storageDirectory = storageDirectory;
         initializeStorageDirectory();
     }
@@ -212,6 +213,46 @@ public class ReceiptStorageService {
      */
     public Path getStorageDirectory() {
         return storageDirectory;
+    }
+
+    /**
+     * Reassociates receipts from a temporary expense ID to the actual expense ID.
+     * Used when creating a new expense where receipts are attached before the expense is saved.
+     *
+     * @param tempExpenseId The temporary expense ID used during attachment
+     * @param actualExpenseId The actual expense ID after saving
+     */
+    public void reassociateReceipts(UUID tempExpenseId, UUID actualExpenseId) {
+        if (tempExpenseId == null || actualExpenseId == null || tempExpenseId.equals(actualExpenseId)) {
+            return;
+        }
+
+        List<UUID> receiptIds = receiptsByExpenseId.remove(tempExpenseId);
+        if (receiptIds == null || receiptIds.isEmpty()) {
+            return;
+        }
+
+        log.debug("Reassociating {} receipts from {} to {}", receiptIds.size(), tempExpenseId, actualExpenseId);
+
+        // Update each receipt's metadata with the new expense ID
+        for (UUID receiptId : receiptIds) {
+            ReceiptMetadata oldMetadata = receiptsById.get(receiptId);
+            if (oldMetadata != null) {
+                ReceiptMetadata newMetadata = new ReceiptMetadata(
+                    oldMetadata.receiptId(),
+                    actualExpenseId,
+                    oldMetadata.originalFilename(),
+                    oldMetadata.storagePath(),
+                    oldMetadata.mimeType(),
+                    oldMetadata.fileSize(),
+                    oldMetadata.uploadedAt()
+                );
+                receiptsById.put(receiptId, newMetadata);
+            }
+        }
+
+        // Add to new expense's receipt list
+        receiptsByExpenseId.computeIfAbsent(actualExpenseId, k -> new ArrayList<>()).addAll(receiptIds);
     }
 
     // === Private Helper Methods ===

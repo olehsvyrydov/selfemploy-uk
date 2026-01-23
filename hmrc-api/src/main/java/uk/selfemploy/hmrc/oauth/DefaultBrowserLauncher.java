@@ -1,43 +1,39 @@
 package uk.selfemploy.hmrc.oauth;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException.OAuthError;
 
-import java.awt.Desktop;
 import java.io.IOException;
-import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Default browser launcher using java.awt.Desktop.
- * Falls back to OS-specific commands if Desktop is not supported.
+ * Default browser launcher using OS-specific commands.
+ * Avoids java.awt.Desktop which can conflict with JavaFX.
  */
 @ApplicationScoped
 public class DefaultBrowserLauncher implements BrowserLauncher {
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultBrowserLauncher.class);
+    private static final Logger LOG = Logger.getLogger(DefaultBrowserLauncher.class.getName());
 
     @Override
     public void openUrl(String url) throws HmrcOAuthException {
-        log.info("Opening browser with URL: {}", url);
+        LOG.info("Opening browser with URL: " + url);
 
         try {
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(URI.create(url));
-            } else {
-                // Fallback to OS-specific commands
-                openUrlWithOsCommand(url);
-            }
+            openUrlWithOsCommand(url);
+            LOG.info("Browser launch command executed");
         } catch (IOException | UnsupportedOperationException e) {
-            log.error("Failed to open browser", e);
+            LOG.log(Level.SEVERE, "Failed to open browser", e);
             throw new HmrcOAuthException(OAuthError.BROWSER_ERROR, e);
         }
     }
 
     private void openUrlWithOsCommand(String url) throws IOException {
         String os = System.getProperty("os.name").toLowerCase();
+        LOG.info("Detected OS: " + os);
+
         ProcessBuilder pb;
 
         if (os.contains("win")) {
@@ -50,6 +46,8 @@ public class DefaultBrowserLauncher implements BrowserLauncher {
             throw new UnsupportedOperationException("Unsupported operating system: " + os);
         }
 
-        pb.start();
+        pb.inheritIO();
+        Process process = pb.start();
+        LOG.info("Browser process started with PID: " + process.pid());
     }
 }

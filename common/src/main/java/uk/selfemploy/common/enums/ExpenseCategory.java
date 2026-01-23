@@ -154,6 +154,31 @@ public enum ExpenseCategory {
         return displayName;
     }
 
+    /**
+     * Returns a shorter, user-friendly display name for UI lists and tables.
+     */
+    public String getShortDisplayName() {
+        return switch (this) {
+            case COST_OF_GOODS -> "Cost of Goods";
+            case SUBCONTRACTOR_COSTS -> "Subcontractor Costs";
+            case STAFF_COSTS -> "Staff Costs";
+            case TRAVEL -> "Travel (Actual)";
+            case TRAVEL_MILEAGE -> "Travel (Mileage)";
+            case PREMISES -> "Premises";
+            case REPAIRS -> "Repairs";
+            case OFFICE_COSTS -> "Office Costs";
+            case ADVERTISING -> "Advertising";
+            case INTEREST -> "Interest";
+            case FINANCIAL_CHARGES -> "Financial Charges";
+            case BAD_DEBTS -> "Bad Debts";
+            case PROFESSIONAL_FEES -> "Professional Fees";
+            case DEPRECIATION -> "Depreciation";
+            case OTHER_EXPENSES -> "Other Expenses";
+            case HOME_OFFICE_SIMPLIFIED -> "Home Office";
+            case BUSINESS_ENTERTAINMENT -> "Entertainment";
+        };
+    }
+
     public String getSa103Box() {
         return sa103Box;
     }
