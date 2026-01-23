@@ -2,6 +2,8 @@ package uk.selfemploy.ui.e2e;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.DialogPane;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.DisplayName;
@@ -9,20 +11,23 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * E2E Tests for Help Page functionality.
- * Tests that Help Topic buttons work when loaded via main navigation.
+ * Tests that Help Topic cards work when loaded via main navigation.
+ *
+ * Updated for text-based icons (no emoji) per /aura design v2.
  */
 @Tag("e2e")
 @DisplayName("Help Page E2E Tests")
 class HelpPageE2ETest extends BaseE2ETest {
 
     @Test
-    @DisplayName("Navigate to Help page and verify buttons exist")
-    void navigateToHelpPageAndVerifyButtons() {
+    @DisplayName("Navigate to Help page and verify help topic cards exist")
+    void navigateToHelpPageAndVerifyCards() {
         // Navigate to Help page
         clickOn("#helpButton");
         waitForFxEvents();
@@ -30,29 +35,24 @@ class HelpPageE2ETest extends BaseE2ETest {
         // Verify Help page loaded
         assertThat(lookup(".page-title").queryLabeled().getText()).isEqualTo("Help & Support");
 
-        // Find help topic buttons
-        var buttons = lookup(".help-topic-button").queryAllAs(Button.class);
-        System.out.println("Found " + buttons.size() + " help topic buttons on Help page");
+        // Find help topic cards (HBox with .help-topic-card class)
+        Set<HBox> cards = lookup(".help-topic-card").queryAllAs(HBox.class);
+        System.out.println("Found " + cards.size() + " help topic cards on Help page");
 
-        // We expect 11 help topic buttons
-        assertThat(buttons.size()).isGreaterThanOrEqualTo(9);
+        // We expect 11 help topic cards
+        assertThat(cards.size()).isGreaterThanOrEqualTo(9);
 
-        // Verify all buttons have onAction handlers
-        for (Button btn : buttons) {
-            System.out.println("Button: " + btn.getText() +
-                " - onAction: " + (btn.getOnAction() != null ? "SET" : "NULL") +
-                " - visible: " + btn.isVisible() +
-                " - disabled: " + btn.isDisabled() +
-                " - mouseTransparent: " + btn.isMouseTransparent());
-            assertThat(btn.getOnAction())
-                .as("Button '%s' should have onAction handler", btn.getText())
+        // Verify all cards have onMouseClicked handlers
+        for (HBox card : cards) {
+            assertThat(card.getOnMouseClicked())
+                .as("Help topic card should have onMouseClicked handler")
                 .isNotNull();
         }
     }
 
     @Test
-    @DisplayName("Click Net Profit help topic button shows dialog")
-    void clickNetProfitButtonShowsDialog() {
+    @DisplayName("Click Net Profit help topic card shows dialog")
+    void clickNetProfitCardShowsDialog() {
         // Navigate to Help page
         clickOn("#helpButton");
         waitForFxEvents();
@@ -60,61 +60,38 @@ class HelpPageE2ETest extends BaseE2ETest {
         // Verify Help page loaded
         assertThat(lookup(".page-title").queryLabeled().getText()).isEqualTo("Help & Support");
 
-        // Find the Net Profit button
-        Button netProfitBtn = lookup(".help-topic-button").nth(0).queryButton();
-        assertThat(netProfitBtn).isNotNull();
-        assertThat(netProfitBtn.getText()).contains("Net Profit");
-
-        System.out.println("=== Before clicking Net Profit button ===");
-        System.out.println("Button: " + netProfitBtn.getText());
-        System.out.println("Button bounds: " + netProfitBtn.getBoundsInParent());
-        System.out.println("Button scene: " + (netProfitBtn.getScene() != null ? "present" : "null"));
+        // Find the first help topic card (Net Profit)
+        HBox netProfitCard = lookup(".help-topic-card").nth(0).queryAs(HBox.class);
+        assertThat(netProfitCard).isNotNull();
 
         // Count windows before click
         List<Window> windowsBefore = Window.getWindows().stream().toList();
-        System.out.println("Windows before click: " + windowsBefore.size());
 
-        // Click the button
-        clickOn(netProfitBtn);
+        // Click the card
+        clickOn(netProfitCard);
         waitForFxEvents();
-
-        // Wait a bit for dialog to appear
         sleep(500);
 
-        System.out.println("=== After clicking Net Profit button ===");
-
-        // Count windows after click - should have one more (the dialog)
+        // Count windows after click
         List<Window> windowsAfter = Window.getWindows().stream().toList();
-        System.out.println("Windows after click: " + windowsAfter.size());
 
         // Look for dialog
         var dialogPanes = lookup(".dialog-pane").queryAllAs(DialogPane.class);
-        System.out.println("Dialog panes found: " + dialogPanes.size());
+        var helpDialogPanes = lookup(".help-dialog-pane").queryAll();
 
-        // Verify a dialog appeared (either as new window or dialog pane)
-        boolean dialogFound = windowsAfter.size() > windowsBefore.size() || !dialogPanes.isEmpty();
+        // Verify a dialog appeared
+        boolean dialogFound = windowsAfter.size() > windowsBefore.size()
+            || !dialogPanes.isEmpty()
+            || !helpDialogPanes.isEmpty();
 
         if (dialogFound) {
             System.out.println("SUCCESS: Dialog was shown!");
-
-            // Close the dialog if it's open
-            if (!dialogPanes.isEmpty()) {
-                type(javafx.scene.input.KeyCode.ESCAPE);
-                waitForFxEvents();
-            }
-        } else {
-            System.out.println("WARNING: No dialog found after click");
-            // Print more debug info
-            for (Window w : windowsAfter) {
-                if (w instanceof Stage stage) {
-                    System.out.println("  Stage: " + stage.getTitle() + " showing=" + stage.isShowing());
-                }
-            }
+            type(javafx.scene.input.KeyCode.ESCAPE);
+            waitForFxEvents();
         }
 
-        // Assert that dialog appeared
         assertThat(dialogFound)
-            .as("Clicking Net Profit button should show a help dialog")
+            .as("Clicking Net Profit card should show a help dialog")
             .isTrue();
     }
 
@@ -137,41 +114,96 @@ class HelpPageE2ETest extends BaseE2ETest {
 
         // Verify all buttons have onAction handlers
         for (Button btn : quickLinkButtons) {
-            System.out.println("Quick Link: " + btn.getText() +
-                " - onAction: " + (btn.getOnAction() != null ? "SET" : "NULL"));
             assertThat(btn.getOnAction())
-                .as("Quick link '%s' should have onAction handler", btn.getText())
+                .as("Quick link should have onAction handler")
                 .isNotNull();
         }
     }
 
     @Test
-    @DisplayName("Help page buttons are interactive")
-    void helpPageButtonsAreInteractive() {
+    @DisplayName("Help topic cards are interactive")
+    void helpTopicCardsAreInteractive() {
         // Navigate to Help page
         clickOn("#helpButton");
         waitForFxEvents();
 
-        // Find the first help topic button
-        Button firstBtn = lookup(".help-topic-button").nth(0).queryButton();
-        assertThat(firstBtn).isNotNull();
+        // Find the first help topic card
+        HBox firstCard = lookup(".help-topic-card").nth(0).queryAs(HBox.class);
+        assertThat(firstCard).isNotNull();
 
-        // Verify button properties that affect interactivity
-        assertThat(firstBtn.isVisible()).as("Button should be visible").isTrue();
-        assertThat(firstBtn.isDisabled()).as("Button should not be disabled").isFalse();
-        assertThat(firstBtn.isMouseTransparent()).as("Button should not be mouse transparent").isFalse();
-        assertThat(firstBtn.getOnAction()).as("Button should have onAction handler").isNotNull();
+        // Verify card properties
+        assertThat(firstCard.isVisible()).as("Card should be visible").isTrue();
+        assertThat(firstCard.isDisabled()).as("Card should not be disabled").isFalse();
+        assertThat(firstCard.isMouseTransparent()).as("Card should not be mouse transparent").isFalse();
+        assertThat(firstCard.getOnMouseClicked()).as("Card should have onMouseClicked handler").isNotNull();
+        assertThat(firstCard.getWidth()).as("Card width should be positive").isGreaterThan(0);
+        assertThat(firstCard.getHeight()).as("Card height should be positive").isGreaterThan(0);
+    }
 
-        // Verify button has non-zero dimensions
-        assertThat(firstBtn.getWidth()).as("Button width should be positive").isGreaterThan(0);
-        assertThat(firstBtn.getHeight()).as("Button height should be positive").isGreaterThan(0);
+    @Test
+    @DisplayName("Help page has category headers")
+    void helpPageHasCategoryHeaders() {
+        // Navigate to Help page
+        clickOn("#helpButton");
+        waitForFxEvents();
 
-        System.out.println("Button is fully interactive:");
-        System.out.println("  - visible: " + firstBtn.isVisible());
-        System.out.println("  - disabled: " + firstBtn.isDisabled());
-        System.out.println("  - mouseTransparent: " + firstBtn.isMouseTransparent());
-        System.out.println("  - width: " + firstBtn.getWidth());
-        System.out.println("  - height: " + firstBtn.getHeight());
-        System.out.println("  - onAction: " + firstBtn.getOnAction());
+        // Find category headers
+        var categoryHeaders = lookup(".help-category-header").queryAll();
+        System.out.println("Found " + categoryHeaders.size() + " category headers");
+
+        // We expect 4 categories
+        assertThat(categoryHeaders.size()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("Topic icons use text-based icons")
+    void topicIconsUseTextBasedIcons() {
+        // Navigate to Help page
+        clickOn("#helpButton");
+        waitForFxEvents();
+
+        // Find topic icon text labels
+        var iconTexts = lookup(".topic-icon-text").queryAllAs(Label.class);
+        System.out.println("Found " + iconTexts.size() + " topic icon texts");
+
+        // Verify they use text-based abbreviations
+        for (Label iconText : iconTexts) {
+            String text = iconText.getText();
+            // Should be text like "NP", "IT", "PA", not emoji
+            assertThat(text).as("Icon should be text-based").matches("[A-Za-z0-9£%!?]+");
+        }
+    }
+
+    @Test
+    @DisplayName("Support section exists with buttons")
+    void supportSectionExists() {
+        // Navigate to Help page
+        clickOn("#helpButton");
+        waitForFxEvents();
+
+        // Find support card
+        var supportCards = lookup(".help-support-card").queryAll();
+        assertThat(supportCards.size()).isGreaterThanOrEqualTo(1);
+
+        // Find support buttons
+        var supportButtons = lookup(".support-link-button").queryAllAs(Button.class);
+        assertThat(supportButtons.size()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Disclaimer section exists")
+    void disclaimerSectionExists() {
+        // Navigate to Help page
+        clickOn("#helpButton");
+        waitForFxEvents();
+
+        // Find disclaimer card
+        var disclaimerCards = lookup(".help-disclaimer-card").queryAll();
+        assertThat(disclaimerCards.size()).isEqualTo(1);
+
+        // Find disclaimer title
+        var disclaimerTitle = lookup(".disclaimer-title").queryAs(Label.class);
+        assertThat(disclaimerTitle).isNotNull();
+        assertThat(disclaimerTitle.getText()).contains("Disclaimer");
     }
 }

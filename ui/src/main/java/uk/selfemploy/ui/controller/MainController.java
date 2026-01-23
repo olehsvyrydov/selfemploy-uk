@@ -10,6 +10,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.component.NotificationDialog;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
@@ -241,36 +242,18 @@ public class MainController implements Initializable {
     }
 
     private void showNotificationPanel() {
-        // Mark all as read when opening
-        notificationService.markAllAsRead();
-
-        // TODO: Show notification panel/popup with history
-        // For now, show a simple dialog with notification history
         var notifications = notificationService.getNotificationHistory();
+        TaxYear currentYear = navigationViewModel.getSelectedTaxYear();
 
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Notifications");
-        alert.setHeaderText("Deadline Notifications");
+        // Create and show custom notification dialog with /aura's design
+        NotificationDialog dialog = new NotificationDialog(
+            notifications,
+            currentYear,
+            () -> notificationService.markAllAsRead()
+        );
 
-        if (notifications.isEmpty()) {
-            alert.setContentText("No notifications yet.\n\nNotifications will appear when deadlines approach.");
-        } else {
-            StringBuilder sb = new StringBuilder();
-            int shown = 0;
-            for (var notification : notifications) {
-                if (shown >= 5) {
-                    sb.append("\n... and ").append(notifications.size() - 5).append(" more");
-                    break;
-                }
-                sb.append("• ").append(notification.title()).append("\n");
-                sb.append("  ").append(notification.message()).append("\n\n");
-                shown++;
-            }
-            alert.setContentText(sb.toString());
-        }
-
-        alert.showAndWait();
-        LOG.info("Notification panel shown, " + notifications.size() + " notifications");
+        dialog.showDialog();
+        LOG.info("Notification dialog shown, " + notifications.size() + " notifications");
     }
 
     /**

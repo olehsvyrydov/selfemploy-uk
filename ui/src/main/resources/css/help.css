@@ -5,360 +5,8 @@
  * Implementation: /james
  *
  * This stylesheet provides consistent styling for help components
- * throughout the application.
+ * using text-based icons for cross-platform compatibility.
  */
-
-/* ===== Root Variables ===== */
-.root {
-    -fx-help-icon-size: 18;
-    -fx-help-tooltip-bg: #1e293b;
-    -fx-help-tooltip-text: white;
-    -fx-help-link-color: #93c5fd;
-    -fx-help-link-hover: #bfdbfe;
-    -fx-help-banner-bg: #f0f9ff;
-    -fx-help-banner-border: #0284c7;
-}
-
-/* ===== Help Icon Button ===== */
-.help-icon-btn {
-    -fx-background-color: transparent;
-    -fx-min-width: 20;
-    -fx-min-height: 20;
-    -fx-max-width: 20;
-    -fx-max-height: 20;
-    -fx-padding: 0;
-    -fx-cursor: hand;
-}
-
-.help-icon-btn:focused {
-    -fx-background-color: transparent;
-}
-
-/* Help Icon Circle */
-.help-icon-circle {
-    -fx-background-color: transparent;
-    -fx-border-color: #adb5bd;
-    -fx-border-width: 1.5;
-    -fx-border-radius: 10;
-    -fx-background-radius: 10;
-    -fx-min-width: 18;
-    -fx-min-height: 18;
-    -fx-max-width: 18;
-    -fx-max-height: 18;
-    -fx-alignment: center;
-}
-
-.help-icon-circle:hover,
-.help-icon-btn:hover .help-icon-circle {
-    -fx-border-color: #0066cc;
-    -fx-background-color: #e6f0ff;
-}
-
-.help-icon-btn:focused .help-icon-circle {
-    -fx-border-color: #0066cc;
-    -fx-border-width: 2;
-    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.3), 4, 0, 0, 0);
-}
-
-/* Help Icon Text (the "?" character) */
-.help-icon-text {
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #adb5bd;
-}
-
-.help-icon-circle:hover .help-icon-text,
-.help-icon-btn:hover .help-icon-text {
-    -fx-text-fill: #0066cc;
-}
-
-.help-icon-btn:focused .help-icon-text {
-    -fx-text-fill: #0066cc;
-}
-
-/* ===== Custom Tooltip Styling ===== */
-.custom-tooltip {
-    -fx-background-color: #1e293b;
-    -fx-text-fill: white;
-    -fx-padding: 12 16;
-    -fx-background-radius: 8;
-    -fx-font-size: 13px;
-    -fx-max-width: 300;
-    -fx-wrap-text: true;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 12, 0, 0, 4);
-}
-
-.tooltip-container {
-    -fx-spacing: 8;
-}
-
-.tooltip-title {
-    -fx-font-weight: bold;
-    -fx-font-size: 13px;
-    -fx-text-fill: white;
-    -fx-padding: 0 0 4 0;
-}
-
-.tooltip-body {
-    -fx-font-size: 13px;
-    -fx-text-fill: #e2e8f0;
-    -fx-line-spacing: 2;
-    -fx-wrap-text: true;
-}
-
-.tooltip-link {
-    -fx-text-fill: #93c5fd;
-    -fx-font-size: 12px;
-    -fx-padding: 8 0 0 0;
-    -fx-cursor: hand;
-}
-
-.tooltip-link:hover {
-    -fx-underline: true;
-    -fx-text-fill: #bfdbfe;
-}
-
-/* ===== Expandable Help Section ===== */
-.expandable-help {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #0066cc;
-    -fx-border-width: 0 0 0 3;
-    -fx-padding: 16;
-    -fx-background-radius: 0 8 8 0;
-}
-
-.expandable-help-header {
-    -fx-cursor: hand;
-    -fx-padding: 8 0;
-    -fx-spacing: 8;
-}
-
-.expandable-help-toggle {
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #0066cc;
-}
-
-.expandable-help-toggle:hover {
-    -fx-underline: true;
-}
-
-.expandable-help-icon {
-    -fx-font-size: 12px;
-    -fx-text-fill: #0066cc;
-}
-
-.expandable-help-content {
-    -fx-padding: 12 0 0 0;
-    -fx-spacing: 12;
-}
-
-.expandable-help-text {
-    -fx-font-size: 14px;
-    -fx-text-fill: #374151;
-    -fx-wrap-text: true;
-    -fx-line-spacing: 3;
-}
-
-/* Calculation/Example Box within Help */
-.help-calculation-box {
-    -fx-background-color: white;
-    -fx-padding: 12;
-    -fx-background-radius: 6;
-    -fx-border-color: #e5e7eb;
-    -fx-border-width: 1;
-    -fx-border-radius: 6;
-    -fx-font-family: "Consolas", "Monaco", monospace;
-    -fx-font-size: 13px;
-}
-
-.help-calculation-title {
-    -fx-font-weight: bold;
-    -fx-font-size: 12px;
-    -fx-text-fill: #6b7280;
-    -fx-padding: 0 0 8 0;
-}
-
-.help-calculation-row {
-    -fx-spacing: 16;
-    -fx-padding: 2 0;
-}
-
-.help-calculation-label {
-    -fx-min-width: 150;
-    -fx-text-fill: #374151;
-}
-
-.help-calculation-value {
-    -fx-text-fill: #111827;
-    -fx-font-weight: bold;
-}
-
-.help-calculation-result {
-    -fx-text-fill: #059669;
-    -fx-font-weight: bold;
-}
-
-/* ===== External Link Styling ===== */
-.help-external-link {
-    -fx-text-fill: #0066cc;
-    -fx-font-size: 13px;
-    -fx-cursor: hand;
-    -fx-padding: 4 0;
-}
-
-.help-external-link:hover {
-    -fx-underline: true;
-}
-
-.help-external-link-icon {
-    -fx-font-size: 10px;
-    -fx-text-fill: #6b7280;
-    -fx-padding: 0 0 0 4;
-}
-
-/* ===== Info Banner (Help Context) ===== */
-.info-banner-help {
-    -fx-background-color: #f0f9ff;
-    -fx-border-color: #0284c7;
-    -fx-border-width: 0 0 0 4;
-    -fx-background-radius: 0 8 8 0;
-    -fx-padding: 16;
-    -fx-spacing: 12;
-}
-
-.info-banner-help-header {
-    -fx-spacing: 8;
-    -fx-alignment: center-left;
-}
-
-.info-banner-icon {
-    -fx-background-color: #0284c7;
-    -fx-text-fill: white;
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-    -fx-min-width: 24;
-    -fx-min-height: 24;
-    -fx-max-width: 24;
-    -fx-max-height: 24;
-    -fx-background-radius: 12;
-    -fx-alignment: center;
-}
-
-.info-banner-title {
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #0c4a6e;
-}
-
-.info-banner-body {
-    -fx-font-size: 14px;
-    -fx-text-fill: #334155;
-    -fx-wrap-text: true;
-    -fx-line-spacing: 2;
-}
-
-/* ===== Field-Level Help Text ===== */
-.field-help-text {
-    -fx-font-size: 12px;
-    -fx-text-fill: #6b7280;
-    -fx-padding: 4 0 0 0;
-    -fx-wrap-text: true;
-}
-
-/* ===== Label with Help Icon Container ===== */
-.label-with-help {
-    -fx-spacing: 8;
-    -fx-alignment: center-left;
-}
-
-.label-with-help .label {
-    -fx-font-weight: normal;
-}
-
-/* ===== Section Header with Help ===== */
-.section-header-with-help {
-    -fx-spacing: 12;
-    -fx-alignment: center-left;
-    -fx-padding: 0 0 8 0;
-}
-
-.section-header-with-help .section-title {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #111827;
-}
-
-/* ===== Help Modal/Popup ===== */
-.help-popup {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-border-color: #e5e7eb;
-    -fx-border-width: 1;
-    -fx-border-radius: 12;
-    -fx-padding: 24;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 20, 0, 0, 8);
-    -fx-max-width: 400;
-}
-
-.help-popup-header {
-    -fx-spacing: 12;
-    -fx-alignment: center-left;
-    -fx-padding: 0 0 16 0;
-    -fx-border-color: transparent transparent #e5e7eb transparent;
-    -fx-border-width: 0 0 1 0;
-}
-
-.help-popup-title {
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #111827;
-}
-
-.help-popup-close {
-    -fx-background-color: transparent;
-    -fx-font-size: 18px;
-    -fx-text-fill: #6b7280;
-    -fx-cursor: hand;
-    -fx-padding: 4 8;
-}
-
-.help-popup-close:hover {
-    -fx-text-fill: #111827;
-    -fx-background-color: #f3f4f6;
-    -fx-background-radius: 4;
-}
-
-.help-popup-body {
-    -fx-padding: 16 0;
-    -fx-spacing: 12;
-}
-
-.help-popup-footer {
-    -fx-padding: 16 0 0 0;
-    -fx-border-color: #e5e7eb transparent transparent transparent;
-    -fx-border-width: 1 0 0 0;
-    -fx-alignment: center-right;
-}
-
-/* ===== Keyboard Hints ===== */
-.keyboard-hint {
-    -fx-font-size: 11px;
-    -fx-text-fill: #9ca3af;
-    -fx-padding: 4 0 0 0;
-}
-
-.keyboard-key {
-    -fx-background-color: #f3f4f6;
-    -fx-text-fill: #374151;
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
-    -fx-padding: 2 6;
-    -fx-background-radius: 3;
-    -fx-border-color: #d1d5db;
-    -fx-border-width: 1;
-    -fx-border-radius: 3;
-}
 
 /* ===== Help Page Layout ===== */
 .help-scroll {
@@ -384,123 +32,524 @@
     -fx-text-fill: #6c757d;
 }
 
-/* Quick Link Buttons */
+/* ===== Help Card (common card style) ===== */
+.help-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 6, 0, 0, 2);
+}
+
+/* ===== Quick Links Section ===== */
+.quick-links-flow {
+    -fx-padding: 8 4 8 4;
+}
+
 .help-link-button {
     -fx-background-color: white;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: #e5e7eb;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 10 16;
     -fx-cursor: hand;
-    -fx-font-size: 13px;
 }
 
 .help-link-button:hover {
-    -fx-background-color: #e6f0ff;
-    -fx-border-color: #0066cc;
-    -fx-text-fill: #0066cc;
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #64748b;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);
 }
 
-/* Help Category */
+.quick-link-icon {
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+    -fx-max-width: 28;
+    -fx-max-height: 28;
+    -fx-background-radius: 6;
+    -fx-alignment: center;
+}
+
+/* Professional muted quick link icon backgrounds */
+.quick-link-icon-blue {
+    -fx-background-color: #e0f2fe;
+}
+
+.quick-link-icon-green {
+    -fx-background-color: #ccfbf1;
+}
+
+.quick-link-icon-orange {
+    -fx-background-color: #fef3c7;
+}
+
+.quick-link-icon-gray {
+    -fx-background-color: #f1f5f9;
+}
+
+.quick-link-icon-text {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.quick-link-icon-text-small {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+/* Professional muted quick link icon text colors */
+.quick-link-icon-blue .quick-link-icon-text,
+.quick-link-icon-blue .quick-link-icon-text-small {
+    -fx-text-fill: #0369a1;
+}
+
+.quick-link-icon-green .quick-link-icon-text,
+.quick-link-icon-green .quick-link-icon-text-small {
+    -fx-text-fill: #0f766e;
+}
+
+.quick-link-icon-orange .quick-link-icon-text,
+.quick-link-icon-orange .quick-link-icon-text-small {
+    -fx-text-fill: #b45309;
+}
+
+.quick-link-icon-gray .quick-link-icon-text,
+.quick-link-icon-gray .quick-link-icon-text-small {
+    -fx-text-fill: #475569;
+}
+
+.quick-link-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #374151;
+}
+
+.external-link-icon {
+    -fx-font-size: 11px;
+    -fx-text-fill: #9ca3af;
+}
+
+/* ===== Help Category ===== */
 .help-category {
     -fx-background-color: white;
     -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
-    -fx-padding: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 6, 0, 0, 2);
 }
 
-.help-category-title {
+/* Category Headers */
+.help-category-header {
+    -fx-padding: 16 20;
+    -fx-background-radius: 12 12 0 0;
+}
+
+/* Professional muted color palette - designed by /aura */
+
+/* Teal - Tax & Calculation (Trust/Calm) */
+.category-header-teal {
+    -fx-background-color: linear-gradient(to right, #0f766e, #14b8a6);
+}
+
+/* Amber - Expenses (Warm/Approachable) */
+.category-header-amber {
+    -fx-background-color: linear-gradient(to right, #b45309, #d97706);
+}
+
+/* Sky - HMRC Submission (Official/Reliable) */
+.category-header-sky {
+    -fx-background-color: linear-gradient(to right, #0369a1, #0ea5e9);
+}
+
+/* Slate - General & Quick Links (Neutral/Professional) */
+.category-header-slate {
+    -fx-background-color: linear-gradient(to right, #475569, #64748b);
+}
+
+/* Legacy aliases for backwards compatibility */
+.category-header-green {
+    -fx-background-color: linear-gradient(to right, #0f766e, #14b8a6);
+}
+
+.category-header-orange {
+    -fx-background-color: linear-gradient(to right, #b45309, #d97706);
+}
+
+.category-header-blue {
+    -fx-background-color: linear-gradient(to right, #0369a1, #0ea5e9);
+}
+
+.category-header-gray {
+    -fx-background-color: linear-gradient(to right, #475569, #64748b);
+}
+
+.category-header-purple {
+    -fx-background-color: linear-gradient(to right, #475569, #64748b);
+}
+
+.quick-links-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: rgba(255, 255, 255, 0.85);
+}
+
+.quick-links-content {
+    -fx-background-color: white;
+    -fx-background-radius: 0 0 12 12;
+}
+
+.help-category-icon-wrapper {
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+    -fx-background-radius: 16;
+    -fx-alignment: center;
+}
+
+.help-category-icon-text {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #0066cc;
-    -fx-padding: 0 0 8 0;
+    -fx-text-fill: white;
 }
 
-/* Help Topic Row */
-.help-topic-row {
-    -fx-background-color: transparent;
-    -fx-padding: 12 16;
-    -fx-background-radius: 8;
-    -fx-cursor: hand;
+.help-category-title-text {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
 }
 
-.help-topic-row:hover {
-    -fx-background-color: #f8f9fa;
+/* Topic List */
+.help-topic-list {
+    -fx-padding: 0;
 }
 
-/* Help Topic Button (clickable row) */
-.help-topic-button {
-    /* Use white background like help-link-button for consistent click behavior */
+/* Help Topic Card */
+.help-topic-card {
     -fx-background-color: white;
-    -fx-border-color: #e9ecef;
+    -fx-border-color: #f3f4f6;
     -fx-border-width: 0 0 1 0;
-    -fx-padding: 14 16;
-    -fx-background-radius: 0;
+    -fx-padding: 14 20;
     -fx-cursor: hand;
-    -fx-alignment: CENTER_LEFT;
+}
+
+.help-topic-card:hover {
+    -fx-background-color: #f8fafc;
+}
+
+.help-topic-card-last {
+    -fx-border-width: 0;
+    -fx-background-radius: 0 0 12 12;
+}
+
+.help-topic-card-last:hover {
+    -fx-background-radius: 0 0 12 12;
+}
+
+/* Topic Icon */
+.help-topic-icon-wrapper {
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-max-width: 40;
+    -fx-max-height: 40;
+    -fx-background-radius: 8;
+    -fx-alignment: center;
+}
+
+/* Professional muted topic icon backgrounds */
+.topic-icon-green,
+.topic-icon-teal {
+    -fx-background-color: #ccfbf1;
+}
+
+.topic-icon-orange,
+.topic-icon-amber {
+    -fx-background-color: #fef3c7;
+}
+
+.topic-icon-blue,
+.topic-icon-sky {
+    -fx-background-color: #e0f2fe;
+}
+
+.topic-icon-gray,
+.topic-icon-slate {
+    -fx-background-color: #f1f5f9;
+}
+
+.topic-icon-text {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.topic-icon-text-small {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+/* Professional muted topic icon text colors */
+.topic-icon-green .topic-icon-text,
+.topic-icon-green .topic-icon-text-small,
+.topic-icon-teal .topic-icon-text,
+.topic-icon-teal .topic-icon-text-small {
+    -fx-text-fill: #0f766e;
+}
+
+.topic-icon-orange .topic-icon-text,
+.topic-icon-orange .topic-icon-text-small,
+.topic-icon-amber .topic-icon-text,
+.topic-icon-amber .topic-icon-text-small {
+    -fx-text-fill: #b45309;
+}
+
+.topic-icon-blue .topic-icon-text,
+.topic-icon-blue .topic-icon-text-small,
+.topic-icon-sky .topic-icon-text,
+.topic-icon-sky .topic-icon-text-small {
+    -fx-text-fill: #0369a1;
+}
+
+.topic-icon-gray .topic-icon-text,
+.topic-icon-gray .topic-icon-text-small,
+.topic-icon-slate .topic-icon-text,
+.topic-icon-slate .topic-icon-text-small {
+    -fx-text-fill: #475569;
+}
+
+/* Topic Content */
+.help-topic-content {
+    -fx-padding: 0 0 0 14;
+}
+
+.help-topic-title {
     -fx-font-size: 14px;
-    -fx-text-fill: #212529;
-}
-
-.help-topic-button:hover {
-    -fx-background-color: #f8f9fa;
-}
-
-.help-topic-button:focused {
-    -fx-background-color: #e6f0ff;
-    -fx-border-color: #0066cc;
-    -fx-border-width: 1;
-}
-
-.help-topic-button:pressed {
-    -fx-background-color: #dbeafe;
-}
-
-.help-topic-icon {
-    -fx-font-size: 20px;
-}
-
-.help-topic-label {
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
-    -fx-text-fill: #212529;
+    -fx-font-weight: 600;
+    -fx-text-fill: #111827;
 }
 
 .help-topic-desc {
     -fx-font-size: 12px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: #6b7280;
+    -fx-padding: 2 0 0 0;
 }
 
-.help-topic-arrow {
-    -fx-font-size: 20px;
-    -fx-text-fill: #adb5bd;
+/* Chevron */
+.help-topic-chevron {
+    -fx-font-size: 24px;
+    -fx-text-fill: #d1d5db;
+    -fx-padding: 0 0 0 8;
 }
 
-/* Support Section */
-.help-support-section {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
-    -fx-padding: 20;
+.help-topic-card:hover .help-topic-chevron {
+    -fx-text-fill: #9ca3af;
+}
+
+/* ===== Support Section ===== */
+.help-support-card {
+    -fx-border-color: #dbeafe;
+    -fx-border-width: 1;
+    -fx-background-color: linear-gradient(to bottom right, #ffffff, #f0f7ff);
+}
+
+.support-icon-wrapper {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+    -fx-background-color: #dbeafe;
+    -fx-background-radius: 18;
+    -fx-alignment: center;
+}
+
+.support-icon-text {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2563eb;
 }
 
 .help-support-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: #6b7280;
 }
 
-.help-support-link {
-    -fx-text-fill: #0066cc;
-    -fx-font-size: 14px;
+.support-link-button {
+    -fx-background-color: #dbeafe;
+    -fx-border-color: transparent;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
 }
 
-/* Help Disclaimer */
-.help-disclaimer {
-    -fx-background-color: #fff3cd;
-    -fx-border-color: #ffc107;
+.support-link-button:hover {
+    -fx-background-color: #bfdbfe;
+    -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.15), 6, 0, 0, 2);
+}
+
+.support-link-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #1d4ed8;
+    -fx-font-weight: 500;
+}
+
+/* ===== Disclaimer Section ===== */
+.help-disclaimer-card {
+    -fx-border-color: #fbbf24;
     -fx-border-width: 0 0 0 4;
-    -fx-border-radius: 0 8 8 0;
-    -fx-background-radius: 0 8 8 0;
-    -fx-padding: 16 20;
+    -fx-background-color: #fffbeb;
+}
+
+.disclaimer-icon-wrapper {
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+    -fx-max-width: 28;
+    -fx-max-height: 28;
+    -fx-background-color: #fbbf24;
+    -fx-background-radius: 14;
+    -fx-alignment: center;
+}
+
+.disclaimer-icon-text {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.disclaimer-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #92400e;
+}
+
+.disclaimer-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #78350f;
+    -fx-padding: 0 0 0 40;
+}
+
+/* ===== Help Dialog Styles ===== */
+.help-dialog-pane {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-padding: 0;
+}
+
+.help-dialog-pane > .button-bar {
+    -fx-padding: 12 24 20 24;
+}
+
+.help-dialog-pane > .button-bar > .container {
+    -fx-alignment: center-right;
+}
+
+.help-dialog-container {
+    -fx-background-color: white;
+    -fx-background-radius: 12 12 0 0;
+}
+
+.help-dialog-header {
+    -fx-background-radius: 12 12 0 0;
+}
+
+.help-dialog-icon-wrapper {
+    -fx-alignment: center;
+}
+
+.help-dialog-icon {
+    -fx-text-fill: white;
+}
+
+.help-dialog-title {
+    -fx-wrap-text: true;
+}
+
+.help-dialog-body {
+    -fx-background-color: white;
+}
+
+.help-dialog-text {
+    -fx-wrap-text: true;
+}
+
+.help-dialog-close-btn {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #374151;
+    -fx-font-size: 13px;
+    -fx-padding: 10 24;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.help-dialog-close-btn:hover {
+    -fx-background-color: #e5e7eb;
+}
+
+.help-dialog-close-btn:focused {
+    -fx-background-color: #e5e7eb;
+    -fx-border-color: #0066cc;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+}
+
+.help-dialog-link-btn {
+    -fx-cursor: hand;
+}
+
+/* ===== Legacy styles for backwards compatibility ===== */
+.help-icon-btn {
+    -fx-background-color: transparent;
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-max-width: 20;
+    -fx-max-height: 20;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.help-icon-circle {
+    -fx-background-color: transparent;
+    -fx-border-color: #adb5bd;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
+    -fx-alignment: center;
+}
+
+.help-icon-text {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #adb5bd;
+}
+
+/* ===== External Browser Toast Notification ===== */
+/* Designed by /aura - Professional slate palette */
+
+.external-browser-toast {
+    -fx-background-color: rgba(51, 65, 85, 0.95);
+    -fx-background-radius: 8;
+    -fx-border-color: #475569;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-padding: 12 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0, 0, 4);
+}
+
+.external-browser-toast-icon {
+    -fx-font-size: 14px;
+    -fx-text-fill: #94a3b8;
+}
+
+.external-browser-toast-text {
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #f8fafc;
+}
+
+.external-browser-toast-url {
+    -fx-font-size: 11px;
+    -fx-text-fill: #94a3b8;
 }

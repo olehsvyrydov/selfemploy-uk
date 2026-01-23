@@ -1,7 +1,9 @@
 package uk.selfemploy.ui.util;
 
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.ui.component.ToastNotification;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -53,7 +55,20 @@ public final class BrowserUtil {
      * @param url the URL to open (null/blank URLs are ignored)
      */
     public static void openUrl(String url) {
-        openUrl(url, null);
+        openUrl(url, true);
+    }
+
+    /**
+     * Opens the specified URL in the system's default browser.
+     *
+     * <p>This method returns immediately - the browser opening happens
+     * asynchronously on a background thread.</p>
+     *
+     * @param url       the URL to open (null/blank URLs are ignored)
+     * @param showToast whether to show a toast notification
+     */
+    public static void openUrl(String url, boolean showToast) {
+        openUrl(url, showToast, null);
     }
 
     /**
@@ -66,9 +81,29 @@ public final class BrowserUtil {
      * @param errorCallback optional callback for error handling (called on background thread)
      */
     public static void openUrl(String url, Consumer<String> errorCallback) {
+        openUrl(url, true, errorCallback);
+    }
+
+    /**
+     * Opens the specified URL in the system's default browser with options.
+     *
+     * <p>This method returns immediately - the browser opening happens
+     * asynchronously on a background thread.</p>
+     *
+     * @param url           the URL to open (null/blank URLs are ignored)
+     * @param showToast     whether to show a toast notification
+     * @param errorCallback optional callback for error handling (called on background thread)
+     */
+    public static void openUrl(String url, boolean showToast, Consumer<String> errorCallback) {
         if (url == null || url.isBlank()) {
             LOG.warn("Attempted to open null or blank URL");
             return;
+        }
+
+        // Show toast notification on JavaFX thread before opening browser
+        if (showToast) {
+            Platform.runLater(() ->
+                ToastNotification.showExternalBrowserToast("Opening in your browser...", url));
         }
 
         // Run on background thread to avoid blocking JavaFX Application Thread

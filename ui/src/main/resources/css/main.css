@@ -75,6 +75,90 @@
     -fx-background-color: rgba(0, 0, 0, 0.12);
 }
 
+/* Improved Header Icon Buttons - /aura design */
+.header-icon-button {
+    -fx-background-color: transparent;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-max-width: 40;
+    -fx-max-height: 40;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.header-icon-button:hover {
+    -fx-background-color: transparent;
+}
+
+.header-icon-circle {
+    -fx-background-color: #f3f4f6;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+    -fx-background-radius: 18;
+    -fx-alignment: center;
+}
+
+.header-icon-button:hover .header-icon-circle {
+    -fx-background-color: #e5e7eb;
+}
+
+.header-icon-button:pressed .header-icon-circle {
+    -fx-background-color: #d1d5db;
+}
+
+.header-icon-text {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #6b7280;
+}
+
+.header-icon-button:hover .header-icon-text {
+    -fx-text-fill: #374151;
+}
+
+.header-icon-emoji {
+    -fx-font-size: 16px;
+}
+
+/* Specific header icon colors */
+.header-icon-notification {
+    -fx-background-color: #fef3c7;
+}
+
+.header-icon-notification .header-icon-text {
+    -fx-text-fill: #d97706;
+}
+
+.header-icon-button:hover .header-icon-notification {
+    -fx-background-color: #fde68a;
+}
+
+.header-icon-help {
+    -fx-background-color: #dbeafe;
+}
+
+.header-icon-help .header-icon-text {
+    -fx-text-fill: #2563eb;
+}
+
+.header-icon-button:hover .header-icon-help {
+    -fx-background-color: #bfdbfe;
+}
+
+.header-icon-settings {
+    -fx-background-color: #f3f4f6;
+}
+
+.header-icon-settings .header-icon-text {
+    -fx-text-fill: #4b5563;
+}
+
+.header-icon-button:hover .header-icon-settings {
+    -fx-background-color: #e5e7eb;
+}
+
 .tax-year-selector {
     -fx-background-color: -fx-bg-primary;
     -fx-border-color: #dee2e6;

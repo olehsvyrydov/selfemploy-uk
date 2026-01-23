@@ -33,18 +33,33 @@
 
             <!-- Notification Bell (SE-309) -->
             <StackPane fx:id="notificationBell" styleClass="notification-bell" onMouseClicked="#handleNotificationsClick">
-                <Button fx:id="notificationButton" styleClass="header-button"
-                        text="&#x1F514;" onAction="#handleNotificationsAction" accessibleText="Notifications"/>
+                <Button fx:id="notificationButton" styleClass="header-icon-button" onAction="#handleNotificationsAction" accessibleText="Notifications">
+                    <graphic>
+                        <StackPane styleClass="header-icon-circle, header-icon-notification">
+                            <Label text="N" styleClass="header-icon-text"/>
+                        </StackPane>
+                    </graphic>
+                </Button>
                 <Label fx:id="notificationBadge" styleClass="notification-badge"
                        text="0" visible="false" managed="false"
                        StackPane.alignment="TOP_RIGHT"/>
             </StackPane>
 
             <!-- Action Buttons -->
-            <Button fx:id="helpButton" styleClass="header-button"
-                    text="&#x2753;" onAction="#handleHelp" accessibleText="Help"/>
-            <Button fx:id="settingsButton" styleClass="header-button"
-                    text="&#x2699;" onAction="#handleSettings" accessibleText="Settings"/>
+            <Button fx:id="helpButton" styleClass="header-icon-button" onAction="#handleHelp" accessibleText="Help">
+                <graphic>
+                    <StackPane styleClass="header-icon-circle, header-icon-help">
+                        <Label text="?" styleClass="header-icon-text"/>
+                    </StackPane>
+                </graphic>
+            </Button>
+            <Button fx:id="settingsButton" styleClass="header-icon-button" onAction="#handleSettings" accessibleText="Settings">
+                <graphic>
+                    <StackPane styleClass="header-icon-circle, header-icon-settings">
+                        <Label text="S" styleClass="header-icon-text"/>
+                    </StackPane>
+                </graphic>
+            </Button>
         </HBox>
     </top>
 

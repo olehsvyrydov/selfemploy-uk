@@ -4,15 +4,13 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
@@ -34,13 +32,13 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      * The GitHub repository URL for this application.
      * Used for Documentation links in the Help page.
      */
-    public static final String GITHUB_REPO_URL = "https://github.com/selfemploy-uk/self-employment";
+    public static final String GITHUB_REPO_URL = "https://github.com/olehsvyrydov/selfemploy-uk";
 
     /**
      * The GitHub Issues URL for this application.
      * Used for reporting bugs and feature requests.
      */
-    public static final String GITHUB_ISSUES_URL = "https://github.com/selfemploy-uk/self-employment/issues";
+    public static final String GITHUB_ISSUES_URL = "https://github.com/olehsvyrydov/selfemploy-uk/issues";
 
     private static final List<String> HELP_CATEGORIES = Arrays.asList(
         "Tax & Calculation",
@@ -52,6 +50,9 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     private static final Map<String, List<HelpTopic>> CATEGORY_TOPICS;
     private static final Map<HelpTopic, String> TOPIC_DISPLAY_NAMES;
     private static final Map<HmrcLinkTopic, String> LINK_DISPLAY_NAMES;
+    private static final Map<HelpTopic, String> TOPIC_DESCRIPTIONS;
+    private static final Map<HelpTopic, String> TOPIC_ICONS;
+    private static final Map<String, String> CATEGORY_COLORS;
 
     static {
         CATEGORY_TOPICS = new LinkedHashMap<>();
@@ -101,6 +102,43 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         LINK_DISPLAY_NAMES.put(HmrcLinkTopic.MTD_FOR_ITSA, "Making Tax Digital");
         LINK_DISPLAY_NAMES.put(HmrcLinkTopic.STATE_PENSION, "State Pension Forecast");
         LINK_DISPLAY_NAMES.put(HmrcLinkTopic.NI_RECORD, "Check NI Record");
+
+        // Topic descriptions for rich help topic cards
+        TOPIC_DESCRIPTIONS = new EnumMap<>(HelpTopic.class);
+        TOPIC_DESCRIPTIONS.put(HelpTopic.NET_PROFIT, "Understanding your taxable profit calculation");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.INCOME_TAX, "Tax bands and rates for the current tax year");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.PERSONAL_ALLOWANCE, "Tax-free income allowance explained");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.NI_CLASS_4, "National Insurance for self-employed profits");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.NI_CLASS_2, "Weekly National Insurance contributions");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.PAYMENTS_ON_ACCOUNT, "Advance tax payments to HMRC");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.EXPENSE_CATEGORY, "SA103 expense categories explained");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.ALLOWABLE_EXPENSES, "What expenses can you claim?");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.DECLARATION, "Legal declaration requirements");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.HMRC_SUBMISSION, "Submitting your Self Assessment");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.TAX_YEAR, "UK tax year dates and deadlines");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.SA103_FORM, "Self-employment supplementary pages");
+
+        // Topic icons
+        TOPIC_ICONS = new EnumMap<>(HelpTopic.class);
+        TOPIC_ICONS.put(HelpTopic.NET_PROFIT, "📈");
+        TOPIC_ICONS.put(HelpTopic.INCOME_TAX, "💰");
+        TOPIC_ICONS.put(HelpTopic.PERSONAL_ALLOWANCE, "🛡");
+        TOPIC_ICONS.put(HelpTopic.NI_CLASS_4, "🏥");
+        TOPIC_ICONS.put(HelpTopic.NI_CLASS_2, "🏥");
+        TOPIC_ICONS.put(HelpTopic.PAYMENTS_ON_ACCOUNT, "📊");
+        TOPIC_ICONS.put(HelpTopic.EXPENSE_CATEGORY, "📋");
+        TOPIC_ICONS.put(HelpTopic.ALLOWABLE_EXPENSES, "✅");
+        TOPIC_ICONS.put(HelpTopic.DECLARATION, "✍");
+        TOPIC_ICONS.put(HelpTopic.HMRC_SUBMISSION, "📤");
+        TOPIC_ICONS.put(HelpTopic.TAX_YEAR, "📅");
+        TOPIC_ICONS.put(HelpTopic.SA103_FORM, "📄");
+
+        // Category colors (matching /aura's design)
+        CATEGORY_COLORS = new HashMap<>();
+        CATEGORY_COLORS.put("Tax & Calculation", "#059669");  // Green
+        CATEGORY_COLORS.put("Expenses", "#d97706");           // Orange
+        CATEGORY_COLORS.put("HMRC Submission", "#0066cc");    // Blue
+        CATEGORY_COLORS.put("General", "#6b7280");            // Gray
     }
 
     // === FXML Injected Fields ===
@@ -202,6 +240,39 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         return LINK_DISPLAY_NAMES.getOrDefault(topic, topic.name());
     }
 
+    /**
+     * Returns the description for a help topic.
+     */
+    public String getTopicDescription(HelpTopic topic) {
+        return TOPIC_DESCRIPTIONS.getOrDefault(topic, "");
+    }
+
+    /**
+     * Returns the icon for a help topic.
+     */
+    public String getTopicIcon(HelpTopic topic) {
+        return TOPIC_ICONS.getOrDefault(topic, "ℹ");
+    }
+
+    /**
+     * Returns the color for a category.
+     */
+    public String getCategoryColor(String category) {
+        return CATEGORY_COLORS.getOrDefault(category, "#0066cc");
+    }
+
+    /**
+     * Returns the category for a given topic.
+     */
+    public String getCategoryForTopic(HelpTopic topic) {
+        for (Map.Entry<String, List<HelpTopic>> entry : CATEGORY_TOPICS.entrySet()) {
+            if (entry.getValue().contains(topic)) {
+                return entry.getKey();
+            }
+        }
+        return "General";
+    }
+
     // === FXML Event Handlers ===
 
     @FXML
@@ -277,80 +348,82 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
 
     @FXML
     void handleGitHubIssuesLink(ActionEvent event) {
-        LOG.info("Opening GitHub Issues in in-app browser");
-        helpService.openHmrcGuidance(GITHUB_ISSUES_URL, "GitHub Issues");
+        LOG.info("Opening GitHub Issues in external browser");
+        // GitHub doesn't render well in JavaFX WebView, open in external browser
+        uk.selfemploy.ui.util.BrowserUtil.openUrl(GITHUB_ISSUES_URL);
     }
 
     @FXML
     void handleDocumentationLink(ActionEvent event) {
-        LOG.info("Opening Documentation in in-app browser");
-        helpService.openHmrcGuidance(GITHUB_REPO_URL, "Documentation");
+        LOG.info("Opening Documentation in external browser");
+        // GitHub doesn't render well in JavaFX WebView, open in external browser
+        uk.selfemploy.ui.util.BrowserUtil.openUrl(GITHUB_REPO_URL);
     }
 
-    // === Help Topic Click Handlers ===
+    // === Help Topic Click Handlers (MouseEvent for onMouseClicked in FXML) ===
 
     @FXML
-    void handleNetProfitClick(ActionEvent event) {
+    void handleNetProfitClick(MouseEvent event) {
         LOG.info("Help topic clicked: Net Profit");
         showHelpDialog(HelpTopic.NET_PROFIT);
     }
 
     @FXML
-    void handleIncomeTaxClick(ActionEvent event) {
+    void handleIncomeTaxClick(MouseEvent event) {
         LOG.info("Help topic clicked: Income Tax");
         showHelpDialog(HelpTopic.INCOME_TAX);
     }
 
     @FXML
-    void handlePersonalAllowanceClick(ActionEvent event) {
+    void handlePersonalAllowanceClick(MouseEvent event) {
         LOG.info("Help topic clicked: Personal Allowance");
         showHelpDialog(HelpTopic.PERSONAL_ALLOWANCE);
     }
 
     @FXML
-    void handleNationalInsuranceClick(ActionEvent event) {
+    void handleNationalInsuranceClick(MouseEvent event) {
         LOG.info("Help topic clicked: National Insurance");
         showHelpDialog(HelpTopic.NI_CLASS_4);
     }
 
     @FXML
-    void handlePaymentsOnAccountClick(ActionEvent event) {
+    void handlePaymentsOnAccountClick(MouseEvent event) {
         LOG.info("Help topic clicked: Payments on Account");
         showHelpDialog(HelpTopic.PAYMENTS_ON_ACCOUNT);
     }
 
     @FXML
-    void handleExpenseCategoriesClick(ActionEvent event) {
+    void handleExpenseCategoriesClick(MouseEvent event) {
         LOG.info("Help topic clicked: Expense Categories");
         showHelpDialog(HelpTopic.EXPENSE_CATEGORY);
     }
 
     @FXML
-    void handleAllowableExpensesClick(ActionEvent event) {
+    void handleAllowableExpensesClick(MouseEvent event) {
         LOG.info("Help topic clicked: Allowable Expenses");
         showHelpDialog(HelpTopic.ALLOWABLE_EXPENSES);
     }
 
     @FXML
-    void handleDeclarationClick(ActionEvent event) {
+    void handleDeclarationClick(MouseEvent event) {
         LOG.info("Help topic clicked: Declaration");
         showHelpDialog(HelpTopic.DECLARATION);
     }
 
     @FXML
-    void handleHmrcSubmissionClick(ActionEvent event) {
+    void handleHmrcSubmissionClick(MouseEvent event) {
         LOG.info("Help topic clicked: HMRC Submission");
         showHelpDialog(HelpTopic.HMRC_SUBMISSION);
     }
 
     @FXML
-    void handleTaxYearClick(ActionEvent event) {
+    void handleTaxYearClick(MouseEvent event) {
         LOG.info("Help topic clicked: Tax Year");
         showHelpDialog(HelpTopic.TAX_YEAR);
     }
 
     @FXML
-    void handleSa103FormClick(ActionEvent event) {
+    void handleSa103FormClick(MouseEvent event) {
         LOG.info("Help topic clicked: SA103 Form");
         showHelpDialog(HelpTopic.SA103_FORM);
     }
@@ -360,48 +433,19 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     /**
      * Shows a help dialog for the specified topic.
      * The dialog displays the help title, body text, and optionally an HMRC guidance button.
+     * Uses a custom styled dialog matching the application design.
      *
      * @param topic the help topic to display
      */
     private void showHelpDialog(HelpTopic topic) {
         var contentOpt = getHelpForTopic(topic);
         contentOpt.ifPresent(content -> {
-            // Create a custom dialog
-            Alert dialog = new Alert(Alert.AlertType.INFORMATION);
-            dialog.setTitle("Help - " + content.title());
-            dialog.setHeaderText(content.title());
+            String icon = getTopicIcon(topic);
+            String category = getCategoryForTopic(topic);
+            String color = getCategoryColor(category);
 
-            // Create the content layout
-            VBox contentBox = new VBox(12);
-            contentBox.setPadding(new Insets(10, 0, 10, 0));
-
-            Label bodyLabel = new Label(content.body());
-            bodyLabel.setWrapText(true);
-            bodyLabel.setMaxWidth(450);
-            contentBox.getChildren().add(bodyLabel);
-
-            DialogPane dialogPane = dialog.getDialogPane();
-            dialogPane.setContent(contentBox);
-            dialogPane.setMinWidth(500);
-
-            // Add HMRC link button if available
-            if (content.hmrcLink() != null && !content.hmrcLink().isBlank()) {
-                ButtonType hmrcButton = new ButtonType(
-                    content.linkText() != null ? content.linkText() : "View HMRC Guidance",
-                    ButtonBar.ButtonData.LEFT
-                );
-                dialog.getButtonTypes().add(0, hmrcButton);
-
-                dialog.setResultConverter(buttonType -> {
-                    if (buttonType == hmrcButton) {
-                        // Open HMRC guidance in in-app browser
-                        helpService.openHmrcGuidance(content.hmrcLink(), content.title());
-                    }
-                    return buttonType;
-                });
-            }
-
-            dialog.showAndWait();
+            HelpDialog dialog = new HelpDialog(content, icon, color, helpService);
+            dialog.showAndWaitDialog();
         });
     }
 

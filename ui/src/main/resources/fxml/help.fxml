@@ -6,7 +6,14 @@
 
 <!--
     Help Page - SE-701: In-App Help System
-    Provides access to help content and HMRC links.
+    Design: /aura (Senior UI/UX Design Architect)
+    Implementation: /james
+
+    Features:
+    - Rich help topic cards with text-based icons
+    - Color-coded categories
+    - External link indicators on Quick Links
+    - Consistent styling throughout
 -->
 <ScrollPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="uk.selfemploy.ui.controller.HelpController"
@@ -21,18 +28,85 @@
             <Label text="Find answers to common questions about UK self-employment taxes" styleClass="page-subtitle"/>
         </VBox>
 
-        <!-- Quick Links Section -->
-        <VBox styleClass="help-section" spacing="16">
-            <Label text="Quick Links to HMRC" styleClass="section-title"/>
-            <Label text="Official HMRC guidance and resources" styleClass="section-subtitle"/>
-
-            <FlowPane hgap="12" vgap="12">
-                <Button text="📊 Income Tax Rates" styleClass="help-link-button" onAction="#handleTaxRatesLink"/>
-                <Button text="📋 SA103 Form" styleClass="help-link-button" onAction="#handleSa103Link"/>
-                <Button text="📅 Filing Deadlines" styleClass="help-link-button" onAction="#handleFilingDeadlinesLink"/>
-                <Button text="💷 Allowable Expenses" styleClass="help-link-button" onAction="#handleAllowableExpensesLink"/>
-                <Button text="🔢 NI Rates" styleClass="help-link-button" onAction="#handleNiRatesLink"/>
-                <Button text="📈 State Pension" styleClass="help-link-button" onAction="#handleStatePensionLink"/>
+        <!-- Quick Links Section - Redesigned to match category cards -->
+        <VBox styleClass="help-category" spacing="0">
+            <HBox styleClass="help-category-header, category-header-slate" alignment="CENTER_LEFT" spacing="10">
+                <StackPane styleClass="help-category-icon-wrapper">
+                    <Label text="↗" styleClass="help-category-icon-text"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label text="Quick Links to HMRC" styleClass="help-category-title-text"/>
+                    <Label text="Official HMRC guidance and resources" styleClass="quick-links-subtitle"/>
+                </VBox>
+            </HBox>
+            <FlowPane hgap="12" vgap="12" styleClass="quick-links-content">
+                <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+                <Button styleClass="help-link-button" onAction="#handleTaxRatesLink">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="8">
+                            <StackPane styleClass="quick-link-icon, quick-link-icon-blue">
+                                <Label text="TR" styleClass="quick-link-icon-text-small"/>
+                            </StackPane>
+                            <Label text="Income Tax Rates" styleClass="quick-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Button styleClass="help-link-button" onAction="#handleSa103Link">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="8">
+                            <StackPane styleClass="quick-link-icon, quick-link-icon-gray">
+                                <Label text="F" styleClass="quick-link-icon-text"/>
+                            </StackPane>
+                            <Label text="SA103 Form" styleClass="quick-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Button styleClass="help-link-button" onAction="#handleFilingDeadlinesLink">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="8">
+                            <StackPane styleClass="quick-link-icon, quick-link-icon-orange">
+                                <Label text="D" styleClass="quick-link-icon-text"/>
+                            </StackPane>
+                            <Label text="Filing Deadlines" styleClass="quick-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Button styleClass="help-link-button" onAction="#handleAllowableExpensesLink">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="8">
+                            <StackPane styleClass="quick-link-icon, quick-link-icon-green">
+                                <Label text="£" styleClass="quick-link-icon-text"/>
+                            </StackPane>
+                            <Label text="Allowable Expenses" styleClass="quick-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Button styleClass="help-link-button" onAction="#handleNiRatesLink">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="8">
+                            <StackPane styleClass="quick-link-icon, quick-link-icon-blue">
+                                <Label text="NI" styleClass="quick-link-icon-text-small"/>
+                            </StackPane>
+                            <Label text="NI Rates" styleClass="quick-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Button styleClass="help-link-button" onAction="#handleStatePensionLink">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="8">
+                            <StackPane styleClass="quick-link-icon, quick-link-icon-green">
+                                <Label text="P" styleClass="quick-link-icon-text"/>
+                            </StackPane>
+                            <Label text="State Pension" styleClass="quick-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
             </FlowPane>
         </VBox>
 
@@ -41,58 +115,214 @@
             <Label text="Help Topics" styleClass="section-title"/>
 
             <!-- Tax & Calculation Category -->
-            <VBox styleClass="help-category" spacing="8">
-                <Label text="Tax &amp; Calculation" styleClass="help-category-title"/>
-                <VBox spacing="4">
-                    <Button text="📈  Net Profit (Box 31)" styleClass="help-topic-button" onAction="#handleNetProfitClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
-                    <Button text="💰  Income Tax" styleClass="help-topic-button" onAction="#handleIncomeTaxClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
-                    <Button text="🛡  Personal Allowance" styleClass="help-topic-button" onAction="#handlePersonalAllowanceClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
-                    <Button text="🏥  National Insurance" styleClass="help-topic-button" onAction="#handleNationalInsuranceClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
-                    <Button text="📊  Payments on Account" styleClass="help-topic-button" onAction="#handlePaymentsOnAccountClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+            <VBox styleClass="help-category" spacing="0">
+                <HBox styleClass="help-category-header, category-header-teal" alignment="CENTER_LEFT" spacing="10">
+                    <StackPane styleClass="help-category-icon-wrapper">
+                        <Label text="T" styleClass="help-category-icon-text"/>
+                    </StackPane>
+                    <Label text="Tax &amp; Calculation" styleClass="help-category-title-text"/>
+                </HBox>
+                <VBox styleClass="help-topic-list" spacing="0">
+                    <!-- Net Profit -->
+                    <HBox styleClass="help-topic-card" alignment="CENTER_LEFT" onMouseClicked="#handleNetProfitClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-green" HBox.hgrow="NEVER">
+                            <Label text="NP" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Net Profit (Box 31)" styleClass="help-topic-title"/>
+                            <Label text="Understanding your taxable profit calculation" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
+                    <!-- Income Tax -->
+                    <HBox styleClass="help-topic-card" alignment="CENTER_LEFT" onMouseClicked="#handleIncomeTaxClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-green" HBox.hgrow="NEVER">
+                            <Label text="IT" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Income Tax" styleClass="help-topic-title"/>
+                            <Label text="Tax bands and rates for the current tax year" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
+                    <!-- Personal Allowance -->
+                    <HBox styleClass="help-topic-card" alignment="CENTER_LEFT" onMouseClicked="#handlePersonalAllowanceClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-green" HBox.hgrow="NEVER">
+                            <Label text="PA" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Personal Allowance" styleClass="help-topic-title"/>
+                            <Label text="Tax-free income allowance explained" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
+                    <!-- National Insurance -->
+                    <HBox styleClass="help-topic-card" alignment="CENTER_LEFT" onMouseClicked="#handleNationalInsuranceClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-green" HBox.hgrow="NEVER">
+                            <Label text="NI" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="National Insurance" styleClass="help-topic-title"/>
+                            <Label text="National Insurance for self-employed profits" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
+                    <!-- Payments on Account -->
+                    <HBox styleClass="help-topic-card, help-topic-card-last" alignment="CENTER_LEFT" onMouseClicked="#handlePaymentsOnAccountClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-green" HBox.hgrow="NEVER">
+                            <Label text="PoA" styleClass="topic-icon-text-small"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Payments on Account" styleClass="help-topic-title"/>
+                            <Label text="Advance tax payments to HMRC" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
                 </VBox>
             </VBox>
 
             <!-- Expenses Category -->
-            <VBox styleClass="help-category" spacing="8">
-                <Label text="Expenses" styleClass="help-category-title"/>
-                <VBox spacing="4">
-                    <Button text="📋  Expense Categories" styleClass="help-topic-button" onAction="#handleExpenseCategoriesClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
-                    <Button text="✅  Allowable Expenses" styleClass="help-topic-button" onAction="#handleAllowableExpensesClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+            <VBox styleClass="help-category" spacing="0">
+                <HBox styleClass="help-category-header, category-header-amber" alignment="CENTER_LEFT" spacing="10">
+                    <StackPane styleClass="help-category-icon-wrapper">
+                        <Label text="£" styleClass="help-category-icon-text"/>
+                    </StackPane>
+                    <Label text="Expenses" styleClass="help-category-title-text"/>
+                </HBox>
+                <VBox styleClass="help-topic-list" spacing="0">
+                    <!-- Expense Categories -->
+                    <HBox styleClass="help-topic-card" alignment="CENTER_LEFT" onMouseClicked="#handleExpenseCategoriesClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-orange" HBox.hgrow="NEVER">
+                            <Label text="EC" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Expense Categories" styleClass="help-topic-title"/>
+                            <Label text="SA103 expense categories explained" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
+                    <!-- Allowable Expenses -->
+                    <HBox styleClass="help-topic-card, help-topic-card-last" alignment="CENTER_LEFT" onMouseClicked="#handleAllowableExpensesClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-orange" HBox.hgrow="NEVER">
+                            <Label text="AE" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Allowable Expenses" styleClass="help-topic-title"/>
+                            <Label text="What expenses can you claim?" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
                 </VBox>
             </VBox>
 
             <!-- HMRC Submission Category -->
-            <VBox styleClass="help-category" spacing="8">
-                <Label text="HMRC Submission" styleClass="help-category-title"/>
-                <VBox spacing="4">
-                    <Button text="✍  Declaration" styleClass="help-topic-button" onAction="#handleDeclarationClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
-                    <Button text="📤  Submitting to HMRC" styleClass="help-topic-button" onAction="#handleHmrcSubmissionClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+            <VBox styleClass="help-category" spacing="0">
+                <HBox styleClass="help-category-header, category-header-sky" alignment="CENTER_LEFT" spacing="10">
+                    <StackPane styleClass="help-category-icon-wrapper">
+                        <Label text="H" styleClass="help-category-icon-text"/>
+                    </StackPane>
+                    <Label text="HMRC Submission" styleClass="help-category-title-text"/>
+                </HBox>
+                <VBox styleClass="help-topic-list" spacing="0">
+                    <!-- Declaration -->
+                    <HBox styleClass="help-topic-card" alignment="CENTER_LEFT" onMouseClicked="#handleDeclarationClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-blue" HBox.hgrow="NEVER">
+                            <Label text="D" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Declaration" styleClass="help-topic-title"/>
+                            <Label text="Legal declaration requirements" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
+                    <!-- Submitting to HMRC -->
+                    <HBox styleClass="help-topic-card, help-topic-card-last" alignment="CENTER_LEFT" onMouseClicked="#handleHmrcSubmissionClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-blue" HBox.hgrow="NEVER">
+                            <Label text="S" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Submitting to HMRC" styleClass="help-topic-title"/>
+                            <Label text="Submitting your Self Assessment" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
                 </VBox>
             </VBox>
 
             <!-- General Category -->
-            <VBox styleClass="help-category" spacing="8">
-                <Label text="General" styleClass="help-category-title"/>
-                <VBox spacing="4">
-                    <Button text="📅  Tax Year" styleClass="help-topic-button" onAction="#handleTaxYearClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
-                    <Button text="📄  SA103 Form" styleClass="help-topic-button" onAction="#handleSa103FormClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+            <VBox styleClass="help-category" spacing="0">
+                <HBox styleClass="help-category-header, category-header-slate" alignment="CENTER_LEFT" spacing="10">
+                    <StackPane styleClass="help-category-icon-wrapper">
+                        <Label text="i" styleClass="help-category-icon-text"/>
+                    </StackPane>
+                    <Label text="General" styleClass="help-category-title-text"/>
+                </HBox>
+                <VBox styleClass="help-topic-list" spacing="0">
+                    <!-- Tax Year -->
+                    <HBox styleClass="help-topic-card" alignment="CENTER_LEFT" onMouseClicked="#handleTaxYearClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-gray" HBox.hgrow="NEVER">
+                            <Label text="TY" styleClass="topic-icon-text"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="Tax Year" styleClass="help-topic-title"/>
+                            <Label text="UK tax year dates and deadlines" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
+                    <!-- SA103 Form -->
+                    <HBox styleClass="help-topic-card, help-topic-card-last" alignment="CENTER_LEFT" onMouseClicked="#handleSa103FormClick">
+                        <StackPane styleClass="help-topic-icon-wrapper, topic-icon-gray" HBox.hgrow="NEVER">
+                            <Label text="103" styleClass="topic-icon-text-small"/>
+                        </StackPane>
+                        <VBox styleClass="help-topic-content" HBox.hgrow="ALWAYS">
+                            <Label text="SA103 Form" styleClass="help-topic-title"/>
+                            <Label text="Self-employment supplementary pages" styleClass="help-topic-desc"/>
+                        </VBox>
+                        <Label text="›" styleClass="help-topic-chevron"/>
+                    </HBox>
                 </VBox>
             </VBox>
         </VBox>
 
-        <!-- Contact & Support -->
-        <VBox styleClass="help-support-section" spacing="12">
-            <Label text="Need More Help?" styleClass="section-title"/>
+        <!-- Contact & Support - Redesigned as card -->
+        <VBox styleClass="help-card, help-support-card" spacing="12">
+            <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="support-icon-wrapper">
+                    <Label text="?" styleClass="support-icon-text"/>
+                </StackPane>
+                <Label text="Need More Help?" styleClass="section-title"/>
+            </HBox>
             <Label text="This application is open-source. For bugs or feature requests:" styleClass="help-support-text" wrapText="true"/>
-            <HBox spacing="16">
-                <Hyperlink text="GitHub Issues" styleClass="help-support-link" onAction="#handleGitHubIssuesLink"/>
-                <Hyperlink text="Documentation" styleClass="help-support-link" onAction="#handleDocumentationLink"/>
+            <HBox spacing="12">
+                <Button styleClass="support-link-button" onAction="#handleGitHubIssuesLink">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="6">
+                            <Label text="GitHub Issues" styleClass="support-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Button styleClass="support-link-button" onAction="#handleDocumentationLink">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="6">
+                            <Label text="Documentation" styleClass="support-link-label"/>
+                            <Label text="↗" styleClass="external-link-icon"/>
+                        </HBox>
+                    </graphic>
+                </Button>
             </HBox>
         </VBox>
 
-        <!-- Disclaimer -->
-        <VBox styleClass="help-disclaimer" spacing="8">
-            <Label text="⚠ Important Disclaimer" styleClass="disclaimer-title"/>
+        <!-- Disclaimer - Redesigned as info card -->
+        <VBox styleClass="help-card, help-disclaimer-card" spacing="10">
+            <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <StackPane styleClass="disclaimer-icon-wrapper">
+                    <Label text="!" styleClass="disclaimer-icon-text"/>
+                </StackPane>
+                <Label text="Important Disclaimer" styleClass="disclaimer-title"/>
+            </HBox>
             <Label text="This application provides tax estimates only. The information provided in the help system is for guidance purposes and may not reflect the latest HMRC rules. Always verify calculations with a qualified accountant and refer to official HMRC guidance before submitting your tax return."
                    styleClass="disclaimer-text" wrapText="true"/>
         </VBox>
