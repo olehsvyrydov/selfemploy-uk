@@ -13,6 +13,7 @@ import javafx.stage.FileChooser;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
@@ -871,14 +872,11 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     }
 
     private void openUrl(String url) {
-        try {
-            java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
-            if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
-                desktop.browse(new java.net.URI(url));
-            }
-        } catch (Exception e) {
-            showError("Unable to Open Link", "Could not open the link in your browser.\n\nURL: " + url);
-        }
+        BrowserUtil.openUrl(url, error -> {
+            // Show error on JavaFX thread
+            javafx.application.Platform.runLater(() ->
+                    showError("Unable to Open Link", "Could not open the link in your browser.\n\nURL: " + url));
+        });
     }
 
     private String formatCurrency(BigDecimal amount) {

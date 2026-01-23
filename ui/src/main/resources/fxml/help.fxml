@@ -44,46 +44,11 @@
             <VBox styleClass="help-category" spacing="8">
                 <Label text="Tax &amp; Calculation" styleClass="help-category-title"/>
                 <VBox spacing="4">
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="📈" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Net Profit (Box 31)" styleClass="help-topic-label"/>
-                            <Label text="Understanding your taxable profit calculation" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="💰" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Income Tax" styleClass="help-topic-label"/>
-                            <Label text="Tax bands and rates for 2025/26" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="🛡" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Personal Allowance" styleClass="help-topic-label"/>
-                            <Label text="Tax-free allowance and high earner taper" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="🏥" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="National Insurance" styleClass="help-topic-label"/>
-                            <Label text="Class 2 and Class 4 contributions" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="📊" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Payments on Account" styleClass="help-topic-label"/>
-                            <Label text="Advance payments towards next year's tax" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
+                    <Button text="📈  Net Profit (Box 31)" styleClass="help-topic-button" onAction="#handleNetProfitClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    <Button text="💰  Income Tax" styleClass="help-topic-button" onAction="#handleIncomeTaxClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    <Button text="🛡  Personal Allowance" styleClass="help-topic-button" onAction="#handlePersonalAllowanceClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    <Button text="🏥  National Insurance" styleClass="help-topic-button" onAction="#handleNationalInsuranceClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    <Button text="📊  Payments on Account" styleClass="help-topic-button" onAction="#handlePaymentsOnAccountClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
                 </VBox>
             </VBox>
 
@@ -91,22 +56,8 @@
             <VBox styleClass="help-category" spacing="8">
                 <Label text="Expenses" styleClass="help-category-title"/>
                 <VBox spacing="4">
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="📋" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Expense Categories" styleClass="help-topic-label"/>
-                            <Label text="SA103 box mapping and category guide" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="✅" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Allowable Expenses" styleClass="help-topic-label"/>
-                            <Label text="What you can and cannot claim" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
+                    <Button text="📋  Expense Categories" styleClass="help-topic-button" onAction="#handleExpenseCategoriesClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    <Button text="✅  Allowable Expenses" styleClass="help-topic-button" onAction="#handleAllowableExpensesClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
                 </VBox>
             </VBox>
 
@@ -114,22 +65,8 @@
             <VBox styleClass="help-category" spacing="8">
                 <Label text="HMRC Submission" styleClass="help-category-title"/>
                 <VBox spacing="4">
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="✍" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Declaration" styleClass="help-topic-label"/>
-                            <Label text="Understanding your legal responsibilities" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="📤" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Submitting to HMRC" styleClass="help-topic-label"/>
-                            <Label text="How the MTD submission process works" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
+                    <Button text="✍  Declaration" styleClass="help-topic-button" onAction="#handleDeclarationClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    <Button text="📤  Submitting to HMRC" styleClass="help-topic-button" onAction="#handleHmrcSubmissionClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
                 </VBox>
             </VBox>
 
@@ -137,22 +74,8 @@
             <VBox styleClass="help-category" spacing="8">
                 <Label text="General" styleClass="help-category-title"/>
                 <VBox spacing="4">
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="📅" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="Tax Year" styleClass="help-topic-label"/>
-                            <Label text="Key dates and deadlines" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
-                    <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12">
-                        <Label text="📄" styleClass="help-topic-icon"/>
-                        <VBox spacing="2" HBox.hgrow="ALWAYS">
-                            <Label text="SA103 Form" styleClass="help-topic-label"/>
-                            <Label text="About the self-employment supplementary pages" styleClass="help-topic-desc"/>
-                        </VBox>
-                        <Label text="›" styleClass="help-topic-arrow"/>
-                    </HBox>
+                    <Button text="📅  Tax Year" styleClass="help-topic-button" onAction="#handleTaxYearClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
+                    <Button text="📄  SA103 Form" styleClass="help-topic-button" onAction="#handleSa103FormClick" maxWidth="Infinity" alignment="CENTER_LEFT"/>
                 </VBox>
             </VBox>
         </VBox>

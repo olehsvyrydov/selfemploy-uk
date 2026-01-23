@@ -2,6 +2,8 @@ package uk.selfemploy.ui.help;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.ui.component.HmrcWebViewDialog;
+import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -63,6 +65,10 @@ public class HelpService {
     /**
      * Opens an external URL in the system browser.
      *
+     * <p>This method uses {@link BrowserUtil} to open URLs safely on a background
+     * thread, avoiding the "Force Quit" crash that occurred when Desktop.browse()
+     * was called directly on the JavaFX Application Thread.</p>
+     *
      * @param url the URL to open
      */
     public void openExternalLink(String url) {
@@ -71,17 +77,60 @@ public class HelpService {
             return;
         }
 
-        try {
-            java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
-            if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
-                desktop.browse(new java.net.URI(url));
-                LOG.debug("Opened external URL: {}", url);
-            } else {
-                LOG.warn("Desktop browse action not supported on this platform");
-            }
-        } catch (Exception e) {
-            LOG.warn("Failed to open URL: {} - {}", url, e.getMessage());
+        LOG.debug("Opening external URL: {}", url);
+        BrowserUtil.openUrl(url, error -> LOG.warn("Failed to open URL {}: {}", url, error));
+    }
+
+    /**
+     * Opens an HMRC guidance page in the in-app browser.
+     *
+     * <p>SE-7XX: In-App Browser for HMRC Guidance</p>
+     *
+     * <p>This method opens the specified HMRC topic in a non-modal WebView dialog,
+     * allowing users to view guidance without leaving the application. The dialog
+     * includes navigation controls and an "Open in Browser" fallback button.</p>
+     *
+     * <p>If the URL is not a valid GOV.UK domain, it falls back to opening
+     * in the external browser for security reasons.</p>
+     *
+     * @param topic the HMRC link topic to display
+     */
+    public void openHmrcGuidance(HmrcLinkTopic topic) {
+        if (topic == null) {
+            LOG.warn("Attempted to open null HMRC topic");
+            return;
         }
+
+        LOG.debug("Opening HMRC guidance: {}", topic);
+        HmrcWebViewDialog.showTopic(topic);
+    }
+
+    /**
+     * Opens an HMRC guidance page by URL in the in-app browser.
+     *
+     * <p>SE-7XX: In-App Browser for HMRC Guidance</p>
+     *
+     * <p>This method validates that the URL is a GOV.UK domain before opening
+     * in the in-app browser. If the URL fails validation, it falls back to
+     * opening in the external browser.</p>
+     *
+     * @param url   the URL to open (must be a GOV.UK domain)
+     * @param title the title to display in the dialog
+     */
+    public void openHmrcGuidance(String url, String title) {
+        if (url == null || url.isBlank()) {
+            LOG.warn("Attempted to open null or blank HMRC URL");
+            return;
+        }
+
+        if (!HmrcWebViewDialog.isValidUrl(url)) {
+            LOG.warn("URL not allowed in in-app browser, falling back to external: {}", url);
+            openExternalLink(url);
+            return;
+        }
+
+        LOG.debug("Opening HMRC guidance in in-app browser: {}", url);
+        HmrcWebViewDialog.showUrl(url, title);
     }
 
     // === Private Methods ===

@@ -3,6 +3,11 @@ package uk.selfemploy.ui.controller;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
@@ -24,6 +29,18 @@ import java.util.logging.Logger;
 public class HelpController implements Initializable, MainController.TaxYearAware {
 
     private static final Logger LOG = Logger.getLogger(HelpController.class.getName());
+
+    /**
+     * The GitHub repository URL for this application.
+     * Used for Documentation links in the Help page.
+     */
+    public static final String GITHUB_REPO_URL = "https://github.com/selfemploy-uk/self-employment";
+
+    /**
+     * The GitHub Issues URL for this application.
+     * Used for reporting bugs and feature requests.
+     */
+    public static final String GITHUB_ISSUES_URL = "https://github.com/selfemploy-uk/self-employment/issues";
 
     private static final List<String> HELP_CATEGORIES = Arrays.asList(
         "Tax & Calculation",
@@ -213,7 +230,8 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         if (selectedTopic != null) {
             getHelpForTopic(selectedTopic).ifPresent(content -> {
                 if (content.hmrcLink() != null) {
-                    helpService.openExternalLink(content.hmrcLink());
+                    // Use in-app browser for HMRC/GOV.UK links
+                    helpService.openHmrcGuidance(content.hmrcLink(), content.title());
                 }
             });
         }
@@ -223,53 +241,169 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
 
     @FXML
     void handleTaxRatesLink(ActionEvent event) {
-        LOG.info("Opening HMRC Tax Rates link");
-        helpService.openExternalLink(helpService.getHmrcLink(HmrcLinkTopic.TAX_RATES));
+        LOG.info("Opening HMRC Tax Rates in in-app browser");
+        helpService.openHmrcGuidance(HmrcLinkTopic.TAX_RATES);
     }
 
     @FXML
     void handleSa103Link(ActionEvent event) {
-        LOG.info("Opening HMRC SA103 Form link");
-        helpService.openExternalLink(helpService.getHmrcLink(HmrcLinkTopic.SA103_FORM));
+        LOG.info("Opening HMRC SA103 Form in in-app browser");
+        helpService.openHmrcGuidance(HmrcLinkTopic.SA103_FORM);
     }
 
     @FXML
     void handleFilingDeadlinesLink(ActionEvent event) {
-        LOG.info("Opening HMRC Filing Deadlines link");
-        helpService.openExternalLink(helpService.getHmrcLink(HmrcLinkTopic.FILING_DEADLINES));
+        LOG.info("Opening HMRC Filing Deadlines in in-app browser");
+        helpService.openHmrcGuidance(HmrcLinkTopic.FILING_DEADLINES);
     }
 
     @FXML
     void handleAllowableExpensesLink(ActionEvent event) {
-        LOG.info("Opening HMRC Allowable Expenses link");
-        helpService.openExternalLink(helpService.getHmrcLink(HmrcLinkTopic.ALLOWABLE_EXPENSES));
+        LOG.info("Opening HMRC Allowable Expenses in in-app browser");
+        helpService.openHmrcGuidance(HmrcLinkTopic.ALLOWABLE_EXPENSES);
     }
 
     @FXML
     void handleNiRatesLink(ActionEvent event) {
-        LOG.info("Opening HMRC NI Rates link");
-        helpService.openExternalLink(helpService.getHmrcLink(HmrcLinkTopic.NI_RATES));
+        LOG.info("Opening HMRC NI Rates in in-app browser");
+        helpService.openHmrcGuidance(HmrcLinkTopic.NI_RATES);
     }
 
     @FXML
     void handleStatePensionLink(ActionEvent event) {
-        LOG.info("Opening HMRC State Pension link");
-        helpService.openExternalLink(helpService.getHmrcLink(HmrcLinkTopic.STATE_PENSION));
+        LOG.info("Opening HMRC State Pension in in-app browser");
+        helpService.openHmrcGuidance(HmrcLinkTopic.STATE_PENSION);
     }
 
     @FXML
     void handleGitHubIssuesLink(ActionEvent event) {
-        LOG.info("Opening GitHub Issues link");
-        helpService.openExternalLink("https://github.com/anthropics/claude-code/issues");
+        LOG.info("Opening GitHub Issues in in-app browser");
+        helpService.openHmrcGuidance(GITHUB_ISSUES_URL, "GitHub Issues");
     }
 
     @FXML
     void handleDocumentationLink(ActionEvent event) {
-        LOG.info("Opening Documentation link");
-        helpService.openExternalLink("https://github.com/anthropics/claude-code");
+        LOG.info("Opening Documentation in in-app browser");
+        helpService.openHmrcGuidance(GITHUB_REPO_URL, "Documentation");
+    }
+
+    // === Help Topic Click Handlers ===
+
+    @FXML
+    void handleNetProfitClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Net Profit");
+        showHelpDialog(HelpTopic.NET_PROFIT);
+    }
+
+    @FXML
+    void handleIncomeTaxClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Income Tax");
+        showHelpDialog(HelpTopic.INCOME_TAX);
+    }
+
+    @FXML
+    void handlePersonalAllowanceClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Personal Allowance");
+        showHelpDialog(HelpTopic.PERSONAL_ALLOWANCE);
+    }
+
+    @FXML
+    void handleNationalInsuranceClick(ActionEvent event) {
+        LOG.info("Help topic clicked: National Insurance");
+        showHelpDialog(HelpTopic.NI_CLASS_4);
+    }
+
+    @FXML
+    void handlePaymentsOnAccountClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Payments on Account");
+        showHelpDialog(HelpTopic.PAYMENTS_ON_ACCOUNT);
+    }
+
+    @FXML
+    void handleExpenseCategoriesClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Expense Categories");
+        showHelpDialog(HelpTopic.EXPENSE_CATEGORY);
+    }
+
+    @FXML
+    void handleAllowableExpensesClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Allowable Expenses");
+        showHelpDialog(HelpTopic.ALLOWABLE_EXPENSES);
+    }
+
+    @FXML
+    void handleDeclarationClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Declaration");
+        showHelpDialog(HelpTopic.DECLARATION);
+    }
+
+    @FXML
+    void handleHmrcSubmissionClick(ActionEvent event) {
+        LOG.info("Help topic clicked: HMRC Submission");
+        showHelpDialog(HelpTopic.HMRC_SUBMISSION);
+    }
+
+    @FXML
+    void handleTaxYearClick(ActionEvent event) {
+        LOG.info("Help topic clicked: Tax Year");
+        showHelpDialog(HelpTopic.TAX_YEAR);
+    }
+
+    @FXML
+    void handleSa103FormClick(ActionEvent event) {
+        LOG.info("Help topic clicked: SA103 Form");
+        showHelpDialog(HelpTopic.SA103_FORM);
     }
 
     // === Private Helper Methods ===
+
+    /**
+     * Shows a help dialog for the specified topic.
+     * The dialog displays the help title, body text, and optionally an HMRC guidance button.
+     *
+     * @param topic the help topic to display
+     */
+    private void showHelpDialog(HelpTopic topic) {
+        var contentOpt = getHelpForTopic(topic);
+        contentOpt.ifPresent(content -> {
+            // Create a custom dialog
+            Alert dialog = new Alert(Alert.AlertType.INFORMATION);
+            dialog.setTitle("Help - " + content.title());
+            dialog.setHeaderText(content.title());
+
+            // Create the content layout
+            VBox contentBox = new VBox(12);
+            contentBox.setPadding(new Insets(10, 0, 10, 0));
+
+            Label bodyLabel = new Label(content.body());
+            bodyLabel.setWrapText(true);
+            bodyLabel.setMaxWidth(450);
+            contentBox.getChildren().add(bodyLabel);
+
+            DialogPane dialogPane = dialog.getDialogPane();
+            dialogPane.setContent(contentBox);
+            dialogPane.setMinWidth(500);
+
+            // Add HMRC link button if available
+            if (content.hmrcLink() != null && !content.hmrcLink().isBlank()) {
+                ButtonType hmrcButton = new ButtonType(
+                    content.linkText() != null ? content.linkText() : "View HMRC Guidance",
+                    ButtonBar.ButtonData.LEFT
+                );
+                dialog.getButtonTypes().add(0, hmrcButton);
+
+                dialog.setResultConverter(buttonType -> {
+                    if (buttonType == hmrcButton) {
+                        // Open HMRC guidance in in-app browser
+                        helpService.openHmrcGuidance(content.hmrcLink(), content.title());
+                    }
+                    return buttonType;
+                });
+            }
+
+            dialog.showAndWait();
+        });
+    }
 
     private void updateTopicList(String category) {
         if (topicList != null) {
@@ -297,7 +431,13 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         });
     }
 
-    private HelpTopic findTopicByDisplayName(String displayName) {
+    /**
+     * Finds a HelpTopic by its display name.
+     *
+     * @param displayName the display name to search for
+     * @return the matching HelpTopic, or null if not found
+     */
+    public HelpTopic findTopicByDisplayName(String displayName) {
         for (Map.Entry<HelpTopic, String> entry : TOPIC_DISPLAY_NAMES.entrySet()) {
             if (entry.getValue().equals(displayName)) {
                 return entry.getKey();

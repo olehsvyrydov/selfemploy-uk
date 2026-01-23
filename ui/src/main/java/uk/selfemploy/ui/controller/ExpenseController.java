@@ -490,7 +490,8 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
 
                 helpDialog.showAndWait().ifPresent(result -> {
                     if (result == learnMore) {
-                        helpService.openExternalLink(content.hmrcLink());
+                        // Use in-app browser for HMRC/GOV.UK links
+                        helpService.openHmrcGuidance(content.hmrcLink(), content.title());
                     }
                 });
             } else {

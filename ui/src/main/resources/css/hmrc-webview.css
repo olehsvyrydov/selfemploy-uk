@@ -1,0 +1,163 @@
+/*
+ * SE-7XX: HMRC WebView Dialog Styles
+ *
+ * Design: /aura (Senior UI/UX Design Architect)
+ * Implementation: /james
+ *
+ * This stylesheet provides styling for the in-app HMRC guidance browser.
+ * Colors aligned with GOV.UK Design System for familiarity.
+ */
+
+/* ===== Dialog Container ===== */
+.hmrc-webview-dialog {
+    -fx-background-color: white;
+}
+
+/* ===== Toolbar ===== */
+.webview-toolbar {
+    -fx-background-color: #f3f2f1; /* GOV.UK grey */
+    -fx-border-color: #b1b4b6;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 48;
+    -fx-max-height: 48;
+}
+
+.webview-toolbar-button {
+    -fx-background-color: white;
+    -fx-border-color: #b1b4b6;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 6 12;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+    -fx-text-fill: #0b0c0c; /* GOV.UK black */
+}
+
+.webview-toolbar-button:hover {
+    -fx-background-color: #e9ecef;
+    -fx-border-color: #505a5f;
+}
+
+.webview-toolbar-button:focused {
+    -fx-border-color: #fd0;
+    -fx-border-width: 3;
+    -fx-background-color: #fd0;
+    -fx-text-fill: #0b0c0c;
+}
+
+.webview-toolbar-button:disabled {
+    -fx-background-color: #f3f2f1;
+    -fx-text-fill: #b1b4b6;
+    -fx-border-color: #d4d4d4;
+    -fx-cursor: default;
+}
+
+/* URL Label in Toolbar */
+.webview-url-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #505a5f;
+    -fx-padding: 0 12;
+    -fx-background-color: white;
+    -fx-border-color: #b1b4b6;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-min-height: 32;
+    -fx-alignment: center-left;
+}
+
+/* Open in Browser Button */
+.webview-open-browser {
+    -fx-background-color: #1d70b8; /* GOV.UK blue */
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+    -fx-font-weight: bold;
+}
+
+.webview-open-browser:hover {
+    -fx-background-color: #003078; /* GOV.UK dark blue */
+}
+
+.webview-open-browser:focused {
+    -fx-border-color: #fd0;
+    -fx-border-width: 3;
+    -fx-background-color: #003078;
+}
+
+/* ===== Status Bar ===== */
+.webview-status-bar {
+    -fx-background-color: #f3f2f1;
+    -fx-border-color: #b1b4b6;
+    -fx-border-width: 1 0 0 0;
+    -fx-min-height: 28;
+    -fx-max-height: 28;
+}
+
+.webview-status-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #505a5f;
+}
+
+/* Progress Bar */
+.webview-progress {
+    -fx-pref-height: 4;
+    -fx-max-height: 4;
+    -fx-min-width: 150;
+    -fx-max-width: 200;
+    -fx-accent: #1d70b8;
+}
+
+.webview-progress > .track {
+    -fx-background-color: #d4d4d4;
+    -fx-background-radius: 2;
+}
+
+.webview-progress > .bar {
+    -fx-background-color: linear-gradient(to right, #1d70b8, #00703c);
+    -fx-background-radius: 2;
+    -fx-background-insets: 0;
+}
+
+/* ===== Error Container ===== */
+.webview-error-container {
+    -fx-background-color: white;
+}
+
+.webview-error-message {
+    -fx-font-size: 16px;
+    -fx-text-fill: #0b0c0c;
+    -fx-text-alignment: center;
+    -fx-max-width: 400;
+    -fx-wrap-text: true;
+}
+
+/* ===== GOV.UK Inspired Colors ===== */
+/*
+ * Primary colors from GOV.UK Design System:
+ * - Black: #0b0c0c
+ * - White: #ffffff
+ * - Blue: #1d70b8
+ * - Dark Blue: #003078
+ * - Yellow (focus): #fd0
+ * - Green: #00703c
+ * - Red: #d4351c
+ * - Grey: #505a5f
+ * - Light Grey: #f3f2f1
+ * - Mid Grey: #b1b4b6
+ */
+
+/* ===== WebView Specific ===== */
+/* Note: WebView content styling is controlled by the loaded HTML/CSS,
+   not by this stylesheet. We can only style the surrounding JavaFX components. */
+
+/* Focus outline for accessibility */
+.webview-toolbar-button:focus-visible {
+    -fx-border-color: #fd0;
+    -fx-border-width: 3;
+}
+
+/* Keyboard navigation highlight */
+.webview-toolbar:contains-focus .webview-toolbar-button:focused {
+    -fx-effect: dropshadow(gaussian, rgba(253, 208, 0, 0.5), 4, 0, 0, 0);
+}

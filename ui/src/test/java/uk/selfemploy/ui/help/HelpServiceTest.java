@@ -197,4 +197,39 @@ class HelpServiceTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("SE-7XX: In-App Browser Integration")
+    class InAppBrowserIntegration {
+
+        @Test
+        @DisplayName("should have openHmrcGuidance method for HmrcLinkTopic")
+        void shouldHaveOpenHmrcGuidanceMethodForTopic() {
+            // Verify the method exists and handles null gracefully
+            // (actual opening requires JavaFX runtime)
+            helpService.openHmrcGuidance((HmrcLinkTopic) null);
+            // No exception thrown - passes
+        }
+
+        @Test
+        @DisplayName("should have openHmrcGuidance method for URL and title")
+        void shouldHaveOpenHmrcGuidanceMethodForUrl() {
+            // Verify the method exists and handles null gracefully
+            helpService.openHmrcGuidance(null, "Test");
+            helpService.openHmrcGuidance("", "Test");
+            helpService.openHmrcGuidance("   ", "Test");
+            // No exception thrown - passes
+        }
+
+        @Test
+        @DisplayName("all HMRC topics should have valid GOV.UK URLs")
+        void allHmrcTopicsShouldHaveValidGovUkUrls() {
+            for (HmrcLinkTopic topic : HmrcLinkTopic.values()) {
+                String url = topic.getUrl();
+                assertThat(url)
+                        .as("URL for topic %s should be a GOV.UK domain", topic)
+                        .contains("gov.uk");
+            }
+        }
+    }
 }

@@ -429,6 +429,34 @@
     -fx-background-color: #f8f9fa;
 }
 
+/* Help Topic Button (clickable row) */
+.help-topic-button {
+    /* Use white background like help-link-button for consistent click behavior */
+    -fx-background-color: white;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 14 16;
+    -fx-background-radius: 0;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+    -fx-font-size: 14px;
+    -fx-text-fill: #212529;
+}
+
+.help-topic-button:hover {
+    -fx-background-color: #f8f9fa;
+}
+
+.help-topic-button:focused {
+    -fx-background-color: #e6f0ff;
+    -fx-border-color: #0066cc;
+    -fx-border-width: 1;
+}
+
+.help-topic-button:pressed {
+    -fx-background-color: #dbeafe;
+}
+
 .help-topic-icon {
     -fx-font-size: 20px;
 }

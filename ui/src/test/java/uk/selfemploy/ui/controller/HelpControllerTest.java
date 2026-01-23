@@ -237,4 +237,79 @@ class HelpControllerTest {
                 .isEqualTo("Filing Deadlines");
         }
     }
+
+    @Nested
+    @DisplayName("GitHub URLs")
+    class GitHubUrls {
+
+        @Test
+        @DisplayName("should return correct GitHub repository URL")
+        void shouldReturnCorrectGitHubRepoUrl() {
+            // The URL should point to the selfemploy-uk/self-employment repository
+            assertThat(HelpController.GITHUB_REPO_URL)
+                .isEqualTo("https://github.com/selfemploy-uk/self-employment");
+        }
+
+        @Test
+        @DisplayName("should return correct GitHub Issues URL")
+        void shouldReturnCorrectGitHubIssuesUrl() {
+            // The URL should point to the issues page of the correct repository
+            assertThat(HelpController.GITHUB_ISSUES_URL)
+                .isEqualTo("https://github.com/selfemploy-uk/self-employment/issues");
+        }
+
+        @Test
+        @DisplayName("GitHub URLs should not point to anthropic repository")
+        void shouldNotPointToAnthropicRepository() {
+            assertThat(HelpController.GITHUB_REPO_URL)
+                .doesNotContain("anthropic");
+            assertThat(HelpController.GITHUB_ISSUES_URL)
+                .doesNotContain("anthropic");
+        }
+    }
+
+    @Nested
+    @DisplayName("Help Topic Click Handlers")
+    class HelpTopicClickHandlers {
+
+        @Test
+        @DisplayName("should have handler for each help topic in FXML")
+        void shouldHaveHandlerForEachTopic() {
+            // Verify we have a mapping for display names to HelpTopic
+            // This ensures the click handlers can find the right topic
+            for (HelpTopic topic : HelpTopic.values()) {
+                String displayName = controller.getTopicDisplayName(topic);
+                assertThat(displayName).isNotNull();
+                assertThat(displayName).isNotBlank();
+            }
+        }
+
+        @Test
+        @DisplayName("should find topic by display name for Net Profit")
+        void shouldFindTopicByDisplayNameNetProfit() {
+            HelpTopic topic = controller.findTopicByDisplayName("Net Profit");
+            assertThat(topic).isEqualTo(HelpTopic.NET_PROFIT);
+        }
+
+        @Test
+        @DisplayName("should find topic by display name for Income Tax")
+        void shouldFindTopicByDisplayNameIncomeTax() {
+            HelpTopic topic = controller.findTopicByDisplayName("Income Tax");
+            assertThat(topic).isEqualTo(HelpTopic.INCOME_TAX);
+        }
+
+        @Test
+        @DisplayName("should find topic by display name for Personal Allowance")
+        void shouldFindTopicByDisplayNamePersonalAllowance() {
+            HelpTopic topic = controller.findTopicByDisplayName("Personal Allowance");
+            assertThat(topic).isEqualTo(HelpTopic.PERSONAL_ALLOWANCE);
+        }
+
+        @Test
+        @DisplayName("should return null for unknown display name")
+        void shouldReturnNullForUnknownDisplayName() {
+            HelpTopic topic = controller.findTopicByDisplayName("Unknown Topic");
+            assertThat(topic).isNull();
+        }
+    }
 }

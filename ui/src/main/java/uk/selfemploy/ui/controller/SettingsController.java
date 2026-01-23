@@ -14,6 +14,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -280,17 +281,18 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     /**
      * Opens an external URL in the system default browser.
+     *
+     * <p>Uses BrowserUtil to open URLs safely on a background thread,
+     * avoiding crashes from Desktop.browse() on the JavaFX Application Thread.</p>
      */
     void openExternalLink(String url) {
-        try {
-            java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
-            if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
-                desktop.browse(new java.net.URI(url));
-            }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to open URL: " + url, e);
-            showError("Error", "Could not open link: " + e.getMessage());
-        }
+        LOG.info("Opening external link: " + url);
+        BrowserUtil.openUrl(url, error -> {
+            LOG.log(Level.WARNING, "Failed to open URL: " + url + " - " + error);
+            // Show error on JavaFX thread
+            javafx.application.Platform.runLater(() ->
+                    showError("Error", "Could not open link: " + error));
+        });
     }
 
     private void showLegalDocument(String fxmlPath, String title, boolean settingsMode) {
