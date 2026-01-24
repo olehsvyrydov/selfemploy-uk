@@ -3,6 +3,7 @@ package uk.selfemploy.ui.viewmodel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.*;
  * Tests the ViewModel logic without requiring JavaFX initialization.
  */
 @DisplayName("IncomeListViewModel")
+@Tag("e2e") // Uses JavaFX properties - exclude from headless CI
 class IncomeListViewModelTest {
 
     @Mock
