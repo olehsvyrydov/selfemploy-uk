@@ -529,14 +529,14 @@ class TaxSummaryE2ETest extends BaseE2ETest {
             var bandRows = lookup("#niContent .tax-band-row").queryAll();
             assertThat(bandRows).hasSize(3);
 
-            // Verify bands contain expected rates
+            // Verify bands contain expected rates (2024/25 and 2025/26: 6% main rate, 2% additional)
             var descriptions = lookup("#niContent .tax-band-desc").queryAllAs(Label.class);
             List<String> descTexts = descriptions.stream()
                     .map(Label::getText)
                     .collect(Collectors.toList());
 
             assertThat(descTexts).anyMatch(t -> t.contains("0%"));
-            assertThat(descTexts).anyMatch(t -> t.contains("9%"));
+            assertThat(descTexts).anyMatch(t -> t.contains("6%")); // Corrected from 9%
             assertThat(descTexts).anyMatch(t -> t.contains("2%"));
         }
     }

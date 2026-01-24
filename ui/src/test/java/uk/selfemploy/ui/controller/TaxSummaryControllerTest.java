@@ -4,13 +4,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for TaxSummaryController.
@@ -23,12 +34,154 @@ class TaxSummaryControllerTest {
     private TaxSummaryViewModel viewModel;
     private TaxYear taxYear;
 
+    @Mock
+    private IncomeService incomeService;
+    @Mock
+    private ExpenseService expenseService;
+
+    private UUID businessId;
+
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         taxYear = TaxYear.of(2025);
         viewModel = new TaxSummaryViewModel();
         controller = new TaxSummaryController();
         controller.setViewModel(viewModel);
+        businessId = UUID.randomUUID();
+    }
+
+    @Nested
+    @DisplayName("Data Loading from Services")
+    class DataLoadingFromServices {
+
+        @Test
+        @DisplayName("should load income and expenses from services when tax year is set")
+        void shouldLoadDataFromServicesWhenTaxYearIsSet() {
+            // Given - services with income and expense data
+            Income income1 = new Income(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 6, 15),
+                new BigDecimal("25000.00"),
+                "Consulting income",
+                IncomeCategory.SALES,
+                null
+            );
+            Income income2 = new Income(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 8, 20),
+                new BigDecimal("15000.00"),
+                "Project work",
+                IncomeCategory.SALES,
+                null
+            );
+
+            Expense expense1 = new Expense(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 7, 10),
+                new BigDecimal("2000.00"),
+                "Office supplies",
+                ExpenseCategory.OFFICE_COSTS,
+                null,
+                null
+            );
+
+            when(incomeService.findByTaxYear(businessId, taxYear))
+                .thenReturn(List.of(income1, income2));
+            when(expenseService.findByTaxYear(businessId, taxYear))
+                .thenReturn(List.of(expense1));
+
+            // When - initialize with dependencies and set tax year
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+            controller.setTaxYear(taxYear);
+
+            // Then - viewModel should have the loaded data
+            assertThat(viewModel.getTurnover()).isEqualByComparingTo(new BigDecimal("40000.00"));
+            assertThat(viewModel.getTotalExpenses()).isEqualByComparingTo(new BigDecimal("2000.00"));
+            assertThat(viewModel.getNetProfit()).isEqualByComparingTo(new BigDecimal("38000.00"));
+        }
+
+        @Test
+        @DisplayName("should calculate tax after loading data")
+        void shouldCalculateTaxAfterLoadingData() {
+            // Given - income of £50,000
+            Income income = new Income(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 6, 15),
+                new BigDecimal("50000.00"),
+                "Annual income",
+                IncomeCategory.SALES,
+                null
+            );
+
+            when(incomeService.findByTaxYear(businessId, taxYear))
+                .thenReturn(List.of(income));
+            when(expenseService.findByTaxYear(businessId, taxYear))
+                .thenReturn(List.of());
+
+            // When
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+            controller.setTaxYear(taxYear);
+
+            // Then - tax should be calculated (not zero)
+            assertThat(viewModel.getIncomeTax()).isGreaterThan(BigDecimal.ZERO);
+            assertThat(viewModel.getNiClass4()).isGreaterThan(BigDecimal.ZERO);
+            assertThat(viewModel.getTotalTax()).isGreaterThan(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("should group expenses by category for SA103 breakdown")
+        void shouldGroupExpensesByCategory() {
+            // Given - multiple expenses in different categories
+            Expense officeExpense = new Expense(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 7, 10),
+                new BigDecimal("500.00"),
+                "Office supplies",
+                ExpenseCategory.OFFICE_COSTS,
+                null,
+                null
+            );
+            Expense travelExpense = new Expense(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 8, 15),
+                new BigDecimal("300.00"),
+                "Train tickets",
+                ExpenseCategory.TRAVEL,
+                null,
+                null
+            );
+            Expense officeExpense2 = new Expense(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 9, 20),
+                new BigDecimal("200.00"),
+                "Printer ink",
+                ExpenseCategory.OFFICE_COSTS,
+                null,
+                null
+            );
+
+            when(incomeService.findByTaxYear(businessId, taxYear))
+                .thenReturn(List.of());
+            when(expenseService.findByTaxYear(businessId, taxYear))
+                .thenReturn(List.of(officeExpense, travelExpense, officeExpense2));
+
+            // When
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+            controller.setTaxYear(taxYear);
+
+            // Then - expenses should be grouped by category
+            var breakdown = viewModel.getExpenseBreakdown();
+            assertThat(breakdown.get(ExpenseCategory.OFFICE_COSTS)).isEqualByComparingTo(new BigDecimal("700.00"));
+            assertThat(breakdown.get(ExpenseCategory.TRAVEL)).isEqualByComparingTo(new BigDecimal("300.00"));
+        }
     }
 
     @Nested
@@ -274,8 +427,8 @@ class TaxSummaryControllerTest {
     class NiClass4BandDisplay {
 
         @Test
-        @DisplayName("should show NI rate bands")
-        void shouldShowNiRateBands() {
+        @DisplayName("should show NI rate bands with correct 2025/26 rates")
+        void shouldShowNiRateBandsWithCorrectRates() {
             // Given
             viewModel.setTurnover(new BigDecimal("50000"));
             viewModel.setTaxYear(taxYear);
@@ -284,10 +437,10 @@ class TaxSummaryControllerTest {
             // When
             var bands = controller.getNiClass4Bands();
 
-            // Then
+            // Then - 2025/26 rates: 6% main rate, 2% additional rate
             assertThat(bands).hasSize(3);
             assertThat(bands.get(0).description()).contains("0%");
-            assertThat(bands.get(1).description()).contains("9%");
+            assertThat(bands.get(1).description()).contains("6%"); // Corrected from 9%
             assertThat(bands.get(2).description()).contains("2%");
         }
     }

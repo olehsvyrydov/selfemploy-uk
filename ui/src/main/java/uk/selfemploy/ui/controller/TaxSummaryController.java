@@ -10,9 +10,14 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
@@ -29,7 +34,7 @@ import java.util.stream.Collectors;
  * Controller for the Tax Summary view (SE-306).
  * Displays tax calculation breakdown with SA103 box mappings.
  */
-public class TaxSummaryController implements Initializable, MainController.TaxYearAware {
+public class TaxSummaryController implements Initializable, MainController.TaxYearAware, Refreshable {
 
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final String TOGGLE_EXPANDED = "[v]";
@@ -129,6 +134,11 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     private Class2NIClarificationViewModel class2ViewModel;
     private TaxYear taxYear;
 
+    // Service dependencies (similar pattern to DashboardController)
+    private IncomeService incomeService;
+    private ExpenseService expenseService;
+    private UUID businessId;
+
     // Section expansion state
     private boolean incomeSectionExpanded = true;
     private boolean expensesSectionExpanded = true;
@@ -224,11 +234,76 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     @Override
     public void setTaxYear(TaxYear taxYear) {
         this.taxYear = taxYear;
+
+        // Fallback to CoreServiceFactory if not initialized via CDI (same pattern as DashboardController)
+        if (incomeService == null) {
+            incomeService = CoreServiceFactory.getIncomeService();
+        }
+        if (expenseService == null) {
+            expenseService = CoreServiceFactory.getExpenseService();
+        }
+        if (businessId == null) {
+            businessId = CoreServiceFactory.getDefaultBusinessId();
+        }
+
         if (viewModel != null) {
             viewModel.setTaxYear(taxYear);
-            viewModel.calculateTax();
+            loadTaxSummaryData();
             updateDisplay();
         }
+    }
+
+    /**
+     * Initializes the controller with required service dependencies.
+     * This enables tax summary data integration with real backend services.
+     *
+     * @param incomeService  the income service for loading income data
+     * @param expenseService the expense service for loading expense data
+     * @param businessId     the current business ID
+     */
+    public void initializeWithDependencies(IncomeService incomeService, ExpenseService expenseService, UUID businessId) {
+        this.incomeService = incomeService;
+        this.expenseService = expenseService;
+        this.businessId = businessId;
+
+        // Load data if tax year is already set
+        if (taxYear != null && viewModel != null) {
+            viewModel.setTaxYear(taxYear);
+            loadTaxSummaryData();
+            updateDisplay();
+        }
+    }
+
+    /**
+     * Loads income and expense data from services and populates the ViewModel.
+     */
+    private void loadTaxSummaryData() {
+        if (incomeService == null || expenseService == null || businessId == null || taxYear == null) {
+            return;
+        }
+
+        // Clear previous data
+        viewModel.clearExpenseBreakdown();
+        viewModel.setTurnover(BigDecimal.ZERO);
+
+        // Load income data
+        var incomes = incomeService.findByTaxYear(businessId, taxYear);
+        BigDecimal totalIncome = incomes.stream()
+            .map(Income::amount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        viewModel.setTurnover(totalIncome);
+
+        // Load expense data and group by category for SA103 breakdown
+        var expenses = expenseService.findByTaxYear(businessId, taxYear);
+        for (Expense expense : expenses) {
+            viewModel.addExpenseByCategory(expense.category(), expense.amount());
+        }
+
+        // Calculate tax with the loaded data
+        viewModel.calculateTax();
+
+        // Update Class 2 NI section based on net profit
+        updateClass2Section();
     }
 
     /**
@@ -236,6 +311,14 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
      */
     public void setViewModel(TaxSummaryViewModel viewModel) {
         this.viewModel = viewModel;
+    }
+
+    // === Refreshable Implementation ===
+
+    @Override
+    public void refreshData() {
+        loadTaxSummaryData();
+        updateDisplay();
     }
 
     // === Draft Banner ===
@@ -430,6 +513,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
     /**
      * Returns NI Class 4 rate bands for display.
+     * Uses the correct 2024/25 and 2025/26 rates: 6% main rate, 2% additional rate.
      */
     public List<TaxBandItem> getNiClass4Bands() {
         if (viewModel == null) {
@@ -445,9 +529,9 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             BigDecimal.ZERO
         ));
 
-        // Main rate - 9% between LPL and UPL
+        // Main rate - 6% between LPL and UPL (corrected from 9%)
         bands.add(new TaxBandItem(
-            "Main Rate (9%)",
+            "Main Rate (6%)",
             "£12,570 - £50,270",
             viewModel.getNiMainRateTax()
         ));
