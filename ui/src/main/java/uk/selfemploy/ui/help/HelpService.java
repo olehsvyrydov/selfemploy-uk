@@ -230,8 +230,8 @@ public class HelpService {
                         "For tax purposes, self-employed individuals typically use " +
                         "the 'cash basis' where income is recorded when received, " +
                         "or 'accrual basis' where income is recorded when earned.")
-                .hmrcLink(HmrcLinkTopic.SA103_FORM.getUrl())
-                .linkText("View SA103 income guidance")
+                .hmrcLink(HmrcLinkTopic.CASH_BASIS.getUrl())
+                .linkText("Learn about cash basis accounting")
                 .build());
 
         helpContent.put(HelpTopic.UNPAID_INCOME, HelpContent.builder()
@@ -248,8 +248,8 @@ public class HelpService {
                         "• Plan for expected revenue\n\n" +
                         "Note: If using the cash basis, unpaid income is not " +
                         "counted towards your tax year turnover until received.")
-                .hmrcLink(HmrcLinkTopic.SA103_FORM.getUrl())
-                .linkText("View SA103 income guidance")
+                .hmrcLink(HmrcLinkTopic.BUSINESS_RECORDS.getUrl())
+                .linkText("View business records guidance")
                 .build());
 
         // === Expense Topics ===
@@ -317,8 +317,8 @@ public class HelpService {
                         "• You are responsible for the accuracy of your submission\n\n" +
                         "Keep your records for at least 5 years in case HMRC " +
                         "opens an enquiry.")
-                .hmrcLink(HmrcLinkTopic.FILING_DEADLINES.getUrl())
-                .linkText("View filing guidance")
+                .hmrcLink(HmrcLinkTopic.KEEPING_RECORDS.getUrl())
+                .linkText("Record keeping requirements")
                 .build());
 
         helpContent.put(HelpTopic.HMRC_SUBMISSION, HelpContent.builder()

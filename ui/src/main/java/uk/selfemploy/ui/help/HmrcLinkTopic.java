@@ -13,7 +13,7 @@ public enum HmrcLinkTopic {
     /**
      * SA103 Self-Employment Form guidance.
      */
-    SA103_FORM("https://www.gov.uk/government/publications/self-assessment-self-employment-sa103"),
+    SA103_FORM("https://www.gov.uk/government/publications/self-assessment-self-employment-full-sa103f"),
 
     /**
      * Income Tax rates and bands.
@@ -58,7 +58,27 @@ public enum HmrcLinkTopic {
     /**
      * National Insurance record check.
      */
-    NI_RECORD("https://www.gov.uk/check-national-insurance-record");
+    NI_RECORD("https://www.gov.uk/check-national-insurance-record"),
+
+    /**
+     * Cash basis for self-employed income recording.
+     */
+    CASH_BASIS("https://www.gov.uk/simpler-income-tax-cash-basis"),
+
+    /**
+     * Business records for self-employed.
+     */
+    BUSINESS_RECORDS("https://www.gov.uk/self-employed-records"),
+
+    /**
+     * How long to keep business records (in case of HMRC enquiry).
+     */
+    KEEPING_RECORDS("https://www.gov.uk/self-employed-records/how-long-to-keep-your-records"),
+
+    /**
+     * Self Assessment tax return penalties.
+     */
+    PENALTIES("https://www.gov.uk/self-assessment-tax-returns/penalties");
 
     private final String url;
 

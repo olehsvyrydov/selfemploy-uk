@@ -24,6 +24,79 @@
 
     -fx-border-color: #dee2e6;
     -fx-shadow: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+
+    /* ==========================================================================
+     * DESIGN TOKEN SYSTEM (TD-012)
+     *
+     * Token Naming Convention: -fx-{category}-{property}-{variant}
+     * Categories: color, space, font, border, radius, shadow, duration
+     *
+     * Approved by: /aura (Sprint 9)
+     * Implemented by: /finn
+     * ========================================================================== */
+
+    /* ----- Color Tokens: Primary Palette (Brand Blue) ----- */
+    -fx-color-primary-50: #e6f0ff;
+    -fx-color-primary-100: #cce0ff;
+    -fx-color-primary-200: #99c2ff;
+    -fx-color-primary-300: #66a3ff;
+    -fx-color-primary-400: #3385ff;
+    -fx-color-primary-500: #0066cc;
+    -fx-color-primary-600: #0052a3;
+    -fx-color-primary-700: #003d7a;
+    -fx-color-primary-800: #002952;
+    -fx-color-primary-900: #001429;
+
+    /* ----- Color Tokens: Semantic Colors ----- */
+    -fx-color-success-50: #e8f5e9;
+    -fx-color-success-500: #28a745;
+    -fx-color-success-700: #1e7e34;
+
+    -fx-color-warning-50: #fff8e1;
+    -fx-color-warning-500: #ffc107;
+    -fx-color-warning-700: #c79100;
+
+    -fx-color-danger-50: #ffebee;
+    -fx-color-danger-500: #dc3545;
+    -fx-color-danger-700: #bd2130;
+
+    -fx-color-info-500: #17a2b8;
+    -fx-color-accent-500: #fd7e14;
+    -fx-color-purple-500: #6f42c1;
+
+    /* ----- Typography Tokens (1.25 Modular Scale) ----- */
+    -fx-font-size-xs: 10px;
+    -fx-font-size-sm: 12px;
+    -fx-font-size-base: 14px;
+    -fx-font-size-lg: 16px;
+    -fx-font-size-xl: 18px;
+    -fx-font-size-2xl: 20px;
+    -fx-font-size-3xl: 24px;
+    -fx-font-size-4xl: 28px;
+    -fx-font-size-5xl: 32px;
+    -fx-font-size-6xl: 48px;
+
+    /* ----- Spacing Tokens (4px Base Unit) ----- */
+    -fx-space-0: 0;
+    -fx-space-1: 4px;
+    -fx-space-2: 8px;
+    -fx-space-3: 12px;
+    -fx-space-4: 16px;
+    -fx-space-5: 20px;
+    -fx-space-6: 24px;
+    -fx-space-8: 32px;
+    -fx-space-10: 40px;
+    -fx-space-12: 48px;
+    -fx-space-16: 64px;
+    -fx-space-24: 96px;
+
+    /* ----- Border Radius Tokens ----- */
+    -fx-radius-sm: 4;
+    -fx-radius-md: 6;
+    -fx-radius-lg: 8;
+    -fx-radius-xl: 12;
+    -fx-radius-2xl: 16;
+    -fx-radius-full: 9999;
 }
 
 /* ===== Root Container ===== */
@@ -1997,6 +2070,98 @@
 .summary-card-income-unpaid:focused {
     -fx-border-color: #fd7e14 -fx-primary -fx-primary #fd7e14;
     -fx-border-width: 3 3 3 4;
+}
+
+/* ===== TD-011: Accessible Component Library ===== */
+
+/* AccessibleButton - Keyboard-accessible button with icon support */
+.accessible-button {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-background-radius: 8;
+    -fx-padding: 10 16;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER;
+}
+
+.accessible-button:hover {
+    -fx-background-color: #dee2e6;
+}
+
+.accessible-button:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+}
+
+.accessible-button-icon {
+    -fx-font-size: 14px;
+}
+
+.accessible-button-text {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -fx-text-primary;
+}
+
+/* Primary button variant */
+.accessible-button.button-primary {
+    -fx-background-color: -fx-primary;
+}
+
+.accessible-button.button-primary .accessible-button-text {
+    -fx-text-fill: white;
+}
+
+.accessible-button.button-primary:hover {
+    -fx-background-color: -fx-primary-dark;
+}
+
+/* AccessibleLink - Accessible hyperlink-style component */
+.accessible-link {
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+.accessible-link:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 2 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 4, 0, 0, 0);
+}
+
+/* AccessibleIconButton - Circular icon-only button */
+.accessible-icon-button {
+    -fx-cursor: hand;
+}
+
+.accessible-icon-button-circle {
+    -fx-background-color: #f3f4f6;
+    -fx-min-width: 40;
+    -fx-min-height: 40;
+    -fx-max-width: 40;
+    -fx-max-height: 40;
+    -fx-background-radius: 20;
+}
+
+.accessible-icon-button:hover .accessible-icon-button-circle {
+    -fx-background-color: #e5e7eb;
+}
+
+.accessible-icon-button:focused .accessible-icon-button-circle {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+}
+
+.accessible-icon-button-icon {
+    -fx-font-size: 18px;
+    -fx-text-fill: #6b7280;
+}
+
+.accessible-icon-button:hover .accessible-icon-button-icon {
+    -fx-text-fill: #374151;
 }
 
 /* High contrast focus mode for accessibility */

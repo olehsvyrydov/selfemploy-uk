@@ -64,11 +64,14 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         Parent root = loader.load();
         controller = loader.getController();
 
-        // Clear stylesheets from FXML root element to avoid CSS lookup recursion in TestFX
-        // The FXML has <stylesheets> embedded in the ScrollPane root element
-        root.getStylesheets().clear();
-
         Scene scene = new Scene(root, 900, 700);
+
+        // Clear ALL stylesheets to avoid StackOverflow from CSS lookup chains
+        // The main.css uses CSS variable lookups (e.g., -fx-bg-secondary) that can cause
+        // infinite recursion in TestFX when the .root class isn't properly resolved
+        // BUG-001 fix: Clear BOTH scene and root stylesheets AFTER Scene creation
+        scene.getStylesheets().clear();
+        root.getStylesheets().clear();
 
         // Apply minimal test CSS with direct values (no lookups)
         try {
