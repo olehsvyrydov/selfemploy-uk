@@ -164,6 +164,15 @@ public class MainController implements Initializable {
                     taxYearAware.setTaxYear(navigationViewModel.getSelectedTaxYear());
                 }
 
+                // Set navigation callbacks for DashboardController (SE-BUG: View Tax Breakdown button)
+                if (controller instanceof DashboardController dashboardController) {
+                    dashboardController.setNavigationCallbacks(
+                        () -> loadView(View.INCOME),
+                        () -> loadView(View.EXPENSES),
+                        () -> loadView(View.TAX_SUMMARY)
+                    );
+                }
+
                 viewCache.put(view, viewNode);
             } catch (IOException e) {
                 showError("Failed to load view: " + view.getTitle(), e);

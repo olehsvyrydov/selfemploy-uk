@@ -140,6 +140,13 @@ public final class ExpenseDialogHelper {
 
             if (owner != null) {
                 dialogStage.initOwner(owner);
+                // Center dialog on owner window's screen (multi-monitor fix)
+                dialogStage.setOnShown(event -> {
+                    double centerX = owner.getX() + (owner.getWidth() - dialogStage.getWidth()) / 2;
+                    double centerY = owner.getY() + (owner.getHeight() - dialogStage.getHeight()) / 2;
+                    dialogStage.setX(centerX);
+                    dialogStage.setY(centerY);
+                });
             }
 
             // Create scene with all required stylesheets

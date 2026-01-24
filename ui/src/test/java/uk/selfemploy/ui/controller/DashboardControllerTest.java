@@ -1,12 +1,15 @@
 package uk.selfemploy.ui.controller;
 
+import javafx.event.ActionEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -95,5 +98,92 @@ class DashboardControllerTest {
     @DisplayName("should have empty recent activity initially")
     void shouldHaveEmptyRecentActivityInitially() {
         assertThat(viewModel.getRecentActivity()).isEmpty();
+    }
+
+    @Nested
+    @DisplayName("Navigation Callbacks")
+    class NavigationCallbackTests {
+
+        @Test
+        @DisplayName("should invoke onNavigateToTax callback when handleViewTax is called")
+        void shouldInvokeOnNavigateToTaxCallback() {
+            // Given
+            AtomicBoolean taxNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> {},  // income
+                () -> {},  // expenses
+                () -> taxNavCalled.set(true)  // tax
+            );
+
+            // When
+            controller.handleViewTax(new ActionEvent());
+
+            // Then
+            assertThat(taxNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should not throw when handleViewTax is called without callbacks set")
+        void shouldNotThrowWhenHandleViewTaxCalledWithoutCallbacks() {
+            // Given - no callbacks set (simulates the bug scenario)
+
+            // When/Then - should not throw, just do nothing
+            controller.handleViewTax(new ActionEvent());
+            // If we get here without exception, test passes
+        }
+
+        @Test
+        @DisplayName("should invoke onNavigateToIncome callback when handleAddIncome is called without services")
+        void shouldInvokeOnNavigateToIncomeCallback() {
+            // Given
+            AtomicBoolean incomeNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> incomeNavCalled.set(true),  // income
+                () -> {},  // expenses
+                () -> {}   // tax
+            );
+
+            // When
+            controller.handleAddIncome(new ActionEvent());
+
+            // Then
+            assertThat(incomeNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should invoke onNavigateToExpenses callback when handleAddExpense is called without services")
+        void shouldInvokeOnNavigateToExpensesCallback() {
+            // Given
+            AtomicBoolean expensesNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> {},  // income
+                () -> expensesNavCalled.set(true),  // expenses
+                () -> {}   // tax
+            );
+
+            // When
+            controller.handleAddExpense(new ActionEvent());
+
+            // Then
+            assertThat(expensesNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should invoke onNavigateToIncome callback when handleViewAllActivity is called")
+        void shouldInvokeOnNavigateToIncomeForViewAllActivity() {
+            // Given
+            AtomicBoolean incomeNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> incomeNavCalled.set(true),  // income
+                () -> {},  // expenses
+                () -> {}   // tax
+            );
+
+            // When
+            controller.handleViewAllActivity(new ActionEvent());
+
+            // Then
+            assertThat(incomeNavCalled.get()).isTrue();
+        }
     }
 }

@@ -6,7 +6,7 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.IncomeDialogController"
-      styleClass="dialog-container" prefWidth="480">
+      styleClass="dialog-container" prefWidth="520">
 
     <!-- Dialog Header -->
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT" spacing="10">
@@ -18,7 +18,7 @@
     </HBox>
 
     <!-- Form Content -->
-    <VBox styleClass="dialog-content" spacing="4">
+    <VBox styleClass="dialog-content" spacing="16">
         <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
         <!-- Date Field -->

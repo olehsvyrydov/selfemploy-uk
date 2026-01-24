@@ -42,6 +42,18 @@ public enum HelpTopic {
      */
     PAYMENTS_ON_ACCOUNT,
 
+    // === Income Topics ===
+
+    /**
+     * Help about paid income (received payments).
+     */
+    PAID_INCOME,
+
+    /**
+     * Help about unpaid income (outstanding invoices).
+     */
+    UNPAID_INCOME,
+
     // === Expense Topics ===
 
     /**

@@ -216,6 +216,42 @@ public class HelpService {
                 .linkText("Learn about payments on account")
                 .build());
 
+        // === Income Topics ===
+
+        helpContent.put(HelpTopic.PAID_INCOME, HelpContent.builder()
+                .title("Paid Income")
+                .body("Paid income represents money you have actually received " +
+                        "for goods or services provided.\n\n" +
+                        "This includes:\n" +
+                        "• Invoice payments received\n" +
+                        "• Cash payments collected\n" +
+                        "• Bank transfers completed\n" +
+                        "• Cheques that have cleared\n\n" +
+                        "For tax purposes, self-employed individuals typically use " +
+                        "the 'cash basis' where income is recorded when received, " +
+                        "or 'accrual basis' where income is recorded when earned.")
+                .hmrcLink(HmrcLinkTopic.SA103_FORM.getUrl())
+                .linkText("View SA103 income guidance")
+                .build());
+
+        helpContent.put(HelpTopic.UNPAID_INCOME, HelpContent.builder()
+                .title("Unpaid Income")
+                .body("Unpaid income represents money you are owed but haven't " +
+                        "yet received.\n\n" +
+                        "This includes:\n" +
+                        "• Outstanding invoices\n" +
+                        "• Pending client payments\n" +
+                        "• Amounts owed to you\n\n" +
+                        "Tracking unpaid income helps you:\n" +
+                        "• Monitor cash flow\n" +
+                        "• Follow up on late payments\n" +
+                        "• Plan for expected revenue\n\n" +
+                        "Note: If using the cash basis, unpaid income is not " +
+                        "counted towards your tax year turnover until received.")
+                .hmrcLink(HmrcLinkTopic.SA103_FORM.getUrl())
+                .linkText("View SA103 income guidance")
+                .build());
+
         // === Expense Topics ===
 
         helpContent.put(HelpTopic.EXPENSE_CATEGORY, HelpContent.builder()

@@ -11,6 +11,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
@@ -21,6 +22,8 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.help.HelpService;
+import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.viewmodel.IncomeListViewModel;
 import uk.selfemploy.ui.viewmodel.IncomeTableRow;
@@ -45,6 +48,10 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     @FXML private Label paidCount;
     @FXML private Label unpaidValue;
     @FXML private Label unpaidCount;
+
+    // Help icons
+    @FXML private Label paidHelpIcon;
+    @FXML private Label unpaidHelpIcon;
 
     // Filters
     @FXML private ComboBox<String> statusFilter;
@@ -75,6 +82,9 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
 
     private IncomeListViewModel viewModel;
     private TaxYear currentTaxYear;
+
+    // Help service
+    private final HelpService helpService = new HelpService();
 
     // For dependency injection (will be set by CDI in production)
     private IncomeService incomeService;
@@ -454,6 +464,42 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
             viewModel.nextPage();
             updateTable();
         }
+    }
+
+    @FXML
+    void handlePaidHelp(MouseEvent event) {
+        showHelpDialog(HelpTopic.PAID_INCOME);
+    }
+
+    @FXML
+    void handleUnpaidHelp(MouseEvent event) {
+        showHelpDialog(HelpTopic.UNPAID_INCOME);
+    }
+
+    private void showHelpDialog(HelpTopic topic) {
+        helpService.getHelp(topic).ifPresent(content -> {
+            Alert helpDialog = new Alert(Alert.AlertType.INFORMATION);
+            helpDialog.setTitle("Help");
+            helpDialog.setHeaderText(content.title());
+            helpDialog.setContentText(content.body());
+
+            // Add "Learn More" link button if available
+            if (content.hmrcLink() != null && !content.hmrcLink().isBlank()) {
+                ButtonType learnMore = new ButtonType(content.linkText() != null ?
+                        content.linkText() : "Learn More");
+                ButtonType close = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+                helpDialog.getButtonTypes().setAll(learnMore, close);
+
+                helpDialog.showAndWait().ifPresent(result -> {
+                    if (result == learnMore) {
+                        // Use in-app browser for HMRC/GOV.UK links
+                        helpService.openHmrcGuidance(content.hmrcLink(), content.title());
+                    }
+                });
+            } else {
+                helpDialog.showAndWait();
+            }
+        });
     }
 
     private void showSuccessToast(String message) {

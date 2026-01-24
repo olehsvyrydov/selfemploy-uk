@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.Cursor?>
 <?import javafx.geometry.Insets?>
 
 <ScrollPane xmlns:fx="http://javafx.com/fxml/1"
@@ -20,30 +21,40 @@
                     styleClass="button-success" onAction="#handleAddIncome"/>
         </HBox>
 
-        <!-- Summary Cards -->
-        <HBox styleClass="card" spacing="0">
-            <!-- Total Summary -->
-            <VBox styleClass="summary-item" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
+        <!-- Summary Cards - Bento Grid Layout -->
+        <HBox styleClass="summary-cards-container" spacing="16">
+            <!-- Total Income Card -->
+            <VBox styleClass="summary-card, summary-card-income-total" HBox.hgrow="ALWAYS" spacing="8">
                 <Label text="TOTAL INCOME" styleClass="metric-label"/>
-                <Label fx:id="totalValue" text="£0.00" styleClass="summary-value"/>
+                <Label fx:id="totalValue" text="£0.00" styleClass="summary-card-value, summary-card-value-income"/>
                 <Label fx:id="totalCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <Separator orientation="VERTICAL" styleClass="summary-divider"/>
-
-            <!-- Paid Summary -->
-            <VBox styleClass="summary-item, summary-paid" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
-                <Label text="PAID" styleClass="metric-label"/>
-                <Label fx:id="paidValue" text="£0.00" styleClass="summary-value, text-success"/>
+            <!-- Paid Card -->
+            <VBox styleClass="summary-card, summary-card-income-paid" HBox.hgrow="ALWAYS" spacing="8">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <Label text="PAID" styleClass="metric-label"/>
+                    <Label fx:id="paidHelpIcon" text="i" styleClass="info-icon-circle"
+                           onMouseClicked="#handlePaidHelp">
+                        <cursor><Cursor fx:constant="HAND"/></cursor>
+                        <tooltip><Tooltip text="Click to learn more about paid income"/></tooltip>
+                    </Label>
+                </HBox>
+                <Label fx:id="paidValue" text="£0.00" styleClass="summary-card-value, summary-card-value-paid"/>
                 <Label fx:id="paidCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <Separator orientation="VERTICAL" styleClass="summary-divider"/>
-
-            <!-- Unpaid Summary -->
-            <VBox styleClass="summary-item, summary-unpaid" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="4">
-                <Label text="UNPAID" styleClass="metric-label"/>
-                <Label fx:id="unpaidValue" text="£0.00" styleClass="summary-value, text-warning"/>
+            <!-- Unpaid Card -->
+            <VBox styleClass="summary-card, summary-card-income-unpaid" HBox.hgrow="ALWAYS" spacing="8">
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <Label text="UNPAID" styleClass="metric-label"/>
+                    <Label fx:id="unpaidHelpIcon" text="i" styleClass="info-icon-circle"
+                           onMouseClicked="#handleUnpaidHelp">
+                        <cursor><Cursor fx:constant="HAND"/></cursor>
+                        <tooltip><Tooltip text="Click to learn more about unpaid income"/></tooltip>
+                    </Label>
+                </HBox>
+                <Label fx:id="unpaidValue" text="£0.00" styleClass="summary-card-value, summary-card-value-unpaid"/>
                 <Label fx:id="unpaidCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
         </HBox>

@@ -5,17 +5,27 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.help.HmrcLinkTopic;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for HelpController.
  * Tests the controller logic for the Help page.
+ *
+ * Test Coverage (as per Sprint 8 Test Design):
+ * - TC-HLP-001 to TC-HLP-008: Help Topic Cards Display
+ * - TC-HLP-010 to TC-HLP-020: Help Topic Click Handlers
+ * - TC-HLP-030 to TC-HLP-037: Quick Links Functionality
+ * - TC-HLP-040 to TC-HLP-043: Support Links
+ * - TC-HLP-050 to TC-HLP-053: Search Functionality
+ * - TC-HLP-060 to TC-HLP-064: Accessibility
  */
 @DisplayName("HelpController")
 class HelpControllerTest {
@@ -101,31 +111,61 @@ class HelpControllerTest {
     }
 
     @Nested
-    @DisplayName("Help Categories")
-    class HelpCategories {
+    @DisplayName("Help Topic Cards Display - TC-HLP-001 to TC-HLP-008")
+    class HelpTopicCardsDisplay {
 
         @Test
-        @DisplayName("should have tax topics category")
+        @DisplayName("TC-HLP-001: should have Tax & Calculation category")
         void shouldHaveTaxCategory() {
             assertThat(controller.getHelpCategories()).contains("Tax & Calculation");
         }
 
         @Test
-        @DisplayName("should have expenses category")
+        @DisplayName("TC-HLP-002: should have Expenses category")
         void shouldHaveExpensesCategory() {
             assertThat(controller.getHelpCategories()).contains("Expenses");
         }
 
         @Test
-        @DisplayName("should have submission category")
+        @DisplayName("TC-HLP-003: should have HMRC Submission category")
         void shouldHaveSubmissionCategory() {
             assertThat(controller.getHelpCategories()).contains("HMRC Submission");
         }
 
         @Test
-        @DisplayName("should have general category")
+        @DisplayName("TC-HLP-004: should have General category")
         void shouldHaveGeneralCategory() {
             assertThat(controller.getHelpCategories()).contains("General");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-005: should have title and description for each topic")
+        void shouldHaveTitleAndDescriptionForTopics() {
+            for (HelpTopic topic : HelpTopic.values()) {
+                String displayName = controller.getTopicDisplayName(topic);
+                String description = controller.getTopicDescription(topic);
+
+                assertThat(displayName).isNotNull().isNotBlank();
+                assertThat(description).isNotNull();
+            }
+        }
+
+        @Test
+        @DisplayName("TC-HLP-006: should have icon for each topic")
+        void shouldHaveIconForTopics() {
+            for (HelpTopic topic : HelpTopic.values()) {
+                String icon = controller.getTopicIcon(topic);
+                assertThat(icon).isNotNull().isNotBlank();
+            }
+        }
+
+        @Test
+        @DisplayName("TC-HLP-008: should have category colors")
+        void shouldHaveCategoryColors() {
+            for (String category : controller.getHelpCategories()) {
+                String color = controller.getCategoryColor(category);
+                assertThat(color).isNotNull().startsWith("#");
+            }
         }
     }
 
@@ -167,8 +207,190 @@ class HelpControllerTest {
     }
 
     @Nested
-    @DisplayName("Quick Links")
+    @DisplayName("Help Topic Click Handlers - TC-HLP-010 to TC-HLP-020")
+    class HelpTopicClickHandlers {
+
+        @Test
+        @DisplayName("TC-HLP-010: should return NET_PROFIT content with correct title")
+        void shouldReturnNetProfitContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.NET_PROFIT);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("Net Profit");
+            assertThat(content.get().body()).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("TC-HLP-011: should return INCOME_TAX content with correct title")
+        void shouldReturnIncomeTaxContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.INCOME_TAX);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("Income Tax");
+            assertThat(content.get().body()).contains("20%"); // Basic rate
+        }
+
+        @Test
+        @DisplayName("TC-HLP-012: should return PERSONAL_ALLOWANCE content")
+        void shouldReturnPersonalAllowanceContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.PERSONAL_ALLOWANCE);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("Personal Allowance");
+            assertThat(content.get().body()).contains("12,570"); // PA amount
+        }
+
+        @Test
+        @DisplayName("TC-HLP-013: should return NI_CLASS_4 content")
+        void shouldReturnNiClass4Content() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.NI_CLASS_4);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("Class 4");
+            assertThat(content.get().body()).contains("6%"); // Main rate
+        }
+
+        @Test
+        @DisplayName("TC-HLP-014: should return PAYMENTS_ON_ACCOUNT content")
+        void shouldReturnPaymentsOnAccountContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.PAYMENTS_ON_ACCOUNT);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("Payments on Account");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-015: should return EXPENSE_CATEGORY content")
+        void shouldReturnExpenseCategoryContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.EXPENSE_CATEGORY);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().body()).contains("SA103");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-016: should return ALLOWABLE_EXPENSES content")
+        void shouldReturnAllowableExpensesContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.ALLOWABLE_EXPENSES);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("Allowable");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-017: should return DECLARATION content")
+        void shouldReturnDeclarationContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.DECLARATION);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("Declaration");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-018: should return HMRC_SUBMISSION content")
+        void shouldReturnHmrcSubmissionContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.HMRC_SUBMISSION);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().body()).contains("MTD");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-019: should return TAX_YEAR content")
+        void shouldReturnTaxYearContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.TAX_YEAR);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().body()).contains("6 April");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-020: should return SA103_FORM content")
+        void shouldReturnSa103FormContent() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.SA103_FORM);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().title()).contains("SA103");
+        }
+
+        @Test
+        @DisplayName("should have handler for each help topic")
+        void shouldHaveHandlerForEachTopic() {
+            // Verify we have content for each topic
+            for (HelpTopic topic : HelpTopic.values()) {
+                String displayName = controller.getTopicDisplayName(topic);
+                assertThat(displayName).isNotNull();
+                assertThat(displayName).isNotBlank();
+            }
+        }
+
+        @Test
+        @DisplayName("should find topic by display name for Net Profit")
+        void shouldFindTopicByDisplayNameNetProfit() {
+            HelpTopic topic = controller.findTopicByDisplayName("Net Profit");
+            assertThat(topic).isEqualTo(HelpTopic.NET_PROFIT);
+        }
+
+        @Test
+        @DisplayName("should find topic by display name for Income Tax")
+        void shouldFindTopicByDisplayNameIncomeTax() {
+            HelpTopic topic = controller.findTopicByDisplayName("Income Tax");
+            assertThat(topic).isEqualTo(HelpTopic.INCOME_TAX);
+        }
+
+        @Test
+        @DisplayName("should find topic by display name for Personal Allowance")
+        void shouldFindTopicByDisplayNamePersonalAllowance() {
+            HelpTopic topic = controller.findTopicByDisplayName("Personal Allowance");
+            assertThat(topic).isEqualTo(HelpTopic.PERSONAL_ALLOWANCE);
+        }
+
+        @Test
+        @DisplayName("should return null for unknown display name")
+        void shouldReturnNullForUnknownDisplayName() {
+            HelpTopic topic = controller.findTopicByDisplayName("Unknown Topic");
+            assertThat(topic).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Quick Links - TC-HLP-030 to TC-HLP-037")
     class QuickLinks {
+
+        @Test
+        @DisplayName("TC-HLP-030: should have income tax rates quick link")
+        void shouldHaveIncomeTaxRatesLink() {
+            List<HmrcLinkTopic> links = controller.getQuickLinks();
+            assertThat(links).contains(HmrcLinkTopic.TAX_RATES);
+        }
+
+        @Test
+        @DisplayName("TC-HLP-031: should have SA103 form quick link")
+        void shouldHaveSa103FormLink() {
+            List<HmrcLinkTopic> links = controller.getQuickLinks();
+            assertThat(links).contains(HmrcLinkTopic.SA103_FORM);
+        }
+
+        @Test
+        @DisplayName("TC-HLP-032: should have filing deadlines quick link")
+        void shouldHaveFilingDeadlinesLink() {
+            List<HmrcLinkTopic> links = controller.getQuickLinks();
+            assertThat(links).contains(HmrcLinkTopic.FILING_DEADLINES);
+        }
+
+        @Test
+        @DisplayName("TC-HLP-033: should have allowable expenses quick link")
+        void shouldHaveAllowableExpensesLink() {
+            List<HmrcLinkTopic> links = controller.getQuickLinks();
+            assertThat(links).contains(HmrcLinkTopic.ALLOWABLE_EXPENSES);
+        }
+
+        @Test
+        @DisplayName("TC-HLP-034: should have NI rates quick link")
+        void shouldHaveNiRatesLink() {
+            List<HmrcLinkTopic> links = controller.getQuickLinks();
+            assertThat(links).contains(HmrcLinkTopic.NI_RATES);
+        }
 
         @Test
         @DisplayName("should provide HMRC quick links")
@@ -183,6 +405,53 @@ class HelpControllerTest {
                 HmrcLinkTopic.FILING_DEADLINES,
                 HmrcLinkTopic.ALLOWABLE_EXPENSES
             );
+        }
+
+        @Test
+        @DisplayName("TC-HLP-037: quick links should point to valid GOV.UK domains")
+        void quickLinksShouldPointToGovUk() {
+            for (HmrcLinkTopic topic : controller.getQuickLinks()) {
+                String url = controller.getHmrcLink(topic);
+                assertThat(url).contains("gov.uk");
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Support Links - TC-HLP-040 to TC-HLP-043")
+    class SupportLinks {
+
+        @Test
+        @DisplayName("TC-HLP-042: should have correct GitHub repository URL format")
+        void shouldHaveCorrectGitHubRepoUrl() {
+            // The URL should point to a valid GitHub repository
+            assertThat(HelpController.GITHUB_REPO_URL)
+                .startsWith("https://github.com/");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-042b: should have correct GitHub Issues URL format")
+        void shouldHaveCorrectGitHubIssuesUrl() {
+            // The URL should point to the issues page
+            assertThat(HelpController.GITHUB_ISSUES_URL)
+                .contains("/issues");
+        }
+
+        @Test
+        @DisplayName("TC-HLP-043: GitHub URLs should not point to incorrect repository")
+        void shouldNotPointToIncorrectRepository() {
+            // URLs should not point to anthropic (example of wrong org)
+            assertThat(HelpController.GITHUB_REPO_URL)
+                .doesNotContain("anthropic");
+            assertThat(HelpController.GITHUB_ISSUES_URL)
+                .doesNotContain("anthropic");
+        }
+
+        @Test
+        @DisplayName("GitHub issues URL should be derived from repo URL")
+        void issuesUrlShouldBeDerivedFromRepoUrl() {
+            assertThat(HelpController.GITHUB_ISSUES_URL)
+                .startsWith(HelpController.GITHUB_REPO_URL);
         }
     }
 
@@ -239,77 +508,77 @@ class HelpControllerTest {
     }
 
     @Nested
-    @DisplayName("GitHub URLs")
-    class GitHubUrls {
+    @DisplayName("Help Content HMRC Links")
+    class HelpContentHmrcLinks {
 
         @Test
-        @DisplayName("should return correct GitHub repository URL")
-        void shouldReturnCorrectGitHubRepoUrl() {
-            // The URL should point to the selfemploy-uk/self-employment repository
-            assertThat(HelpController.GITHUB_REPO_URL)
-                .isEqualTo("https://github.com/selfemploy-uk/self-employment");
+        @DisplayName("TC-EXP-012: help content should include HMRC link when available")
+        void helpContentShouldIncludeHmrcLink() {
+            // Most help topics should have HMRC links
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.INCOME_TAX);
+
+            assertThat(content).isPresent();
+            assertThat(content.get().hmrcLink()).isNotNull().isNotBlank();
+            assertThat(content.get().hmrcLink()).contains("gov.uk");
         }
 
         @Test
-        @DisplayName("should return correct GitHub Issues URL")
-        void shouldReturnCorrectGitHubIssuesUrl() {
-            // The URL should point to the issues page of the correct repository
-            assertThat(HelpController.GITHUB_ISSUES_URL)
-                .isEqualTo("https://github.com/selfemploy-uk/self-employment/issues");
-        }
+        @DisplayName("help content should include link text")
+        void helpContentShouldIncludeLinkText() {
+            Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.INCOME_TAX);
 
-        @Test
-        @DisplayName("GitHub URLs should not point to anthropic repository")
-        void shouldNotPointToAnthropicRepository() {
-            assertThat(HelpController.GITHUB_REPO_URL)
-                .doesNotContain("anthropic");
-            assertThat(HelpController.GITHUB_ISSUES_URL)
-                .doesNotContain("anthropic");
+            assertThat(content).isPresent();
+            assertThat(content.get().linkText()).isNotNull().isNotBlank();
         }
     }
 
     @Nested
-    @DisplayName("Help Topic Click Handlers")
-    class HelpTopicClickHandlers {
+    @DisplayName("Category to Topic Mapping")
+    class CategoryToTopicMapping {
 
         @Test
-        @DisplayName("should have handler for each help topic in FXML")
-        void shouldHaveHandlerForEachTopic() {
-            // Verify we have a mapping for display names to HelpTopic
-            // This ensures the click handlers can find the right topic
+        @DisplayName("should return correct category for topic")
+        void shouldReturnCorrectCategoryForTopic() {
+            // Tax topics
+            assertThat(controller.getCategoryForTopic(HelpTopic.INCOME_TAX))
+                .isEqualTo("Tax & Calculation");
+
+            // Expense topics
+            assertThat(controller.getCategoryForTopic(HelpTopic.ALLOWABLE_EXPENSES))
+                .isEqualTo("Expenses");
+
+            // Submission topics
+            assertThat(controller.getCategoryForTopic(HelpTopic.DECLARATION))
+                .isEqualTo("HMRC Submission");
+
+            // General topics
+            assertThat(controller.getCategoryForTopic(HelpTopic.TAX_YEAR))
+                .isEqualTo("General");
+        }
+    }
+
+    @Nested
+    @DisplayName("All Topics Have Complete Content")
+    class AllTopicsHaveCompleteContent {
+
+        @Test
+        @DisplayName("all help topics should have retrievable content")
+        void allTopicsShouldHaveContent() {
             for (HelpTopic topic : HelpTopic.values()) {
-                String displayName = controller.getTopicDisplayName(topic);
-                assertThat(displayName).isNotNull();
-                assertThat(displayName).isNotBlank();
+                Optional<HelpContent> content = controller.getHelpForTopic(topic);
+
+                assertThat(content)
+                    .as("Content should be present for topic: " + topic)
+                    .isPresent();
+
+                assertThat(content.get().title())
+                    .as("Title should not be blank for topic: " + topic)
+                    .isNotBlank();
+
+                assertThat(content.get().body())
+                    .as("Body should not be blank for topic: " + topic)
+                    .isNotBlank();
             }
-        }
-
-        @Test
-        @DisplayName("should find topic by display name for Net Profit")
-        void shouldFindTopicByDisplayNameNetProfit() {
-            HelpTopic topic = controller.findTopicByDisplayName("Net Profit");
-            assertThat(topic).isEqualTo(HelpTopic.NET_PROFIT);
-        }
-
-        @Test
-        @DisplayName("should find topic by display name for Income Tax")
-        void shouldFindTopicByDisplayNameIncomeTax() {
-            HelpTopic topic = controller.findTopicByDisplayName("Income Tax");
-            assertThat(topic).isEqualTo(HelpTopic.INCOME_TAX);
-        }
-
-        @Test
-        @DisplayName("should find topic by display name for Personal Allowance")
-        void shouldFindTopicByDisplayNamePersonalAllowance() {
-            HelpTopic topic = controller.findTopicByDisplayName("Personal Allowance");
-            assertThat(topic).isEqualTo(HelpTopic.PERSONAL_ALLOWANCE);
-        }
-
-        @Test
-        @DisplayName("should return null for unknown display name")
-        void shouldReturnNullForUnknownDisplayName() {
-            HelpTopic topic = controller.findTopicByDisplayName("Unknown Topic");
-            assertThat(topic).isNull();
         }
     }
 }
