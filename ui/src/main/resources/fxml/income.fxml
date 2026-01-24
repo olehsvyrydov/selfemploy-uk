@@ -21,21 +21,24 @@
                     styleClass="button-success" onAction="#handleAddIncome"/>
         </HBox>
 
-        <!-- Summary Cards - Bento Grid Layout -->
+        <!-- Summary Cards - Bento Grid Layout - SE-810: Keyboard accessible cards -->
         <HBox styleClass="summary-cards-container" spacing="16">
-            <!-- Total Income Card -->
-            <VBox styleClass="summary-card, summary-card-income-total" HBox.hgrow="ALWAYS" spacing="8">
+            <!-- Total Income Card - SE-810: Focusable for screen readers -->
+            <VBox styleClass="summary-card, summary-card-income-total" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
                 <Label text="TOTAL INCOME" styleClass="metric-label"/>
                 <Label fx:id="totalValue" text="£0.00" styleClass="summary-card-value, summary-card-value-income"/>
                 <Label fx:id="totalCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <!-- Paid Card -->
-            <VBox styleClass="summary-card, summary-card-income-paid" HBox.hgrow="ALWAYS" spacing="8">
+            <!-- Paid Card - SE-810: Focusable for screen readers -->
+            <VBox styleClass="summary-card, summary-card-income-paid" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label text="PAID" styleClass="metric-label"/>
                     <Label fx:id="paidHelpIcon" text="i" styleClass="info-icon-circle"
-                           onMouseClicked="#handlePaidHelp">
+                           onMouseClicked="#handlePaidHelp" focusTraversable="true"
+                           onKeyPressed="#handlePaidHelpKeyPress">
                         <cursor><Cursor fx:constant="HAND"/></cursor>
                         <tooltip><Tooltip text="Click to learn more about paid income"/></tooltip>
                     </Label>
@@ -44,12 +47,14 @@
                 <Label fx:id="paidCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <!-- Unpaid Card -->
-            <VBox styleClass="summary-card, summary-card-income-unpaid" HBox.hgrow="ALWAYS" spacing="8">
+            <!-- Unpaid Card - SE-810: Focusable for screen readers -->
+            <VBox styleClass="summary-card, summary-card-income-unpaid" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label text="UNPAID" styleClass="metric-label"/>
                     <Label fx:id="unpaidHelpIcon" text="i" styleClass="info-icon-circle"
-                           onMouseClicked="#handleUnpaidHelp">
+                           onMouseClicked="#handleUnpaidHelp" focusTraversable="true"
+                           onKeyPressed="#handleUnpaidHelpKeyPress">
                         <cursor><Cursor fx:constant="HAND"/></cursor>
                         <tooltip><Tooltip text="Click to learn more about unpaid income"/></tooltip>
                     </Label>

@@ -13,6 +13,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -472,6 +474,28 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     @FXML
     void handleNonDeductibleHelp(MouseEvent event) {
         showHelpDialog(HelpTopic.NON_DEDUCTIBLE_EXPENSES);
+    }
+
+    /**
+     * SE-810: Keyboard handler for Deductible help icon.
+     */
+    @FXML
+    void handleDeductibleHelpKeyPress(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+            showHelpDialog(HelpTopic.ALLOWABLE_EXPENSES);
+            event.consume();
+        }
+    }
+
+    /**
+     * SE-810: Keyboard handler for Non-Deductible help icon.
+     */
+    @FXML
+    void handleNonDeductibleHelpKeyPress(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+            showHelpDialog(HelpTopic.NON_DEDUCTIBLE_EXPENSES);
+            event.consume();
+        }
     }
 
     private void showHelpDialog(HelpTopic topic) {

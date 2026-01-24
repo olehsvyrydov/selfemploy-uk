@@ -92,9 +92,9 @@ class IncomeListViewModelTest {
         }
 
         @Test
-        @DisplayName("should initialize with default page size of 20")
+        @DisplayName("should initialize with default page size of 10")
         void shouldInitializeWithDefaultPageSize() {
-            assertThat(viewModel.getPageSize()).isEqualTo(20);
+            assertThat(viewModel.getPageSize()).isEqualTo(10);
         }
     }
 

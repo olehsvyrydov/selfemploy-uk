@@ -1,6 +1,8 @@
 package uk.selfemploy.ui.controller;
 
 import javafx.event.ActionEvent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -184,6 +186,148 @@ class DashboardControllerTest {
 
             // Then
             assertThat(incomeNavCalled.get()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("SE-810: Keyboard Card Navigation")
+    class KeyboardCardNavigationTests {
+
+        @Test
+        @DisplayName("should navigate to Income page on Enter key press on Income card")
+        void shouldNavigateToIncomeOnEnterKeyPress() {
+            // Given
+            AtomicBoolean incomeNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> incomeNavCalled.set(true),
+                () -> {},
+                () -> {}
+            );
+
+            // When - simulate Enter key press
+            KeyEvent enterEvent = createKeyEvent(KeyCode.ENTER);
+            controller.handleIncomeCardKeyPress(enterEvent);
+
+            // Then
+            assertThat(incomeNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should navigate to Income page on Space key press on Income card")
+        void shouldNavigateToIncomeOnSpaceKeyPress() {
+            // Given
+            AtomicBoolean incomeNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> incomeNavCalled.set(true),
+                () -> {},
+                () -> {}
+            );
+
+            // When - simulate Space key press
+            KeyEvent spaceEvent = createKeyEvent(KeyCode.SPACE);
+            controller.handleIncomeCardKeyPress(spaceEvent);
+
+            // Then
+            assertThat(incomeNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should navigate to Expenses page on Enter key press on Expenses card")
+        void shouldNavigateToExpensesOnEnterKeyPress() {
+            // Given
+            AtomicBoolean expensesNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> {},
+                () -> expensesNavCalled.set(true),
+                () -> {}
+            );
+
+            // When - simulate Enter key press
+            KeyEvent enterEvent = createKeyEvent(KeyCode.ENTER);
+            controller.handleExpensesCardKeyPress(enterEvent);
+
+            // Then
+            assertThat(expensesNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should navigate to Tax Summary page on Enter key press on Profit card")
+        void shouldNavigateToTaxSummaryOnProfitCardEnterKeyPress() {
+            // Given
+            AtomicBoolean taxNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> {},
+                () -> {},
+                () -> taxNavCalled.set(true)
+            );
+
+            // When - simulate Enter key press
+            KeyEvent enterEvent = createKeyEvent(KeyCode.ENTER);
+            controller.handleProfitCardKeyPress(enterEvent);
+
+            // Then
+            assertThat(taxNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should navigate to Tax Summary page on Enter key press on Tax card")
+        void shouldNavigateToTaxSummaryOnTaxCardEnterKeyPress() {
+            // Given
+            AtomicBoolean taxNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> {},
+                () -> {},
+                () -> taxNavCalled.set(true)
+            );
+
+            // When - simulate Enter key press
+            KeyEvent enterEvent = createKeyEvent(KeyCode.ENTER);
+            controller.handleTaxCardKeyPress(enterEvent);
+
+            // Then
+            assertThat(taxNavCalled.get()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should not navigate on Tab key press")
+        void shouldNotNavigateOnTabKeyPress() {
+            // Given
+            AtomicBoolean incomeNavCalled = new AtomicBoolean(false);
+            controller.setNavigationCallbacks(
+                () -> incomeNavCalled.set(true),
+                () -> {},
+                () -> {}
+            );
+
+            // When - simulate Tab key press
+            KeyEvent tabEvent = createKeyEvent(KeyCode.TAB);
+            controller.handleIncomeCardKeyPress(tabEvent);
+
+            // Then
+            assertThat(incomeNavCalled.get()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should not throw when navigation callback is null")
+        void shouldNotThrowWhenCallbackIsNull() {
+            // Given - no callbacks set
+
+            // When/Then - should not throw
+            KeyEvent enterEvent = createKeyEvent(KeyCode.ENTER);
+            controller.handleIncomeCardKeyPress(enterEvent);
+            controller.handleExpensesCardKeyPress(enterEvent);
+            controller.handleProfitCardKeyPress(enterEvent);
+            controller.handleTaxCardKeyPress(enterEvent);
+        }
+
+        private KeyEvent createKeyEvent(KeyCode keyCode) {
+            return new KeyEvent(
+                KeyEvent.KEY_PRESSED,
+                "",
+                "",
+                keyCode,
+                false, false, false, false
+            );
         }
     }
 }

@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.Cursor?>
 <?import javafx.geometry.Insets?>
 
 <ScrollPane xmlns:fx="http://javafx.com/fxml/1"
@@ -19,7 +20,7 @@
             <Label fx:id="taxYearBadge" text="Tax Year 2025/26" styleClass="tax-year-badge"/>
         </HBox>
 
-        <!-- Metric Cards Grid -->
+        <!-- Metric Cards Grid - SE-810: Keyboard accessible cards -->
         <GridPane fx:id="metricsGrid" styleClass="metrics-grid" hgap="20" vgap="20">
             <columnConstraints>
                 <ColumnConstraints percentWidth="25"/>
@@ -28,8 +29,11 @@
                 <ColumnConstraints percentWidth="25"/>
             </columnConstraints>
 
-            <!-- Income Card -->
-            <VBox styleClass="metric-card, metric-income" GridPane.columnIndex="0">
+            <!-- Income Card - SE-810: Focusable with keyboard navigation -->
+            <VBox fx:id="incomeCard" styleClass="metric-card, metric-income" GridPane.columnIndex="0"
+                  focusTraversable="true" onKeyPressed="#handleIncomeCardKeyPress"
+                  onMouseClicked="#handleIncomeCardClick">
+                <cursor><Cursor fx:constant="HAND"/></cursor>
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label text="+" styleClass="metric-icon, icon-income"/>
                     <Label text="TOTAL INCOME" styleClass="metric-label"/>
@@ -39,8 +43,11 @@
                 <Label fx:id="incomeTrend" text="£0.00 this month" styleClass="metric-trend, trend-positive"/>
             </VBox>
 
-            <!-- Expenses Card -->
-            <VBox styleClass="metric-card, metric-expenses" GridPane.columnIndex="1">
+            <!-- Expenses Card - SE-810: Focusable with keyboard navigation -->
+            <VBox fx:id="expensesCard" styleClass="metric-card, metric-expenses" GridPane.columnIndex="1"
+                  focusTraversable="true" onKeyPressed="#handleExpensesCardKeyPress"
+                  onMouseClicked="#handleExpensesCardClick">
+                <cursor><Cursor fx:constant="HAND"/></cursor>
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label text="-" styleClass="metric-icon, icon-expenses"/>
                     <Label text="TOTAL EXPENSES" styleClass="metric-label"/>
@@ -50,8 +57,11 @@
                 <Label fx:id="expensesTrend" text="£0.00 this month" styleClass="metric-trend, trend-neutral"/>
             </VBox>
 
-            <!-- Net Profit Card -->
-            <VBox styleClass="metric-card, metric-profit" GridPane.columnIndex="2">
+            <!-- Net Profit Card - SE-810: Focusable with keyboard navigation -->
+            <VBox fx:id="profitCard" styleClass="metric-card, metric-profit" GridPane.columnIndex="2"
+                  focusTraversable="true" onKeyPressed="#handleProfitCardKeyPress"
+                  onMouseClicked="#handleProfitCardClick">
+                <cursor><Cursor fx:constant="HAND"/></cursor>
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label text="=" styleClass="metric-icon, icon-profit"/>
                     <Label text="NET PROFIT" styleClass="metric-label"/>
@@ -61,8 +71,11 @@
                 <Label text="Taxable amount" styleClass="metric-trend"/>
             </VBox>
 
-            <!-- Estimated Tax Card -->
-            <VBox styleClass="metric-card, metric-tax" GridPane.columnIndex="3">
+            <!-- Estimated Tax Card - SE-810: Focusable with keyboard navigation -->
+            <VBox fx:id="taxCard" styleClass="metric-card, metric-tax" GridPane.columnIndex="3"
+                  focusTraversable="true" onKeyPressed="#handleTaxCardKeyPress"
+                  onMouseClicked="#handleTaxCardClick">
+                <cursor><Cursor fx:constant="HAND"/></cursor>
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label text="£" styleClass="metric-icon, icon-tax"/>
                     <Label text="ESTIMATED TAX" styleClass="metric-label"/>

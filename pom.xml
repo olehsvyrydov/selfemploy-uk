@@ -202,6 +202,8 @@
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
+                        <!-- Exclude E2E tests that require JavaFX toolkit (run separately with -DincludeTags=e2e) -->
+                        <excludedGroups>e2e</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>

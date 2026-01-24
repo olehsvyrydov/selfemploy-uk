@@ -1660,7 +1660,7 @@
 
 .settings-container {
     -fx-background-color: -fx-bg-secondary;
-    -fx-max-width: 800;
+    -fx-max-width: 1200;
 }
 
 .settings-section {
@@ -1708,10 +1708,10 @@
     -fx-background-radius: 0 12 12 0;
 }
 
-/* UTR field - responsive width with minimum */
+/* UTR field - responsive width with minimum for 10-digit UTR (SE-815) */
 .utr-field {
-    -fx-min-width: 180;
-    -fx-pref-width: 280;
+    -fx-min-width: 160;
+    -fx-max-width: 400;
 }
 
 .settings-card-row {
@@ -1803,7 +1803,7 @@
 
 .hmrc-container {
     -fx-background-color: -fx-bg-secondary;
-    -fx-max-width: 900;
+    -fx-max-width: 1200;
 }
 
 .status-banner {
@@ -1894,4 +1894,119 @@
 .info-label {
     -fx-font-size: 13px;
     -fx-text-fill: -fx-text-muted;
+}
+
+/*
+ * ===== Accessible Cards (SE-810 & SE-811) =====
+ * Keyboard accessible cards with visible focus indicators.
+ * WCAG 2.1 AA compliant focus visibility.
+ */
+
+/* Base accessible card styles */
+.accessible-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 20;
+    -fx-cursor: hand;
+}
+
+.accessible-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 0, 4);
+}
+
+/*
+ * Focus indicator for accessible cards.
+ * WCAG 2.1 AA requires a visible focus indicator with at least 3:1 contrast.
+ * Using primary blue (#0066cc) which provides 4.5:1 contrast against white.
+ */
+.accessible-card:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 3;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.5), 12, 0, 0, 0);
+    -fx-background-color: -fx-primary-light;
+}
+
+/* Metric cards with focus support */
+.metric-card:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 3;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.5), 12, 0, 0, 0);
+    -fx-background-color: -fx-primary-light;
+}
+
+/* Preserve the left accent border on focus for metric cards */
+.metric-income:focused {
+    -fx-border-color: -fx-success -fx-primary -fx-primary -fx-success;
+    -fx-border-width: 3 3 3 4;
+}
+
+.metric-expenses:focused {
+    -fx-border-color: #fd7e14 -fx-primary -fx-primary #fd7e14;
+    -fx-border-width: 3 3 3 4;
+}
+
+.metric-profit:focused {
+    -fx-border-color: -fx-primary -fx-primary -fx-primary -fx-primary;
+    -fx-border-width: 3 3 3 4;
+}
+
+.metric-tax:focused {
+    -fx-border-color: #6f42c1 -fx-primary -fx-primary #6f42c1;
+    -fx-border-width: 3 3 3 4;
+}
+
+/* Summary cards with focus support */
+.summary-card:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 3;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.5), 12, 0, 0, 0);
+    -fx-background-color: -fx-primary-light;
+}
+
+/* Preserve the left accent border on focus for summary cards */
+.summary-card-total:focused {
+    -fx-border-color: #fd7e14 -fx-primary -fx-primary #fd7e14;
+    -fx-border-width: 3 3 3 4;
+}
+
+.summary-card-deductible:focused {
+    -fx-border-color: #28a745 -fx-primary -fx-primary #28a745;
+    -fx-border-width: 3 3 3 4;
+}
+
+.summary-card-nondeductible:focused {
+    -fx-border-color: #6c757d -fx-primary -fx-primary #6c757d;
+    -fx-border-width: 3 3 3 4;
+}
+
+/* Income summary cards focus states */
+.summary-card-income-total:focused {
+    -fx-border-color: #0066cc -fx-primary -fx-primary #0066cc;
+    -fx-border-width: 3 3 3 4;
+}
+
+.summary-card-income-paid:focused {
+    -fx-border-color: #28a745 -fx-primary -fx-primary #28a745;
+    -fx-border-width: 3 3 3 4;
+}
+
+.summary-card-income-unpaid:focused {
+    -fx-border-color: #fd7e14 -fx-primary -fx-primary #fd7e14;
+    -fx-border-width: 3 3 3 4;
+}
+
+/* High contrast focus mode for accessibility */
+@media (prefers-contrast: high) {
+    .accessible-card:focused,
+    .metric-card:focused,
+    .summary-card:focused,
+    .feature-card:focused {
+        -fx-border-color: #000000;
+        -fx-border-width: 4;
+        -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.8), 8, 0, 0, 0);
+    }
 }

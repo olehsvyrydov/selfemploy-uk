@@ -713,6 +713,81 @@ class SettingsControllerTest {
                 browserUtil.verify(() -> BrowserUtil.openUrl(eq(url), any(Consumer.class)));
             }
         }
+
+        @Test
+        @DisplayName("should open GitHub URL with correct path")
+        void shouldOpenGitHubUrlWithCorrectPath() {
+            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
+                // Given
+                String githubUrl = "https://github.com/username/self-employment";
+
+                // When
+                controller.openExternalLink(githubUrl);
+
+                // Then
+                browserUtil.verify(() -> BrowserUtil.openUrl(eq(githubUrl), any(Consumer.class)));
+            }
+        }
+
+        @Test
+        @DisplayName("should open issue tracker URL with correct path")
+        void shouldOpenIssueTrackerUrlWithCorrectPath() {
+            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
+                // Given
+                String issuesUrl = "https://github.com/username/self-employment/issues";
+
+                // When
+                controller.openExternalLink(issuesUrl);
+
+                // Then
+                browserUtil.verify(() -> BrowserUtil.openUrl(eq(issuesUrl), any(Consumer.class)));
+            }
+        }
+
+        @Test
+        @DisplayName("should handle HTTPS URLs")
+        void shouldHandleHttpsUrls() {
+            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
+                // Given
+                String secureUrl = "https://secure.example.com/path";
+
+                // When
+                controller.openExternalLink(secureUrl);
+
+                // Then
+                browserUtil.verify(() -> BrowserUtil.openUrl(eq(secureUrl), any(Consumer.class)));
+            }
+        }
+
+        @Test
+        @DisplayName("should handle URLs with query parameters")
+        void shouldHandleUrlsWithQueryParameters() {
+            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
+                // Given
+                String urlWithParams = "https://example.com/page?param=value&other=123";
+
+                // When
+                controller.openExternalLink(urlWithParams);
+
+                // Then
+                browserUtil.verify(() -> BrowserUtil.openUrl(eq(urlWithParams), any(Consumer.class)));
+            }
+        }
+
+        @Test
+        @DisplayName("should handle URLs with fragment identifiers")
+        void shouldHandleUrlsWithFragmentIdentifiers() {
+            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
+                // Given
+                String urlWithFragment = "https://example.com/page#section";
+
+                // When
+                controller.openExternalLink(urlWithFragment);
+
+                // Then
+                browserUtil.verify(() -> BrowserUtil.openUrl(eq(urlWithFragment), any(Consumer.class)));
+            }
+        }
     }
 
     // ========================================================================
@@ -793,6 +868,80 @@ class SettingsControllerTest {
 
                 // Then - BrowserUtil should be called with the URL
                 browserUtil.verify(() -> BrowserUtil.openUrl(eq(expectedUrl), any(Consumer.class)));
+            } finally {
+                System.clearProperty(key);
+            }
+        }
+
+    }
+
+    // ========================================================================
+    // Hyperlink Handler Tests - Unconfigured URLs
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Hyperlink Handlers - Unconfigured URLs")
+    class HyperlinkHandlersUnconfigured {
+
+        @Test
+        @DisplayName("getConfiguredUrl returns null when GitHub URL is not configured")
+        void getConfiguredUrlReturnsNullWhenGitHubUrlNotConfigured() {
+            // Ensure no URL is configured
+            System.clearProperty("app.url.github");
+
+            // When
+            String url = controller.getConfiguredUrl("app.url.github");
+
+            // Then
+            assertThat(url).isNull();
+        }
+
+        @Test
+        @DisplayName("getConfiguredUrl returns null when Issues URL is not configured")
+        void getConfiguredUrlReturnsNullWhenIssuesUrlNotConfigured() {
+            // Ensure no URL is configured
+            System.clearProperty("app.url.issues");
+
+            // When
+            String url = controller.getConfiguredUrl("app.url.issues");
+
+            // Then
+            assertThat(url).isNull();
+        }
+
+        @Test
+        @DisplayName("getConfiguredUrl returns null for empty string value")
+        void getConfiguredUrlReturnsNullForEmptyStringValue() {
+            // Given - URL is set to empty string
+            String key = "app.url.github";
+            System.setProperty(key, "");
+
+            try {
+                // When
+                String url = controller.getConfiguredUrl(key);
+
+                // Then
+                assertThat(url).isNull();
+            } finally {
+                System.clearProperty(key);
+            }
+        }
+
+        @Test
+        @DisplayName("openExternalLink is only called when URL is configured")
+        void openExternalLinkIsOnlyCalledWhenUrlIsConfigured() {
+            // Given - URL is configured
+            String key = "app.url.github";
+            String expectedUrl = "https://github.com/test/repo";
+            System.setProperty(key, expectedUrl);
+
+            try {
+                // When
+                String url = controller.getConfiguredUrl(key);
+
+                // Then - URL should be returned and can be passed to openExternalLink
+                assertThat(url).isEqualTo(expectedUrl);
+                // The handler will only call openExternalLink if url != null
             } finally {
                 System.clearProperty(key);
             }

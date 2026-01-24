@@ -5,6 +5,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import uk.selfemploy.common.domain.TaxYear;
@@ -28,7 +31,13 @@ public class DashboardController implements Initializable, MainController.TaxYea
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy");
 
-    // Metric cards
+    // Metric cards - SE-810: Keyboard accessible cards
+    @FXML private VBox incomeCard;
+    @FXML private VBox expensesCard;
+    @FXML private VBox profitCard;
+    @FXML private VBox taxCard;
+
+    // Metric card values
     @FXML private Label incomeValue;
     @FXML private Label incomeTrend;
     @FXML private Label expensesValue;
@@ -370,5 +379,121 @@ public class DashboardController implements Initializable, MainController.TaxYea
     @Override
     public void refreshData() {
         loadDashboardData();
+    }
+
+    // === SE-810: Keyboard Accessible Metric Cards ===
+
+    /**
+     * Handles keyboard events for the Income card.
+     * Navigates to Income page on Enter or Space key.
+     */
+    @FXML
+    void handleIncomeCardKeyPress(KeyEvent event) {
+        if (isActivationKey(event)) {
+            navigateToIncome();
+            event.consume();
+        }
+    }
+
+    /**
+     * Handles mouse click on the Income card.
+     */
+    @FXML
+    void handleIncomeCardClick(MouseEvent event) {
+        navigateToIncome();
+    }
+
+    /**
+     * Handles keyboard events for the Expenses card.
+     * Navigates to Expenses page on Enter or Space key.
+     */
+    @FXML
+    void handleExpensesCardKeyPress(KeyEvent event) {
+        if (isActivationKey(event)) {
+            navigateToExpenses();
+            event.consume();
+        }
+    }
+
+    /**
+     * Handles mouse click on the Expenses card.
+     */
+    @FXML
+    void handleExpensesCardClick(MouseEvent event) {
+        navigateToExpenses();
+    }
+
+    /**
+     * Handles keyboard events for the Net Profit card.
+     * Navigates to Tax Summary page on Enter or Space key.
+     */
+    @FXML
+    void handleProfitCardKeyPress(KeyEvent event) {
+        if (isActivationKey(event)) {
+            navigateToTax();
+            event.consume();
+        }
+    }
+
+    /**
+     * Handles mouse click on the Net Profit card.
+     */
+    @FXML
+    void handleProfitCardClick(MouseEvent event) {
+        navigateToTax();
+    }
+
+    /**
+     * Handles keyboard events for the Estimated Tax card.
+     * Navigates to Tax Summary page on Enter or Space key.
+     */
+    @FXML
+    void handleTaxCardKeyPress(KeyEvent event) {
+        if (isActivationKey(event)) {
+            navigateToTax();
+            event.consume();
+        }
+    }
+
+    /**
+     * Handles mouse click on the Estimated Tax card.
+     */
+    @FXML
+    void handleTaxCardClick(MouseEvent event) {
+        navigateToTax();
+    }
+
+    /**
+     * Checks if the key event is an activation key (Enter or Space).
+     */
+    private boolean isActivationKey(KeyEvent event) {
+        return event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE;
+    }
+
+    /**
+     * Navigates to the Income page.
+     */
+    private void navigateToIncome() {
+        if (onNavigateToIncome != null) {
+            onNavigateToIncome.run();
+        }
+    }
+
+    /**
+     * Navigates to the Expenses page.
+     */
+    private void navigateToExpenses() {
+        if (onNavigateToExpenses != null) {
+            onNavigateToExpenses.run();
+        }
+    }
+
+    /**
+     * Navigates to the Tax Summary page.
+     */
+    private void navigateToTax() {
+        if (onNavigateToTax != null) {
+            onNavigateToTax.run();
+        }
     }
 }

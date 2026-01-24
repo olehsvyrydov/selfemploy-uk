@@ -15,7 +15,7 @@
 
 .history-container {
     -fx-background-color: -fx-bg-secondary;
-    -fx-max-width: 900;
+    -fx-max-width: 1200;
 }
 
 /* ===== Filter Controls ===== */

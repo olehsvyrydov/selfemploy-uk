@@ -21,21 +21,24 @@
                     styleClass="button-warning" onAction="#handleAddExpense"/>
         </HBox>
 
-        <!-- Summary Cards - Bento Grid Layout -->
+        <!-- Summary Cards - Bento Grid Layout - SE-810: Keyboard accessible cards -->
         <HBox styleClass="summary-cards-container" spacing="16">
-            <!-- Total Expenses Card -->
-            <VBox styleClass="summary-card, summary-card-total" HBox.hgrow="ALWAYS" spacing="8">
+            <!-- Total Expenses Card - SE-810: Focusable for screen readers -->
+            <VBox styleClass="summary-card, summary-card-total" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
                 <Label text="TOTAL EXPENSES" styleClass="metric-label"/>
                 <Label fx:id="totalValue" text="£0.00" styleClass="summary-card-value, summary-card-value-total"/>
                 <Label fx:id="totalCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <!-- Deductible Card -->
-            <VBox styleClass="summary-card, summary-card-deductible" HBox.hgrow="ALWAYS" spacing="8">
+            <!-- Deductible Card - SE-810: Focusable for screen readers -->
+            <VBox styleClass="summary-card, summary-card-deductible" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label text="DEDUCTIBLE" styleClass="metric-label"/>
                     <Label fx:id="deductibleHelpIcon" text="i" styleClass="info-icon-circle"
-                           onMouseClicked="#handleDeductibleHelp">
+                           onMouseClicked="#handleDeductibleHelp" focusTraversable="true"
+                           onKeyPressed="#handleDeductibleHelpKeyPress">
                         <cursor><Cursor fx:constant="HAND"/></cursor>
                         <tooltip><Tooltip text="Click to learn more about deductible expenses"/></tooltip>
                     </Label>
@@ -44,12 +47,14 @@
                 <Label fx:id="deductibleCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
 
-            <!-- Non-Deductible Card -->
-            <VBox styleClass="summary-card, summary-card-nondeductible" HBox.hgrow="ALWAYS" spacing="8">
+            <!-- Non-Deductible Card - SE-810: Focusable for screen readers -->
+            <VBox styleClass="summary-card, summary-card-nondeductible" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
                 <HBox alignment="CENTER_LEFT" spacing="6">
                     <Label text="NON-DEDUCTIBLE" styleClass="metric-label"/>
                     <Label fx:id="nonDeductibleHelpIcon" text="i" styleClass="info-icon-circle"
-                           onMouseClicked="#handleNonDeductibleHelp">
+                           onMouseClicked="#handleNonDeductibleHelp" focusTraversable="true"
+                           onKeyPressed="#handleNonDeductibleHelpKeyPress">
                         <cursor><Cursor fx:constant="HAND"/></cursor>
                         <tooltip><Tooltip text="Click to learn more about non-deductible expenses"/></tooltip>
                     </Label>

@@ -6,7 +6,7 @@
 /* ===== Wizard Container ===== */
 .wizard-container {
     -fx-background-color: -fx-bg-secondary;
-    -fx-max-width: 1000;
+    -fx-max-width: 1200;
 }
 
 /* ===== Progress Indicator ===== */

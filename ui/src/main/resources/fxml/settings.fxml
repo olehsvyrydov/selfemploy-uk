@@ -40,7 +40,7 @@
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
                     <TextField fx:id="utrField" promptText="Enter 10-digit UTR"
-                               styleClass="utr-field" HBox.hgrow="ALWAYS" maxWidth="320"
+                               styleClass="utr-field" HBox.hgrow="ALWAYS"
                                accessibleText="Enter your 10-digit Unique Taxpayer Reference"/>
                     <Button fx:id="saveUtrButton" text="Save" styleClass="button-secondary" onAction="#handleSaveUtr"/>
                 </HBox>

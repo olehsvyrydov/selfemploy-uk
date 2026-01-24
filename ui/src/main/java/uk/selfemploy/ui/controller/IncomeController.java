@@ -10,6 +10,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
@@ -474,6 +475,28 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     @FXML
     void handleUnpaidHelp(MouseEvent event) {
         showHelpDialog(HelpTopic.UNPAID_INCOME);
+    }
+
+    /**
+     * SE-810: Keyboard handler for Paid help icon.
+     */
+    @FXML
+    void handlePaidHelpKeyPress(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+            showHelpDialog(HelpTopic.PAID_INCOME);
+            event.consume();
+        }
+    }
+
+    /**
+     * SE-810: Keyboard handler for Unpaid help icon.
+     */
+    @FXML
+    void handleUnpaidHelpKeyPress(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+            showHelpDialog(HelpTopic.UNPAID_INCOME);
+            event.consume();
+        }
     }
 
     private void showHelpDialog(HelpTopic topic) {

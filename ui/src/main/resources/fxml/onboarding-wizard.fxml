@@ -104,11 +104,11 @@
                         <Label text="[?]" styleClass="help-icon"/>
                     </HBox>
                     <HBox styleClass="segmented-input" spacing="8" alignment="CENTER_LEFT">
-                        <TextField fx:id="utrSegment1" styleClass="segment-field" maxLength="4" prefColumnCount="4"/>
+                        <TextField fx:id="utrSegment1" styleClass="segment-field" prefColumnCount="4"/>
                         <Label text="-" styleClass="segment-separator"/>
-                        <TextField fx:id="utrSegment2" styleClass="segment-field" maxLength="3" prefColumnCount="3"/>
+                        <TextField fx:id="utrSegment2" styleClass="segment-field" prefColumnCount="3"/>
                         <Label text="-" styleClass="segment-separator"/>
-                        <TextField fx:id="utrSegment3" styleClass="segment-field" maxLength="3" prefColumnCount="3"/>
+                        <TextField fx:id="utrSegment3" styleClass="segment-field" prefColumnCount="3"/>
                     </HBox>
                     <HBox spacing="8">
                         <Label text="Your 10-digit UTR from HMRC" styleClass="field-hint"/>
