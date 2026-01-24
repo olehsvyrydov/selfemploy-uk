@@ -1674,6 +1674,46 @@
     -fx-padding: 20;
 }
 
+/* ===== Settings Section Accent Colors (per /aura design) ===== */
+
+/* Profile section - blue accent */
+.settings-card-profile {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #0066cc;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+/* Legal section - gray accent */
+.settings-card-legal {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #6c757d;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+/* Data section - green accent */
+.settings-card-data {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #28a745;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+/* About section - primary blue accent */
+.settings-card-about {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #0066cc;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+/* UTR field - responsive width with minimum */
+.utr-field {
+    -fx-min-width: 180;
+    -fx-pref-width: 280;
+}
+
 .settings-card-row {
     -fx-background-color: -fx-bg-primary;
     -fx-background-radius: 12;
@@ -1724,6 +1764,11 @@
 .about-link {
     -fx-text-fill: -fx-primary;
     -fx-font-size: 13px;
+    -fx-underline: false;
+}
+
+.about-link:hover {
+    -fx-underline: true;
 }
 
 .settings-disclaimer {

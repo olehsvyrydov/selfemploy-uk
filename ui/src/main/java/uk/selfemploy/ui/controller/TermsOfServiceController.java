@@ -28,9 +28,6 @@ import java.util.ResourceBundle;
  */
 public class TermsOfServiceController implements Initializable {
 
-    // Header
-    @FXML private Button closeBtn;
-
     // Version info
     @FXML private Label versionLabel;
     @FXML private Label lastUpdatedLabel;
@@ -99,10 +96,6 @@ public class TermsOfServiceController implements Initializable {
 
         // Bind accept button state
         acceptBtn.disableProperty().bind(viewModel.acceptEnabledProperty().not());
-
-        // Bind close button visibility
-        closeBtn.visibleProperty().bind(viewModel.closeButtonVisibleProperty());
-        closeBtn.managedProperty().bind(viewModel.closeButtonVisibleProperty());
 
         // Bind action buttons visibility (Accept/Decline)
         acceptBtn.visibleProperty().bind(viewModel.actionButtonsVisibleProperty());

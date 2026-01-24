@@ -2,7 +2,9 @@ package uk.selfemploy.ui.service;
 
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.ReceiptStorageService;
+import uk.selfemploy.core.service.TermsAcceptanceService;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +25,8 @@ public final class CoreServiceFactory {
     private static SqliteExpenseService expenseService;
     private static SqliteIncomeService incomeService;
     private static ReceiptStorageService receiptStorageService;
+    private static TermsAcceptanceService termsAcceptanceService;
+    private static PrivacyAcknowledgmentService privacyAcknowledgmentService;
     private static UUID defaultBusinessId;
 
     private CoreServiceFactory() {
@@ -71,6 +75,34 @@ public final class CoreServiceFactory {
             receiptStorageService = new ReceiptStorageService(storagePath);
         }
         return receiptStorageService;
+    }
+
+    /**
+     * Gets or creates the singleton TermsAcceptanceService instance.
+     * Uses SQLite for persistence - data survives app restarts.
+     *
+     * @return The TermsAcceptanceService instance (SQLite-backed implementation)
+     */
+    public static synchronized TermsAcceptanceService getTermsAcceptanceService() {
+        if (termsAcceptanceService == null) {
+            LOG.info("Creating SQLite TermsAcceptanceService");
+            termsAcceptanceService = new SqliteTermsAcceptanceService();
+        }
+        return termsAcceptanceService;
+    }
+
+    /**
+     * Gets or creates the singleton PrivacyAcknowledgmentService instance.
+     * Uses SQLite for persistence - data survives app restarts.
+     *
+     * @return The PrivacyAcknowledgmentService instance (SQLite-backed implementation)
+     */
+    public static synchronized PrivacyAcknowledgmentService getPrivacyAcknowledgmentService() {
+        if (privacyAcknowledgmentService == null) {
+            LOG.info("Creating SQLite PrivacyAcknowledgmentService");
+            privacyAcknowledgmentService = new SqlitePrivacyAcknowledgmentService();
+        }
+        return privacyAcknowledgmentService;
     }
 
     /**
@@ -132,6 +164,8 @@ public final class CoreServiceFactory {
         expenseService = null;
         incomeService = null;
         receiptStorageService = null;
+        termsAcceptanceService = null;
+        privacyAcknowledgmentService = null;
         defaultBusinessId = null;
         LOG.info("CoreServiceFactory shutdown - data persisted");
     }
@@ -140,6 +174,7 @@ public final class CoreServiceFactory {
      * Returns true if services are currently initialized.
      */
     public static boolean isInitialized() {
-        return expenseService != null || incomeService != null || receiptStorageService != null;
+        return expenseService != null || incomeService != null || receiptStorageService != null
+                || termsAcceptanceService != null || privacyAcknowledgmentService != null;
     }
 }

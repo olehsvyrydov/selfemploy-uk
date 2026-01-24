@@ -30,47 +30,47 @@
             <Label fx:id="taxYearLabel" text="Tax Year 2025/26" styleClass="page-subtitle"/>
         </VBox>
 
-        <!-- Progress Indicator -->
-        <HBox fx:id="progressIndicator" styleClass="progress-indicator" spacing="0">
-            <!-- Step 1 -->
-            <VBox fx:id="step1Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+        <!-- Progress Indicator - Fixed spacing per /aura design -->
+        <HBox fx:id="progressIndicator" styleClass="progress-indicator" spacing="0" alignment="CENTER">
+            <!-- Step 1 - Active by default -->
+            <VBox fx:id="step1Container" styleClass="step-container, step-active" alignment="CENTER" minWidth="120">
                 <HBox styleClass="step-header" alignment="CENTER">
                     <Label fx:id="step1Number" text="1" styleClass="step-number"/>
                 </HBox>
-                <Label text="Review Summary" styleClass="step-label"/>
+                <Label text="Review Summary" styleClass="step-label" textAlignment="CENTER"/>
             </VBox>
 
             <!-- Connector 1-2 -->
-            <Region styleClass="step-connector" HBox.hgrow="ALWAYS"/>
+            <Region styleClass="step-connector" HBox.hgrow="ALWAYS" minWidth="40" maxWidth="80"/>
 
             <!-- Step 2 -->
-            <VBox fx:id="step2Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+            <VBox fx:id="step2Container" styleClass="step-container" alignment="CENTER" minWidth="120">
                 <HBox styleClass="step-header" alignment="CENTER">
                     <Label fx:id="step2Number" text="2" styleClass="step-number"/>
                 </HBox>
-                <Label text="Calculate Tax" styleClass="step-label"/>
+                <Label text="Calculate Tax" styleClass="step-label" textAlignment="CENTER"/>
             </VBox>
 
             <!-- Connector 2-3 -->
-            <Region styleClass="step-connector" HBox.hgrow="ALWAYS"/>
+            <Region styleClass="step-connector" HBox.hgrow="ALWAYS" minWidth="40" maxWidth="80"/>
 
             <!-- Step 3 -->
-            <VBox fx:id="step3Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+            <VBox fx:id="step3Container" styleClass="step-container" alignment="CENTER" minWidth="120">
                 <HBox styleClass="step-header" alignment="CENTER">
                     <Label fx:id="step3Number" text="3" styleClass="step-number"/>
                 </HBox>
-                <Label text="Review Calculation" styleClass="step-label"/>
+                <Label text="Review" styleClass="step-label" textAlignment="CENTER"/>
             </VBox>
 
             <!-- Connector 3-4 -->
-            <Region styleClass="step-connector" HBox.hgrow="ALWAYS"/>
+            <Region styleClass="step-connector" HBox.hgrow="ALWAYS" minWidth="40" maxWidth="80"/>
 
             <!-- Step 4 -->
-            <VBox fx:id="step4Container" styleClass="step-container" HBox.hgrow="ALWAYS">
+            <VBox fx:id="step4Container" styleClass="step-container" alignment="CENTER" minWidth="120">
                 <HBox styleClass="step-header" alignment="CENTER">
                     <Label fx:id="step4Number" text="4" styleClass="step-number"/>
                 </HBox>
-                <Label text="Submit Declaration" styleClass="step-label"/>
+                <Label text="Submit" styleClass="step-label" textAlignment="CENTER"/>
             </VBox>
         </HBox>
 
@@ -294,8 +294,8 @@
         <HBox fx:id="actionBar" styleClass="action-bar" spacing="12" alignment="CENTER_RIGHT">
             <Button fx:id="cancelButton" text="Cancel" styleClass="button-secondary" onAction="#handleCancel"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="calculateButton" text="Calculate Tax" styleClass="button-primary" onAction="#handleCalculate" visible="false" managed="false"/>
-            <Button fx:id="reviewButton" text="Review Calculation" styleClass="button-primary" onAction="#handleReview" visible="false" managed="false"/>
+            <Button fx:id="calculateButton" text="Calculate Tax →" styleClass="button-primary" onAction="#handleCalculate" visible="true" managed="true"/>
+            <Button fx:id="reviewButton" text="Review Calculation →" styleClass="button-primary" onAction="#handleReview" visible="false" managed="false"/>
             <!-- Submit Button with Declaration Binding (SE-506) -->
             <VBox alignment="CENTER_RIGHT" spacing="4" visible="false" managed="false" fx:id="submitContainer">
                 <Button fx:id="submitButton" text="Submit to HMRC" styleClass="button-primary, button-submit-hmrc"

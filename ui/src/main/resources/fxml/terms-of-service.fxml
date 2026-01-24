@@ -26,9 +26,6 @@
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT">
         <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
         <Label text="Terms of Service" styleClass="dialog-title"/>
-        <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="closeBtn" text="X" styleClass="close-button"
-                onAction="#handleClose" visible="false" managed="false"/>
     </HBox>
 
     <!-- Content -->
@@ -56,33 +53,33 @@
                 <Separator/>
                 <VBox fx:id="tocLinks" styleClass="toc-links" spacing="2">
                     <Hyperlink text="1. Acceptance of Terms" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-1"/>
+                               onAction="#scrollToSection" userData="section1"/>
                     <Hyperlink text="2. Nature of the Software" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-2"/>
+                               onAction="#scrollToSection" userData="section2"/>
                     <Hyperlink text="3. No Professional Advice" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-3"/>
+                               onAction="#scrollToSection" userData="section3"/>
                     <Hyperlink text="4. Your Responsibilities" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-4"/>
+                               onAction="#scrollToSection" userData="section4"/>
                     <Hyperlink text="5. HMRC Integration" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-5"/>
+                               onAction="#scrollToSection" userData="section5"/>
                     <Hyperlink text="6. Open Source Licence" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-6"/>
+                               onAction="#scrollToSection" userData="section6"/>
                     <Hyperlink text="7. Limitation of Liability" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-7"/>
+                               onAction="#scrollToSection" userData="section7"/>
                     <Hyperlink text="8. Indemnification" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-8"/>
+                               onAction="#scrollToSection" userData="section8"/>
                     <Hyperlink text="9. Data and Privacy" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-9"/>
+                               onAction="#scrollToSection" userData="section9"/>
                     <Hyperlink text="10. Updates and Changes" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-10"/>
+                               onAction="#scrollToSection" userData="section10"/>
                     <Hyperlink text="11. Termination" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-11"/>
+                               onAction="#scrollToSection" userData="section11"/>
                     <Hyperlink text="12. Support" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-12"/>
+                               onAction="#scrollToSection" userData="section12"/>
                     <Hyperlink text="13. Governing Law" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-13"/>
+                               onAction="#scrollToSection" userData="section13"/>
                     <Hyperlink text="14. General Provisions" styleClass="toc-link"
-                               onAction="#scrollToSection" userData="section-14"/>
+                               onAction="#scrollToSection" userData="section14"/>
                 </VBox>
             </VBox>
 
@@ -101,7 +98,7 @@
                     </VBox>
 
                     <!-- Section 1: Acceptance of Terms -->
-                    <VBox fx:id="section-1" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section1" styleClass="tos-section" spacing="8">
                         <Label text="1. ACCEPTANCE OF TERMS" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="1.1. These Terms of Service ('Terms') constitute a legally binding agreement between you ('User', 'you') and the developers of UK Self-Employment Manager ('we', 'us')."/>
@@ -112,7 +109,7 @@
                     </VBox>
 
                     <!-- Section 2: Nature of the Software -->
-                    <VBox fx:id="section-2" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section2" styleClass="tos-section" spacing="8">
                         <Label text="2. NATURE OF THE SOFTWARE" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="2.1. UK Self-Employment Manager is a RECORD-KEEPING AND TAX CALCULATION TOOL designed to help UK self-employed individuals: Record business income and expenses; Calculate estimated tax liabilities; Submit Making Tax Digital (MTD) returns to HMRC; Generate tax summaries and reports."/>
@@ -121,7 +118,7 @@
                     </VBox>
 
                     <!-- Section 3: No Professional Advice - CRITICAL -->
-                    <VBox fx:id="section-3" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section3" styleClass="tos-section" spacing="8">
                         <HBox alignment="CENTER_LEFT" spacing="8">
                             <Label text="3. NO PROFESSIONAL ADVICE" styleClass="tos-section-title"/>
                             <Label text="CRITICAL" styleClass="tos-important-badge"/>
@@ -141,7 +138,7 @@
                     </VBox>
 
                     <!-- Section 4: Your Responsibilities -->
-                    <VBox fx:id="section-4" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section4" styleClass="tos-section" spacing="8">
                         <Label text="4. YOUR RESPONSIBILITIES" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text tos-bold" wrapText="true"
                                text="4.1. Data Accuracy: You are solely responsible for: The accuracy and completeness of all data you enter; Verifying that imported bank data is correctly categorised; Ensuring income and expense classifications are correct; Reviewing all calculations before submission."/>
@@ -154,7 +151,7 @@
                     </VBox>
 
                     <!-- Section 5: HMRC Integration -->
-                    <VBox fx:id="section-5" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section5" styleClass="tos-section" spacing="8">
                         <Label text="5. HMRC INTEGRATION" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="5.1. Authorisation: When you connect to HMRC, you authorise the Software to: Retrieve your business details from HMRC; Submit quarterly updates on your behalf; Submit annual Self Assessment returns on your behalf; View your submission history."/>
@@ -167,7 +164,7 @@
                     </VBox>
 
                     <!-- Section 6: Open Source Licence -->
-                    <VBox fx:id="section-6" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section6" styleClass="tos-section" spacing="8">
                         <Label text="6. OPEN SOURCE LICENCE" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="6.1. This Software is provided under the Apache License 2.0. By using the Software, you also accept the terms of the Apache License 2.0."/>
@@ -178,7 +175,7 @@
                     </VBox>
 
                     <!-- Section 7: Limitation of Liability -->
-                    <VBox fx:id="section-7" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section7" styleClass="tos-section" spacing="8">
                         <Label text="7. LIMITATION OF LIABILITY" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text tos-bold" wrapText="true"
                                text="7.1. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:"/>
@@ -209,14 +206,14 @@
                     </VBox>
 
                     <!-- Section 8: Indemnification -->
-                    <VBox fx:id="section-8" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section8" styleClass="tos-section" spacing="8">
                         <Label text="8. INDEMNIFICATION" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="8.1. You agree to indemnify, defend, and hold harmless the developers, contributors, and maintainers of the Software from and against any claims, damages, losses, or expenses (including legal fees) arising from: Your use of the Software; Your breach of these Terms; Your submission of inaccurate data to HMRC; Any third-party claims relating to your tax affairs."/>
                     </VBox>
 
                     <!-- Section 9: Data and Privacy -->
-                    <VBox fx:id="section-9" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section9" styleClass="tos-section" spacing="8">
                         <Label text="9. DATA AND PRIVACY" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="9.1. All your data is stored locally on your device. We do not have access to your financial information."/>
@@ -227,7 +224,7 @@
                     </VBox>
 
                     <!-- Section 10: Updates and Changes -->
-                    <VBox fx:id="section-10" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section10" styleClass="tos-section" spacing="8">
                         <Label text="10. UPDATES AND CHANGES" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="10.1. Software Updates: We may release updates to the Software at any time. Updates may include: Bug fixes; New features; Tax rate changes; Security patches."/>
@@ -238,7 +235,7 @@
                     </VBox>
 
                     <!-- Section 11: Termination -->
-                    <VBox fx:id="section-11" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section11" styleClass="tos-section" spacing="8">
                         <Label text="11. TERMINATION" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="11.1. You may stop using the Software at any time."/>
@@ -249,7 +246,7 @@
                     </VBox>
 
                     <!-- Section 12: Support -->
-                    <VBox fx:id="section-12" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section12" styleClass="tos-section" spacing="8">
                         <Label text="12. SUPPORT" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="12.1. This is community-supported open-source software."/>
@@ -260,7 +257,7 @@
                     </VBox>
 
                     <!-- Section 13: Governing Law and Jurisdiction -->
-                    <VBox fx:id="section-13" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section13" styleClass="tos-section" spacing="8">
                         <Label text="13. GOVERNING LAW AND JURISDICTION" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="13.1. These Terms are governed by the laws of England and Wales."/>
@@ -271,7 +268,7 @@
                     </VBox>
 
                     <!-- Section 14: General Provisions -->
-                    <VBox fx:id="section-14" styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section14" styleClass="tos-section" spacing="8">
                         <Label text="14. GENERAL PROVISIONS" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="14.1. Entire Agreement: These Terms, together with the Privacy Notice and Apache License 2.0, constitute the entire agreement between you and us regarding the Software."/>

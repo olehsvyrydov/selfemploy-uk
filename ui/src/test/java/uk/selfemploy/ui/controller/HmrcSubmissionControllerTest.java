@@ -4,39 +4,150 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for HmrcSubmissionController.
+ * Comprehensive unit tests for HmrcSubmissionController.
  * Tests the controller logic for the HMRC Submission hub page.
+ *
+ * <p>Test Categories:
+ * <ul>
+ *   <li>Initialization Tests - Controller setup and service initialization</li>
+ *   <li>Connection Status Tests - HMRC connection state management</li>
+ *   <li>Tax Year Management Tests - Tax year handling and deadline display</li>
+ *   <li>Quarter Status Tests - MTD quarterly submission status</li>
+ *   <li>Service Integration Tests - Financial data loading via services</li>
+ * </ul>
  */
+@ExtendWith(MockitoExtension.class)
 @DisplayName("HmrcSubmissionController")
 class HmrcSubmissionControllerTest {
 
     private HmrcSubmissionController controller;
     private TaxYear taxYear;
 
+    @Mock
+    private IncomeService incomeService;
+
+    @Mock
+    private ExpenseService expenseService;
+
+    private UUID businessId;
+
     @BeforeEach
     void setUp() {
         controller = new HmrcSubmissionController();
         taxYear = TaxYear.of(2025);
+        businessId = UUID.randomUUID();
     }
 
-    @Test
-    @DisplayName("should implement TaxYearAware interface")
-    void shouldImplementTaxYearAware() {
-        assertThat(controller).isInstanceOf(MainController.TaxYearAware.class);
+    @Nested
+    @DisplayName("Initialization Tests")
+    class InitializationTests {
+
+        @Test
+        @DisplayName("should implement TaxYearAware interface")
+        void shouldImplementTaxYearAware() {
+            assertThat(controller).isInstanceOf(MainController.TaxYearAware.class);
+        }
+
+        @Test
+        @DisplayName("should implement Initializable interface")
+        void shouldImplementInitializable() {
+            assertThat(controller).isInstanceOf(javafx.fxml.Initializable.class);
+        }
+
+        @Test
+        @DisplayName("should create controller without errors")
+        void shouldCreateControllerWithoutErrors() {
+            assertThat(controller).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should initialize services when accessed")
+        void shouldInitializeServicesWhenAccessed() {
+            // Given - controller with injected dependencies
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+
+            // Then - services should be accessible
+            assertThat(controller.getIncomeService()).isEqualTo(incomeService);
+            assertThat(controller.getExpenseService()).isEqualTo(expenseService);
+            assertThat(controller.getBusinessId()).isEqualTo(businessId);
+        }
+
+        @Test
+        @DisplayName("should accept custom dependencies for testing")
+        void shouldAcceptCustomDependencies() {
+            // When
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+
+            // Then
+            assertThat(controller.getIncomeService()).isSameAs(incomeService);
+            assertThat(controller.getExpenseService()).isSameAs(expenseService);
+            assertThat(controller.getBusinessId()).isEqualTo(businessId);
+        }
     }
 
-    @Test
-    @DisplayName("should implement Initializable interface")
-    void shouldImplementInitializable() {
-        assertThat(controller).isInstanceOf(javafx.fxml.Initializable.class);
+    @Nested
+    @DisplayName("Connection Status Tests")
+    class ConnectionStatusTests {
+
+        @Test
+        @DisplayName("should be disconnected initially")
+        void shouldBeDisconnectedInitially() {
+            assertThat(controller.isConnected()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should update connection status when connected")
+        void shouldUpdateConnectionStatusWhenConnected() {
+            // When
+            controller.setConnected(true);
+
+            // Then
+            assertThat(controller.isConnected()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should update connection status when disconnected")
+        void shouldUpdateConnectionStatusWhenDisconnected() {
+            // Given - connected state
+            controller.setConnected(true);
+
+            // When
+            controller.setConnected(false);
+
+            // Then
+            assertThat(controller.isConnected()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should toggle connection status correctly")
+        void shouldToggleConnectionStatusCorrectly() {
+            // Initially disconnected
+            assertThat(controller.isConnected()).isFalse();
+
+            // Connect
+            controller.setConnected(true);
+            assertThat(controller.isConnected()).isTrue();
+
+            // Disconnect
+            controller.setConnected(false);
+            assertThat(controller.isConnected()).isFalse();
+        }
     }
 
     @Nested
@@ -75,6 +186,25 @@ class HmrcSubmissionControllerTest {
 
             // Then
             assertThat(controller.getTaxYear()).isEqualTo(taxYear);
+        }
+
+        @Test
+        @DisplayName("should accept multiple tax year changes")
+        void shouldAcceptMultipleTaxYearChanges() {
+            // Given
+            TaxYear year2023 = TaxYear.of(2023);
+            TaxYear year2024 = TaxYear.of(2024);
+            TaxYear year2025 = TaxYear.of(2025);
+
+            // When/Then
+            controller.setTaxYear(year2023);
+            assertThat(controller.getTaxYear()).isEqualTo(year2023);
+
+            controller.setTaxYear(year2024);
+            assertThat(controller.getTaxYear()).isEqualTo(year2024);
+
+            controller.setTaxYear(year2025);
+            assertThat(controller.getTaxYear()).isEqualTo(year2025);
         }
     }
 
@@ -197,16 +327,41 @@ class HmrcSubmissionControllerTest {
 
             assertThat(status).contains("Q4");
         }
-    }
-
-    @Nested
-    @DisplayName("Connection State")
-    class ConnectionState {
 
         @Test
-        @DisplayName("should be disconnected initially")
-        void shouldBeDisconnectedInitially() {
-            assertThat(controller.isConnected()).isFalse();
+        @DisplayName("should format Q1 deadline correctly")
+        void shouldFormatQ1DeadlineCorrectly() {
+            LocalDate aprilDate = LocalDate.of(2025, 4, 15);
+            String status = controller.determineQuarterStatus(aprilDate, taxYear);
+
+            assertThat(status).isEqualTo("Current: Q1 (Apr-Jun) - Due by 7 Aug");
+        }
+
+        @Test
+        @DisplayName("should format Q2 deadline correctly")
+        void shouldFormatQ2DeadlineCorrectly() {
+            LocalDate julyDate = LocalDate.of(2025, 7, 15);
+            String status = controller.determineQuarterStatus(julyDate, taxYear);
+
+            assertThat(status).isEqualTo("Current: Q2 (Jul-Sep) - Due by 7 Nov");
+        }
+
+        @Test
+        @DisplayName("should format Q3 deadline correctly")
+        void shouldFormatQ3DeadlineCorrectly() {
+            LocalDate octDate = LocalDate.of(2025, 10, 15);
+            String status = controller.determineQuarterStatus(octDate, taxYear);
+
+            assertThat(status).isEqualTo("Current: Q3 (Oct-Dec) - Due by 7 Feb");
+        }
+
+        @Test
+        @DisplayName("should format Q4 deadline correctly")
+        void shouldFormatQ4DeadlineCorrectly() {
+            LocalDate janDate = LocalDate.of(2026, 1, 15);
+            String status = controller.determineQuarterStatus(janDate, taxYear);
+
+            assertThat(status).isEqualTo("Current: Q4 (Jan-Mar) - Due by 7 May");
         }
     }
 
@@ -252,6 +407,20 @@ class HmrcSubmissionControllerTest {
         }
 
         @Test
+        @DisplayName("should format deadline correctly for tax year 2023/24")
+        void shouldFormatDeadlineFor2023() {
+            // Given
+            TaxYear year2023 = TaxYear.of(2023);
+            controller.setTaxYear(year2023);
+
+            // When
+            String deadline = controller.getFormattedAnnualDeadline();
+
+            // Then
+            assertThat(deadline).isEqualTo("Deadline: 31 January 2025");
+        }
+
+        @Test
         @DisplayName("should use correct date format")
         void shouldUseCorrectDateFormat() {
             // Given
@@ -262,6 +431,21 @@ class HmrcSubmissionControllerTest {
 
             // Then - should use "d MMMM yyyy" format
             assertThat(deadline).matches("Deadline: \\d{1,2} [A-Z][a-z]+ \\d{4}");
+        }
+
+        @Test
+        @DisplayName("should update deadline when tax year changes")
+        void shouldUpdateDeadlineWhenTaxYearChanges() {
+            // Given
+            TaxYear year2024 = TaxYear.of(2024);
+            controller.setTaxYear(year2024);
+            assertThat(controller.getFormattedAnnualDeadline()).contains("2026");
+
+            // When
+            controller.setTaxYear(taxYear);
+
+            // Then
+            assertThat(controller.getFormattedAnnualDeadline()).contains("2027");
         }
     }
 
@@ -287,6 +471,293 @@ class HmrcSubmissionControllerTest {
             TaxYear year2024 = TaxYear.of(2024);
 
             assertThat(year2024.onlineFilingDeadline()).isEqualTo(LocalDate.of(2026, 1, 31));
+        }
+
+        @Test
+        @DisplayName("should calculate deadline for tax year 2023/24")
+        void shouldCalculateDeadlineFor2023() {
+            TaxYear year2023 = TaxYear.of(2023);
+
+            assertThat(year2023.onlineFilingDeadline()).isEqualTo(LocalDate.of(2025, 1, 31));
+        }
+    }
+
+    @Nested
+    @DisplayName("Service Integration Tests")
+    class ServiceIntegrationTests {
+
+        @BeforeEach
+        void setUpMocks() {
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+        }
+
+        @Test
+        @DisplayName("should load total income from income service")
+        void shouldLoadTotalIncomeFromService() {
+            // Given
+            BigDecimal expectedIncome = new BigDecimal("50000.00");
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(expectedIncome);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+
+            // When
+            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            verify(incomeService).getTotalByTaxYear(businessId, taxYear);
+            assertThat(netProfit).isEqualByComparingTo(expectedIncome);
+        }
+
+        @Test
+        @DisplayName("should load deductible expenses from expense service")
+        void shouldLoadDeductibleExpensesFromService() {
+            // Given
+            BigDecimal totalIncome = new BigDecimal("50000.00");
+            BigDecimal expectedExpenses = new BigDecimal("10000.00");
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(expectedExpenses);
+
+            // When
+            controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            verify(expenseService).getDeductibleTotal(businessId, taxYear);
+        }
+
+        @Test
+        @DisplayName("should calculate net profit correctly")
+        void shouldCalculateNetProfitCorrectly() {
+            // Given
+            BigDecimal totalIncome = new BigDecimal("50000.00");
+            BigDecimal totalExpenses = new BigDecimal("15000.00");
+            BigDecimal expectedNetProfit = new BigDecimal("35000.00");
+
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(totalExpenses);
+
+            // When
+            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            assertThat(netProfit).isEqualByComparingTo(expectedNetProfit);
+        }
+
+        @Test
+        @DisplayName("should handle zero income")
+        void shouldHandleZeroIncome() {
+            // Given
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+
+            // When
+            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            assertThat(netProfit).isEqualByComparingTo(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("should handle zero expenses")
+        void shouldHandleZeroExpenses() {
+            // Given
+            BigDecimal totalIncome = new BigDecimal("50000.00");
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+
+            // When
+            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            assertThat(netProfit).isEqualByComparingTo(totalIncome);
+        }
+
+        @Test
+        @DisplayName("should handle expenses greater than income (loss)")
+        void shouldHandleExpensesGreaterThanIncome() {
+            // Given - loss scenario
+            BigDecimal totalIncome = new BigDecimal("10000.00");
+            BigDecimal totalExpenses = new BigDecimal("15000.00");
+            BigDecimal expectedNetLoss = new BigDecimal("-5000.00");
+
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(totalExpenses);
+
+            // When
+            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            assertThat(netProfit).isEqualByComparingTo(expectedNetLoss);
+        }
+
+        @Test
+        @DisplayName("should use correct tax year when loading data")
+        void shouldUseCorrectTaxYearWhenLoadingData() {
+            // Given
+            TaxYear differentYear = TaxYear.of(2024);
+            when(incomeService.getTotalByTaxYear(businessId, differentYear)).thenReturn(BigDecimal.ZERO);
+            when(expenseService.getDeductibleTotal(businessId, differentYear)).thenReturn(BigDecimal.ZERO);
+
+            // When
+            controller.initializeAnnualSubmissionForTest(null, differentYear);
+
+            // Then
+            verify(incomeService).getTotalByTaxYear(businessId, differentYear);
+            verify(expenseService).getDeductibleTotal(businessId, differentYear);
+        }
+
+        @Test
+        @DisplayName("should set tax year on controller after initialization")
+        void shouldSetTaxYearOnController() {
+            // Given
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+
+            // When
+            controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            assertThat(controller.getTaxYear()).isEqualTo(taxYear);
+        }
+
+        @Test
+        @DisplayName("should handle large income values")
+        void shouldHandleLargeIncomeValues() {
+            // Given - large income value
+            BigDecimal largeIncome = new BigDecimal("1000000.00");
+            BigDecimal expenses = new BigDecimal("100000.00");
+            BigDecimal expectedNet = new BigDecimal("900000.00");
+
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(largeIncome);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(expenses);
+
+            // When
+            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            assertThat(netProfit).isEqualByComparingTo(expectedNet);
+        }
+
+        @Test
+        @DisplayName("should handle decimal precision correctly")
+        void shouldHandleDecimalPrecisionCorrectly() {
+            // Given - values with decimal precision
+            BigDecimal income = new BigDecimal("50000.75");
+            BigDecimal expenses = new BigDecimal("15000.25");
+            BigDecimal expectedNet = new BigDecimal("35000.50");
+
+            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(income);
+            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(expenses);
+
+            // When
+            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+
+            // Then
+            assertThat(netProfit).isEqualByComparingTo(expectedNet);
+        }
+    }
+
+    @Nested
+    @DisplayName("Dialog Stage Management")
+    class DialogStageManagement {
+
+        @Test
+        @DisplayName("should accept dialog stage setter")
+        void shouldAcceptDialogStageSetter() {
+            // This test verifies the setter doesn't throw
+            // Actual Stage testing requires JavaFX initialization
+            controller.setDialogStage(null);
+            // If we get here without exception, test passes
+        }
+    }
+
+    @Nested
+    @DisplayName("Edge Cases")
+    class EdgeCases {
+
+        @Test
+        @DisplayName("should handle first day of Q1")
+        void shouldHandleFirstDayOfQ1() {
+            LocalDate firstDayQ1 = LocalDate.of(2025, 4, 1);
+            String status = controller.determineQuarterStatus(firstDayQ1, taxYear);
+            assertThat(status).contains("Q1");
+        }
+
+        @Test
+        @DisplayName("should handle last day of Q4")
+        void shouldHandleLastDayOfQ4() {
+            LocalDate lastDayQ4 = LocalDate.of(2026, 3, 31);
+            String status = controller.determineQuarterStatus(lastDayQ4, taxYear);
+            assertThat(status).contains("Q4");
+        }
+
+        @Test
+        @DisplayName("should handle boundary between Q1 and Q2")
+        void shouldHandleBoundaryQ1Q2() {
+            // June 30 - last day of Q1
+            LocalDate lastDayQ1 = LocalDate.of(2025, 6, 30);
+            assertThat(controller.determineQuarterStatus(lastDayQ1, taxYear)).contains("Q1");
+
+            // July 1 - first day of Q2
+            LocalDate firstDayQ2 = LocalDate.of(2025, 7, 1);
+            assertThat(controller.determineQuarterStatus(firstDayQ2, taxYear)).contains("Q2");
+        }
+
+        @Test
+        @DisplayName("should handle boundary between Q2 and Q3")
+        void shouldHandleBoundaryQ2Q3() {
+            // September 30 - last day of Q2
+            LocalDate lastDayQ2 = LocalDate.of(2025, 9, 30);
+            assertThat(controller.determineQuarterStatus(lastDayQ2, taxYear)).contains("Q2");
+
+            // October 1 - first day of Q3
+            LocalDate firstDayQ3 = LocalDate.of(2025, 10, 1);
+            assertThat(controller.determineQuarterStatus(firstDayQ3, taxYear)).contains("Q3");
+        }
+
+        @Test
+        @DisplayName("should handle boundary between Q3 and Q4")
+        void shouldHandleBoundaryQ3Q4() {
+            // December 31 - last day of Q3
+            LocalDate lastDayQ3 = LocalDate.of(2025, 12, 31);
+            assertThat(controller.determineQuarterStatus(lastDayQ3, taxYear)).contains("Q3");
+
+            // January 1 - first day of Q4
+            LocalDate firstDayQ4 = LocalDate.of(2026, 1, 1);
+            assertThat(controller.determineQuarterStatus(firstDayQ4, taxYear)).contains("Q4");
+        }
+
+        @Test
+        @DisplayName("should handle leap year February")
+        void shouldHandleLeapYearFebruary() {
+            // 2024 is a leap year
+            LocalDate leapYearFeb = LocalDate.of(2024, 2, 29);
+            TaxYear year2023 = TaxYear.of(2023);
+            String status = controller.determineQuarterStatus(leapYearFeb, year2023);
+            assertThat(status).contains("Q4");
+        }
+    }
+
+    @Nested
+    @DisplayName("Tax Year Label Format")
+    class TaxYearLabelFormat {
+
+        @Test
+        @DisplayName("should format tax year label correctly for 2025/26")
+        void shouldFormatTaxYearLabel2025() {
+            assertThat(taxYear.label()).isEqualTo("2025/26");
+        }
+
+        @Test
+        @DisplayName("should format tax year label correctly for 2024/25")
+        void shouldFormatTaxYearLabel2024() {
+            TaxYear year2024 = TaxYear.of(2024);
+            assertThat(year2024.label()).isEqualTo("2024/25");
+        }
+
+        @Test
+        @DisplayName("should format tax year label correctly for century boundary")
+        void shouldFormatTaxYearLabelCenturyBoundary() {
+            TaxYear year2099 = TaxYear.of(2099);
+            assertThat(year2099.label()).isEqualTo("2099/00");
         }
     }
 }

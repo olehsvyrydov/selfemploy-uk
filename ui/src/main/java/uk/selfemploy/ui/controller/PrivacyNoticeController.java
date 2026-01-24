@@ -24,9 +24,6 @@ import java.util.ResourceBundle;
  */
 public class PrivacyNoticeController implements Initializable {
 
-    // Header
-    @FXML private Button closeBtn;
-
     // Version info
     @FXML private Label versionLabel;
     @FXML private Label effectiveDateLabel;
@@ -83,10 +80,6 @@ public class PrivacyNoticeController implements Initializable {
 
         // Bind continue button state
         continueBtn.disableProperty().bind(viewModel.continueEnabledProperty().not());
-
-        // Bind close button visibility
-        closeBtn.visibleProperty().bind(viewModel.closeButtonVisibleProperty());
-        closeBtn.managedProperty().bind(viewModel.closeButtonVisibleProperty());
     }
 
     private void setupCallbacks() {

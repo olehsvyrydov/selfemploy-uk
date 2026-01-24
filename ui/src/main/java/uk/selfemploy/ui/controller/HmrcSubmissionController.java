@@ -17,8 +17,14 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
+
+import java.math.BigDecimal;
+import java.util.UUID;
 
 import java.io.IOException;
 import java.net.URI;
@@ -61,10 +67,35 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     private TaxYear taxYear;
     private boolean isConnected = false;
 
+    // Services for loading financial data
+    private IncomeService incomeService;
+    private ExpenseService expenseService;
+    private UUID businessId;
+
+    // Dialog stage reference for dynamic resizing
+    private Stage dialogStage;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        initializeServices();
         updateConnectionStatus();
         updateDeadlines();
+    }
+
+    /**
+     * Initializes services for loading financial data.
+     * Uses CoreServiceFactory for standalone UI mode.
+     */
+    private void initializeServices() {
+        if (incomeService == null) {
+            incomeService = CoreServiceFactory.getIncomeService();
+        }
+        if (expenseService == null) {
+            expenseService = CoreServiceFactory.getExpenseService();
+        }
+        if (businessId == null) {
+            businessId = CoreServiceFactory.getDefaultBusinessId();
+        }
     }
 
     @Override
@@ -137,6 +168,89 @@ public class HmrcSubmissionController implements Initializable, MainController.T
      */
     public boolean isConnected() {
         return isConnected;
+    }
+
+    /**
+     * Sets the connection status.
+     * Package-private for testing.
+     */
+    void setConnected(boolean connected) {
+        this.isConnected = connected;
+        updateConnectionStatus();
+    }
+
+    /**
+     * Sets the dialog stage for dynamic resizing.
+     * Package-private for testing.
+     *
+     * @param stage the dialog stage
+     */
+    void setDialogStage(Stage stage) {
+        this.dialogStage = stage;
+    }
+
+    /**
+     * Initializes dependencies for testing.
+     * Package-private for testing.
+     *
+     * @param incomeService the income service
+     * @param expenseService the expense service
+     * @param businessId the business ID
+     */
+    void initializeWithDependencies(IncomeService incomeService, ExpenseService expenseService, UUID businessId) {
+        this.incomeService = incomeService;
+        this.expenseService = expenseService;
+        this.businessId = businessId;
+    }
+
+    /**
+     * Initializes the Annual Submission controller with financial data.
+     * Package-private for testing.
+     *
+     * @param controller The AnnualSubmissionController to initialize
+     * @param taxYear The tax year for submission
+     * @return The calculated net profit
+     */
+    BigDecimal initializeAnnualSubmissionForTest(AnnualSubmissionController controller, TaxYear taxYear) {
+        this.taxYear = taxYear;
+        initializeServices();
+
+        BigDecimal totalIncome = incomeService.getTotalByTaxYear(businessId, taxYear);
+        BigDecimal totalExpenses = expenseService.getDeductibleTotal(businessId, taxYear);
+        BigDecimal netProfit = totalIncome.subtract(totalExpenses);
+
+        if (controller != null) {
+            controller.initializeSubmission(taxYear, totalIncome, totalExpenses, netProfit);
+        }
+
+        return netProfit;
+    }
+
+    /**
+     * Gets the income service.
+     * Package-private for testing.
+     */
+    IncomeService getIncomeService() {
+        initializeServices();
+        return incomeService;
+    }
+
+    /**
+     * Gets the expense service.
+     * Package-private for testing.
+     */
+    ExpenseService getExpenseService() {
+        initializeServices();
+        return expenseService;
+    }
+
+    /**
+     * Gets the business ID.
+     * Package-private for testing.
+     */
+    UUID getBusinessId() {
+        initializeServices();
+        return businessId;
     }
 
     /**
@@ -399,10 +513,18 @@ public class HmrcSubmissionController implements Initializable, MainController.T
             Stage stage = new Stage();
             stage.setTitle(title + " - UK Self-Employment Manager");
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setMinWidth(900);
-            stage.setMinHeight(650);
+            stage.setResizable(true);
 
-            Scene scene = new Scene(root, 1100, 750);
+            // Dynamic width: Annual Submission starts at 700px (step 1), others at 1200px
+            int initialWidth = (controller instanceof AnnualSubmissionController) ? 700 : 1200;
+
+            // Set stage size constraints BEFORE setting scene
+            stage.setMinWidth(700);
+            stage.setMinHeight(750);
+            stage.setWidth(initialWidth);
+            stage.setHeight(950);
+
+            Scene scene = new Scene(root);
             // Load stylesheets
             scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
             scene.getStylesheets().add(getClass().getResource("/css/annual-submission.css").toExternalForm());
@@ -410,6 +532,13 @@ public class HmrcSubmissionController implements Initializable, MainController.T
             scene.getStylesheets().add(getClass().getResource("/css/legal.css").toExternalForm());
 
             stage.setScene(scene);
+
+            // Initialize Annual Submission controller AFTER scene is set
+            if (controller instanceof AnnualSubmissionController annualController && taxYear != null) {
+                annualController.setDialogStage(stage);
+                initializeAnnualSubmission(annualController);
+            }
+
             stage.showAndWait();
 
         } catch (IOException e) {
@@ -420,5 +549,26 @@ public class HmrcSubmissionController implements Initializable, MainController.T
             alert.setContentText(e.getMessage());
             alert.showAndWait();
         }
+    }
+
+    /**
+     * Initializes the Annual Submission controller with financial data from services.
+     *
+     * @param controller The AnnualSubmissionController to initialize
+     */
+    private void initializeAnnualSubmission(AnnualSubmissionController controller) {
+        // Ensure services are initialized
+        initializeServices();
+
+        // Calculate totals for the tax year using service methods
+        BigDecimal totalIncome = incomeService.getTotalByTaxYear(businessId, taxYear);
+        BigDecimal totalExpenses = expenseService.getDeductibleTotal(businessId, taxYear);
+        BigDecimal netProfit = totalIncome.subtract(totalExpenses);
+
+        LOG.info("Initializing Annual Submission for " + taxYear.label() +
+                 ": Income=" + totalIncome + ", Expenses=" + totalExpenses + ", NetProfit=" + netProfit);
+
+        // Initialize the submission with financial data
+        controller.initializeSubmission(taxYear, totalIncome, totalExpenses, netProfit);
     }
 }

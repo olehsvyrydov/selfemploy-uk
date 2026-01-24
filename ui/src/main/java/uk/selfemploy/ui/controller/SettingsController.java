@@ -13,7 +13,11 @@ import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
+import uk.selfemploy.core.service.TermsAcceptanceService;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.io.File;
@@ -300,19 +304,43 @@ public class SettingsController implements Initializable, MainController.TaxYear
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
 
-            // Set settings mode on the controller if supported
-            Object controller = loader.getController();
-            if (controller instanceof TermsOfServiceController tos) {
-                tos.setSettingsMode(settingsMode);
-            } else if (controller instanceof PrivacyNoticeController privacy) {
-                privacy.setSettingsMode(settingsMode);
-            }
-
             Stage stage = new Stage();
             stage.setTitle(title + " - UK Self-Employment Manager");
             stage.initModality(Modality.APPLICATION_MODAL);
+            // stage.initStyle(StageStyle.UNDECORATED); // No system title bar - dialog has its own header with close button
 
-            Scene scene = new Scene(root, 650, 750);
+            // Initialize the controller with required dependencies and set settings mode
+            Object controller = loader.getController();
+
+            // Determine dialog size based on document type
+            double width;
+            double height;
+
+            if (controller instanceof TermsOfServiceController tos) {
+                // Initialize with service and set settings mode
+                TermsAcceptanceService termsService = CoreServiceFactory.getTermsAcceptanceService();
+                tos.initializeWithDependencies(termsService);
+                tos.setDialogStage(stage);
+                tos.setSettingsMode(settingsMode);
+                // Terms of Service needs wide view for table of contents + content (nearly full screen)
+                width = 1200;
+                height = 1200;
+            } else if (controller instanceof PrivacyNoticeController privacy) {
+                // Initialize with service and set settings mode
+                PrivacyAcknowledgmentService privacyService = CoreServiceFactory.getPrivacyAcknowledgmentService();
+                privacy.initializeWithDependencies(privacyService);
+                privacy.setDialogStage(stage);
+                privacy.setSettingsMode(settingsMode);
+                // Privacy Notice modal dialog - matching app height
+                width = 550;
+                height = 1200;
+            } else {
+                // Default fallback
+                width = 650;
+                height = 750;
+            }
+
+            Scene scene = new Scene(root, width, height);
             // Load stylesheets
             var mainCss = getClass().getResource("/css/main.css");
             var legalCss = getClass().getResource("/css/legal.css");
@@ -324,6 +352,14 @@ public class SettingsController implements Initializable, MainController.TaxYear
             }
 
             stage.setScene(scene);
+
+            // Set minimum size to prevent dialog from becoming too small
+            stage.setMinWidth(width * 0.8);
+            stage.setMinHeight(height * 0.8);
+
+            // Allow resizing
+            stage.setResizable(true);
+
             stage.showAndWait();
 
         } catch (IOException e) {

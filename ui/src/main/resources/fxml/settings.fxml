@@ -26,11 +26,11 @@
         </VBox>
 
         <!-- Profile Section -->
-        <VBox styleClass="settings-section" spacing="16">
+        <VBox styleClass="settings-section, settings-section-profile" spacing="16">
             <Label text="Profile" styleClass="section-title"/>
 
             <!-- UTR Setting -->
-            <VBox styleClass="settings-card" spacing="12">
+            <VBox styleClass="settings-card, settings-card-profile" spacing="12">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="📋" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
@@ -39,7 +39,8 @@
                     </VBox>
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <TextField fx:id="utrField" promptText="Enter 10-digit UTR" prefWidth="240"
+                    <TextField fx:id="utrField" promptText="Enter 10-digit UTR"
+                               styleClass="utr-field" HBox.hgrow="ALWAYS" maxWidth="320"
                                accessibleText="Enter your 10-digit Unique Taxpayer Reference"/>
                     <Button fx:id="saveUtrButton" text="Save" styleClass="button-secondary" onAction="#handleSaveUtr"/>
                 </HBox>
@@ -49,11 +50,11 @@
         </VBox>
 
         <!-- Legal Section -->
-        <VBox styleClass="settings-section" spacing="16">
+        <VBox styleClass="settings-section, settings-section-legal" spacing="16">
             <Label text="Legal" styleClass="section-title"/>
 
             <!-- Terms of Service -->
-            <HBox styleClass="settings-card-row" alignment="CENTER_LEFT" spacing="12">
+            <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
                 <Label text="📄" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Terms of Service" styleClass="settings-label"/>
@@ -63,7 +64,7 @@
             </HBox>
 
             <!-- Privacy Notice -->
-            <HBox styleClass="settings-card-row" alignment="CENTER_LEFT" spacing="12">
+            <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
                 <Label text="🛡" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Privacy Notice" styleClass="settings-label"/>
@@ -74,11 +75,11 @@
         </VBox>
 
         <!-- Data Management Section -->
-        <VBox styleClass="settings-section" spacing="16">
+        <VBox styleClass="settings-section, settings-section-data" spacing="16">
             <Label text="Data Management" styleClass="section-title"/>
 
             <!-- Export Data -->
-            <HBox styleClass="settings-card-row" alignment="CENTER_LEFT" spacing="12">
+            <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
                 <Label text="📤" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Export Data" styleClass="settings-label"/>
@@ -88,7 +89,7 @@
             </HBox>
 
             <!-- Import Data -->
-            <HBox styleClass="settings-card-row" alignment="CENTER_LEFT" spacing="12">
+            <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
                 <Label text="📥" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Import Data" styleClass="settings-label"/>
@@ -99,10 +100,10 @@
         </VBox>
 
         <!-- About Section -->
-        <VBox styleClass="settings-section" spacing="16">
+        <VBox styleClass="settings-section, settings-section-about" spacing="16">
             <Label text="About" styleClass="section-title"/>
 
-            <VBox styleClass="settings-card" spacing="8">
+            <VBox styleClass="settings-card, settings-card-about" spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="SE" styleClass="about-logo"/>
                     <VBox spacing="4">

@@ -20,9 +20,6 @@
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT">
         <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
         <Label text="Privacy Notice" styleClass="dialog-title"/>
-        <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="closeBtn" text="X" styleClass="close-button"
-                onAction="#handleClose" visible="false" managed="false"/>
     </HBox>
 
     <!-- Content -->

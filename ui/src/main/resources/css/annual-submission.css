@@ -30,17 +30,20 @@
     -fx-text-fill: -fx-text-secondary;
 }
 
-/* ===== Progress Indicator ===== */
+/* ===== Progress Indicator - Improved per /aura design ===== */
 .progress-indicator {
     -fx-background-color: -fx-bg-primary;
     -fx-background-radius: 12;
-    -fx-padding: 24 32;
+    -fx-padding: 24 24;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-alignment: center;
 }
 
 .step-container {
     -fx-alignment: center;
     -fx-spacing: 8;
+    -fx-min-width: 100;
+    -fx-pref-width: 120;
 }
 
 .step-header {
@@ -71,10 +74,11 @@
 }
 
 .step-label {
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
     -fx-text-fill: -fx-text-muted;
     -fx-text-alignment: center;
-    -fx-wrap-text: true;
+    -fx-wrap-text: false;
+    -fx-padding: 4 8 0 8;
 }
 
 .step-container.step-active .step-label {
@@ -82,22 +86,42 @@
     -fx-font-weight: bold;
 }
 
+.step-container.step-completed .step-label {
+    -fx-text-fill: -fx-success;
+}
+
 .step-connector {
     -fx-border-color: #dee2e6;
     -fx-border-width: 0 0 2 0;
     -fx-min-height: 2;
     -fx-max-height: 2;
-    -fx-translate-y: -16;
+    -fx-pref-height: 2;
+    -fx-translate-y: -12;
+    -fx-min-width: 40;
+    -fx-max-width: 80;
 }
 
-/* ===== Panels ===== */
-.summary-panel,
-.calculation-panel {
+/* ===== Panels with Left Accent (matching Income/Expense pattern) ===== */
+.summary-panel {
     -fx-background-color: -fx-bg-primary;
-    -fx-background-radius: 12;
+    -fx-background-radius: 0 12 12 0;
     -fx-padding: 24;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
-    -fx-min-width: 400;
+    -fx-min-width: 380;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #0066cc;
+    -fx-border-radius: 0 12 12 0;
+}
+
+.calculation-panel {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 0 12 12 0;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-min-width: 380;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #dc3545;
+    -fx-border-radius: 0 12 12 0;
 }
 
 .panel-title {

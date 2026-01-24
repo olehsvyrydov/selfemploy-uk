@@ -204,6 +204,27 @@ public final class SqliteDataStore {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_income_business_date ON income(business_id, date)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_income_category ON income(category)");
 
+            // Terms acceptance table for SE-508
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS terms_acceptance (
+                    id TEXT PRIMARY KEY,
+                    tos_version TEXT NOT NULL,
+                    accepted_at TEXT NOT NULL,
+                    scroll_completed_at TEXT NOT NULL,
+                    application_version TEXT NOT NULL
+                )
+            """);
+
+            // Privacy acknowledgment table for SE-507
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS privacy_acknowledgment (
+                    id TEXT PRIMARY KEY,
+                    privacy_version TEXT NOT NULL,
+                    acknowledged_at TEXT NOT NULL,
+                    application_version TEXT NOT NULL
+                )
+            """);
+
             LOG.info("Database tables initialized");
         }
     }
@@ -724,5 +745,157 @@ public final class SqliteDataStore {
             LOG.log(Level.WARNING, "Failed to count income", e);
         }
         return 0;
+    }
+
+    // === Terms Acceptance Operations (SE-508) ===
+
+    /**
+     * Saves a Terms of Service acceptance.
+     *
+     * @param tosVersion          The version of the ToS being accepted
+     * @param acceptedAt          The timestamp of acceptance (UTC)
+     * @param scrollCompletedAt   The timestamp when user scrolled to bottom (UTC)
+     * @param applicationVersion  The version of the application
+     * @return true if saved successfully, false otherwise
+     */
+    public synchronized boolean saveTermsAcceptance(String tosVersion, java.time.Instant acceptedAt,
+                                                     java.time.Instant scrollCompletedAt, String applicationVersion) {
+        String sql = """
+            INSERT INTO terms_acceptance (id, tos_version, accepted_at, scroll_completed_at, application_version)
+            VALUES (?, ?, ?, ?, ?)
+        """;
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, UUID.randomUUID().toString());
+            pstmt.setString(2, tosVersion);
+            pstmt.setString(3, acceptedAt.toString());
+            pstmt.setString(4, scrollCompletedAt.toString());
+            pstmt.setString(5, applicationVersion);
+            pstmt.executeUpdate();
+            LOG.info("Saved Terms acceptance for version: " + tosVersion);
+            return true;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save Terms acceptance", e);
+            return false;
+        }
+    }
+
+    /**
+     * Gets the most recently accepted ToS version.
+     *
+     * @return Optional containing the version string, or empty if no acceptances exist
+     */
+    public synchronized Optional<String> getLatestAcceptedTermsVersion() {
+        String sql = "SELECT tos_version FROM terms_acceptance ORDER BY accepted_at DESC LIMIT 1";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return Optional.of(rs.getString("tos_version"));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to get latest Terms version", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Gets the timestamp of the most recent Terms acceptance.
+     *
+     * @return Optional containing the timestamp, or empty if no acceptances exist
+     */
+    public synchronized Optional<java.time.Instant> getLatestTermsAcceptanceTimestamp() {
+        String sql = "SELECT accepted_at FROM terms_acceptance ORDER BY accepted_at DESC LIMIT 1";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return Optional.of(java.time.Instant.parse(rs.getString("accepted_at")));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to get Terms acceptance timestamp", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Gets the scroll completed timestamp of the most recent Terms acceptance.
+     *
+     * @return Optional containing the timestamp, or empty if no acceptances exist
+     */
+    public synchronized Optional<java.time.Instant> getLatestTermsScrollCompletedTimestamp() {
+        String sql = "SELECT scroll_completed_at FROM terms_acceptance ORDER BY accepted_at DESC LIMIT 1";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return Optional.of(java.time.Instant.parse(rs.getString("scroll_completed_at")));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to get Terms scroll completed timestamp", e);
+        }
+        return Optional.empty();
+    }
+
+    // === Privacy Acknowledgment Operations (SE-507) ===
+
+    /**
+     * Saves a privacy notice acknowledgment.
+     *
+     * @param privacyVersion      The version of the privacy notice being acknowledged
+     * @param acknowledgedAt      The timestamp of acknowledgment (UTC)
+     * @param applicationVersion  The version of the application
+     * @return true if saved successfully, false otherwise
+     */
+    public synchronized boolean savePrivacyAcknowledgment(String privacyVersion, java.time.Instant acknowledgedAt,
+                                                           String applicationVersion) {
+        String sql = """
+            INSERT INTO privacy_acknowledgment (id, privacy_version, acknowledged_at, application_version)
+            VALUES (?, ?, ?, ?)
+        """;
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, UUID.randomUUID().toString());
+            pstmt.setString(2, privacyVersion);
+            pstmt.setString(3, acknowledgedAt.toString());
+            pstmt.setString(4, applicationVersion);
+            pstmt.executeUpdate();
+            LOG.info("Saved Privacy acknowledgment for version: " + privacyVersion);
+            return true;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save Privacy acknowledgment", e);
+            return false;
+        }
+    }
+
+    /**
+     * Gets the most recently acknowledged privacy notice version.
+     *
+     * @return Optional containing the version string, or empty if no acknowledgments exist
+     */
+    public synchronized Optional<String> getLatestAcknowledgedPrivacyVersion() {
+        String sql = "SELECT privacy_version FROM privacy_acknowledgment ORDER BY acknowledged_at DESC LIMIT 1";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return Optional.of(rs.getString("privacy_version"));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to get latest Privacy version", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Gets the timestamp of the most recent Privacy acknowledgment.
+     *
+     * @return Optional containing the timestamp, or empty if no acknowledgments exist
+     */
+    public synchronized Optional<java.time.Instant> getLatestPrivacyAcknowledgmentTimestamp() {
+        String sql = "SELECT acknowledged_at FROM privacy_acknowledgment ORDER BY acknowledged_at DESC LIMIT 1";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return Optional.of(java.time.Instant.parse(rs.getString("acknowledged_at")));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to get Privacy acknowledgment timestamp", e);
+        }
+        return Optional.empty();
     }
 }

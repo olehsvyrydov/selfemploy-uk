@@ -11,6 +11,8 @@ import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionDeclarationViewModel;
 
+import javafx.stage.Stage;
+
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Clock;
@@ -114,6 +116,14 @@ public class AnnualSubmissionController {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMMM yyyy");
 
+    // Dynamic width per step (user request)
+    private static final int STEP_1_WIDTH = 700;
+    private static final int STEP_2_WIDTH = 840;
+    private static final int STEP_3_WIDTH = 1220;
+
+    // Dialog stage reference for dynamic resizing
+    private Stage dialogStage;
+
     // === ViewModels ===
 
     private AnnualSubmissionViewModel viewModel;
@@ -129,6 +139,12 @@ public class AnnualSubmissionController {
         setupBindings();
         setupListeners();
         initializeDisclaimers();
+
+        // Initialize Step 1 as active and show Calculate button
+        javafx.application.Platform.runLater(() -> {
+            updateStepIndicator(1);
+            updateActionButtons(1);
+        });
     }
 
     /**
@@ -258,10 +274,70 @@ public class AnnualSubmissionController {
         return declarationViewModel;
     }
 
+    /**
+     * Sets the dialog stage for dynamic resizing.
+     * Call this after loading the FXML to enable step-based width changes.
+     *
+     * @param stage the Stage containing this view
+     */
+    public void setDialogStage(Stage stage) {
+        this.dialogStage = stage;
+        System.out.println("[DEBUG] setDialogStage called, stage = " + stage);
+    }
+
+    /**
+     * Updates the dialog width based on the current step.
+     * Step 1: 700px, Step 2: 900px, Step 3+: 1200px
+     */
+    private void updateDialogWidth(int currentStep) {
+        if (dialogStage == null) {
+            System.out.println("[DEBUG] dialogStage is null, cannot resize");
+            return;
+        }
+
+        int targetWidth = switch (currentStep) {
+            case 1 -> STEP_1_WIDTH;
+            case 2 -> STEP_2_WIDTH;
+            default -> STEP_3_WIDTH;
+        };
+
+        double currentWidth = dialogStage.getWidth();
+        System.out.println("[DEBUG] updateDialogWidth called for step " + currentStep +
+            ", current=" + currentWidth + ", target=" + targetWidth);
+
+        if (Math.abs(currentWidth - targetWidth) < 1) {
+            System.out.println("[DEBUG] Already at target width, skipping");
+            return;
+        }
+
+        // Calculate new X position to keep dialog centered
+        double currentX = dialogStage.getX();
+        double currentCenterX = currentX + currentWidth / 2;
+        double newX = currentCenterX - targetWidth / 2.0;
+
+        // Force stage to resize by setting min and max width temporarily
+        double originalMinWidth = dialogStage.getMinWidth();
+        double originalMaxWidth = dialogStage.getMaxWidth();
+
+        dialogStage.setMinWidth(targetWidth);
+        dialogStage.setMaxWidth(targetWidth);
+        dialogStage.setWidth(targetWidth);
+        dialogStage.setX(newX);
+
+        // Restore flexible sizing after a brief delay
+        javafx.application.Platform.runLater(() -> {
+            dialogStage.setMinWidth(originalMinWidth);
+            dialogStage.setMaxWidth(Double.MAX_VALUE);
+        });
+
+        System.out.println("[DEBUG] After resize: stage.getWidth() = " + dialogStage.getWidth());
+    }
+
     // === Event Handlers ===
 
     @FXML
     private void handleCalculate() {
+        System.out.println("[DEBUG] handleCalculate() called, current step = " + viewModel.getCurrentStep());
         viewModel.executeNextStep();
         // TODO: Call backend service to calculate tax
         // For now, simulate with mock data
@@ -391,8 +467,11 @@ public class AnnualSubmissionController {
 
         // Listen for current step changes
         viewModel.currentStepProperty().addListener((obs, oldVal, newVal) -> {
-            updateStepIndicator(newVal.intValue());
-            updateActionButtons(newVal.intValue());
+            int step = newVal.intValue();
+            System.out.println("[DEBUG] Step changed: " + oldVal + " -> " + newVal + " (dialogStage=" + dialogStage + ")");
+            updateStepIndicator(step);
+            updateActionButtons(step);
+            updateDialogWidth(step);
         });
 
         // Listen for state changes
