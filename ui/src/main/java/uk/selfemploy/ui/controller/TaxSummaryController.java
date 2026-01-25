@@ -10,9 +10,13 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.component.HelpDialog;
+import uk.selfemploy.ui.help.HelpContent;
+import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.core.service.ExpenseService;
@@ -145,6 +149,9 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     private boolean incomeTaxSectionExpanded = true;
     private boolean niSectionExpanded = true;
     private boolean poaSectionExpanded = true;
+
+    // Help service for styled dialogs
+    private final HelpService helpService = new HelpService();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -619,35 +626,49 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
     @FXML
     void handleShowPOAInfo(ActionEvent event) {
-        showInfo("Payments on Account",
-            "If your tax bill is more than £1,000, you'll usually need to make " +
-            "advance payments towards next year's tax bill. These are called " +
-            "'payments on account'.\n\n" +
-            "Each payment is half of your previous year's tax bill. You make " +
-            "two payments a year:\n" +
-            "• First payment: 31 January\n" +
-            "• Second payment: 31 July\n\n" +
-            "These payments go towards next year's tax bill. If you've paid too much, " +
-            "you'll get a refund. If you haven't paid enough, you'll need to make a " +
-            "'balancing payment'."
-        );
+        HelpContent content = HelpContent.builder()
+                .title("Payments on Account")
+                .body("If your tax bill is more than £1,000, you'll usually need to make " +
+                    "advance payments towards next year's tax bill. These are called " +
+                    "'payments on account'.\n\n" +
+                    "Each payment is half of your previous year's tax bill. You make " +
+                    "two payments a year:\n" +
+                    "• First payment: 31 January\n" +
+                    "• Second payment: 31 July\n\n" +
+                    "These payments go towards next year's tax bill. If you've paid too much, " +
+                    "you'll get a refund. If you haven't paid enough, you'll need to make a " +
+                    "'balancing payment'.")
+                .hmrcLink("https://www.gov.uk/understand-self-assessment-bill/payments-on-account")
+                .linkText("View HMRC guidance")
+                .build();
+
+        // Tax & Calculation category color (green)
+        HelpDialog dialog = new HelpDialog(content, FontAwesomeSolid.CHART_BAR, "#059669", helpService);
+        dialog.showAndWait();
     }
 
     @FXML
     void handleShowClass2Help(ActionEvent event) {
-        showInfo("About Class 2 National Insurance",
-            "Class 2 National Insurance is a flat-rate contribution paid by " +
-            "self-employed people.\n\n" +
-            "Key points:\n" +
-            "• It's a fixed weekly amount (not based on profits)\n" +
-            "• Contributes to your State Pension entitlement\n" +
-            "• You need 35 qualifying years for the full State Pension\n" +
-            "• Each year you pay counts as a qualifying year\n\n" +
-            "Small Profits Threshold (SPT):\n" +
-            "If your profits are below £6,725, Class 2 NI is voluntary. " +
-            "However, you may still want to pay to protect your State Pension.\n\n" +
-            "Full State Pension (2025/26): £221.20 per week (£11,502/year)"
-        );
+        HelpContent content = HelpContent.builder()
+                .title("About Class 2 National Insurance")
+                .body("Class 2 National Insurance is a flat-rate contribution paid by " +
+                    "self-employed people.\n\n" +
+                    "Key points:\n" +
+                    "• It's a fixed weekly amount (not based on profits)\n" +
+                    "• Contributes to your State Pension entitlement\n" +
+                    "• You need 35 qualifying years for the full State Pension\n" +
+                    "• Each year you pay counts as a qualifying year\n\n" +
+                    "Small Profits Threshold (SPT):\n" +
+                    "If your profits are below £6,725, Class 2 NI is voluntary. " +
+                    "However, you may still want to pay to protect your State Pension.\n\n" +
+                    "Full State Pension (2025/26): £221.20 per week (£11,502/year)")
+                .hmrcLink("https://www.gov.uk/national-insurance/how-much-you-pay")
+                .linkText("View HMRC NI rates")
+                .build();
+
+        // Tax & Calculation category color (green)
+        HelpDialog dialog = new HelpDialog(content, FontAwesomeSolid.HEARTBEAT, "#059669", helpService);
+        dialog.showAndWait();
     }
 
     @FXML

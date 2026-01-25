@@ -255,19 +255,19 @@ public class HelpService {
         // === Expense Topics ===
 
         helpContent.put(HelpTopic.EXPENSE_CATEGORY, HelpContent.builder()
-                .title("SA103 Expense Categories")
+                .title("SA103F Expense Categories")
                 .body("Each expense category maps to a specific box on your " +
-                        "HMRC Self Assessment SA103 form.\n\n" +
+                        "HMRC Self Assessment SA103F form (2024-25).\n\n" +
                         "Selecting the correct category ensures your expenses " +
                         "are properly reported to HMRC.\n\n" +
                         "Categories include:\n" +
-                        "• Cost of goods (Box 10)\n" +
-                        "• Staff costs (Box 12)\n" +
-                        "• Travel (Box 13)\n" +
-                        "• Premises (Box 14)\n" +
-                        "• Office costs (Box 16)\n" +
-                        "• Professional fees (Box 21)\n" +
-                        "• Other expenses (Box 23)")
+                        "• Cost of goods (Box 17)\n" +
+                        "• Staff costs (Box 19)\n" +
+                        "• Travel (Box 20)\n" +
+                        "• Premises (Box 21)\n" +
+                        "• Office costs (Box 23)\n" +
+                        "• Professional fees (Box 28)\n" +
+                        "• Other expenses (Box 30)")
                 .hmrcLink(HmrcLinkTopic.SA103_FORM.getUrl())
                 .linkText("View all SA103 categories")
                 .build());
@@ -358,6 +358,87 @@ public class HelpService {
                         "complete and accurate reporting.")
                 .hmrcLink(HmrcLinkTopic.SA103_FORM.getUrl())
                 .linkText("Download SA103 form and notes")
+                .build());
+
+        // === User Guide Topics (SE-9XX) ===
+
+        helpContent.put(HelpTopic.GETTING_STARTED, HelpContent.builder()
+                .title("Getting Started")
+                .body("Welcome to UK Self-Employment Manager - a free, privacy-first " +
+                        "application for UK self-employed individuals.\n\n" +
+                        "Quick overview of features:\n" +
+                        "• Track Income: Record all business income\n" +
+                        "• Track Expenses: Log expenses by SA103 category\n" +
+                        "• Calculate Tax: Real-time Income Tax & NI estimates\n" +
+                        "• Submit to HMRC: One-click MTD submission\n\n" +
+                        "First Steps:\n" +
+                        "1. Complete the setup wizard with your details\n" +
+                        "2. Add your first income entry from Dashboard\n" +
+                        "3. Record business expenses as you incur them\n" +
+                        "4. Review your Tax Summary regularly\n" +
+                        "5. Connect to HMRC when ready to submit")
+                .build());
+
+        helpContent.put(HelpTopic.HMRC_CONNECTION, HelpContent.builder()
+                .title("HMRC Connection & OAuth2")
+                .body("This app uses secure OAuth2 to connect to HMRC.\n\n" +
+                        "How it works:\n" +
+                        "1. Click 'Connect to HMRC' in the app\n" +
+                        "2. Your browser opens HMRC's Government Gateway\n" +
+                        "3. You log in with YOUR Government Gateway credentials\n" +
+                        "4. HMRC asks if you grant access to this app\n" +
+                        "5. You click 'Allow' and return to the app\n\n" +
+                        "Password Safety:\n" +
+                        "• Your password is entered ONLY on HMRC's website\n" +
+                        "• This app NEVER sees or stores your password\n" +
+                        "• We receive only a limited-access token\n" +
+                        "• HMRC controls what we can do on your behalf\n\n" +
+                        "To Disconnect:\n" +
+                        "• Settings > HMRC Connection > Disconnect, or\n" +
+                        "• Log into HMRC and revoke access manually")
+                .hmrcLink(HmrcLinkTopic.MTD_FOR_ITSA.getUrl())
+                .linkText("Learn about Making Tax Digital")
+                .build());
+
+        helpContent.put(HelpTopic.SECURITY_PRIVACY, HelpContent.builder()
+                .title("Security & Privacy")
+                .body("Your data privacy is our priority.\n\n" +
+                        "Local-Only Storage:\n" +
+                        "• All data stays on YOUR computer\n" +
+                        "• We have NO access to your data\n" +
+                        "• No cloud servers store your information\n\n" +
+                        "Encryption:\n" +
+                        "• Database encrypted with AES-256-GCM\n" +
+                        "• HMRC tokens stored in OS keychain\n" +
+                        "• All data at rest is encrypted\n\n" +
+                        "What's Sent to HMRC:\n" +
+                        "• Your tax figures (income, expenses, profit)\n" +
+                        "• Fraud prevention headers (required by law)\n" +
+                        "• Device ID, OS, app version, timezone\n\n" +
+                        "No Third-Party Sharing:\n" +
+                        "• We share nothing with advertisers\n" +
+                        "• No analytics or tracking companies\n" +
+                        "• Only HMRC receives data (when you submit)")
+                .build());
+
+        helpContent.put(HelpTopic.FAQ, HelpContent.builder()
+                .title("Frequently Asked Questions")
+                .body("Common Questions:\n\n" +
+                        "Do I need to be registered as self-employed?\n" +
+                        "Yes. You must be registered with HMRC and have a UTR.\n\n" +
+                        "What tax years are supported?\n" +
+                        "UK tax years from 2024/25 onwards are supported.\n\n" +
+                        "Does the app work offline?\n" +
+                        "Yes, for recording income/expenses. Internet is needed " +
+                        "only for HMRC submissions.\n\n" +
+                        "What if I make a mistake?\n" +
+                        "Before submitting: just edit or delete the entry.\n" +
+                        "After submitting: contact HMRC to make corrections.\n\n" +
+                        "Does this handle VAT?\n" +
+                        "No. This app is for Income Tax and NI Class 4 only.\n\n" +
+                        "Why doesn't my tax match my accountant's figure?\n" +
+                        "Accountants may apply reliefs or allowances not entered. " +
+                        "Always verify with a qualified professional.")
                 .build());
     }
 }

@@ -17,12 +17,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
@@ -501,28 +504,32 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
 
     private void showHelpDialog(HelpTopic topic) {
         helpService.getHelp(topic).ifPresent(content -> {
-            Alert helpDialog = new Alert(Alert.AlertType.INFORMATION);
-            helpDialog.setTitle("Help");
-            helpDialog.setHeaderText(content.title());
-            helpDialog.setContentText(content.body());
+            // Use styled HelpDialog matching the Help page pattern
+            Ikon icon = getIconForTopic(topic);
+            String color = getColorForTopic(topic);
 
-            // Add "Learn More" link button if available
-            if (content.hmrcLink() != null && !content.hmrcLink().isBlank()) {
-                ButtonType learnMore = new ButtonType(content.linkText() != null ?
-                        content.linkText() : "Learn More");
-                ButtonType close = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
-                helpDialog.getButtonTypes().setAll(learnMore, close);
-
-                helpDialog.showAndWait().ifPresent(result -> {
-                    if (result == learnMore) {
-                        // Use in-app browser for HMRC/GOV.UK links
-                        helpService.openHmrcGuidance(content.hmrcLink(), content.title());
-                    }
-                });
-            } else {
-                helpDialog.showAndWait();
-            }
+            HelpDialog dialog = new HelpDialog(content, icon, color, helpService);
+            dialog.showAndWait();
         });
+    }
+
+    /**
+     * Returns the icon for a help topic.
+     */
+    private Ikon getIconForTopic(HelpTopic topic) {
+        return switch (topic) {
+            case PAID_INCOME -> FontAwesomeSolid.POUND_SIGN;
+            case UNPAID_INCOME -> FontAwesomeSolid.CLIPBOARD;
+            default -> FontAwesomeSolid.INFO_CIRCLE;
+        };
+    }
+
+    /**
+     * Returns the color for a help topic based on its category.
+     */
+    private String getColorForTopic(HelpTopic topic) {
+        // Income-related topics use green (matching Income page theme)
+        return "#059669";
     }
 
     private void showSuccessToast(String message) {

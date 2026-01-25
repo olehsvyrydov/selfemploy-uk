@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.kordamp.ikonli.Ikon;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
@@ -154,8 +155,8 @@ class HelpControllerTest {
         @DisplayName("TC-HLP-006: should have icon for each topic")
         void shouldHaveIconForTopics() {
             for (HelpTopic topic : HelpTopic.values()) {
-                String icon = controller.getTopicIcon(topic);
-                assertThat(icon).isNotNull().isNotBlank();
+                Ikon icon = controller.getTopicIcon(topic);
+                assertThat(icon).isNotNull();
             }
         }
 
@@ -578,6 +579,228 @@ class HelpControllerTest {
                 assertThat(content.get().body())
                     .as("Body should not be blank for topic: " + topic)
                     .isNotBlank();
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("SE-9XX: User Guide Feature")
+    class UserGuideFeature {
+
+        @Nested
+        @DisplayName("New Help Topics")
+        class NewHelpTopics {
+
+            @Test
+            @DisplayName("should have GETTING_STARTED topic in User Guide category")
+            void shouldHaveGettingStartedTopic() {
+                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
+                assertThat(topics).contains(HelpTopic.GETTING_STARTED);
+            }
+
+            @Test
+            @DisplayName("should have HMRC_CONNECTION topic in User Guide category")
+            void shouldHaveHmrcConnectionTopic() {
+                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
+                assertThat(topics).contains(HelpTopic.HMRC_CONNECTION);
+            }
+
+            @Test
+            @DisplayName("should have SECURITY_PRIVACY topic in User Guide category")
+            void shouldHaveSecurityPrivacyTopic() {
+                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
+                assertThat(topics).contains(HelpTopic.SECURITY_PRIVACY);
+            }
+
+            @Test
+            @DisplayName("should have FAQ topic in User Guide category")
+            void shouldHaveFaqTopic() {
+                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
+                assertThat(topics).contains(HelpTopic.FAQ);
+            }
+
+            @Test
+            @DisplayName("should have User Guide category")
+            void shouldHaveUserGuideCategory() {
+                assertThat(controller.getHelpCategories()).contains("User Guide");
+            }
+        }
+
+        @Nested
+        @DisplayName("User Guide Content")
+        class UserGuideContent {
+
+            @Test
+            @DisplayName("should return GETTING_STARTED content with correct information")
+            void shouldReturnGettingStartedContent() {
+                Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.GETTING_STARTED);
+
+                assertThat(content).isPresent();
+                assertThat(content.get().title()).contains("Getting Started");
+                assertThat(content.get().body()).isNotBlank();
+            }
+
+            @Test
+            @DisplayName("should return HMRC_CONNECTION content with OAuth explanation")
+            void shouldReturnHmrcConnectionContent() {
+                Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.HMRC_CONNECTION);
+
+                assertThat(content).isPresent();
+                assertThat(content.get().body()).containsIgnoringCase("OAuth");
+            }
+
+            @Test
+            @DisplayName("should return SECURITY_PRIVACY content with encryption info")
+            void shouldReturnSecurityPrivacyContent() {
+                Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.SECURITY_PRIVACY);
+
+                assertThat(content).isPresent();
+                assertThat(content.get().body()).containsIgnoringCase("encrypt");
+            }
+
+            @Test
+            @DisplayName("should return FAQ content")
+            void shouldReturnFaqContent() {
+                Optional<HelpContent> content = controller.getHelpForTopic(HelpTopic.FAQ);
+
+                assertThat(content).isPresent();
+                assertThat(content.get().title()).containsIgnoringCase("question");
+            }
+        }
+
+        @Nested
+        @DisplayName("Display Names for New Topics")
+        class DisplayNamesForNewTopics {
+
+            @Test
+            @DisplayName("should return display name for GETTING_STARTED")
+            void shouldReturnDisplayNameForGettingStarted() {
+                assertThat(controller.getTopicDisplayName(HelpTopic.GETTING_STARTED))
+                    .isEqualTo("Getting Started");
+            }
+
+            @Test
+            @DisplayName("should return display name for HMRC_CONNECTION")
+            void shouldReturnDisplayNameForHmrcConnection() {
+                assertThat(controller.getTopicDisplayName(HelpTopic.HMRC_CONNECTION))
+                    .isEqualTo("HMRC Connection");
+            }
+
+            @Test
+            @DisplayName("should return display name for SECURITY_PRIVACY")
+            void shouldReturnDisplayNameForSecurityPrivacy() {
+                assertThat(controller.getTopicDisplayName(HelpTopic.SECURITY_PRIVACY))
+                    .isEqualTo("Security & Privacy");
+            }
+
+            @Test
+            @DisplayName("should return display name for FAQ")
+            void shouldReturnDisplayNameForFaq() {
+                assertThat(controller.getTopicDisplayName(HelpTopic.FAQ))
+                    .isEqualTo("FAQ");
+            }
+        }
+
+        @Nested
+        @DisplayName("Topic Icons for New Topics")
+        class TopicIconsForNewTopics {
+
+            @Test
+            @DisplayName("should return icon for GETTING_STARTED")
+            void shouldReturnIconForGettingStarted() {
+                Ikon icon = controller.getTopicIcon(HelpTopic.GETTING_STARTED);
+                assertThat(icon).isNotNull();
+            }
+
+            @Test
+            @DisplayName("should return icon for HMRC_CONNECTION")
+            void shouldReturnIconForHmrcConnection() {
+                Ikon icon = controller.getTopicIcon(HelpTopic.HMRC_CONNECTION);
+                assertThat(icon).isNotNull();
+            }
+
+            @Test
+            @DisplayName("should return icon for SECURITY_PRIVACY")
+            void shouldReturnIconForSecurityPrivacy() {
+                Ikon icon = controller.getTopicIcon(HelpTopic.SECURITY_PRIVACY);
+                assertThat(icon).isNotNull();
+            }
+
+            @Test
+            @DisplayName("should return icon for FAQ")
+            void shouldReturnIconForFaq() {
+                Ikon icon = controller.getTopicIcon(HelpTopic.FAQ);
+                assertThat(icon).isNotNull();
+            }
+        }
+
+        @Nested
+        @DisplayName("Topic Descriptions for New Topics")
+        class TopicDescriptionsForNewTopics {
+
+            @Test
+            @DisplayName("should return description for GETTING_STARTED")
+            void shouldReturnDescriptionForGettingStarted() {
+                String desc = controller.getTopicDescription(HelpTopic.GETTING_STARTED);
+                assertThat(desc).isNotNull().isNotBlank();
+            }
+
+            @Test
+            @DisplayName("should return description for HMRC_CONNECTION")
+            void shouldReturnDescriptionForHmrcConnection() {
+                String desc = controller.getTopicDescription(HelpTopic.HMRC_CONNECTION);
+                assertThat(desc).isNotNull().isNotBlank();
+            }
+
+            @Test
+            @DisplayName("should return description for SECURITY_PRIVACY")
+            void shouldReturnDescriptionForSecurityPrivacy() {
+                String desc = controller.getTopicDescription(HelpTopic.SECURITY_PRIVACY);
+                assertThat(desc).isNotNull().isNotBlank();
+            }
+
+            @Test
+            @DisplayName("should return description for FAQ")
+            void shouldReturnDescriptionForFaq() {
+                String desc = controller.getTopicDescription(HelpTopic.FAQ);
+                assertThat(desc).isNotNull().isNotBlank();
+            }
+        }
+
+        @Nested
+        @DisplayName("User Guide Dialog")
+        class UserGuideDialog {
+
+            @Test
+            @DisplayName("should have user guide content available")
+            void shouldHaveUserGuideContentAvailable() {
+                String userGuideContent = controller.getUserGuideContent();
+                assertThat(userGuideContent).isNotNull().isNotBlank();
+            }
+
+            @Test
+            @DisplayName("user guide content should include key sections")
+            void userGuideContentShouldIncludeKeySections() {
+                String content = controller.getUserGuideContent();
+
+                assertThat(content).contains("What This App Does");
+                assertThat(content).contains("Getting Started");
+                assertThat(content).contains("Daily Usage");
+                assertThat(content).contains("HMRC Connection");
+                assertThat(content).contains("Security");
+                assertThat(content).contains("Deadline");
+            }
+        }
+
+        @Nested
+        @DisplayName("Category Color for User Guide")
+        class CategoryColorForUserGuide {
+
+            @Test
+            @DisplayName("should have color for User Guide category")
+            void shouldHaveColorForUserGuideCategory() {
+                String color = controller.getCategoryColor("User Guide");
+                assertThat(color).isNotNull().startsWith("#");
             }
         }
     }

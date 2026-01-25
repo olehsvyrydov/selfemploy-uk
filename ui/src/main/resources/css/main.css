@@ -191,6 +191,15 @@
     -fx-text-fill: #374151;
 }
 
+.header-icon-fonticon {
+    -fx-icon-size: 16;
+    -fx-icon-color: #6b7280;
+}
+
+.header-icon-button:hover .header-icon-fonticon {
+    -fx-icon-color: #374151;
+}
+
 .header-icon-emoji {
     -fx-font-size: 16px;
 }
@@ -200,8 +209,10 @@
     -fx-background-color: #fef3c7;
 }
 
-.header-icon-notification .header-icon-text {
+.header-icon-notification .header-icon-text,
+.header-icon-notification .header-icon-fonticon {
     -fx-text-fill: #d97706;
+    -fx-icon-color: #d97706;
 }
 
 .header-icon-button:hover .header-icon-notification {
@@ -212,8 +223,10 @@
     -fx-background-color: #dbeafe;
 }
 
-.header-icon-help .header-icon-text {
+.header-icon-help .header-icon-text,
+.header-icon-help .header-icon-fonticon {
     -fx-text-fill: #2563eb;
+    -fx-icon-color: #2563eb;
 }
 
 .header-icon-button:hover .header-icon-help {
@@ -224,8 +237,10 @@
     -fx-background-color: #f3f4f6;
 }
 
-.header-icon-settings .header-icon-text {
+.header-icon-settings .header-icon-text,
+.header-icon-settings .header-icon-fonticon {
     -fx-text-fill: #4b5563;
+    -fx-icon-color: #4b5563;
 }
 
 .header-icon-button:hover .header-icon-settings {

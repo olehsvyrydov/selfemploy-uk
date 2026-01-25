@@ -20,12 +20,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.ReceiptStorageService;
-import uk.selfemploy.ui.help.HelpContent;
+import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
@@ -283,7 +286,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     HBox container = new HBox(2);
                     container.setAlignment(Pos.CENTER);
 
-                    Label clipIcon = new Label("📎");
+                    FontIcon clipIcon = FontIcon.of(FontAwesomeSolid.PAPERCLIP, 14);
                     clipIcon.getStyleClass().add("receipt-icon");
 
                     Label badge = new Label(String.valueOf(count));
@@ -500,28 +503,32 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
 
     private void showHelpDialog(HelpTopic topic) {
         helpService.getHelp(topic).ifPresent(content -> {
-            Alert helpDialog = new Alert(Alert.AlertType.INFORMATION);
-            helpDialog.setTitle("Help");
-            helpDialog.setHeaderText(content.title());
-            helpDialog.setContentText(content.body());
+            // Use styled HelpDialog matching the Help page pattern
+            Ikon icon = getIconForTopic(topic);
+            String color = getColorForTopic(topic);
 
-            // Add "Learn More" link button if available
-            if (content.hmrcLink() != null && !content.hmrcLink().isBlank()) {
-                ButtonType learnMore = new ButtonType(content.linkText() != null ?
-                        content.linkText() : "Learn More");
-                ButtonType close = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
-                helpDialog.getButtonTypes().setAll(learnMore, close);
-
-                helpDialog.showAndWait().ifPresent(result -> {
-                    if (result == learnMore) {
-                        // Use in-app browser for HMRC/GOV.UK links
-                        helpService.openHmrcGuidance(content.hmrcLink(), content.title());
-                    }
-                });
-            } else {
-                helpDialog.showAndWait();
-            }
+            HelpDialog dialog = new HelpDialog(content, icon, color, helpService);
+            dialog.showAndWait();
         });
+    }
+
+    /**
+     * Returns the icon for a help topic.
+     */
+    private Ikon getIconForTopic(HelpTopic topic) {
+        return switch (topic) {
+            case ALLOWABLE_EXPENSES -> FontAwesomeSolid.CHECK_CIRCLE;
+            case NON_DEDUCTIBLE_EXPENSES -> FontAwesomeSolid.TIMES_CIRCLE;
+            default -> FontAwesomeSolid.INFO_CIRCLE;
+        };
+    }
+
+    /**
+     * Returns the color for a help topic based on its category.
+     */
+    private String getColorForTopic(HelpTopic topic) {
+        // Expense-related topics use orange (matching Expenses page theme)
+        return "#d97706";
     }
 
     private void handleEditExpense(ExpenseTableRow row) {

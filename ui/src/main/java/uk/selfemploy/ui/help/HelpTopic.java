@@ -93,5 +93,27 @@ public enum HelpTopic {
     /**
      * Help about SA103 form in general.
      */
-    SA103_FORM
+    SA103_FORM,
+
+    // === User Guide Topics (SE-9XX) ===
+
+    /**
+     * Getting started with the application - overview and first steps.
+     */
+    GETTING_STARTED,
+
+    /**
+     * How HMRC OAuth2 connection works, password safety, connecting/disconnecting.
+     */
+    HMRC_CONNECTION,
+
+    /**
+     * Security and privacy information - local storage, encryption, data sent to HMRC.
+     */
+    SECURITY_PRIVACY,
+
+    /**
+     * Frequently Asked Questions.
+     */
+    FAQ
 }

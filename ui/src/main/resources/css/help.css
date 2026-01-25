@@ -2,10 +2,10 @@
  * SE-701: In-App Help System Styles
  *
  * Design: /aura (Senior UI/UX Design Architect)
- * Implementation: /james
+ * Redesign: /finn - Minimal style to match Settings page
  *
  * This stylesheet provides consistent styling for help components
- * using text-based icons for cross-platform compatibility.
+ * using a clean, minimal design that matches the Settings page.
  */
 
 /* ===== Help Page Layout ===== */
@@ -27,300 +27,111 @@
     -fx-padding: 0;
 }
 
-.section-subtitle {
-    -fx-font-size: 13px;
-    -fx-text-fill: #6c757d;
-}
-
-/* ===== Help Card (common card style) ===== */
-.help-card {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 6, 0, 0, 2);
-}
-
-/* ===== Quick Links Section ===== */
+/* ===== Quick Links - Inline buttons ===== */
 .quick-links-flow {
-    -fx-padding: 8 4 8 4;
+    -fx-padding: 0;
 }
 
-.help-link-button {
+.help-quick-link {
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+    -fx-text-fill: #374151;
+}
+
+.help-quick-link:hover {
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #0f766e;
+    -fx-text-fill: #0f766e;
+}
+
+.help-quick-link:focused {
+    -fx-border-color: #0066cc;
+    -fx-border-width: 2;
+}
+
+/* ===== User Guide Button - Prominent call to action ===== */
+.user-guide-btn {
+    -fx-background-color: linear-gradient(to right, #7c3aed, #8b5cf6);
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(124, 58, 237, 0.3), 8, 0, 0, 2);
+}
+
+.user-guide-btn:hover {
+    -fx-background-color: linear-gradient(to right, #6d28d9, #7c3aed);
+}
+
+.user-guide-btn:focused {
+    -fx-border-color: #4c1d95;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+}
+
+/* ===== Help Topic Rows - Settings card style ===== */
+.help-topic-row {
     -fx-background-color: white;
     -fx-border-color: #e5e7eb;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 10 16;
+    -fx-padding: 16 20;
     -fx-cursor: hand;
 }
 
-.help-link-button:hover {
+.help-topic-row:hover {
     -fx-background-color: #f8fafc;
-    -fx-border-color: #64748b;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);
+    -fx-border-color: #d1d5db;
 }
 
-.quick-link-icon {
-    -fx-min-width: 28;
-    -fx-min-height: 28;
-    -fx-max-width: 28;
-    -fx-max-height: 28;
+/* Topic Badge - Small colored badge with initials */
+.help-topic-badge {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
     -fx-background-radius: 6;
     -fx-alignment: center;
-}
-
-/* Professional muted quick link icon backgrounds */
-.quick-link-icon-blue {
-    -fx-background-color: #e0f2fe;
-}
-
-.quick-link-icon-green {
-    -fx-background-color: #ccfbf1;
-}
-
-.quick-link-icon-orange {
-    -fx-background-color: #fef3c7;
-}
-
-.quick-link-icon-gray {
-    -fx-background-color: #f1f5f9;
-}
-
-.quick-link-icon-text {
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #374151;
-}
-
-.quick-link-icon-text-small {
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #374151;
-}
-
-/* Professional muted quick link icon text colors */
-.quick-link-icon-blue .quick-link-icon-text,
-.quick-link-icon-blue .quick-link-icon-text-small {
-    -fx-text-fill: #0369a1;
-}
-
-.quick-link-icon-green .quick-link-icon-text,
-.quick-link-icon-green .quick-link-icon-text-small {
-    -fx-text-fill: #0f766e;
-}
-
-.quick-link-icon-orange .quick-link-icon-text,
-.quick-link-icon-orange .quick-link-icon-text-small {
-    -fx-text-fill: #b45309;
-}
-
-.quick-link-icon-gray .quick-link-icon-text,
-.quick-link-icon-gray .quick-link-icon-text-small {
-    -fx-text-fill: #475569;
-}
-
-.quick-link-label {
-    -fx-font-size: 13px;
-    -fx-text-fill: #374151;
-}
-
-.external-link-icon {
     -fx-font-size: 11px;
-    -fx-text-fill: #9ca3af;
-}
-
-/* ===== Help Category ===== */
-.help-category {
-    -fx-background-color: white;
-    -fx-background-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 6, 0, 0, 2);
-}
-
-/* Category Headers */
-.help-category-header {
-    -fx-padding: 16 20;
-    -fx-background-radius: 12 12 0 0;
-}
-
-/* Professional muted color palette - designed by /aura */
-
-/* Teal - Tax & Calculation (Trust/Calm) */
-.category-header-teal {
-    -fx-background-color: linear-gradient(to right, #0f766e, #14b8a6);
-}
-
-/* Amber - Expenses (Warm/Approachable) */
-.category-header-amber {
-    -fx-background-color: linear-gradient(to right, #b45309, #d97706);
-}
-
-/* Sky - HMRC Submission (Official/Reliable) */
-.category-header-sky {
-    -fx-background-color: linear-gradient(to right, #0369a1, #0ea5e9);
-}
-
-/* Slate - General & Quick Links (Neutral/Professional) */
-.category-header-slate {
-    -fx-background-color: linear-gradient(to right, #475569, #64748b);
-}
-
-/* Legacy aliases for backwards compatibility */
-.category-header-green {
-    -fx-background-color: linear-gradient(to right, #0f766e, #14b8a6);
-}
-
-.category-header-orange {
-    -fx-background-color: linear-gradient(to right, #b45309, #d97706);
-}
-
-.category-header-blue {
-    -fx-background-color: linear-gradient(to right, #0369a1, #0ea5e9);
-}
-
-.category-header-gray {
-    -fx-background-color: linear-gradient(to right, #475569, #64748b);
-}
-
-.category-header-purple {
-    -fx-background-color: linear-gradient(to right, #475569, #64748b);
-}
-
-.quick-links-subtitle {
-    -fx-font-size: 12px;
-    -fx-text-fill: rgba(255, 255, 255, 0.85);
-}
-
-.quick-links-content {
-    -fx-background-color: white;
-    -fx-background-radius: 0 0 12 12;
-}
-
-.help-category-icon-wrapper {
-    -fx-min-width: 32;
-    -fx-min-height: 32;
-    -fx-max-width: 32;
-    -fx-max-height: 32;
-    -fx-background-color: rgba(255, 255, 255, 0.25);
-    -fx-background-radius: 16;
-    -fx-alignment: center;
-}
-
-.help-category-icon-text {
-    -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: white;
 }
 
-.help-category-title-text {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: white;
-}
-
-/* Topic List */
-.help-topic-list {
-    -fx-padding: 0;
-}
-
-/* Help Topic Card */
-.help-topic-card {
-    -fx-background-color: white;
-    -fx-border-color: #f3f4f6;
-    -fx-border-width: 0 0 1 0;
-    -fx-padding: 14 20;
-    -fx-cursor: hand;
-}
-
-.help-topic-card:hover {
-    -fx-background-color: #f8fafc;
-}
-
-.help-topic-card-last {
-    -fx-border-width: 0;
-    -fx-background-radius: 0 0 12 12;
-}
-
-.help-topic-card-last:hover {
-    -fx-background-radius: 0 0 12 12;
-}
-
-/* Topic Icon */
-.help-topic-icon-wrapper {
-    -fx-min-width: 40;
-    -fx-min-height: 40;
-    -fx-max-width: 40;
-    -fx-max-height: 40;
-    -fx-background-radius: 8;
-    -fx-alignment: center;
-}
-
-/* Professional muted topic icon backgrounds */
-.topic-icon-green,
-.topic-icon-teal {
+/* Badge color variants - muted professional palette */
+.badge-teal {
     -fx-background-color: #ccfbf1;
-}
-
-.topic-icon-orange,
-.topic-icon-amber {
-    -fx-background-color: #fef3c7;
-}
-
-.topic-icon-blue,
-.topic-icon-sky {
-    -fx-background-color: #e0f2fe;
-}
-
-.topic-icon-gray,
-.topic-icon-slate {
-    -fx-background-color: #f1f5f9;
-}
-
-.topic-icon-text {
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #374151;
-}
-
-.topic-icon-text-small {
-    -fx-font-size: 9px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #374151;
-}
-
-/* Professional muted topic icon text colors */
-.topic-icon-green .topic-icon-text,
-.topic-icon-green .topic-icon-text-small,
-.topic-icon-teal .topic-icon-text,
-.topic-icon-teal .topic-icon-text-small {
     -fx-text-fill: #0f766e;
 }
 
-.topic-icon-orange .topic-icon-text,
-.topic-icon-orange .topic-icon-text-small,
-.topic-icon-amber .topic-icon-text,
-.topic-icon-amber .topic-icon-text-small {
+.badge-amber {
+    -fx-background-color: #fef3c7;
     -fx-text-fill: #b45309;
 }
 
-.topic-icon-blue .topic-icon-text,
-.topic-icon-blue .topic-icon-text-small,
-.topic-icon-sky .topic-icon-text,
-.topic-icon-sky .topic-icon-text-small {
+.badge-sky {
+    -fx-background-color: #e0f2fe;
     -fx-text-fill: #0369a1;
 }
 
-.topic-icon-gray .topic-icon-text,
-.topic-icon-gray .topic-icon-text-small,
-.topic-icon-slate .topic-icon-text,
-.topic-icon-slate .topic-icon-text-small {
+.badge-slate {
+    -fx-background-color: #f1f5f9;
     -fx-text-fill: #475569;
+}
+
+.badge-violet {
+    -fx-background-color: #ede9fe;
+    -fx-text-fill: #6d28d9;
 }
 
 /* Topic Content */
-.help-topic-content {
-    -fx-padding: 0 0 0 14;
-}
-
 .help-topic-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
@@ -330,41 +141,25 @@
 .help-topic-desc {
     -fx-font-size: 12px;
     -fx-text-fill: #6b7280;
-    -fx-padding: 2 0 0 0;
 }
 
 /* Chevron */
 .help-topic-chevron {
-    -fx-font-size: 24px;
+    -fx-font-size: 20px;
     -fx-text-fill: #d1d5db;
-    -fx-padding: 0 0 0 8;
 }
 
-.help-topic-card:hover .help-topic-chevron {
+.help-topic-row:hover .help-topic-chevron {
     -fx-text-fill: #9ca3af;
 }
 
 /* ===== Support Section ===== */
 .help-support-card {
-    -fx-border-color: #dbeafe;
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
     -fx-border-width: 1;
-    -fx-background-color: linear-gradient(to bottom right, #ffffff, #f0f7ff);
-}
-
-.support-icon-wrapper {
-    -fx-min-width: 36;
-    -fx-min-height: 36;
-    -fx-max-width: 36;
-    -fx-max-height: 36;
-    -fx-background-color: #dbeafe;
-    -fx-background-radius: 18;
-    -fx-alignment: center;
-}
-
-.support-icon-text {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #2563eb;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
 }
 
 .help-support-text {
@@ -372,62 +167,154 @@
     -fx-text-fill: #6b7280;
 }
 
-.support-link-button {
-    -fx-background-color: #dbeafe;
-    -fx-border-color: transparent;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 8 16;
-    -fx-cursor: hand;
-}
-
-.support-link-button:hover {
-    -fx-background-color: #bfdbfe;
-    -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.15), 6, 0, 0, 2);
-}
-
-.support-link-label {
-    -fx-font-size: 13px;
-    -fx-text-fill: #1d4ed8;
-    -fx-font-weight: 500;
-}
-
-/* ===== Disclaimer Section ===== */
-.help-disclaimer-card {
+/* ===== Disclaimer - Left border accent (matches Settings) ===== */
+.help-disclaimer {
+    -fx-background-color: #fffbeb;
     -fx-border-color: #fbbf24;
     -fx-border-width: 0 0 0 4;
-    -fx-background-color: #fffbeb;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16 20;
 }
 
-.disclaimer-icon-wrapper {
-    -fx-min-width: 28;
-    -fx-min-height: 28;
-    -fx-max-width: 28;
-    -fx-max-height: 28;
-    -fx-background-color: #fbbf24;
-    -fx-background-radius: 14;
-    -fx-alignment: center;
-}
-
-.disclaimer-icon-text {
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-text-fill: white;
-}
-
-.disclaimer-title {
+.help-disclaimer .disclaimer-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-text-fill: #92400e;
 }
 
-.disclaimer-text {
+.help-disclaimer .disclaimer-text {
     -fx-font-size: 13px;
     -fx-text-fill: #78350f;
-    -fx-padding: 0 0 0 40;
 }
 
-/* ===== Help Dialog Styles ===== */
+/* ===== Help Dialog Styles (Stage-based, matches NotificationDialog) ===== */
+/* Redesigned: 2026-01-25 - Uses DialogStyler for consistent popup styling */
+
+/* Dialog container - floating effect per /aura design */
+.help-dialog-container {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    /* Crisp edge border for separation (8% opacity per /aura) */
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    /* Shadow applied programmatically to wrapper to avoid clip issues */
+}
+
+/* Header - Gradient (11px radius to fit inside 12px container with 1px border) */
+.help-dialog-header {
+    -fx-background-color: linear-gradient(to right, #475569, #64748b);
+    -fx-background-radius: 11 11 0 0;
+}
+
+.help-dialog-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: white;
+    -fx-wrap-text: true;
+}
+
+.help-dialog-icon-wrapper {
+    -fx-alignment: center;
+}
+
+.help-dialog-icon {
+    /* Emojis are graphics, not text - don't apply text-fill */
+    -fx-font-size: 18px;
+    -fx-alignment: center;
+}
+
+.help-dialog-close {
+    -fx-background-color: transparent;
+    -fx-text-fill: rgba(255, 255, 255, 0.7);
+    -fx-font-size: 18px;
+    -fx-cursor: hand;
+    -fx-padding: 4 8;
+    -fx-background-radius: 4;
+}
+
+.help-dialog-close:hover {
+    -fx-text-fill: white;
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+.help-dialog-close:focused {
+    -fx-text-fill: white;
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-border-color: rgba(255, 255, 255, 0.5);
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+
+/* Body content */
+.help-dialog-body {
+    -fx-background-color: white;
+}
+
+.help-dialog-text {
+    -fx-wrap-text: true;
+}
+
+/* ScrollPane styling */
+.help-scroll-pane {
+    -fx-background-color: white;
+    -fx-background: white;
+    -fx-padding: 0;
+}
+
+.help-scroll-pane > .viewport {
+    -fx-background-color: white;
+}
+
+.help-scroll-pane > .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.help-scroll-pane > .scroll-bar > .thumb {
+    -fx-background-color: #cbd5e1;
+    -fx-background-radius: 4;
+}
+
+.help-scroll-pane > .scroll-bar > .thumb:hover {
+    -fx-background-color: #94a3b8;
+}
+
+/* Footer buttons area */
+.help-dialog-buttons {
+    -fx-spacing: 12;
+    -fx-alignment: center-right;
+    -fx-background-color: white;
+    -fx-background-radius: 0 0 12 12;
+}
+
+/* Primary Button (Teal - matches NotificationDialog) */
+.help-btn-primary {
+    -fx-background-color: #0f766e;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-padding: 10 24;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.help-btn-primary:hover {
+    -fx-background-color: #14b8a6;
+}
+
+.help-btn-primary:focused {
+    -fx-background-color: #14b8a6;
+    -fx-border-color: #0f766e;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+}
+
+/* Link button for HMRC guidance */
+.help-dialog-link-btn {
+    -fx-cursor: hand;
+}
+
+/* Legacy styles for backwards compatibility */
 .help-dialog-pane {
     -fx-background-color: white;
     -fx-background-radius: 12;
@@ -440,35 +327,6 @@
 
 .help-dialog-pane > .button-bar > .container {
     -fx-alignment: center-right;
-}
-
-.help-dialog-container {
-    -fx-background-color: white;
-    -fx-background-radius: 12 12 0 0;
-}
-
-.help-dialog-header {
-    -fx-background-radius: 12 12 0 0;
-}
-
-.help-dialog-icon-wrapper {
-    -fx-alignment: center;
-}
-
-.help-dialog-icon {
-    -fx-text-fill: white;
-}
-
-.help-dialog-title {
-    -fx-wrap-text: true;
-}
-
-.help-dialog-body {
-    -fx-background-color: white;
-}
-
-.help-dialog-text {
-    -fx-wrap-text: true;
 }
 
 .help-dialog-close-btn {
@@ -489,10 +347,6 @@
     -fx-border-color: #0066cc;
     -fx-border-width: 2;
     -fx-border-radius: 6;
-}
-
-.help-dialog-link-btn {
-    -fx-cursor: hand;
 }
 
 /* ===== Legacy styles for backwards compatibility ===== */
@@ -552,4 +406,27 @@
 .external-browser-toast-url {
     -fx-font-size: 11px;
     -fx-text-fill: #94a3b8;
+}
+
+/* ===== Dialog Header Colors (for help topic dialogs) ===== */
+/* These match the badge colors for visual consistency */
+
+.dialog-header-teal {
+    -fx-background-color: linear-gradient(to right, #0f766e, #14b8a6);
+}
+
+.dialog-header-amber {
+    -fx-background-color: linear-gradient(to right, #b45309, #d97706);
+}
+
+.dialog-header-sky {
+    -fx-background-color: linear-gradient(to right, #0369a1, #0ea5e9);
+}
+
+.dialog-header-slate {
+    -fx-background-color: linear-gradient(to right, #475569, #64748b);
+}
+
+.dialog-header-violet {
+    -fx-background-color: linear-gradient(to right, #7c3aed, #8b5cf6);
 }

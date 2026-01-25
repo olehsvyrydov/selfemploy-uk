@@ -199,6 +199,51 @@ class HelpServiceTest {
     }
 
     @Nested
+    @DisplayName("SE-9XX: User Guide Help Topics")
+    class UserGuideHelpTopics {
+
+        @Test
+        @DisplayName("should provide Getting Started help")
+        void shouldProvideGettingStartedHelp() {
+            Optional<HelpContent> help = helpService.getHelp(HelpTopic.GETTING_STARTED);
+
+            assertThat(help).isPresent();
+            assertThat(help.get().title()).contains("Getting Started");
+            assertThat(help.get().body()).contains("overview");
+        }
+
+        @Test
+        @DisplayName("should provide HMRC Connection help")
+        void shouldProvideHmrcConnectionHelp() {
+            Optional<HelpContent> help = helpService.getHelp(HelpTopic.HMRC_CONNECTION);
+
+            assertThat(help).isPresent();
+            assertThat(help.get().title()).contains("HMRC");
+            assertThat(help.get().body()).contains("OAuth");
+        }
+
+        @Test
+        @DisplayName("should provide Security & Privacy help")
+        void shouldProvideSecurityPrivacyHelp() {
+            Optional<HelpContent> help = helpService.getHelp(HelpTopic.SECURITY_PRIVACY);
+
+            assertThat(help).isPresent();
+            assertThat(help.get().title()).contains("Security");
+            assertThat(help.get().body()).contains("encrypted");
+        }
+
+        @Test
+        @DisplayName("should provide FAQ help")
+        void shouldProvideFaqHelp() {
+            Optional<HelpContent> help = helpService.getHelp(HelpTopic.FAQ);
+
+            assertThat(help).isPresent();
+            assertThat(help.get().title()).containsIgnoringCase("question");
+            assertThat(help.get().body()).isNotBlank();
+        }
+    }
+
+    @Nested
     @DisplayName("SE-7XX: In-App Browser Integration")
     class InAppBrowserIntegration {
 

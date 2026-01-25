@@ -3,6 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="uk.selfemploy.ui.controller.MainController"
@@ -36,7 +37,7 @@
                 <Button fx:id="notificationButton" styleClass="header-icon-button" onAction="#handleNotificationsAction" accessibleText="Notifications">
                     <graphic>
                         <StackPane styleClass="header-icon-circle, header-icon-notification">
-                            <Label text="N" styleClass="header-icon-text"/>
+                            <FontIcon iconLiteral="fas-bell" iconSize="16" styleClass="header-icon-fonticon"/>
                         </StackPane>
                     </graphic>
                 </Button>
@@ -49,14 +50,14 @@
             <Button fx:id="helpButton" styleClass="header-icon-button" onAction="#handleHelp" accessibleText="Help">
                 <graphic>
                     <StackPane styleClass="header-icon-circle, header-icon-help">
-                        <Label text="?" styleClass="header-icon-text"/>
+                        <FontIcon iconLiteral="fas-question-circle" iconSize="16" styleClass="header-icon-fonticon"/>
                     </StackPane>
                 </graphic>
             </Button>
             <Button fx:id="settingsButton" styleClass="header-icon-button" onAction="#handleSettings" accessibleText="Settings">
                 <graphic>
                     <StackPane styleClass="header-icon-circle, header-icon-settings">
-                        <Label text="S" styleClass="header-icon-text"/>
+                        <FontIcon iconLiteral="fas-cog" iconSize="16" styleClass="header-icon-fonticon"/>
                     </StackPane>
                 </graphic>
             </Button>

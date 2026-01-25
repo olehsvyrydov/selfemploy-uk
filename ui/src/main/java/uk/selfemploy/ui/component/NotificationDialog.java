@@ -14,6 +14,9 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.service.DeadlineNotification;
 import uk.selfemploy.ui.service.NotificationPriority;
@@ -115,7 +118,7 @@ public class NotificationDialog {
         header.setPadding(new Insets(16, 20, 16, 20));
 
         // Bell icon
-        Label bellIcon = new Label("🔔");
+        FontIcon bellIcon = FontIcon.of(FontAwesomeSolid.BELL, 20);
         bellIcon.getStyleClass().add("notification-dialog-icon");
 
         // Title
@@ -159,7 +162,7 @@ public class NotificationDialog {
         emptyState.setMinWidth(340);
 
         // Large bell icon
-        Label bellIcon = new Label("🔔");
+        FontIcon bellIcon = FontIcon.of(FontAwesomeSolid.BELL, 48);
         bellIcon.getStyleClass().add("notification-empty-icon");
 
         // Title
@@ -198,7 +201,7 @@ public class NotificationDialog {
         row.setAlignment(Pos.CENTER_LEFT);
 
         // Calendar icon
-        Label icon = new Label("📅");
+        FontIcon icon = FontIcon.of(FontAwesomeSolid.CALENDAR_ALT, 16);
         icon.getStyleClass().add("notification-deadline-icon");
 
         // Text content
@@ -272,7 +275,7 @@ public class NotificationDialog {
         iconWrapper.setMinSize(32, 32);
         iconWrapper.setMaxSize(32, 32);
 
-        Label iconText = new Label(getTypeIcon(notification.priority()));
+        FontIcon iconText = FontIcon.of(getTypeIcon(notification.priority()), 14);
         iconText.getStyleClass().add("notification-type-icon-text");
         iconWrapper.getChildren().add(iconText);
 
@@ -330,12 +333,12 @@ public class NotificationDialog {
     /**
      * Returns the icon for a notification priority.
      */
-    private String getTypeIcon(NotificationPriority priority) {
+    private Ikon getTypeIcon(NotificationPriority priority) {
         return switch (priority) {
-            case LOW -> "ℹ️";
-            case MEDIUM -> "📋";
-            case HIGH -> "⚠️";
-            case CRITICAL -> "🚨";
+            case LOW -> FontAwesomeSolid.INFO_CIRCLE;
+            case MEDIUM -> FontAwesomeSolid.CLIPBOARD;
+            case HIGH -> FontAwesomeSolid.EXCLAMATION_TRIANGLE;
+            case CRITICAL -> FontAwesomeSolid.EXCLAMATION_CIRCLE;
         };
     }
 

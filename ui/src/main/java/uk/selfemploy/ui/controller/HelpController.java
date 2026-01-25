@@ -9,8 +9,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.component.HelpDialog;
+import uk.selfemploy.ui.component.HelpDialog.DialogSize;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
@@ -41,6 +44,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     public static final String GITHUB_ISSUES_URL = "https://github.com/olehsvyrydov/selfemploy-uk/issues";
 
     private static final List<String> HELP_CATEGORIES = Arrays.asList(
+        "User Guide",
         "Tax & Calculation",
         "Expenses",
         "HMRC Submission",
@@ -51,11 +55,17 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     private static final Map<HelpTopic, String> TOPIC_DISPLAY_NAMES;
     private static final Map<HmrcLinkTopic, String> LINK_DISPLAY_NAMES;
     private static final Map<HelpTopic, String> TOPIC_DESCRIPTIONS;
-    private static final Map<HelpTopic, String> TOPIC_ICONS;
+    private static final Map<HelpTopic, Ikon> TOPIC_ICONS;
     private static final Map<String, String> CATEGORY_COLORS;
 
     static {
         CATEGORY_TOPICS = new LinkedHashMap<>();
+        CATEGORY_TOPICS.put("User Guide", Arrays.asList(
+            HelpTopic.GETTING_STARTED,
+            HelpTopic.HMRC_CONNECTION,
+            HelpTopic.SECURITY_PRIVACY,
+            HelpTopic.FAQ
+        ));
         CATEGORY_TOPICS.put("Tax & Calculation", Arrays.asList(
             HelpTopic.NET_PROFIT,
             HelpTopic.INCOME_TAX,
@@ -90,6 +100,11 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         TOPIC_DISPLAY_NAMES.put(HelpTopic.HMRC_SUBMISSION, "HMRC Submission");
         TOPIC_DISPLAY_NAMES.put(HelpTopic.TAX_YEAR, "Tax Year");
         TOPIC_DISPLAY_NAMES.put(HelpTopic.SA103_FORM, "SA103 Form");
+        // User Guide topics
+        TOPIC_DISPLAY_NAMES.put(HelpTopic.GETTING_STARTED, "Getting Started");
+        TOPIC_DISPLAY_NAMES.put(HelpTopic.HMRC_CONNECTION, "HMRC Connection");
+        TOPIC_DISPLAY_NAMES.put(HelpTopic.SECURITY_PRIVACY, "Security & Privacy");
+        TOPIC_DISPLAY_NAMES.put(HelpTopic.FAQ, "FAQ");
 
         LINK_DISPLAY_NAMES = new EnumMap<>(HmrcLinkTopic.class);
         LINK_DISPLAY_NAMES.put(HmrcLinkTopic.TAX_RATES, "Income Tax Rates");
@@ -117,24 +132,35 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         TOPIC_DESCRIPTIONS.put(HelpTopic.HMRC_SUBMISSION, "Submitting your Self Assessment");
         TOPIC_DESCRIPTIONS.put(HelpTopic.TAX_YEAR, "UK tax year dates and deadlines");
         TOPIC_DESCRIPTIONS.put(HelpTopic.SA103_FORM, "Self-employment supplementary pages");
+        // User Guide topics
+        TOPIC_DESCRIPTIONS.put(HelpTopic.GETTING_STARTED, "Quick overview of app features and first steps");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.HMRC_CONNECTION, "How OAuth2 works and password safety");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.SECURITY_PRIVACY, "Local storage, encryption and data handling");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.FAQ, "Common questions and answers");
 
-        // Topic icons
+        // Topic icons (FontAwesome)
         TOPIC_ICONS = new EnumMap<>(HelpTopic.class);
-        TOPIC_ICONS.put(HelpTopic.NET_PROFIT, "📈");
-        TOPIC_ICONS.put(HelpTopic.INCOME_TAX, "💰");
-        TOPIC_ICONS.put(HelpTopic.PERSONAL_ALLOWANCE, "🛡");
-        TOPIC_ICONS.put(HelpTopic.NI_CLASS_4, "🏥");
-        TOPIC_ICONS.put(HelpTopic.NI_CLASS_2, "🏥");
-        TOPIC_ICONS.put(HelpTopic.PAYMENTS_ON_ACCOUNT, "📊");
-        TOPIC_ICONS.put(HelpTopic.EXPENSE_CATEGORY, "📋");
-        TOPIC_ICONS.put(HelpTopic.ALLOWABLE_EXPENSES, "✅");
-        TOPIC_ICONS.put(HelpTopic.DECLARATION, "✍");
-        TOPIC_ICONS.put(HelpTopic.HMRC_SUBMISSION, "📤");
-        TOPIC_ICONS.put(HelpTopic.TAX_YEAR, "📅");
-        TOPIC_ICONS.put(HelpTopic.SA103_FORM, "📄");
+        TOPIC_ICONS.put(HelpTopic.NET_PROFIT, FontAwesomeSolid.CHART_LINE);
+        TOPIC_ICONS.put(HelpTopic.INCOME_TAX, FontAwesomeSolid.POUND_SIGN);
+        TOPIC_ICONS.put(HelpTopic.PERSONAL_ALLOWANCE, FontAwesomeSolid.SHIELD_ALT);
+        TOPIC_ICONS.put(HelpTopic.NI_CLASS_4, FontAwesomeSolid.HEARTBEAT);
+        TOPIC_ICONS.put(HelpTopic.NI_CLASS_2, FontAwesomeSolid.HEARTBEAT);
+        TOPIC_ICONS.put(HelpTopic.PAYMENTS_ON_ACCOUNT, FontAwesomeSolid.CHART_BAR);
+        TOPIC_ICONS.put(HelpTopic.EXPENSE_CATEGORY, FontAwesomeSolid.CLIPBOARD);
+        TOPIC_ICONS.put(HelpTopic.ALLOWABLE_EXPENSES, FontAwesomeSolid.CHECK_CIRCLE);
+        TOPIC_ICONS.put(HelpTopic.DECLARATION, FontAwesomeSolid.SIGNATURE);
+        TOPIC_ICONS.put(HelpTopic.HMRC_SUBMISSION, FontAwesomeSolid.UPLOAD);
+        TOPIC_ICONS.put(HelpTopic.TAX_YEAR, FontAwesomeSolid.CALENDAR_ALT);
+        TOPIC_ICONS.put(HelpTopic.SA103_FORM, FontAwesomeSolid.FILE_ALT);
+        // User Guide topics
+        TOPIC_ICONS.put(HelpTopic.GETTING_STARTED, FontAwesomeSolid.ROCKET);
+        TOPIC_ICONS.put(HelpTopic.HMRC_CONNECTION, FontAwesomeSolid.LINK);
+        TOPIC_ICONS.put(HelpTopic.SECURITY_PRIVACY, FontAwesomeSolid.LOCK);
+        TOPIC_ICONS.put(HelpTopic.FAQ, FontAwesomeSolid.QUESTION_CIRCLE);
 
         // Category colors (matching /aura's design)
         CATEGORY_COLORS = new HashMap<>();
+        CATEGORY_COLORS.put("User Guide", "#7c3aed");         // Purple (indigo/violet)
         CATEGORY_COLORS.put("Tax & Calculation", "#059669");  // Green
         CATEGORY_COLORS.put("Expenses", "#d97706");           // Orange
         CATEGORY_COLORS.put("HMRC Submission", "#0066cc");    // Blue
@@ -250,8 +276,8 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     /**
      * Returns the icon for a help topic.
      */
-    public String getTopicIcon(HelpTopic topic) {
-        return TOPIC_ICONS.getOrDefault(topic, "ℹ");
+    public Ikon getTopicIcon(HelpTopic topic) {
+        return TOPIC_ICONS.getOrDefault(topic, FontAwesomeSolid.INFO_CIRCLE);
     }
 
     /**
@@ -272,6 +298,112 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         }
         return "General";
     }
+
+    /**
+     * Returns the comprehensive User Guide content for the User Guide dialog.
+     * This content is adapted from the full USER_GUIDE.md for in-app display.
+     *
+     * @return the user guide content as a formatted string
+     */
+    public String getUserGuideContent() {
+        return USER_GUIDE_CONTENT;
+    }
+
+    /**
+     * Comprehensive User Guide content for in-app display.
+     * Adapted from docs/USER_GUIDE.md.
+     */
+    private static final String USER_GUIDE_CONTENT = """
+            What This App Does
+            ━━━━━━━━━━━━━━━━━━
+            UK Self-Employment Manager is a free, open-source desktop application \
+            for UK self-employed individuals to:
+
+            • Track Income - Record all business income with dates and descriptions
+            • Track Expenses - Log expenses categorised to match HMRC's SA103 form
+            • Calculate Tax - Real-time estimates of Income Tax and NI Class 4
+            • Submit to HMRC - One-click annual Self Assessment via MTD APIs
+
+            What makes it different: completely free, privacy-first (data stays on \
+            your computer), open source, and MTD compliant.
+
+            Getting Started
+            ━━━━━━━━━━━━━━━
+            1. Complete the setup wizard with your name and UTR
+            2. Select your tax year (runs 6 April to 5 April)
+            3. Choose your business type (Freelancer, Sole Trader, etc.)
+
+            After setup, you can:
+            • Add income from the Dashboard or Income page
+            • Record expenses from the Expenses page
+            • View tax estimates on the Tax Summary page
+
+            Daily Usage
+            ━━━━━━━━━━━
+            Adding Income:
+            Navigate to Income > Add Income > Enter date, amount, description, source
+
+            Adding Expenses:
+            Navigate to Expenses > Add Expense > Select SA103 category > Enter details
+
+            Expense categories match HMRC's SA103F form:
+            • Cost of Sales (Box 17)
+            • Staff Costs (Box 19)
+            • Travel (Box 20)
+            • Premises (Box 21)
+            • Office Costs (Box 23)
+            • Professional Fees (Box 26)
+            • Other Expenses (Box 28)
+
+            Understanding HMRC Connection
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            This app uses OAuth2 - a secure industry-standard protocol:
+
+            1. You click "Connect to HMRC" in the app
+            2. Your browser opens HMRC's official Government Gateway
+            3. You log in with YOUR credentials on HMRC's website
+            4. HMRC asks if you want to grant this app access
+            5. You click "Allow" and return to the app
+
+            Your password is NEVER shared with us:
+            • You enter your password only on HMRC's website
+            • We receive only a limited-access token
+            • HMRC controls what we can do on your behalf
+
+            Security and Privacy
+            ━━━━━━━━━━━━━━━━━━━━
+            Local-Only Storage:
+            • All data stays on YOUR computer
+            • We have NO access to your data
+            • No cloud servers store your information
+
+            Encryption:
+            • Database encrypted with AES-256-GCM
+            • HMRC tokens stored in your OS keychain
+            • All data at rest is encrypted
+
+            What's sent to HMRC when you submit:
+            • Your tax figures (income, expenses, profit)
+            • Fraud prevention headers (required by HMRC)
+
+            Key Deadlines
+            ━━━━━━━━━━━━━
+            • Tax Year Ends: 5 April
+            • Online Return Deadline: 31 January
+            • Tax Payment Deadline: 31 January
+            • Payment on Account 2: 31 July
+
+            Late filing penalties:
+            • 1 day late: £100
+            • 3 months late: £10/day (up to £900)
+            • 6 months late: £300 or 5% of tax owed
+            • 12 months late: £300 or up to 100% of tax owed
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            ⚠ This software is a record-keeping tool, not a substitute \
+            for professional advice. Tax calculations are estimates only. \
+            Always verify with a qualified accountant.
+            """;
 
     // === FXML Event Handlers ===
 
@@ -428,25 +560,86 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         showHelpDialog(HelpTopic.SA103_FORM);
     }
 
+    // === User Guide Topic Click Handlers ===
+    // These topics use MEDIUM size dialogs (800x600) for more comprehensive content
+
+    @FXML
+    void handleGettingStartedClick(MouseEvent event) {
+        LOG.info("Help topic clicked: Getting Started");
+        showHelpDialog(HelpTopic.GETTING_STARTED, DialogSize.MEDIUM);
+    }
+
+    @FXML
+    void handleHmrcConnectionClick(MouseEvent event) {
+        LOG.info("Help topic clicked: HMRC Connection");
+        showHelpDialog(HelpTopic.HMRC_CONNECTION, DialogSize.MEDIUM);
+    }
+
+    @FXML
+    void handleSecurityPrivacyClick(MouseEvent event) {
+        LOG.info("Help topic clicked: Security & Privacy");
+        showHelpDialog(HelpTopic.SECURITY_PRIVACY, DialogSize.MEDIUM);
+    }
+
+    @FXML
+    void handleFaqClick(MouseEvent event) {
+        LOG.info("Help topic clicked: FAQ");
+        showHelpDialog(HelpTopic.FAQ, DialogSize.MEDIUM);
+    }
+
+    @FXML
+    void handleUserGuideClick(ActionEvent event) {
+        LOG.info("Opening full User Guide dialog");
+        showUserGuideDialog();
+    }
+
     // === Private Helper Methods ===
 
     /**
-     * Shows a help dialog for the specified topic.
+     * Shows a help dialog for the specified topic with standard size.
      * The dialog displays the help title, body text, and optionally an HMRC guidance button.
      * Uses a custom styled dialog matching the application design.
      *
      * @param topic the help topic to display
      */
     private void showHelpDialog(HelpTopic topic) {
+        showHelpDialog(topic, DialogSize.STANDARD);
+    }
+
+    /**
+     * Shows a help dialog for the specified topic with the given size.
+     * The dialog displays the help title, body text, and optionally an HMRC guidance button.
+     * Uses a custom styled dialog matching the application design.
+     *
+     * @param topic the help topic to display
+     * @param size the dialog size (STANDARD, MEDIUM, or LARGE)
+     */
+    private void showHelpDialog(HelpTopic topic, DialogSize size) {
         var contentOpt = getHelpForTopic(topic);
         contentOpt.ifPresent(content -> {
-            String icon = getTopicIcon(topic);
+            Ikon icon = getTopicIcon(topic);
             String category = getCategoryForTopic(topic);
             String color = getCategoryColor(category);
 
-            HelpDialog dialog = new HelpDialog(content, icon, color, helpService);
+            HelpDialog dialog = new HelpDialog(content, icon, color, helpService, size);
             dialog.showAndWaitDialog();
         });
+    }
+
+    /**
+     * Shows the comprehensive User Guide dialog with all key information.
+     * This provides a single-page overview of the application.
+     */
+    private void showUserGuideDialog() {
+        HelpContent userGuideContent = HelpContent.builder()
+                .title("User Guide")
+                .body(getUserGuideContent())
+                .build();
+
+        String color = getCategoryColor("User Guide");
+        // Use large mode (1200x900) for User Guide with styled section titles
+        HelpDialog dialog = new HelpDialog(userGuideContent, FontAwesomeSolid.BOOK, color, helpService, true);
+        dialog.showAndWaitDialog();
     }
 
     private void updateTopicList(String category) {

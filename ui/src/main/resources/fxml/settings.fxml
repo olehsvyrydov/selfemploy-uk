@@ -3,6 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!--
     Settings Page - User preferences and configuration
@@ -32,7 +33,7 @@
             <!-- UTR Setting -->
             <VBox styleClass="settings-card, settings-card-profile" spacing="12">
                 <HBox alignment="CENTER_LEFT" spacing="12">
-                    <Label text="📋" styleClass="settings-icon"/>
+                    <FontIcon iconLiteral="fas-clipboard" iconSize="20" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
                         <Label text="Unique Taxpayer Reference (UTR)" styleClass="settings-label"/>
                         <Label fx:id="utrLabel" text="Not set" styleClass="settings-value"/>
@@ -55,7 +56,7 @@
 
             <!-- Terms of Service -->
             <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
-                <Label text="📄" styleClass="settings-icon"/>
+                <FontIcon iconLiteral="fas-file-alt" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Terms of Service" styleClass="settings-label"/>
                     <Label text="View the application terms and conditions" styleClass="settings-description"/>
@@ -65,7 +66,7 @@
 
             <!-- Privacy Notice -->
             <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
-                <Label text="🛡" styleClass="settings-icon"/>
+                <FontIcon iconLiteral="fas-shield-alt" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Privacy Notice" styleClass="settings-label"/>
                     <Label text="View how your data is handled" styleClass="settings-description"/>
@@ -80,7 +81,7 @@
 
             <!-- Export Data -->
             <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
-                <Label text="📤" styleClass="settings-icon"/>
+                <FontIcon iconLiteral="fas-upload" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Export Data" styleClass="settings-label"/>
                     <Label text="Export your income, expenses, and tax data to a file" styleClass="settings-description"/>
@@ -90,7 +91,7 @@
 
             <!-- Import Data -->
             <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
-                <Label text="📥" styleClass="settings-icon"/>
+                <FontIcon iconLiteral="fas-download" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
                     <Label text="Import Data" styleClass="settings-label"/>
                     <Label text="Import data from a previously exported file" styleClass="settings-description"/>
@@ -122,7 +123,10 @@
 
         <!-- Footer Disclaimer -->
         <VBox styleClass="settings-disclaimer" spacing="8">
-            <Label text="⚠ Important" styleClass="disclaimer-title"/>
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="16" styleClass="disclaimer-icon"/>
+                <Label text="Important" styleClass="disclaimer-title"/>
+            </HBox>
             <Label text="This application provides tax estimates only. Always verify calculations with a qualified accountant before submitting to HMRC. You are responsible for the accuracy of your tax returns."
                    styleClass="disclaimer-text" wrapText="true"/>
         </VBox>
