@@ -100,27 +100,6 @@
             </HBox>
         </VBox>
 
-        <!-- About Section -->
-        <VBox styleClass="settings-section, settings-section-about" spacing="16">
-            <Label text="About" styleClass="section-title"/>
-
-            <VBox styleClass="settings-card, settings-card-about" spacing="8">
-                <HBox alignment="CENTER_LEFT" spacing="12">
-                    <Label text="SE" styleClass="about-logo"/>
-                    <VBox spacing="4">
-                        <Label text="UK Self-Employment Manager" styleClass="settings-label"/>
-                        <Label fx:id="versionLabel" text="Version 0.1.0-SNAPSHOT" styleClass="settings-value"/>
-                    </VBox>
-                </HBox>
-                <Label text="A free, open-source application for UK self-employed individuals to manage their accounting and submit tax returns to HMRC."
-                       styleClass="settings-description" wrapText="true"/>
-                <HBox spacing="16">
-                    <Hyperlink text="GitHub Repository" styleClass="about-link" onAction="#handleGitHubLink"/>
-                    <Hyperlink text="Report an Issue" styleClass="about-link" onAction="#handleReportIssueLink"/>
-                </HBox>
-            </VBox>
-        </VBox>
-
         <!-- Footer Disclaimer -->
         <VBox styleClass="settings-disclaimer" spacing="8">
             <HBox alignment="CENTER_LEFT" spacing="8">

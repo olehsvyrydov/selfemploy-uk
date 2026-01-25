@@ -13,19 +13,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.TaxYear;
-import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 /**
  * Comprehensive unit tests for SettingsController.
@@ -89,7 +83,7 @@ class SettingsControllerTest {
             controller.initialize(null, null);
 
             // Then - no exception is thrown, controller remains usable
-            assertThat(controller.getApplicationVersion()).isNotNull();
+            assertThat(controller.getSettingsCategories()).isNotEmpty();
         }
 
         @Test
@@ -188,78 +182,6 @@ class SettingsControllerTest {
     }
 
     // ========================================================================
-    // Application Version Tests
-    // ========================================================================
-
-    @Nested
-    @DisplayName("Application Version")
-    class ApplicationVersion {
-
-        @Test
-        @DisplayName("should return application version")
-        void shouldReturnApplicationVersion() {
-            // When
-            String version = controller.getApplicationVersion();
-
-            // Then
-            assertThat(version).isNotNull();
-            assertThat(version).isNotEmpty();
-        }
-
-        @Test
-        @DisplayName("should format version string with prefix")
-        void shouldFormatVersionString() {
-            // When
-            String versionText = controller.getFormattedVersion();
-
-            // Then
-            assertThat(versionText).startsWith("Version ");
-        }
-
-        @Test
-        @DisplayName("should contain version number in formatted string")
-        void shouldContainVersionNumberInFormattedString() {
-            // When
-            String versionText = controller.getFormattedVersion();
-
-            // Then
-            assertThat(versionText).contains(controller.getApplicationVersion());
-        }
-
-        @Test
-        @DisplayName("should return consistent version across calls")
-        void shouldReturnConsistentVersion() {
-            // When
-            String version1 = controller.getApplicationVersion();
-            String version2 = controller.getApplicationVersion();
-            String version3 = controller.getApplicationVersion();
-
-            // Then
-            assertThat(version1).isEqualTo(version2).isEqualTo(version3);
-        }
-
-        @Test
-        @DisplayName("should have version in expected format")
-        void shouldHaveVersionInExpectedFormat() {
-            // When
-            String version = controller.getApplicationVersion();
-
-            // Then - should match semantic versioning pattern (e.g., 0.1.0-SNAPSHOT)
-            assertThat(version).matches("\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9]+)?");
-        }
-
-        @Test
-        @DisplayName("should format version with correct prefix")
-        void shouldFormatVersionWithCorrectPrefix() {
-            // When
-            String formatted = controller.getFormattedVersion();
-
-            // Then
-            assertThat(formatted).isEqualTo("Version " + controller.getApplicationVersion());
-        }
-    }
-
-    // ========================================================================
     // Settings Categories Tests
     // ========================================================================
 
@@ -286,15 +208,9 @@ class SettingsControllerTest {
         }
 
         @Test
-        @DisplayName("should have about settings category")
-        void shouldHaveAboutCategory() {
-            assertThat(controller.getSettingsCategories()).contains("About");
-        }
-
-        @Test
-        @DisplayName("should have exactly four categories")
-        void shouldHaveExactlyFourCategories() {
-            assertThat(controller.getSettingsCategories()).hasSize(4);
+        @DisplayName("should have exactly three categories (About moved to Help)")
+        void shouldHaveExactlyThreeCategories() {
+            assertThat(controller.getSettingsCategories()).hasSize(3);
         }
 
         @Test
@@ -304,7 +220,7 @@ class SettingsControllerTest {
             List<String> categories = controller.getSettingsCategories();
 
             // Then
-            assertThat(categories).containsExactly("Profile", "Legal", "Data", "About");
+            assertThat(categories).containsExactly("Profile", "Legal", "Data");
         }
 
         @Test
@@ -611,186 +527,6 @@ class SettingsControllerTest {
     }
 
     // ========================================================================
-    // URL Configuration Tests
-    // ========================================================================
-
-    @Nested
-    @DisplayName("URL Configuration")
-    class UrlConfiguration {
-
-        @Test
-        @DisplayName("should return null for unconfigured URL")
-        void shouldReturnNullForUnconfiguredUrl() {
-            // When
-            String url = controller.getConfiguredUrl("app.url.nonexistent");
-
-            // Then
-            assertThat(url).isNull();
-        }
-
-        @Test
-        @DisplayName("should return system property value when set")
-        void shouldReturnSystemPropertyWhenSet() {
-            // Given
-            String key = "app.url.test.unique." + System.currentTimeMillis();
-            String expectedUrl = "https://example.com";
-            System.setProperty(key, expectedUrl);
-
-            try {
-                // When
-                String url = controller.getConfiguredUrl(key);
-
-                // Then
-                assertThat(url).isEqualTo(expectedUrl);
-            } finally {
-                System.clearProperty(key);
-            }
-        }
-
-        @Test
-        @DisplayName("should return null for empty system property")
-        void shouldReturnNullForEmptySystemProperty() {
-            // Given
-            String key = "app.url.empty.test." + System.currentTimeMillis();
-            System.setProperty(key, "");
-
-            try {
-                // When
-                String url = controller.getConfiguredUrl(key);
-
-                // Then
-                assertThat(url).isNull();
-            } finally {
-                System.clearProperty(key);
-            }
-        }
-
-        @Test
-        @DisplayName("should handle key with dots correctly")
-        void shouldHandleKeyWithDotsCorrectly() {
-            // When - key with multiple dots
-            String url = controller.getConfiguredUrl("app.nested.deep.url.key");
-
-            // Then - should not throw, just return null if not set
-            assertThat(url).isNull();
-        }
-    }
-
-    // ========================================================================
-    // External Link Tests
-    // ========================================================================
-
-    @Nested
-    @DisplayName("External Links")
-    class ExternalLinks {
-
-        @Test
-        @DisplayName("should call BrowserUtil to open external link")
-        void shouldCallBrowserUtilToOpenExternalLink() {
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                // Given
-                String url = "https://example.com";
-
-                // When
-                controller.openExternalLink(url);
-
-                // Then
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(url), any(Consumer.class)));
-            }
-        }
-
-        @Test
-        @DisplayName("should pass error callback to BrowserUtil")
-        void shouldPassErrorCallbackToBrowserUtil() {
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                // Given
-                String url = "https://test.com";
-
-                // When
-                controller.openExternalLink(url);
-
-                // Then - verify callback was provided (not null)
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(url), any(Consumer.class)));
-            }
-        }
-
-        @Test
-        @DisplayName("should open GitHub URL with correct path")
-        void shouldOpenGitHubUrlWithCorrectPath() {
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                // Given
-                String githubUrl = "https://github.com/username/self-employment";
-
-                // When
-                controller.openExternalLink(githubUrl);
-
-                // Then
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(githubUrl), any(Consumer.class)));
-            }
-        }
-
-        @Test
-        @DisplayName("should open issue tracker URL with correct path")
-        void shouldOpenIssueTrackerUrlWithCorrectPath() {
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                // Given
-                String issuesUrl = "https://github.com/username/self-employment/issues";
-
-                // When
-                controller.openExternalLink(issuesUrl);
-
-                // Then
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(issuesUrl), any(Consumer.class)));
-            }
-        }
-
-        @Test
-        @DisplayName("should handle HTTPS URLs")
-        void shouldHandleHttpsUrls() {
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                // Given
-                String secureUrl = "https://secure.example.com/path";
-
-                // When
-                controller.openExternalLink(secureUrl);
-
-                // Then
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(secureUrl), any(Consumer.class)));
-            }
-        }
-
-        @Test
-        @DisplayName("should handle URLs with query parameters")
-        void shouldHandleUrlsWithQueryParameters() {
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                // Given
-                String urlWithParams = "https://example.com/page?param=value&other=123";
-
-                // When
-                controller.openExternalLink(urlWithParams);
-
-                // Then
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(urlWithParams), any(Consumer.class)));
-            }
-        }
-
-        @Test
-        @DisplayName("should handle URLs with fragment identifiers")
-        void shouldHandleUrlsWithFragmentIdentifiers() {
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                // Given
-                String urlWithFragment = "https://example.com/page#section";
-
-                // When
-                controller.openExternalLink(urlWithFragment);
-
-                // Then
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(urlWithFragment), any(Consumer.class)));
-            }
-        }
-    }
-
-    // ========================================================================
     // Event Handler Tests (without JavaFX toolkit)
     // ========================================================================
 
@@ -830,122 +566,6 @@ class SettingsControllerTest {
             // When/Then - should not throw
             controller.handleImportData(event);
         }
-
-        @Test
-        @DisplayName("should call openExternalLink when GitHub URL is configured")
-        void shouldCallOpenExternalLinkWhenGitHubUrlConfigured() {
-            // Given - URL configured via system property
-            String key = "app.url.github";
-            String expectedUrl = "https://github.com/test/repo";
-            System.setProperty(key, expectedUrl);
-
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                ActionEvent event = mock(ActionEvent.class);
-
-                // When
-                controller.handleGitHubLink(event);
-
-                // Then - BrowserUtil should be called with the URL
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(expectedUrl), any(Consumer.class)));
-            } finally {
-                System.clearProperty(key);
-            }
-        }
-
-        @Test
-        @DisplayName("should call openExternalLink when Report Issue URL is configured")
-        void shouldCallOpenExternalLinkWhenReportIssueUrlConfigured() {
-            // Given - URL configured via system property
-            String key = "app.url.issues";
-            String expectedUrl = "https://github.com/test/repo/issues";
-            System.setProperty(key, expectedUrl);
-
-            try (MockedStatic<BrowserUtil> browserUtil = mockStatic(BrowserUtil.class)) {
-                ActionEvent event = mock(ActionEvent.class);
-
-                // When
-                controller.handleReportIssueLink(event);
-
-                // Then - BrowserUtil should be called with the URL
-                browserUtil.verify(() -> BrowserUtil.openUrl(eq(expectedUrl), any(Consumer.class)));
-            } finally {
-                System.clearProperty(key);
-            }
-        }
-
-    }
-
-    // ========================================================================
-    // Hyperlink Handler Tests - Unconfigured URLs
-    // ========================================================================
-
-    @Nested
-    @DisplayName("Hyperlink Handlers - Unconfigured URLs")
-    class HyperlinkHandlersUnconfigured {
-
-        @Test
-        @DisplayName("getConfiguredUrl returns null when GitHub URL is not configured")
-        void getConfiguredUrlReturnsNullWhenGitHubUrlNotConfigured() {
-            // Ensure no URL is configured
-            System.clearProperty("app.url.github");
-
-            // When
-            String url = controller.getConfiguredUrl("app.url.github");
-
-            // Then
-            assertThat(url).isNull();
-        }
-
-        @Test
-        @DisplayName("getConfiguredUrl returns null when Issues URL is not configured")
-        void getConfiguredUrlReturnsNullWhenIssuesUrlNotConfigured() {
-            // Ensure no URL is configured
-            System.clearProperty("app.url.issues");
-
-            // When
-            String url = controller.getConfiguredUrl("app.url.issues");
-
-            // Then
-            assertThat(url).isNull();
-        }
-
-        @Test
-        @DisplayName("getConfiguredUrl returns null for empty string value")
-        void getConfiguredUrlReturnsNullForEmptyStringValue() {
-            // Given - URL is set to empty string
-            String key = "app.url.github";
-            System.setProperty(key, "");
-
-            try {
-                // When
-                String url = controller.getConfiguredUrl(key);
-
-                // Then
-                assertThat(url).isNull();
-            } finally {
-                System.clearProperty(key);
-            }
-        }
-
-        @Test
-        @DisplayName("openExternalLink is only called when URL is configured")
-        void openExternalLinkIsOnlyCalledWhenUrlIsConfigured() {
-            // Given - URL is configured
-            String key = "app.url.github";
-            String expectedUrl = "https://github.com/test/repo";
-            System.setProperty(key, expectedUrl);
-
-            try {
-                // When
-                String url = controller.getConfiguredUrl(key);
-
-                // Then - URL should be returned and can be passed to openExternalLink
-                assertThat(url).isEqualTo(expectedUrl);
-                // The handler will only call openExternalLink if url != null
-            } finally {
-                System.clearProperty(key);
-            }
-        }
     }
 
     // ========================================================================
@@ -965,7 +585,7 @@ class SettingsControllerTest {
             controller.initialize(null, null);
 
             // Then - should not throw, state remains valid
-            assertThat(controller.getApplicationVersion()).isNotNull();
+            assertThat(controller.getSettingsCategories()).isNotEmpty();
         }
 
         @Test
@@ -977,9 +597,9 @@ class SettingsControllerTest {
             controller.setUtr("1234567890");
 
             // When - call various methods
-            controller.getApplicationVersion();
             controller.getSettingsCategories();
             controller.canExportData();
+            controller.canImportData();
 
             // Then - state unchanged
             assertThat(controller.getTaxYear()).isEqualTo(taxYear);
@@ -1124,42 +744,4 @@ class SettingsControllerTest {
         }
     }
 
-    // ========================================================================
-    // Version String Tests
-    // ========================================================================
-
-    @Nested
-    @DisplayName("Version String Patterns")
-    class VersionStringPatterns {
-
-        @Test
-        @DisplayName("should have non-empty version")
-        void shouldHaveNonEmptyVersion() {
-            assertThat(controller.getApplicationVersion()).isNotBlank();
-        }
-
-        @Test
-        @DisplayName("should have formatted version starting with Version prefix")
-        void shouldHaveFormattedVersionPrefix() {
-            assertThat(controller.getFormattedVersion()).startsWith("Version ");
-        }
-
-        @Test
-        @DisplayName("should have formatted version containing actual version")
-        void shouldHaveFormattedVersionContainingActualVersion() {
-            String version = controller.getApplicationVersion();
-            String formatted = controller.getFormattedVersion();
-
-            assertThat(formatted).contains(version);
-        }
-
-        @Test
-        @DisplayName("should match expected formatted version structure")
-        void shouldMatchExpectedFormattedVersionStructure() {
-            String formatted = controller.getFormattedVersion();
-
-            // Should be "Version X.Y.Z" or "Version X.Y.Z-SUFFIX"
-            assertThat(formatted).matches("Version \\d+\\.\\d+\\.\\d+(-[A-Za-z0-9]+)?");
-        }
-    }
 }

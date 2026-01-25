@@ -167,6 +167,10 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         CATEGORY_COLORS.put("General", "#6b7280");            // Gray
     }
 
+    // === Constants ===
+
+    private static final String APPLICATION_VERSION = "0.1.0-SNAPSHOT";
+
     // === FXML Injected Fields ===
 
     @FXML private ListView<String> categoryList;
@@ -175,6 +179,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     @FXML private Label helpTitle;
     @FXML private TextArea helpBody;
     @FXML private Label hmrcLinkLabel;
+    @FXML private Label versionLabel;
 
     // === State ===
 
@@ -188,7 +193,10 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Initialize would set up list views if they exist
+        // Initialize version label if present
+        if (versionLabel != null) {
+            versionLabel.setText("Version " + APPLICATION_VERSION);
+        }
     }
 
     @Override
@@ -489,6 +497,12 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     void handleDocumentationLink(ActionEvent event) {
         LOG.info("Opening Documentation in external browser");
         // GitHub doesn't render well in JavaFX WebView, open in external browser
+        uk.selfemploy.ui.util.BrowserUtil.openUrl(GITHUB_REPO_URL);
+    }
+
+    @FXML
+    void handleViewGitHubLink(ActionEvent event) {
+        LOG.info("Opening GitHub Repository in external browser");
         uk.selfemploy.ui.util.BrowserUtil.openUrl(GITHUB_REPO_URL);
     }
 

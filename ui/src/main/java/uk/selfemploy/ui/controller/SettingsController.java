@@ -18,7 +18,6 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
-import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,12 +35,10 @@ import java.util.logging.Logger;
 public class SettingsController implements Initializable, MainController.TaxYearAware {
 
     private static final Logger LOG = Logger.getLogger(SettingsController.class.getName());
-    private static final String APPLICATION_VERSION = "0.1.0-SNAPSHOT";
-    private static final List<String> SETTINGS_CATEGORIES = Arrays.asList("Profile", "Legal", "Data", "About");
+    private static final List<String> SETTINGS_CATEGORIES = Arrays.asList("Profile", "Legal", "Data");
 
     // === FXML Injected Fields ===
 
-    @FXML private Label versionLabel;
     @FXML private Label utrLabel;
     @FXML private TextField utrField;
     @FXML private Button saveUtrButton;
@@ -57,7 +54,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        updateDisplay();
+        updateUtrDisplay();
     }
 
     @Override
@@ -70,22 +67,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
      */
     public TaxYear getTaxYear() {
         return taxYear;
-    }
-
-    // === Application Version ===
-
-    /**
-     * Returns the application version.
-     */
-    public String getApplicationVersion() {
-        return APPLICATION_VERSION;
-    }
-
-    /**
-     * Returns the formatted version string for display.
-     */
-    public String getFormattedVersion() {
-        return "Version " + APPLICATION_VERSION;
     }
 
     // === Settings Categories ===
@@ -172,10 +153,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     // === Private Helper Methods ===
 
-    private void updateDisplay() {
-        if (versionLabel != null) {
-            versionLabel.setText(getFormattedVersion());
-        }
+    private void updateUtrDisplay() {
         if (utrLabel != null) {
             utrLabel.setText(getFormattedUtr());
         }
@@ -189,7 +167,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
             String newUtr = utrField.getText().replaceAll("\\s", "");
             if (isValidUtr(newUtr)) {
                 setUtr(newUtr);
-                updateDisplay();
+                updateUtrDisplay();
                 showInfo("UTR Saved", "Your Unique Taxpayer Reference has been saved.");
             } else {
                 showError("Invalid UTR", "Please enter a valid 10-digit UTR number.");
@@ -246,57 +224,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
             // TODO: Implement actual data import
             showInfo("Import", "Data import functionality will be available soon.\n\nSelected file:\n" + file.getAbsolutePath());
         }
-    }
-
-    @FXML
-    void handleGitHubLink(ActionEvent event) {
-        LOG.info("Opening GitHub Repository link");
-        String url = getConfiguredUrl("app.url.github");
-        if (url != null) {
-            openExternalLink(url);
-        } else {
-            showInfo("GitHub Repository", "Repository URL not configured.\n\nThis will be available in a future release.");
-        }
-    }
-
-    @FXML
-    void handleReportIssueLink(ActionEvent event) {
-        LOG.info("Opening Report Issue link");
-        String url = getConfiguredUrl("app.url.issues");
-        if (url != null) {
-            openExternalLink(url);
-        } else {
-            showInfo("Report an Issue", "Issue tracker URL not configured.\n\nThis will be available in a future release.");
-        }
-    }
-
-    /**
-     * Gets a configured URL from system properties or environment.
-     * Returns null if not configured.
-     */
-    String getConfiguredUrl(String key) {
-        // Check system property first, then environment variable
-        String url = System.getProperty(key);
-        if (url == null || url.isEmpty()) {
-            url = System.getenv(key.replace('.', '_').toUpperCase());
-        }
-        return (url != null && !url.isEmpty()) ? url : null;
-    }
-
-    /**
-     * Opens an external URL in the system default browser.
-     *
-     * <p>Uses BrowserUtil to open URLs safely on a background thread,
-     * avoiding crashes from Desktop.browse() on the JavaFX Application Thread.</p>
-     */
-    void openExternalLink(String url) {
-        LOG.info("Opening external link: " + url);
-        BrowserUtil.openUrl(url, error -> {
-            LOG.log(Level.WARNING, "Failed to open URL: " + url + " - " + error);
-            // Show error on JavaFX thread
-            javafx.application.Platform.runLater(() ->
-                    showError("Error", "Could not open link: " + error));
-        });
     }
 
     private void showLegalDocument(String fxmlPath, String title, boolean settingsMode) {

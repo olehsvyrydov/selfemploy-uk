@@ -220,17 +220,47 @@
             </HBox>
         </VBox>
 
-        <!-- Need More Help Section -->
+        <!-- Need More Help Section (Consolidated) -->
         <VBox styleClass="help-section, help-section-support" spacing="16">
             <Label text="Need More Help?" styleClass="section-title"/>
 
             <VBox styleClass="help-support-card" spacing="12">
                 <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
-                <Label text="This application is open-source. For bugs or feature requests:" styleClass="help-support-text" wrapText="true"/>
+                <Label text="This application is open-source. For bugs, feature requests, or to contribute:"
+                       styleClass="help-support-text" wrapText="true"/>
                 <HBox spacing="12">
-                    <Button styleClass="help-quick-link" onAction="#handleGitHubIssuesLink" text="GitHub Issues ↗"/>
-                    <Button styleClass="help-quick-link" onAction="#handleDocumentationLink" text="Documentation ↗"/>
+                    <Button styleClass="help-quick-link" onAction="#handleGitHubIssuesLink" text="GitHub Issues"/>
                 </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- About Section -->
+        <VBox styleClass="help-section, help-section-about" spacing="16">
+            <Label text="About" styleClass="section-title"/>
+
+            <VBox styleClass="help-about-card" spacing="12">
+                <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+                <!-- App Identity -->
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="SE" styleClass="about-logo"/>
+                    <VBox spacing="4">
+                        <Label text="UK Self-Employment Manager" styleClass="about-app-name"/>
+                        <Label fx:id="versionLabel" text="Version 0.1.0-SNAPSHOT" styleClass="about-version"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Description -->
+                <Label text="A free, open-source desktop application for UK self-employed individuals to manage their accounting and submit tax returns to HMRC via Making Tax Digital."
+                       styleClass="about-description" wrapText="true"/>
+
+                <!-- Links -->
+                <HBox spacing="16" alignment="CENTER_LEFT">
+                    <Hyperlink text="View on GitHub" styleClass="about-link" onAction="#handleViewGitHubLink"/>
+                </HBox>
+
+                <!-- License -->
+                <Label text="Open source under Apache 2.0 License" styleClass="about-license"/>
             </VBox>
         </VBox>
 

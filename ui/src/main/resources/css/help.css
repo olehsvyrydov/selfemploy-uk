@@ -430,3 +430,39 @@
 .dialog-header-violet {
     -fx-background-color: linear-gradient(to right, #7c3aed, #8b5cf6);
 }
+
+/* ===== About Section ===== */
+.help-section-about {
+    -fx-padding: 0;
+}
+
+.help-about-card {
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.about-app-name {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #111827;
+}
+
+.about-version {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6b7280;
+}
+
+.about-description {
+    -fx-font-size: 14px;
+    -fx-text-fill: #4b5563;
+    -fx-line-spacing: 2;
+}
+
+.about-license {
+    -fx-font-size: 12px;
+    -fx-text-fill: #9ca3af;
+    -fx-font-style: italic;
+}

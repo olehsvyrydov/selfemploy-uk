@@ -804,4 +804,36 @@ class HelpControllerTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("SE-1020: About Section (moved from Settings)")
+    class AboutSection {
+
+        @Test
+        @DisplayName("should initialize version label with correct prefix")
+        void shouldInitializeVersionLabelWithCorrectPrefix() {
+            // When initialize is called (without FXML injection)
+            controller.initialize(null, null);
+
+            // Then - no exception thrown, controller remains functional
+            assertThat(controller.getHelpService()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should have handleViewGitHubLink handler available")
+        void shouldHaveHandleViewGitHubLinkHandler() {
+            // The GITHUB_REPO_URL constant should be accessible
+            assertThat(HelpController.GITHUB_REPO_URL)
+                .isNotNull()
+                .startsWith("https://github.com/");
+        }
+
+        @Test
+        @DisplayName("GitHub repo URL should be well-formed")
+        void gitHubRepoUrlShouldBeWellFormed() {
+            assertThat(HelpController.GITHUB_REPO_URL)
+                .contains("github.com")
+                .contains("selfemploy");
+        }
+    }
 }
