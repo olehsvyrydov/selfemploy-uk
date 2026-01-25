@@ -82,7 +82,42 @@ A free, privacy-first desktop application that makes tax management effortless f
 
 ---
 
-## Phase 5: Business Types (2026)
+## Phase 5: Plugin Ecosystem (2026)
+
+**Goal:** Enable third-party extensibility through a secure plugin marketplace
+
+### Phase 5.1: Plugin API Foundation (Q1 2026) - COMPLETE
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Plugin API | Done | Core plugin interfaces and lifecycle |
+| Extension Points | Done | 9 extension types for different functionality |
+| Permission System | Done | 10 permissions across 3 sensitivity levels |
+| Plugin Runtime | Done | ClassLoader isolation and lifecycle management |
+| Developer Docs | Done | Comprehensive documentation and examples |
+
+### Phase 5.2: Plugin Marketplace (Q2 2026)
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Plugin Discovery | Planned | Browse and search available plugins |
+| Plugin Installation | Planned | One-click install from marketplace |
+| Version Management | Planned | Automatic updates and compatibility checks |
+| Publisher Verification | Planned | Trusted publisher program |
+| Community Reviews | Planned | Ratings and reviews system |
+
+### Phase 5.3: Sample Plugins (Q2-Q3 2026)
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Bank Import Plugins | Planned | Import from major UK banks |
+| Report Generators | Planned | PDF/Excel custom reports |
+| Cloud Backup Plugins | Planned | Google Drive, Dropbox, OneDrive |
+| Accounting Exports | Planned | Sage, QuickBooks, Xero formats |
+
+---
+
+## Phase 6: Business Types (2026-2027)
 
 ### Partnerships
 
@@ -132,4 +167,4 @@ This roadmap aligns with HMRC's Making Tax Digital requirements:
 
 ---
 
-*Last updated: January 2025*
+*Last updated: January 2026*

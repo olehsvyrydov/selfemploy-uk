@@ -28,6 +28,8 @@
         <module>core</module>
         <module>ui</module>
         <module>app</module>
+        <module>plugin-api</module>
+        <module>plugin-runtime</module>
     </modules>
 
     <properties>
@@ -100,6 +102,16 @@
             <dependency>
                 <groupId>uk.selfemploy</groupId>
                 <artifactId>self-employment-ui</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>uk.selfemploy</groupId>
+                <artifactId>self-employment-plugin-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>uk.selfemploy</groupId>
+                <artifactId>self-employment-plugin-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

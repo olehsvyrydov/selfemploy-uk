@@ -138,6 +138,92 @@ Contributors will be recognized in:
 - GitHub contributors list
 - Release notes for significant contributions
 
+---
+
+## Contributing Plugins
+
+We welcome plugin contributions that extend the application's functionality. Plugins allow you to add features without modifying the core codebase.
+
+### Getting Started with Plugin Development
+
+See the comprehensive [Plugin Developer Guide](docs/plugin-development/getting-started.md) to build your first plugin in 15 minutes.
+
+### Plugin Contribution Process
+
+1. **Review the Documentation**
+   - Read [docs/plugin-development/README.md](docs/plugin-development/README.md) for an overview
+   - Understand the 9 available [extension points](docs/plugin-development/extension-points.md)
+   - Review the [security requirements](docs/plugin-development/security.md)
+
+2. **Create Your Plugin**
+   - Add the Plugin SDK dependency (see getting started guide)
+   - Implement the `Plugin` interface
+   - Choose appropriate extension points
+   - Declare required permissions in your descriptor
+
+3. **Follow Security Guidelines**
+   - Request only necessary permissions (principle of least privilege)
+   - Sign your JAR if requesting HIGH sensitivity permissions
+   - Encrypt any sensitive data stored locally
+   - Use HTTPS for all network connections
+
+4. **Testing Requirements**
+   - Unit test coverage > 80%
+   - Test with minimal permissions to ensure graceful degradation
+   - Include integration tests using the provided test utilities
+   - Tag JavaFX-dependent tests with `@Tag("e2e")`
+
+5. **Submit for Review**
+   - Create a separate repository for your plugin
+   - Include comprehensive README with:
+     - Feature description
+     - Required permissions and justification
+     - Installation instructions
+     - Screenshots/demos
+   - Submit to the Plugin Marketplace (coming Q2 2026)
+
+### Plugin Extension Points
+
+| Extension Point | Use Case |
+|-----------------|----------|
+| NavigationExtension | Add custom pages to the sidebar |
+| DashboardWidget | Create dashboard cards and KPIs |
+| ReportGenerator | Generate PDF/Excel reports |
+| DataImporter | Import bank statements, CSV files |
+| DataExporter | Export to Sage, QuickBooks formats |
+| TaxCalculatorExtension | Scottish rates, custom reliefs |
+| ExpenseCategoryExtension | Industry-specific expense categories |
+| IntegrationExtension | Connect to Stripe, PayPal, banks |
+| HmrcApiExtension | VAT returns, partnership submissions |
+
+### Sample Plugin Structure
+
+```
+my-plugin/
+├── pom.xml
+├── README.md
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/example/myplugin/
+│   │   │       ├── MyPlugin.java
+│   │   │       └── extensions/
+│   │   └── resources/
+│   │       └── META-INF/services/
+│   │           └── uk.selfemploy.plugin.api.Plugin
+│   └── test/
+│       └── java/
+└── LICENSE
+```
+
+### Getting Help
+
+- Review [example plugins](docs/plugin-development/examples/)
+- Check the [API reference](docs/plugin-development/api-reference.md)
+- Open a Discussion with the "plugin-development" tag
+
+---
+
 ## Questions?
 
 - Open a [Discussion](https://github.com/olehsvyrydov/selfemploy-uk/discussions)

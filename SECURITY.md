@@ -189,6 +189,79 @@ Security updates are backported to the latest stable release.
 
 ---
 
+## Plugin Security
+
+The plugin system implements multiple layers of security to protect users from malicious or poorly-written plugins.
+
+### Permission System
+
+Plugins must declare their required permissions, which are enforced at runtime:
+
+| Permission | Sensitivity | Description |
+|------------|-------------|-------------|
+| `UI_EXTENSION` | LOW | Add navigation items and widgets |
+| `DATA_READ` | LOW | Read transaction data |
+| `SETTINGS_READ` | LOW | Read user settings |
+| `CLIPBOARD_ACCESS` | LOW | Access system clipboard |
+| `FILE_ACCESS` | MEDIUM | Access file system beyond plugin directory |
+| `NETWORK_ACCESS` | MEDIUM | Make network connections |
+| `DATA_WRITE` | MEDIUM | Create/modify transactions |
+| `SETTINGS_WRITE` | MEDIUM | Modify user settings |
+| `HMRC_API` | HIGH | Interact with HMRC APIs |
+| `SYSTEM_EXEC` | HIGH | Execute system commands |
+
+### Sensitivity Levels
+
+| Level | User Experience | Requirements |
+|-------|-----------------|--------------|
+| **LOW** | Auto-granted on install | No special requirements |
+| **MEDIUM** | User prompted on first use | User approval required |
+| **HIGH** | Explicit approval dialog | JAR signing required |
+
+### JAR Signing Requirements
+
+Plugins requesting HIGH sensitivity permissions (`HMRC_API`, `SYSTEM_EXEC`) must be signed by a trusted publisher:
+
+1. **Self-signed certificates** - Acceptable for development/testing
+2. **CA-signed certificates** - Required for Plugin Marketplace submission
+
+The application verifies signatures at plugin load time:
+- Unsigned plugins requesting HIGH permissions are rejected
+- Invalid signatures cause plugin rejection
+- Users are prompted before trusting new publishers
+
+### Plugin Isolation
+
+Each plugin runs in a secure sandbox:
+
+- **ClassLoader isolation**: Plugins cannot access internal application classes
+- **Data isolation**: Each plugin has its own encrypted data directory
+- **No direct database access**: All data operations go through controlled APIs
+- **Permission enforcement**: Runtime checks prevent unauthorized operations
+
+### User Security Controls
+
+Users can manage plugin security through Settings:
+
+- View installed plugins and their permissions
+- Revoke permissions for any plugin
+- Disable or uninstall plugins
+- View trusted publishers list
+- Report suspicious plugins
+
+### Reporting Plugin Security Issues
+
+If you discover a security vulnerability in a plugin:
+
+1. Do NOT install or continue using the plugin
+2. Report to the plugin author
+3. If unresponsive, email security@selfemploy.uk
+4. Include plugin name, version, and vulnerability details
+
+For detailed security documentation, see [docs/plugin-development/security.md](docs/plugin-development/security.md).
+
+---
+
 ## Third-Party Dependencies
 
 We use CodeQL and Dependabot to monitor for vulnerabilities in dependencies:

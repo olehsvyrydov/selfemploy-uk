@@ -79,6 +79,45 @@ self-employment/
 2. **Partnerships**: (Phase 2) Business partners sharing profits
 3. **Ltd Company Directors**: (Phase 3) Salary/dividend optimization
 
+## Plugin System
+
+The application features an extensible plugin architecture that allows third-party developers to add new functionality without modifying the core codebase.
+
+### Key Features
+
+- **9 Extension Points**: Navigation pages, dashboard widgets, custom reports, data importers/exporters, tax calculation extensions, expense categories, external integrations, and HMRC API extensions
+- **Secure by Design**: Permission-based security model with 10 granular permissions across 3 sensitivity levels
+- **Isolated Execution**: Each plugin runs in its own classloader with isolated data storage
+- **Plugin Lifecycle**: Full lifecycle management (load, enable, disable, unload)
+
+### For Plugin Developers
+
+See the comprehensive [Plugin Developer Documentation](docs/plugin-development/README.md) to get started creating plugins.
+
+```xml
+<!-- Add to your pom.xml -->
+<dependency>
+    <groupId>uk.selfemploy</groupId>
+    <artifactId>self-employment-plugin-api</artifactId>
+    <version>0.1.0</version>
+    <scope>provided</scope>
+</dependency>
+```
+
+### Extension Points Available
+
+| Extension Point | Purpose |
+|-----------------|---------|
+| NavigationExtension | Add navigation pages |
+| DashboardWidget | Custom dashboard widgets |
+| ReportGenerator | Generate custom reports |
+| DataImporter | Import data (CSV, bank statements) |
+| DataExporter | Export to other formats |
+| TaxCalculatorExtension | Custom tax calculations |
+| ExpenseCategoryExtension | Industry-specific categories |
+| IntegrationExtension | External service integration |
+| HmrcApiExtension | HMRC API extensions |
+
 ## HMRC Making Tax Digital (MTD) Timeline
 
 | Date | Requirement |
