@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<!--
+    Reconciliation Dashboard - SE-10B-008
+    Data health check and reconciliation issues overview.
+    Design: /aura (SE-10B-007-008-reconciliation-dashboard.md)
+-->
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.ReconciliationDashboardController"
+            styleClass="page-scroll" fitToWidth="true" fitToHeight="true">
+    <VBox styleClass="page-container" spacing="24" alignment="TOP_CENTER">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Header -->
+        <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="1200">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Reconciliation Dashboard" styleClass="page-title"/>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="lastCheckedLabel" text="Last checked: Just now"
+                           styleClass="page-subtitle"/>
+                    <Button fx:id="refreshBtn" text="[refresh]" styleClass="refresh-btn"
+                            onAction="#handleRefresh"
+                            accessibleText="Refresh data health check"/>
+                </HBox>
+            </VBox>
+        </HBox>
+
+        <!-- Loading State -->
+        <VBox fx:id="loadingState" styleClass="loading-state" alignment="CENTER" spacing="16"
+              managed="false" visible="false" maxWidth="1200" VBox.vgrow="ALWAYS">
+            <ProgressIndicator prefWidth="48" prefHeight="48"/>
+            <Label text="Analyzing your records..." styleClass="loading-message"/>
+            <Label text="Checking for duplicates and issues" styleClass="loading-hint"/>
+        </VBox>
+
+        <!-- Dashboard Content -->
+        <VBox fx:id="dashboardContent" spacing="24" maxWidth="1200" VBox.vgrow="ALWAYS">
+
+            <!-- Summary Cards Grid -->
+            <GridPane styleClass="summary-cards-grid" hgap="16" vgap="16">
+                <!-- Total Income Card -->
+                <VBox styleClass="reconciliation-card, card-income" GridPane.columnIndex="0" GridPane.rowIndex="0"
+                      onMouseClicked="#handleIncomeCardClick"
+                      focusTraversable="true"
+                      accessibleText="Total income card, click to view details"
+                      accessibleRole="BUTTON">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="[income]" styleClass="card-icon, icon-income"/>
+                        <Label text="Total Income" styleClass="reconciliation-card-title"/>
+                    </HBox>
+                    <Label fx:id="totalIncomeValue" text="0.00"
+                           styleClass="reconciliation-card-value, value-income"/>
+                    <Label fx:id="incomeCountLabel" text="0 records"
+                           styleClass="reconciliation-card-subtitle"/>
+                </VBox>
+
+                <!-- Total Expenses Card -->
+                <VBox styleClass="reconciliation-card, card-expenses" GridPane.columnIndex="1" GridPane.rowIndex="0"
+                      onMouseClicked="#handleExpensesCardClick"
+                      focusTraversable="true"
+                      accessibleText="Total expenses card, click to view details"
+                      accessibleRole="BUTTON">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="[expense]" styleClass="card-icon, icon-expense"/>
+                        <Label text="Total Expenses" styleClass="reconciliation-card-title"/>
+                    </HBox>
+                    <Label fx:id="totalExpensesValue" text="0.00"
+                           styleClass="reconciliation-card-value, value-expense"/>
+                    <Label fx:id="expenseCountLabel" text="0 records"
+                           styleClass="reconciliation-card-subtitle"/>
+                </VBox>
+
+                <!-- Potential Duplicates Card -->
+                <VBox styleClass="reconciliation-card, card-alert" GridPane.columnIndex="0" GridPane.rowIndex="1"
+                      onMouseClicked="#handleDuplicatesCardClick"
+                      focusTraversable="true"
+                      accessibleText="Potential duplicates card, click to review"
+                      accessibleRole="BUTTON">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="[duplicate]" styleClass="card-icon, icon-alert"/>
+                        <Label text="Potential Duplicates" styleClass="reconciliation-card-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <StackPane fx:id="duplicateBadge" styleClass="alert-badge" managed="false" visible="false">
+                            <Label fx:id="duplicateBadgeText" text="0" styleClass="alert-badge-text"/>
+                        </StackPane>
+                    </HBox>
+                    <Label fx:id="duplicateCountValue" text="0"
+                           styleClass="reconciliation-card-value"/>
+                    <Label text="Need review" styleClass="reconciliation-card-subtitle"/>
+                </VBox>
+
+                <!-- Missing Categories Card -->
+                <VBox styleClass="reconciliation-card, card-warning" GridPane.columnIndex="1" GridPane.rowIndex="1"
+                      onMouseClicked="#handleCategoriesCardClick"
+                      focusTraversable="true"
+                      accessibleText="Missing categories card, click to fix"
+                      accessibleRole="BUTTON">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="[category]" styleClass="card-icon, icon-warning"/>
+                        <Label text="Missing Categories" styleClass="reconciliation-card-title"/>
+                    </HBox>
+                    <Label fx:id="uncategorizedCountValue" text="0"
+                           styleClass="reconciliation-card-value"/>
+                    <Label text="Uncategorized expenses" styleClass="reconciliation-card-subtitle"/>
+                </VBox>
+
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS" minWidth="200"/>
+                    <ColumnConstraints hgrow="ALWAYS" minWidth="200"/>
+                </columnConstraints>
+            </GridPane>
+
+            <!-- All Clear Message -->
+            <VBox fx:id="allClearBox" styleClass="all-clear-banner" alignment="CENTER" spacing="12"
+                  managed="false" visible="false">
+                <HBox alignment="CENTER" spacing="12">
+                    <Label text="[checkmark]" styleClass="all-clear-icon"/>
+                    <VBox spacing="4">
+                        <Label text="All Clear!" styleClass="all-clear-title"/>
+                        <Label text="No reconciliation issues found. Your records look great!"
+                               styleClass="all-clear-message"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- Issues List -->
+            <VBox fx:id="issuesSection" spacing="16">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="Issues to Review" styleClass="section-title"/>
+                    <Label fx:id="issueCountLabel" text="(0)" styleClass="section-count"/>
+                </HBox>
+
+                <VBox fx:id="issuesList" styleClass="issues-list" spacing="12">
+                    <!-- Issues will be dynamically added here -->
+                </VBox>
+            </VBox>
+
+            <!-- Quick Actions -->
+            <VBox spacing="12">
+                <Label text="Quick Actions" styleClass="section-title"/>
+                <HBox spacing="12">
+                    <Button fx:id="reviewDuplicatesBtn" text="Review Duplicates"
+                            styleClass="quick-action-btn, action-danger"
+                            onAction="#handleReviewDuplicates"
+                            accessibleText="Review potential duplicate transactions"/>
+                    <Button fx:id="fixCategoriesBtn" text="Fix Categories"
+                            styleClass="quick-action-btn, action-warning"
+                            onAction="#handleFixCategories"
+                            accessibleText="Assign categories to uncategorized expenses"/>
+                    <Button fx:id="checkGapsBtn" text="Check Gaps"
+                            styleClass="quick-action-btn, action-info"
+                            onAction="#handleCheckGaps"
+                            accessibleText="Check for gaps in your income records"/>
+                </HBox>
+            </VBox>
+
+        </VBox>
+
+    </VBox>
+</ScrollPane>

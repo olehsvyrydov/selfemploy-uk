@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<!--
+    Import Review Page - SE-10B-005
+    Reviews potential duplicate transactions during bank import.
+    Design: /aura (SE-10B-004-005-import-review-ui.md)
+-->
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="uk.selfemploy.ui.controller.ImportReviewController"
+      styleClass="import-review-container" spacing="20">
+    <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Import Review" styleClass="page-title"/>
+            <Label fx:id="headerSubtitle" text="Review 0 transactions before importing"
+                   styleClass="page-subtitle"/>
+        </VBox>
+        <Button fx:id="cancelImportBtn" text="Cancel Import" styleClass="button-secondary"
+                onAction="#handleCancelImport"/>
+    </HBox>
+
+    <!-- Loading State -->
+    <VBox fx:id="loadingState" styleClass="loading-state" alignment="CENTER" spacing="16"
+          managed="false" visible="false">
+        <ProgressIndicator prefWidth="48" prefHeight="48"/>
+        <Label fx:id="loadingLabel" text="Checking for duplicates..."
+               styleClass="loading-message"/>
+        <Label text="Analyzing transactions" styleClass="loading-hint"/>
+    </VBox>
+
+    <!-- All Clear State (no duplicates found) -->
+    <VBox fx:id="allClearState" styleClass="all-clear-state" alignment="CENTER" spacing="16"
+          managed="false" visible="false">
+        <StackPane styleClass="all-clear-icon">
+            <Label text="[check]" styleClass="all-clear-icon-text"/>
+        </StackPane>
+        <Label text="All Clear!" styleClass="all-clear-title"/>
+        <Label text="No duplicate transactions detected in this import."
+               styleClass="all-clear-message" wrapText="true"/>
+        <Button fx:id="continueImportBtn" text="Continue to Import" styleClass="button-primary"
+                onAction="#handleContinueImport"/>
+    </VBox>
+
+    <!-- Review Content -->
+    <VBox fx:id="reviewContent" spacing="16" VBox.vgrow="ALWAYS">
+
+        <!-- Summary Bar -->
+        <HBox fx:id="summaryBar" styleClass="import-summary-bar" alignment="CENTER_LEFT" spacing="24">
+            <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
+                <Label text="[total]" styleClass="summary-icon"/>
+                <VBox spacing="2">
+                    <Label fx:id="totalCountLabel" text="0" styleClass="import-summary-count"/>
+                    <Label text="Total" styleClass="import-summary-label"/>
+                </VBox>
+            </HBox>
+            <Region styleClass="import-summary-divider"/>
+            <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
+                <Label text="+" styleClass="summary-icon, text-success"/>
+                <VBox spacing="2">
+                    <Label fx:id="newCountLabel" text="0" styleClass="import-summary-count, text-success"/>
+                    <Label text="New" styleClass="import-summary-label"/>
+                </VBox>
+            </HBox>
+            <Region styleClass="import-summary-divider"/>
+            <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
+                <Label text="!" styleClass="summary-icon, text-danger"/>
+                <VBox spacing="2">
+                    <Label fx:id="exactCountLabel" text="0" styleClass="import-summary-count, text-danger"/>
+                    <Label text="Exact Match" styleClass="import-summary-label"/>
+                </VBox>
+            </HBox>
+            <Region styleClass="import-summary-divider"/>
+            <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
+                <Label text="?" styleClass="summary-icon, text-warning"/>
+                <VBox spacing="2">
+                    <Label fx:id="likelyCountLabel" text="0" styleClass="import-summary-count, text-warning"/>
+                    <Label text="Likely Match" styleClass="import-summary-label"/>
+                </VBox>
+            </HBox>
+        </HBox>
+
+        <!-- Bulk Actions Bar -->
+        <HBox styleClass="bulk-action-bar" alignment="CENTER_LEFT" spacing="12">
+            <Button fx:id="importAllNewBtn" text="Import All New"
+                    styleClass="button-success-outline"
+                    onAction="#handleImportAllNew"
+                    accessibleText="Set all new transactions to import"/>
+            <Button fx:id="skipAllDuplicatesBtn" text="Skip All Duplicates"
+                    styleClass="button-secondary"
+                    onAction="#handleSkipAllDuplicates"
+                    accessibleText="Set all exact matches to skip"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="selectionLabel" text="0 selected" styleClass="selection-label"/>
+        </HBox>
+
+        <!-- Review Table -->
+        <TableView fx:id="reviewTable" styleClass="import-table, data-table" VBox.vgrow="ALWAYS"
+                   accessibleText="Import review table with transaction candidates">
+            <columns>
+                <TableColumn fx:id="selectColumn" prefWidth="40" sortable="false"/>
+                <TableColumn fx:id="dateColumn" text="Date" prefWidth="100"/>
+                <TableColumn fx:id="descriptionColumn" text="Description" minWidth="200"/>
+                <TableColumn fx:id="amountColumn" text="Amount" prefWidth="120"/>
+                <TableColumn fx:id="matchColumn" text="Match" prefWidth="100"/>
+                <TableColumn fx:id="actionColumn" text="Action" prefWidth="140" sortable="false"/>
+            </columns>
+            <placeholder>
+                <Label text="No transactions to review" styleClass="empty-table-message"/>
+            </placeholder>
+        </TableView>
+
+    </VBox>
+
+    <!-- Footer -->
+    <HBox alignment="CENTER_RIGHT" spacing="12">
+        <Button fx:id="backBtn" text="Back to Mapping" styleClass="button-secondary"
+                onAction="#handleBack"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <HBox alignment="CENTER_RIGHT" spacing="8">
+            <Label fx:id="importCountLabel" text="0 items will be imported"
+                   styleClass="import-count-label"/>
+            <Button fx:id="importBtn" text="Import Selected" styleClass="button-primary"
+                    onAction="#handleImport"
+                    disable="true"
+                    accessibleText="Import selected transactions"/>
+        </HBox>
+    </HBox>
+
+</VBox>

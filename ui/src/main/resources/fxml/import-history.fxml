@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<!--
+    Import History Page - SE-10B-006
+    Shows past imports with undo functionality.
+    Design: /aura (SE-10B-006-import-history-view.md)
+-->
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.ImportHistoryController"
+            styleClass="page-scroll" fitToWidth="true" fitToHeight="true">
+    <VBox styleClass="page-container" spacing="20" alignment="TOP_CENTER">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Header -->
+        <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="1200">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Import History" styleClass="page-title"/>
+                <Label fx:id="headerSubtitle" text="View and manage past bank statement imports"
+                       styleClass="page-subtitle"/>
+            </VBox>
+            <Button fx:id="newImportBtn" text="New Import" styleClass="button-primary"
+                    onAction="#handleNewImport"
+                    accessibleText="Start a new bank import"/>
+        </HBox>
+
+        <!-- Filter Bar -->
+        <HBox styleClass="filters-bar" alignment="CENTER_LEFT" spacing="16" maxWidth="1200">
+            <Label text="Filter by:" styleClass="filter-label"/>
+            <ToggleButton fx:id="allTimeFilter" text="All Time" styleClass="filter-chip"
+                          onAction="#handleFilterChange"
+                          accessibleText="Show all imports"/>
+            <ToggleButton fx:id="last7DaysFilter" text="Last 7 Days" styleClass="filter-chip"
+                          onAction="#handleFilterChange"
+                          accessibleText="Show imports from last 7 days"/>
+            <ToggleButton fx:id="last30DaysFilter" text="Last 30 Days" styleClass="filter-chip"
+                          onAction="#handleFilterChange"
+                          accessibleText="Show imports from last 30 days"/>
+            <ToggleButton fx:id="thisTaxYearFilter" text="This Tax Year" styleClass="filter-chip"
+                          onAction="#handleFilterChange"
+                          accessibleText="Show imports from current tax year"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="resultCountLabel" text="0 imports" styleClass="result-count"/>
+        </HBox>
+
+        <!-- Loading State -->
+        <VBox fx:id="loadingState" styleClass="loading-state" alignment="CENTER" spacing="16"
+              managed="false" visible="false" maxWidth="1200" VBox.vgrow="ALWAYS">
+            <ProgressIndicator prefWidth="48" prefHeight="48"/>
+            <Label text="Loading import history..." styleClass="loading-message"/>
+        </VBox>
+
+        <!-- Empty State -->
+        <VBox fx:id="emptyState" styleClass="empty-state-container" alignment="CENTER" spacing="16"
+              managed="false" visible="false" maxWidth="1200">
+            <Label text="[folder]" styleClass="empty-state-icon"/>
+            <Label text="No import history yet" styleClass="empty-state-title"/>
+            <Label text="Import your first bank statement to see it here"
+                   styleClass="empty-state-message" wrapText="true"/>
+            <Button text="Import Bank Statement" styleClass="button-primary"
+                    onAction="#handleNewImport"/>
+        </VBox>
+
+        <!-- No Results State -->
+        <VBox fx:id="noResultsState" styleClass="empty-state-container" alignment="CENTER" spacing="16"
+              managed="false" visible="false" maxWidth="1200">
+            <Label text="[search]" styleClass="empty-state-icon"/>
+            <Label text="No imports found for this filter" styleClass="empty-state-title"/>
+            <Label text="Try selecting a different time period"
+                   styleClass="empty-state-message" wrapText="true"/>
+        </VBox>
+
+        <!-- History List -->
+        <VBox fx:id="historyList" styleClass="import-history-list" spacing="12" maxWidth="1200"
+              VBox.vgrow="ALWAYS">
+            <!-- History items will be dynamically added here -->
+        </VBox>
+
+    </VBox>
+</ScrollPane>

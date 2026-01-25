@@ -5,6 +5,7 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.enums.ExpenseCategory;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -39,6 +40,16 @@ public class ExpenseEntity {
 
     @Column(length = 1000)
     private String notes;
+
+    // Soft delete support (Sprint 10B)
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "deleted_by")
+    private String deletedBy;
+
+    @Column(name = "deletion_reason")
+    private String deletionReason;
 
     // Default constructor for JPA
     public ExpenseEntity() {}
@@ -92,4 +103,37 @@ public class ExpenseEntity {
     public void setReceiptPath(String receiptPath) { this.receiptPath = receiptPath; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    // Soft delete getters and setters
+    public Instant getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
+    public String getDeletedBy() { return deletedBy; }
+    public void setDeletedBy(String deletedBy) { this.deletedBy = deletedBy; }
+    public String getDeletionReason() { return deletionReason; }
+    public void setDeletionReason(String deletionReason) { this.deletionReason = deletionReason; }
+
+    /**
+     * Checks if this record has been soft deleted.
+     */
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    /**
+     * Soft deletes this record.
+     */
+    public void softDelete(Instant timestamp, String deletedBy, String reason) {
+        this.deletedAt = timestamp;
+        this.deletedBy = deletedBy;
+        this.deletionReason = reason;
+    }
+
+    /**
+     * Restores a soft-deleted record.
+     */
+    public void restore() {
+        this.deletedAt = null;
+        this.deletedBy = null;
+        this.deletionReason = null;
+    }
 }

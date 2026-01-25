@@ -1,0 +1,863 @@
+/*
+ * Import Review, History, and Reconciliation Dashboard Styles
+ * Sprint 10B - SE-10B-005, SE-10B-006, SE-10B-008
+ * Design: /aura specifications
+ */
+
+/* ===== Common Containers ===== */
+.import-review-container {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-max-width: 1200;
+}
+
+/* ===== Loading State ===== */
+.loading-state {
+    -fx-padding: 60;
+}
+
+.loading-message {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.loading-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== All Clear State ===== */
+.all-clear-state {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 60;
+}
+
+.all-clear-icon {
+    -fx-background-color: #d4edda;
+    -fx-min-width: 64;
+    -fx-min-height: 64;
+    -fx-max-width: 64;
+    -fx-max-height: 64;
+    -fx-background-radius: 32;
+    -fx-alignment: CENTER;
+}
+
+.all-clear-icon-text {
+    -fx-font-size: 28px;
+    -fx-text-fill: #155724;
+    -fx-font-weight: bold;
+}
+
+.all-clear-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-success;
+}
+
+.all-clear-message {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-max-width: 400;
+    -fx-text-alignment: CENTER;
+}
+
+/* ===== Import Summary Bar ===== */
+.import-summary-bar {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 8;
+    -fx-padding: 16 24;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
+}
+
+.import-summary-item {
+    -fx-padding: 0 16;
+}
+
+.import-summary-divider {
+    -fx-min-width: 1;
+    -fx-max-width: 1;
+    -fx-min-height: 40;
+    -fx-background-color: #dee2e6;
+}
+
+.import-summary-count {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.import-summary-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.summary-icon {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Bulk Action Bar ===== */
+.bulk-action-bar {
+    -fx-padding: 8 0;
+}
+
+.selection-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.button-success-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-success;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: -fx-success;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+    -fx-font-weight: 500;
+}
+
+.button-success-outline:hover {
+    -fx-background-color: derive(-fx-success, 90%);
+}
+
+/* ===== Match Badges ===== */
+.match-badge {
+    -fx-padding: 4 10;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.match-badge-new {
+    -fx-background-color: #d4edda;
+}
+
+.match-badge-new .match-badge-icon,
+.match-badge-new .match-badge-text {
+    -fx-text-fill: #155724;
+}
+
+.match-badge-exact {
+    -fx-background-color: #f8d7da;
+}
+
+.match-badge-exact .match-badge-icon,
+.match-badge-exact .match-badge-text {
+    -fx-text-fill: #721c24;
+}
+
+.match-badge-likely {
+    -fx-background-color: #fff3cd;
+}
+
+.match-badge-likely .match-badge-icon,
+.match-badge-likely .match-badge-text {
+    -fx-text-fill: #856404;
+}
+
+/* ===== Table Row Styling ===== */
+.row-new {
+    -fx-background-color: derive(#d4edda, 60%);
+}
+
+.row-exact {
+    -fx-background-color: derive(#f8d7da, 60%);
+}
+
+.row-likely {
+    -fx-background-color: derive(#fff3cd, 60%);
+}
+
+/* ===== Amount Styling ===== */
+.amount-positive {
+    -fx-text-fill: -fx-success;
+    -fx-font-weight: bold;
+}
+
+.amount-negative {
+    -fx-text-fill: #fd7e14;
+    -fx-font-weight: bold;
+}
+
+/* ===== Action ComboBox ===== */
+.action-combo {
+    -fx-background-color: -fx-bg-primary;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-pref-width: 130;
+}
+
+/* ===== Import Count Label ===== */
+.import-count-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+/* ===== Filter Chips ===== */
+.filter-chip {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-size: 13px;
+    -fx-padding: 6 16;
+    -fx-background-radius: 16;
+    -fx-cursor: hand;
+}
+
+.filter-chip:hover {
+    -fx-background-color: #dee2e6;
+}
+
+.filter-chip:selected {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+}
+
+.filter-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.result-count {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* ===== Import History List ===== */
+.import-history-list {
+    -fx-padding: 0;
+}
+
+.import-history-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
+    -fx-cursor: hand;
+}
+
+.import-history-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);
+}
+
+.import-history-card:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+}
+
+/* Status-specific card styling */
+.import-status-active {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-success;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+}
+
+.import-status-undone {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #6c757d;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-opacity: 0.75;
+}
+
+.import-status-locked {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-primary;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+}
+
+/* Status icons */
+.status-icon {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-min-width: 28;
+    -fx-alignment: CENTER;
+}
+
+.status-icon-active {
+    -fx-text-fill: -fx-success;
+}
+
+.status-icon-undone {
+    -fx-text-fill: #6c757d;
+}
+
+.status-icon-locked {
+    -fx-text-fill: -fx-primary;
+}
+
+/* Import file info */
+.import-file-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.import-date {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.import-records {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.meta-separator {
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* Status badge */
+.import-status-badge {
+    -fx-padding: 4 12;
+    -fx-background-radius: 12;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.import-status-badge.import-status-active {
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+    -fx-border-width: 0;
+}
+
+.import-status-badge.import-status-undone {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: #6c757d;
+    -fx-border-width: 0;
+}
+
+.import-status-badge.import-status-locked {
+    -fx-background-color: #cce5ff;
+    -fx-text-fill: #004085;
+    -fx-border-width: 0;
+}
+
+/* Expand button */
+.expand-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+}
+
+.expand-btn:hover {
+    -fx-text-fill: -fx-primary;
+}
+
+/* Import details section */
+.import-details {
+    -fx-padding: 12 0 0 0;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 1 0 0 0;
+}
+
+.detail-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.detail-value {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+/* Amount boxes in details */
+.amount-box {
+    -fx-padding: 8 16;
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 6;
+}
+
+.amount-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.amount-count {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.amount-value {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.amount-income {
+    -fx-text-fill: -fx-success;
+}
+
+.amount-expense {
+    -fx-text-fill: #fd7e14;
+}
+
+/* Undo button */
+.undo-btn {
+    -fx-font-size: 13px;
+    -fx-padding: 8 16;
+}
+
+.undo-disabled-reason {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-style: italic;
+}
+
+/* ===== Reconciliation Dashboard ===== */
+
+/* Summary cards grid */
+.summary-cards-grid {
+    -fx-padding: 0;
+}
+
+.reconciliation-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+    -fx-padding: 20;
+    -fx-min-height: 120;
+    -fx-cursor: hand;
+}
+
+.reconciliation-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 0, 4);
+}
+
+.reconciliation-card:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+}
+
+/* Card variants */
+.card-income {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-success;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+.card-expenses {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #fd7e14;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+.card-alert {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-danger;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+.card-warning {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-warning;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+/* Card icons */
+.card-icon {
+    -fx-font-size: 18px;
+}
+
+.icon-income {
+    -fx-text-fill: -fx-success;
+}
+
+.icon-expense {
+    -fx-text-fill: #fd7e14;
+}
+
+.icon-alert {
+    -fx-text-fill: -fx-danger;
+}
+
+.icon-warning {
+    -fx-text-fill: #856404;
+}
+
+/* Card content */
+.reconciliation-card-title {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.reconciliation-card-value {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.value-income {
+    -fx-text-fill: -fx-success;
+}
+
+.value-expense {
+    -fx-text-fill: #fd7e14;
+}
+
+.reconciliation-card-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+/* Alert badge */
+.alert-badge {
+    -fx-background-color: -fx-danger;
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-max-width: 20;
+    -fx-max-height: 20;
+    -fx-background-radius: 10;
+    -fx-alignment: CENTER;
+}
+
+.alert-badge-text {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* All clear banner */
+.all-clear-banner {
+    -fx-background-color: #d4edda;
+    -fx-background-radius: 8;
+    -fx-padding: 20;
+}
+
+.all-clear-banner .all-clear-icon {
+    -fx-font-size: 24px;
+    -fx-text-fill: -fx-success;
+}
+
+.all-clear-banner .all-clear-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #155724;
+}
+
+.all-clear-banner .all-clear-message {
+    -fx-font-size: 14px;
+    -fx-text-fill: #155724;
+}
+
+/* ===== Issues List ===== */
+.issues-list {
+    -fx-padding: 0;
+}
+
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.section-count {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-muted;
+}
+
+.issue-card {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
+}
+
+.issue-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);
+}
+
+.issue-card:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+}
+
+/* Severity styling */
+.issue-severity-high {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-danger;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+}
+
+.issue-severity-medium {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-warning;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+}
+
+.issue-severity-low {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: -fx-primary;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+}
+
+.severity-icon {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-min-width: 24;
+    -fx-alignment: CENTER;
+}
+
+.severity-icon.issue-severity-high {
+    -fx-text-fill: -fx-danger;
+    -fx-border-width: 0;
+}
+
+.severity-icon.issue-severity-medium {
+    -fx-text-fill: #856404;
+    -fx-border-width: 0;
+}
+
+.severity-icon.issue-severity-low {
+    -fx-text-fill: -fx-primary;
+    -fx-border-width: 0;
+}
+
+.issue-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.issue-description {
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.issue-details {
+    -fx-padding: 8 0 0 0;
+}
+
+.detail-chip {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-font-size: 11px;
+    -fx-padding: 2 8;
+    -fx-background-radius: 4;
+}
+
+.issue-action-btn {
+    -fx-font-size: 12px;
+    -fx-padding: 6 14;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.issue-action-btn.issue-severity-high {
+    -fx-background-color: -fx-danger;
+    -fx-text-fill: white;
+    -fx-border-width: 0;
+}
+
+.issue-action-btn.issue-severity-medium {
+    -fx-background-color: -fx-warning;
+    -fx-text-fill: #212529;
+    -fx-border-width: 0;
+}
+
+.issue-action-btn.issue-severity-low {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+    -fx-border-width: 0;
+}
+
+/* ===== Quick Actions ===== */
+.quick-action-btn {
+    -fx-font-size: 13px;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-weight: 500;
+}
+
+.quick-action-btn.action-danger {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-danger;
+    -fx-border-width: 1;
+    -fx-text-fill: -fx-danger;
+}
+
+.quick-action-btn.action-danger:hover {
+    -fx-background-color: derive(-fx-danger, 90%);
+}
+
+.quick-action-btn.action-danger:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+.quick-action-btn.action-warning {
+    -fx-background-color: transparent;
+    -fx-border-color: #fd7e14;
+    -fx-border-width: 1;
+    -fx-text-fill: #fd7e14;
+}
+
+.quick-action-btn.action-warning:hover {
+    -fx-background-color: derive(#fd7e14, 90%);
+}
+
+.quick-action-btn.action-warning:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+.quick-action-btn.action-info {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 1;
+    -fx-text-fill: -fx-primary;
+}
+
+.quick-action-btn.action-info:hover {
+    -fx-background-color: -fx-primary-light;
+}
+
+/* Refresh button */
+.refresh-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+    -fx-padding: 4 8;
+}
+
+.refresh-btn:hover {
+    -fx-text-fill: -fx-primary-dark;
+}
+
+/* ===== Comparison Dialog ===== */
+
+.comparison-dialog {
+    -fx-background-color: -fx-bg-primary;
+    -fx-background-radius: 12;
+}
+
+.comparison-panel {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-min-width: 280;
+}
+
+.comparison-panel-header {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 0 0 12 0;
+}
+
+.comparison-field {
+    -fx-padding: 8 0;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 0 0 1 0;
+}
+
+.comparison-field-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-secondary;
+}
+
+.comparison-field-value {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-primary;
+}
+
+.comparison-field-different {
+    -fx-background-color: #fff3cd;
+    -fx-background-radius: 4;
+}
+
+.comparison-difference-note {
+    -fx-background-color: #e6f0ff;
+    -fx-background-radius: 6;
+    -fx-padding: 12;
+    -fx-text-fill: -fx-primary;
+    -fx-font-size: 13px;
+}
+
+/* Comparison Dialog Buttons */
+.comparison-dialog .button-primary-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: -fx-primary;
+    -fx-padding: 8 16;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.comparison-dialog .button-primary-outline:hover {
+    -fx-background-color: -fx-primary-light;
+}
+
+.comparison-dialog .button-primary-outline:focused {
+    -fx-border-color: -fx-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+}
+
+.comparison-dialog .button-secondary {
+    -fx-background-color: -fx-bg-tertiary;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-padding: 8 16;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.comparison-dialog .button-secondary:hover {
+    -fx-background-color: #dee2e6;
+}
+
+.comparison-dialog .button-secondary:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
+}
+
+.comparison-dialog .button-primary {
+    -fx-background-color: -fx-primary;
+    -fx-text-fill: white;
+    -fx-padding: 8 16;
+    -fx-background-radius: 6;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.comparison-dialog .button-primary:hover {
+    -fx-background-color: -fx-primary-dark;
+}
+
+.comparison-dialog .button-primary:focused {
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.6), 8, 0, 0, 0);
+}
+
+.comparison-dialog .close-btn {
+    -fx-text-fill: -fx-text-muted;
+}
+
+.comparison-dialog .close-btn:hover {
+    -fx-text-fill: -fx-text-primary;
+}
+
+.comparison-dialog .close-btn:focused {
+    -fx-text-fill: -fx-primary;
+}
