@@ -17,9 +17,14 @@
       styleClass="privacy-notice-container" prefWidth="600" maxHeight="700">
 
     <!-- Header -->
-    <HBox styleClass="dialog-header" alignment="CENTER_LEFT">
+    <HBox fx:id="headerRow" styleClass="dialog-header" alignment="CENTER_LEFT">
         <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
         <Label text="Privacy Notice" styleClass="dialog-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <!-- Settings mode close button (X) - hidden by default -->
+        <Button fx:id="headerCloseBtn" text="X" styleClass="close-button"
+                onAction="#handleClose" visible="false" managed="false"
+                accessibleText="Close privacy notice dialog"/>
     </HBox>
 
     <!-- Content -->
@@ -216,18 +221,35 @@
             </VBox>
         </ScrollPane>
 
-        <!-- Acknowledgment Checkbox -->
+        <!-- Acknowledgment Checkbox (PS11-001: Updated text per /alex legal) -->
         <HBox styleClass="acknowledgment-row" alignment="CENTER_LEFT" spacing="12">
-            <CheckBox fx:id="acknowledgeCheckbox" onAction="#handleAcknowledgeChange"/>
-            <Label text="I have read and understand this privacy notice"
-                   styleClass="acknowledgment-label" wrapText="true"/>
+            <CheckBox fx:id="acknowledgeCheckbox" styleClass="legal-checkbox"
+                      onAction="#handleAcknowledgeChange"
+                      accessibleText="Acknowledge privacy notice, required to continue"/>
+            <Label fx:id="acknowledgmentLabel"
+                   text="I acknowledge I have been provided with this privacy notice"
+                   styleClass="acknowledgment-label" wrapText="true"
+                   labelFor="$acknowledgeCheckbox"/>
         </HBox>
     </VBox>
 
-    <!-- Footer -->
-    <HBox styleClass="dialog-footer" alignment="CENTER">
+    <!-- Footer - First Launch Mode (default) -->
+    <HBox fx:id="firstLaunchFooter" styleClass="dialog-footer" alignment="CENTER">
         <padding><Insets top="16" right="24" bottom="24" left="24"/></padding>
         <Button fx:id="continueBtn" text="Continue" styleClass="button-primary"
-                onAction="#handleContinue" disable="true" prefWidth="200"/>
+                onAction="#handleContinue" disable="true" prefWidth="200"
+                accessibleText="Continue to application"/>
+    </HBox>
+
+    <!-- Footer - Settings Mode (hidden by default) -->
+    <HBox fx:id="settingsFooter" styleClass="dialog-footer, privacy-footer-settings"
+          alignment="CENTER" spacing="12" visible="false" managed="false">
+        <padding><Insets top="16" right="24" bottom="24" left="24"/></padding>
+        <Button fx:id="closeBtn" text="Close" styleClass="button-secondary"
+                onAction="#handleClose" prefWidth="100"
+                accessibleText="Close without changes"/>
+        <Button fx:id="acknowledgeBtn" text="Acknowledge" styleClass="button-primary"
+                onAction="#handleAcknowledge" disable="true" prefWidth="140"
+                accessibleText="Save acknowledgment"/>
     </HBox>
 </VBox>

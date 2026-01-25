@@ -1959,6 +1959,33 @@
     -fx-text-fill: -fx-text-muted;
 }
 
+/* ===== Coming Soon Feature Card (PS11-004) ===== */
+.feature-card-coming-soon {
+    -fx-background-color: -fx-bg-secondary;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+}
+
+.feature-card-coming-soon:hover {
+    -fx-background-color: -fx-bg-tertiary;
+}
+
+.coming-soon-badge {
+    -fx-background-color: #6c757d;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+}
+
+.mtd-info-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -fx-text-muted;
+    -fx-font-style: italic;
+}
+
 .info-box {
     -fx-background-color: #e6f0ff;
     -fx-border-color: -fx-primary;

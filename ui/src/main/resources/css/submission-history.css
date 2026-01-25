@@ -233,7 +233,7 @@
     -fx-font-size: 13px;
 }
 
-/* ===== Empty State ===== */
+/* ===== Empty State (PS11-005 Redesigned) ===== */
 .empty-state-container {
     -fx-background-color: -fx-bg-primary;
     -fx-background-radius: 12;
@@ -259,6 +259,52 @@
     -fx-max-width: 400;
     -fx-wrap-text: true;
     -fx-text-alignment: CENTER;
+}
+
+/* Info Box in Empty State (PS11-005) */
+.empty-state-container .info-box {
+    -fx-background-color: #e6f0ff;
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 0 0 0 4;
+    -fx-border-radius: 0 8 8 0;
+    -fx-background-radius: 0 8 8 0;
+    -fx-padding: 16 20;
+}
+
+.info-icon {
+    -fx-font-size: 20px;
+    -fx-text-fill: -fx-primary;
+    -fx-font-weight: bold;
+}
+
+/* ===== Disabled Button Styling (PS11-005) ===== */
+.button-primary:disabled {
+    -fx-background-color: #adb5bd;
+    -fx-text-fill: #ffffff;
+    -fx-cursor: default;
+    -fx-opacity: 1.0;
+}
+
+/* Disabled button focus state for accessibility */
+.button-primary:disabled:focused {
+    -fx-border-color: -fx-primary;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.2), 4, 0, 0, 0);
+}
+
+/* ===== Tooltip Styling for Disabled Buttons (PS11-005) ===== */
+.tooltip.disabled-button-tooltip {
+    -fx-background-color: #343a40;
+    -fx-background-radius: 6;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+    -fx-padding: 8 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+.tooltip.disabled-button-tooltip .text {
+    -fx-fill: #ffffff;
 }
 
 /* ===== Detail Panel ===== */

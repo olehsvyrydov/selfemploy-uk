@@ -14,12 +14,15 @@ import javafx.scene.layout.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.enums.SubmissionStatus;
+import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionHistoryViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionTableRow;
+import uk.selfemploy.ui.viewmodel.View;
 
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 /**
  * Controller for the Submission History view.
@@ -55,6 +58,9 @@ public class SubmissionHistoryController implements Initializable {
 
     // Empty state
     @FXML private VBox emptyState;
+    @FXML private HBox infoBox;
+    @FXML private Label infoBoxMessage;
+    @FXML private Button goToHmrcBtn;
 
     // Detail panel
     @FXML private VBox detailPanel;
@@ -79,9 +85,14 @@ public class SubmissionHistoryController implements Initializable {
     @FXML private Button viewDataBtn;
 
     private SubmissionHistoryViewModel viewModel;
+    private Consumer<View> navigationCallback;
 
     /** Guard flag to prevent infinite recursion when updating tax year filter programmatically */
     private boolean updatingTaxYearFilter = false;
+
+    /** Tooltip messages for disabled button states */
+    private static final String TOOLTIP_NOT_CONNECTED = "Connect to HMRC first to submit returns";
+    private static final String TOOLTIP_NO_DATA = "Add income or expenses first to submit";
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -391,8 +402,37 @@ public class SubmissionHistoryController implements Initializable {
     @FXML
     void handleSubmitQuarterly(ActionEvent event) {
         LOG.info("Navigate to quarterly submission");
-        // In production, this would navigate to the Tax Summary view
-        // Implementation depends on navigation service
+        navigateToView(View.HMRC_SUBMISSION);
+    }
+
+    /**
+     * Handles navigation to the HMRC Submission page (PS11-005).
+     * Used by the empty state "Go to HMRC Submission" button.
+     */
+    @FXML
+    void handleGoToHmrcSubmission(ActionEvent event) {
+        LOG.info("Navigate to HMRC Submission page");
+        navigateToView(View.HMRC_SUBMISSION);
+    }
+
+    /**
+     * Sets the navigation callback for view switching.
+     *
+     * @param callback Consumer that accepts a View to navigate to
+     */
+    public void setNavigationCallback(Consumer<View> callback) {
+        this.navigationCallback = callback;
+    }
+
+    /**
+     * Navigates to the specified view using the navigation callback.
+     */
+    private void navigateToView(View view) {
+        if (navigationCallback != null) {
+            navigationCallback.accept(view);
+        } else {
+            LOG.warn("Navigation callback not set, cannot navigate to: {}", view);
+        }
     }
 
     @FXML

@@ -1,5 +1,7 @@
 package uk.selfemploy.ui.service;
 
+import uk.selfemploy.core.export.DataExportService;
+import uk.selfemploy.core.export.DataImportService;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
@@ -27,6 +29,8 @@ public final class CoreServiceFactory {
     private static ReceiptStorageService receiptStorageService;
     private static TermsAcceptanceService termsAcceptanceService;
     private static PrivacyAcknowledgmentService privacyAcknowledgmentService;
+    private static DataExportService dataExportService;
+    private static DataImportService dataImportService;
     private static UUID defaultBusinessId;
 
     private CoreServiceFactory() {
@@ -106,6 +110,38 @@ public final class CoreServiceFactory {
     }
 
     /**
+     * Gets or creates the singleton DataExportService instance.
+     *
+     * @return The DataExportService instance
+     */
+    public static synchronized DataExportService getDataExportService() {
+        if (dataExportService == null) {
+            LOG.info("Creating DataExportService");
+            dataExportService = new DataExportService(
+                getIncomeService(),
+                getExpenseService()
+            );
+        }
+        return dataExportService;
+    }
+
+    /**
+     * Gets or creates the singleton DataImportService instance.
+     *
+     * @return The DataImportService instance
+     */
+    public static synchronized DataImportService getDataImportService() {
+        if (dataImportService == null) {
+            LOG.info("Creating DataImportService");
+            dataImportService = new DataImportService(
+                getIncomeService(),
+                getExpenseService()
+            );
+        }
+        return dataImportService;
+    }
+
+    /**
      * Gets the default business ID for standalone mode.
      * The business ID is persisted to SQLite so it remains constant across app restarts.
      *
@@ -166,6 +202,8 @@ public final class CoreServiceFactory {
         receiptStorageService = null;
         termsAcceptanceService = null;
         privacyAcknowledgmentService = null;
+        dataExportService = null;
+        dataImportService = null;
         defaultBusinessId = null;
         LOG.info("CoreServiceFactory shutdown - data persisted");
     }
@@ -175,6 +213,7 @@ public final class CoreServiceFactory {
      */
     public static boolean isInitialized() {
         return expenseService != null || incomeService != null || receiptStorageService != null
-                || termsAcceptanceService != null || privacyAcknowledgmentService != null;
+                || termsAcceptanceService != null || privacyAcknowledgmentService != null
+                || dataExportService != null || dataImportService != null;
     }
 }

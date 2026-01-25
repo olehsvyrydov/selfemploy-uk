@@ -474,6 +474,240 @@ class SubmissionHistoryViewModelTest {
         }
     }
 
+    // =========================================================================
+    // PS11-004: Quarterly Updates Placeholder Tests
+    // =========================================================================
+    @Nested
+    @DisplayName("PS11-004: Quarterly Updates Placeholder")
+    class Ps11004QuarterlyUpdatesPlaceholder {
+
+        @Test
+        @DisplayName("QU-U01: should show quarterly submission placeholder message")
+        void shouldShowQuarterlySubmissionPlaceholderMessage() {
+            // The ViewModel should indicate quarterly updates feature status
+            assertThat(viewModel.getQuarterlyUpdatesMessage())
+                .isEqualTo("Quarterly updates coming April 2026 for income over GBP50,000");
+        }
+
+        @Test
+        @DisplayName("QU-U02: should return correct feature coming date")
+        void shouldReturnCorrectFeatureComingDate() {
+            assertThat(viewModel.getQuarterlyUpdatesAvailableDate())
+                .isEqualTo("April 2026");
+        }
+
+        @Test
+        @DisplayName("QU-U03: should return correct income threshold for quarterly updates")
+        void shouldReturnCorrectIncomeThresholdForQuarterlyUpdates() {
+            assertThat(viewModel.getQuarterlyUpdatesIncomeThreshold())
+                .isEqualTo("GBP50,000");
+        }
+
+        @Test
+        @DisplayName("QU-U04: should indicate quarterly updates not yet available")
+        void shouldIndicateQuarterlyUpdatesNotYetAvailable() {
+            assertThat(viewModel.isQuarterlyUpdatesAvailable()).isFalse();
+        }
+
+        @Test
+        @DisplayName("QU-U05: should return HMRC MTD information link")
+        void shouldReturnHmrcMtdInformationLink() {
+            assertThat(viewModel.getQuarterlyUpdatesInfoUrl())
+                .isEqualTo("https://www.gov.uk/guidance/using-making-tax-digital-for-income-tax");
+        }
+
+        @Test
+        @DisplayName("QU-U06: should return learn more button text")
+        void shouldReturnLearnMoreButtonText() {
+            assertThat(viewModel.getQuarterlyUpdatesLearnMoreText())
+                .isEqualTo("Learn more about Making Tax Digital");
+        }
+
+        @Test
+        @DisplayName("QU-U07: should count quarterly submissions by type")
+        void shouldCountQuarterlySubmissionsByType() {
+            // Given
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.QUARTERLY_Q1, "2025/26", SubmissionStatus.ACCEPTED
+            ));
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.QUARTERLY_Q2, "2025/26", SubmissionStatus.PENDING
+            ));
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.ANNUAL, "2025/26", SubmissionStatus.ACCEPTED
+            ));
+
+            // When
+            int quarterlyCount = viewModel.getQuarterlySubmissionCount();
+
+            // Then
+            assertThat(quarterlyCount).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("QU-U08: should identify next quarterly deadline")
+        void shouldIdentifyNextQuarterlyDeadline() {
+            // The ViewModel should provide information about quarterly deadlines
+            assertThat(viewModel.getNextQuarterlyDeadlineInfo())
+                .contains("Q"); // Should contain quarter info
+        }
+
+        @Test
+        @DisplayName("QU-U09: should show placeholder for quarterly submission types")
+        void shouldShowPlaceholderForQuarterlySubmissionTypes() {
+            // Given - no quarterly submissions
+            assertThat(viewModel.isEmptyState()).isTrue();
+
+            // Then - should indicate quarterly updates message
+            assertThat(viewModel.getQuarterlyUpdatesMessage()).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("QU-U10: should hide placeholder after quarterly submissions exist")
+        void shouldHidePlaceholderAfterQuarterlySubmissionsExist() {
+            // Given
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.QUARTERLY_Q1, "2025/26", SubmissionStatus.ACCEPTED
+            ));
+
+            // Then - empty state should be hidden
+            assertThat(viewModel.isEmptyState()).isFalse();
+        }
+    }
+
+    // =========================================================================
+    // PS11-005: Button State Fix Tests
+    // =========================================================================
+    @Nested
+    @DisplayName("PS11-005: Button State Tests")
+    class Ps11005ButtonStateTests {
+
+        @Test
+        @DisplayName("BTN-U01: should indicate when action button is enabled")
+        void shouldIndicateWhenActionButtonIsEnabled() {
+            // Given - a submission is selected
+            SubmissionTableRow submission = createSubmission(
+                SubmissionType.QUARTERLY_Q1, "2025/26", SubmissionStatus.ACCEPTED
+            );
+            viewModel.addSubmission(submission);
+            viewModel.selectSubmission(submission);
+
+            // Then
+            assertThat(viewModel.isViewDetailsEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("BTN-U02: should indicate when action button is disabled")
+        void shouldIndicateWhenActionButtonIsDisabled() {
+            // Given - no submission selected
+            assertThat(viewModel.hasSelection()).isFalse();
+
+            // Then
+            assertThat(viewModel.isViewDetailsEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("BTN-U03: should return tooltip for disabled state (no selection)")
+        void shouldReturnTooltipForDisabledStateNoSelection() {
+            // Given - no selection
+            assertThat(viewModel.hasSelection()).isFalse();
+
+            // Then
+            assertThat(viewModel.getViewDetailsTooltip())
+                .isEqualTo("Select a submission to view details");
+        }
+
+        @Test
+        @DisplayName("BTN-U04: should return tooltip for enabled state")
+        void shouldReturnTooltipForEnabledState() {
+            // Given
+            SubmissionTableRow submission = createSubmission(
+                SubmissionType.QUARTERLY_Q1, "2025/26", SubmissionStatus.ACCEPTED
+            );
+            viewModel.addSubmission(submission);
+            viewModel.selectSubmission(submission);
+
+            // Then
+            assertThat(viewModel.getViewDetailsTooltip())
+                .isEqualTo("View submission details");
+        }
+
+        @Test
+        @DisplayName("BTN-U05: should expose view details enabled property for binding")
+        void shouldExposeViewDetailsEnabledPropertyForBinding() {
+            assertThat(viewModel.viewDetailsEnabledProperty()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("BTN-U06: viewDetailsEnabled should update when selection changes")
+        void viewDetailsEnabledShouldUpdateWhenSelectionChanges() {
+            // Given
+            SubmissionTableRow submission = createSubmission(
+                SubmissionType.QUARTERLY_Q1, "2025/26", SubmissionStatus.ACCEPTED
+            );
+            viewModel.addSubmission(submission);
+            assertThat(viewModel.viewDetailsEnabledProperty().get()).isFalse();
+
+            // When
+            viewModel.selectSubmission(submission);
+
+            // Then
+            assertThat(viewModel.viewDetailsEnabledProperty().get()).isTrue();
+
+            // When
+            viewModel.clearSelection();
+
+            // Then
+            assertThat(viewModel.viewDetailsEnabledProperty().get()).isFalse();
+        }
+
+        @Test
+        @DisplayName("BTN-U07: should disable export button when no submissions")
+        void shouldDisableExportButtonWhenNoSubmissions() {
+            // Given - empty state
+            assertThat(viewModel.isEmptyState()).isTrue();
+
+            // Then
+            assertThat(viewModel.isExportEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("BTN-U08: should enable export button when submissions exist")
+        void shouldEnableExportButtonWhenSubmissionsExist() {
+            // Given
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.ANNUAL, "2025/26", SubmissionStatus.ACCEPTED
+            ));
+
+            // Then
+            assertThat(viewModel.isExportEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("BTN-U09: should return export tooltip for disabled state")
+        void shouldReturnExportTooltipForDisabledState() {
+            // Given - empty state
+            assertThat(viewModel.isEmptyState()).isTrue();
+
+            // Then
+            assertThat(viewModel.getExportTooltip())
+                .isEqualTo("No submissions to export");
+        }
+
+        @Test
+        @DisplayName("BTN-U10: should return export tooltip for enabled state")
+        void shouldReturnExportTooltipForEnabledState() {
+            // Given
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.ANNUAL, "2025/26", SubmissionStatus.ACCEPTED
+            ));
+
+            // Then
+            assertThat(viewModel.getExportTooltip())
+                .isEqualTo("Export submission history");
+        }
+    }
+
     // === Helper Methods ===
 
     private SubmissionTableRow createSubmission(

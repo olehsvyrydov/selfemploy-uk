@@ -299,11 +299,12 @@ class PrivacyNoticeControllerTest {
         }
 
         @Test
-        @DisplayName("acknowledgment label should contain correct text")
+        @DisplayName("acknowledgment label should contain legal-compliant text (PS11-001)")
         void acknowledgmentLabelShouldContainCorrectText() {
+            // PS11-001: Updated per /alex legal consultation
             assertThat(viewModel.getAcknowledgmentLabelText())
                 .as("Acknowledgment label text should match specification")
-                .isEqualTo("I have read and understand this privacy notice");
+                .isEqualTo("I acknowledge I have been provided with this privacy notice");
         }
 
         @Test

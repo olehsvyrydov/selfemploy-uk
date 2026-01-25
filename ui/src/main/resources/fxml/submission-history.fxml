@@ -65,14 +65,30 @@
             <!-- Dynamic content - submission cards populated by controller -->
         </VBox>
 
-        <!-- Empty State (shown when no submissions) -->
+        <!-- Empty State (shown when no submissions) - PS11-005 Redesigned -->
         <VBox fx:id="emptyState" styleClass="empty-state-container" alignment="CENTER"
               spacing="16" managed="false" visible="false">
+            <!-- Document Icon -->
+            <Label text="&#128196;" styleClass="empty-state-icon"/>
             <Label text="No Submissions Yet" styleClass="empty-state-title"/>
             <Label text="Your HMRC submission history will appear here once you submit your first quarterly or annual return."
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER"/>
-            <Button text="Submit Quarterly Return" styleClass="button-primary"
-                    onAction="#handleSubmitQuarterly"/>
+
+            <!-- Info Box explaining prerequisites (PS11-005) -->
+            <HBox fx:id="infoBox" styleClass="info-box" spacing="12" alignment="CENTER_LEFT" maxWidth="400">
+                <Label text="&#9432;" styleClass="info-icon"/>
+                <VBox spacing="4">
+                    <Label text="Getting Started" styleClass="info-title"/>
+                    <Label fx:id="infoBoxMessage"
+                           text="To submit returns, first connect to HMRC from the HMRC Submission page."
+                           styleClass="info-text" wrapText="true"/>
+                </VBox>
+            </HBox>
+
+            <!-- Primary action button - navigates to HMRC Submission (PS11-005) -->
+            <Button fx:id="goToHmrcBtn" text="Go to HMRC Submission" styleClass="button-primary"
+                    onAction="#handleGoToHmrcSubmission"
+                    accessibleText="Navigate to HMRC Submission page to connect your account"/>
         </VBox>
 
         <!-- Detail Panel (shown when a submission is selected) -->

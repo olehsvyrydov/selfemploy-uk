@@ -15,6 +15,14 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.export.DataExportService;
+import uk.selfemploy.core.export.DataImportService;
+import uk.selfemploy.core.export.ExportResult;
+import uk.selfemploy.core.export.ImportException;
+import uk.selfemploy.core.export.ImportOptions;
+import uk.selfemploy.core.export.ImportPreview;
+import uk.selfemploy.core.export.ImportResult;
+import uk.selfemploy.core.export.ImportType;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
@@ -22,9 +30,11 @@ import uk.selfemploy.ui.service.CoreServiceFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -201,8 +211,37 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
 
         if (file != null) {
-            // TODO: Implement actual data export
-            showInfo("Export", "Data export functionality will be available soon.\n\nFile would be saved to:\n" + file.getAbsolutePath());
+            try {
+                DataExportService exportService = CoreServiceFactory.getDataExportService();
+                UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+                TaxYear[] taxYears = taxYear != null
+                    ? new TaxYear[]{taxYear}
+                    : new TaxYear[]{TaxYear.current()};
+
+                ExportResult result;
+                String fileName = file.getName().toLowerCase();
+
+                if (fileName.endsWith(".json")) {
+                    result = exportService.exportToJson(businessId, taxYears, file.toPath());
+                } else if (fileName.endsWith(".csv")) {
+                    // For CSV, export income by default
+                    result = exportService.exportIncomeToCsv(businessId, taxYears, file.toPath());
+                } else {
+                    showError("Export Error", "Unsupported file format. Please use .json or .csv");
+                    return;
+                }
+
+                if (result.success()) {
+                    showInfo("Export Successful",
+                        String.format("Exported %d income and %d expense records to:\n%s",
+                            result.incomeCount(), result.expenseCount(), file.getAbsolutePath()));
+                } else {
+                    showError("Export Failed", result.errorMessage());
+                }
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Export failed", e);
+                showError("Export Error", "Failed to export data: " + e.getMessage());
+            }
         }
     }
 
@@ -221,8 +260,56 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
 
         if (file != null) {
-            // TODO: Implement actual data import
-            showInfo("Import", "Data import functionality will be available soon.\n\nSelected file:\n" + file.getAbsolutePath());
+            try {
+                DataImportService importService = CoreServiceFactory.getDataImportService();
+                UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+                Path filePath = file.toPath();
+                String fileName = file.getName().toLowerCase();
+
+                ImportResult result;
+
+                if (fileName.endsWith(".json")) {
+                    // Preview first
+                    ImportPreview preview = importService.previewJsonImport(filePath);
+                    if (!preview.isValid() && preview.errors() != null && !preview.errors().isEmpty()) {
+                        int maxErrors = Math.min(5, preview.errors().size());
+                        showError("Import Validation Failed",
+                            "Found validation errors:\n" + String.join("\n", preview.errors().subList(0, maxErrors)));
+                        return;
+                    }
+                    result = importService.importJson(businessId, filePath, ImportOptions.defaults());
+                } else if (fileName.endsWith(".csv")) {
+                    // For CSV, default to income (could add dialog to choose)
+                    ImportPreview preview = importService.previewCsvImport(filePath, ImportType.INCOME);
+                    if (!preview.isValid() && preview.errors() != null && !preview.errors().isEmpty()) {
+                        int maxErrors = Math.min(5, preview.errors().size());
+                        showError("Import Validation Failed",
+                            "Found validation errors:\n" + String.join("\n", preview.errors().subList(0, maxErrors)));
+                        return;
+                    }
+                    result = importService.importCsv(businessId, filePath, ImportType.INCOME, ImportOptions.defaults());
+                } else {
+                    showError("Import Error", "Unsupported file format. Please use .json or .csv");
+                    return;
+                }
+
+                if (result.success()) {
+                    showInfo("Import Successful",
+                        String.format("Imported %d records successfully.\nSkipped: %d",
+                            result.importedCount(), result.skippedCount()));
+                } else {
+                    String errorMsg = result.errors() != null && !result.errors().isEmpty()
+                        ? result.errors().get(0)
+                        : "Unknown error";
+                    showError("Import Failed", errorMsg);
+                }
+            } catch (ImportException e) {
+                LOG.log(Level.WARNING, "Import validation failed", e);
+                showError("Import Error", e.getMessage());
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Import failed", e);
+                showError("Import Error", "Failed to import data: " + e.getMessage());
+            }
         }
     }
 

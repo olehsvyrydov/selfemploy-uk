@@ -261,8 +261,47 @@ class PrivacyNoticeViewModelTest {
     }
 
     @Nested
-    @DisplayName("Privacy Policy Link")
+    @DisplayName("Privacy Policy Link (PS11-001)")
     class PrivacyPolicyLink {
+
+        @Test
+        @DisplayName("PN-U01: should return correct GitHub privacy policy URL")
+        void shouldReturnCorrectPrivacyPolicyUrl() {
+            // PS11-001: Privacy policy link should open in external browser
+            assertThat(viewModel.getFullPrivacyPolicyUrl())
+                .isEqualTo("https://github.com/selfemploy-uk/self-employment/blob/main/PRIVACY.md");
+        }
+
+        @Test
+        @DisplayName("PN-U02: should trigger browser callback on open full policy")
+        void shouldTriggerBrowserCallbackOnOpenFullPolicy() {
+            // Given
+            AtomicBoolean linkClicked = new AtomicBoolean(false);
+            String[] clickedUrl = new String[1];
+            viewModel.setOnOpenBrowserCallback(url -> {
+                linkClicked.set(true);
+                clickedUrl[0] = url;
+            });
+
+            // When
+            viewModel.handleOpenFullPolicy();
+
+            // Then
+            assertThat(linkClicked.get()).isTrue();
+            assertThat(clickedUrl[0]).isEqualTo(viewModel.getFullPrivacyPolicyUrl());
+        }
+
+        @Test
+        @DisplayName("PN-U03: should not throw when browser callback is null")
+        void shouldNotThrowWhenBrowserCallbackIsNull() {
+            // Given - no callback set
+
+            // When/Then - should not throw
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                () -> viewModel.handleOpenFullPolicy(),
+                "handleOpenFullPolicy should not throw when callback is null"
+            );
+        }
 
         @Test
         @DisplayName("should have full privacy policy URL")
@@ -307,16 +346,47 @@ class PrivacyNoticeViewModelTest {
         }
 
         @Test
-        @DisplayName("should have acknowledgment label text")
+        @DisplayName("should have acknowledgment label text with legal-compliant wording")
         void shouldHaveAcknowledgmentLabelText() {
+            // PS11-001: Updated per /alex legal consultation
             assertThat(viewModel.getAcknowledgmentLabelText())
-                .isEqualTo("I have read and understand this privacy notice");
+                .isEqualTo("I acknowledge I have been provided with this privacy notice");
         }
 
         @Test
-        @DisplayName("should have continue button text")
+        @DisplayName("should have continue button text in first launch mode")
         void shouldHaveContinueButtonText() {
             assertThat(viewModel.getContinueButtonText()).isEqualTo("Continue");
+        }
+
+        @Test
+        @DisplayName("should have acknowledge button text in settings mode")
+        void shouldHaveAcknowledgeButtonTextInSettingsMode() {
+            // Given
+            viewModel.setSettingsMode(true);
+
+            // Then
+            assertThat(viewModel.getContinueButtonText()).isEqualTo("Acknowledge");
+        }
+
+        @Test
+        @DisplayName("should have close button text")
+        void shouldHaveCloseButtonText() {
+            assertThat(viewModel.getCloseButtonText()).isEqualTo("Close");
+        }
+
+        @Test
+        @DisplayName("should have browser opened toast message")
+        void shouldHaveBrowserOpenedToastMessage() {
+            assertThat(viewModel.getBrowserOpenedToastMessage())
+                .isEqualTo("Privacy policy opened in your browser");
+        }
+
+        @Test
+        @DisplayName("should have browser open failed toast message")
+        void shouldHaveBrowserOpenFailedToastMessage() {
+            assertThat(viewModel.getBrowserOpenFailedToastMessage())
+                .isEqualTo("Could not open browser. URL copied to clipboard.");
         }
     }
 
@@ -376,6 +446,149 @@ class PrivacyNoticeViewModelTest {
                 any(Instant.class),
                 argThat((String appVersion) -> appVersion != null && !appVersion.isEmpty())
             );
+        }
+    }
+
+    // =========================================================================
+    // PS11-001: Privacy Notice UX Fixes - Additional Tests
+    // =========================================================================
+    @Nested
+    @DisplayName("PS11-001: Mode-Aware Button Behavior")
+    class ModeAwareButtonBehavior {
+
+        @Test
+        @DisplayName("PN-U12: should show Continue button in first launch mode")
+        void shouldShowContinueButtonInFirstLaunchMode() {
+            // Given - default first launch mode
+            assertThat(viewModel.isFirstLaunchMode()).isTrue();
+
+            // Then
+            assertThat(viewModel.getContinueButtonText()).isEqualTo("Continue");
+        }
+
+        @Test
+        @DisplayName("PN-U13: should show Close button visible in settings mode")
+        void shouldShowCloseButtonInSettingsMode() {
+            // When
+            viewModel.setSettingsMode(true);
+
+            // Then
+            assertThat(viewModel.isCloseButtonVisible()).isTrue();
+        }
+
+        @Test
+        @DisplayName("PN-U14: should show two buttons (Close and Acknowledge) in settings mode")
+        void shouldShowTwoButtonsInSettingsMode() {
+            // When
+            viewModel.setSettingsMode(true);
+
+            // Then
+            assertThat(viewModel.isCloseButtonVisible()).isTrue();
+            assertThat(viewModel.getContinueButtonText()).isEqualTo("Acknowledge");
+            assertThat(viewModel.getCloseButtonText()).isEqualTo("Close");
+        }
+
+        @Test
+        @DisplayName("PN-U15: should disable Continue until checkbox is checked")
+        void shouldDisableContinueUntilCheckboxChecked() {
+            // Given - first launch mode, checkbox unchecked
+            assertThat(viewModel.isFirstLaunchMode()).isTrue();
+            assertThat(viewModel.isAcknowledged()).isFalse();
+
+            // Then
+            assertThat(viewModel.isContinueEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("PN-U16: should enable Continue when checkbox is checked")
+        void shouldEnableContinueWhenCheckboxChecked() {
+            // When
+            viewModel.setAcknowledged(true);
+
+            // Then
+            assertThat(viewModel.isContinueEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("PN-U17: should close dialog without saving in settings mode")
+        void shouldCloseDialogWithoutSavingInSettingsMode() {
+            // Given
+            AtomicBoolean closeCalled = new AtomicBoolean(false);
+            viewModel.setOnCloseCallback(() -> closeCalled.set(true));
+            viewModel.setSettingsMode(true);
+            viewModel.setAcknowledged(false); // Not acknowledged
+
+            // When
+            viewModel.handleClose();
+
+            // Then
+            assertThat(closeCalled.get()).isTrue();
+            verify(acknowledgmentService, never()).saveAcknowledgment(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("PN-U18: should save acknowledgment on Continue click")
+        void shouldSaveAcknowledgmentOnContinueClick() {
+            // Given
+            viewModel.setAcknowledged(true);
+            when(acknowledgmentService.saveAcknowledgment(any(), any(), any())).thenReturn(true);
+
+            // When
+            boolean result = viewModel.handleContinue();
+
+            // Then
+            assertThat(result).isTrue();
+            verify(acknowledgmentService).saveAcknowledgment(
+                eq("1.0"),
+                any(Instant.class),
+                any(String.class)
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("PS11-001: Checkbox Text Tests")
+    class CheckboxTextTests {
+
+        @Test
+        @DisplayName("PN-U10: should return legal compliant checkbox text")
+        void shouldReturnLegalCompliantCheckboxText() {
+            // PS11-001: Per /alex legal consultation
+            assertThat(viewModel.getAcknowledgmentLabelText())
+                .isEqualTo("I acknowledge I have been provided with this privacy notice");
+        }
+
+        @Test
+        @DisplayName("PN-U11: checkbox should bind to acknowledged property")
+        void shouldBindCheckboxToAcknowledgedProperty() {
+            // Given - initial state
+            assertThat(viewModel.acknowledgedProperty().get()).isFalse();
+
+            // When
+            viewModel.acknowledgedProperty().set(true);
+
+            // Then
+            assertThat(viewModel.isAcknowledged()).isTrue();
+            assertThat(viewModel.isContinueEnabled()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("PS11-001: Toast Message Tests")
+    class ToastMessageTests {
+
+        @Test
+        @DisplayName("PN-U06: should return success toast message when browser opens")
+        void shouldShowSuccessToastWhenBrowserOpens() {
+            assertThat(viewModel.getBrowserOpenedToastMessage())
+                .isEqualTo("Privacy policy opened in your browser");
+        }
+
+        @Test
+        @DisplayName("PN-U07: should return error toast message when browser fails")
+        void shouldShowErrorToastWhenBrowserFails() {
+            assertThat(viewModel.getBrowserOpenFailedToastMessage())
+                .isEqualTo("Could not open browser. URL copied to clipboard.");
         }
     }
 

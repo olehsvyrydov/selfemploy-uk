@@ -59,22 +59,25 @@
                 </HBox>
             </VBox>
 
-            <!-- Quarterly Updates Card (MTD) -->
-            <VBox fx:id="quarterlyCard" styleClass="feature-card" spacing="12"
+            <!-- Quarterly Updates Card (MTD) - PS11-004: Improved placeholder -->
+            <VBox fx:id="quarterlyCard" styleClass="feature-card, feature-card-coming-soon" spacing="12"
                   focusTraversable="true"
                   onMouseClicked="#handleQuarterlySubmission"
                   onKeyPressed="#handleQuarterlySubmissionKey"
-                  accessibleText="Quarterly Updates - Submit quarterly income and expense updates for Making Tax Digital">
+                  accessibleText="Quarterly Updates - Coming Q4 2025 - Required for MTD ITSA from April 2026">
                 <HBox alignment="CENTER_LEFT" spacing="12">
-                    <Label text="📅" styleClass="feature-icon"/>
+                    <Label text="&#128197;" styleClass="feature-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Quarterly Updates" styleClass="feature-title"/>
-                        <Label text="Submit quarterly income/expense updates (MTD)" styleClass="feature-description"/>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="Quarterly Updates" styleClass="feature-title"/>
+                            <Label text="Coming Q4 2025" styleClass="coming-soon-badge"/>
+                        </HBox>
+                        <Label text="Submit quarterly income/expense updates (MTD ITSA)" styleClass="feature-description"/>
                     </VBox>
-                    <Label text="›" styleClass="feature-arrow"/>
+                    <Label text="&#8250;" styleClass="feature-arrow"/>
                 </HBox>
-                <HBox spacing="8">
-                    <Label fx:id="quarterlyStatusLabel" text="Next quarter due: Q4 (Jan-Mar)" styleClass="deadline-label"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Required from April 2026 for income &gt; £50,000" styleClass="mtd-info-label"/>
                 </HBox>
             </VBox>
 

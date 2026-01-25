@@ -4,6 +4,7 @@ import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import uk.selfemploy.common.enums.SubmissionStatus;
+import uk.selfemploy.common.enums.SubmissionType;
 
 import java.util.Comparator;
 import java.util.List;
@@ -257,6 +258,134 @@ public class SubmissionHistoryViewModel {
      */
     public boolean isNoResults() {
         return !submissions.isEmpty() && getFilteredSubmissions().isEmpty();
+    }
+
+    // =========================================================================
+    // PS11-004: Quarterly Updates Placeholder
+    // =========================================================================
+
+    private static final String QUARTERLY_UPDATES_MESSAGE =
+        "Quarterly updates coming April 2026 for income over GBP50,000";
+    private static final String QUARTERLY_UPDATES_AVAILABLE_DATE = "April 2026";
+    private static final String QUARTERLY_UPDATES_INCOME_THRESHOLD = "GBP50,000";
+    private static final String QUARTERLY_UPDATES_INFO_URL =
+        "https://www.gov.uk/guidance/using-making-tax-digital-for-income-tax";
+    private static final String QUARTERLY_UPDATES_LEARN_MORE_TEXT =
+        "Learn more about Making Tax Digital";
+
+    /**
+     * Returns the quarterly updates placeholder message.
+     * PS11-004: Shows MTD timeline and income thresholds.
+     */
+    public String getQuarterlyUpdatesMessage() {
+        return QUARTERLY_UPDATES_MESSAGE;
+    }
+
+    /**
+     * Returns the date when quarterly updates become available.
+     */
+    public String getQuarterlyUpdatesAvailableDate() {
+        return QUARTERLY_UPDATES_AVAILABLE_DATE;
+    }
+
+    /**
+     * Returns the income threshold for mandatory quarterly updates.
+     */
+    public String getQuarterlyUpdatesIncomeThreshold() {
+        return QUARTERLY_UPDATES_INCOME_THRESHOLD;
+    }
+
+    /**
+     * Returns whether quarterly updates feature is available.
+     * Currently returns false as the feature is planned for April 2026.
+     */
+    public boolean isQuarterlyUpdatesAvailable() {
+        return false;
+    }
+
+    /**
+     * Returns the HMRC MTD guidance URL.
+     */
+    public String getQuarterlyUpdatesInfoUrl() {
+        return QUARTERLY_UPDATES_INFO_URL;
+    }
+
+    /**
+     * Returns the "learn more" button text.
+     */
+    public String getQuarterlyUpdatesLearnMoreText() {
+        return QUARTERLY_UPDATES_LEARN_MORE_TEXT;
+    }
+
+    /**
+     * Returns the count of quarterly submissions (Q1-Q4).
+     */
+    public int getQuarterlySubmissionCount() {
+        return (int) submissions.stream()
+            .filter(s -> s.type() != null && s.type().name().startsWith("QUARTERLY"))
+            .count();
+    }
+
+    /**
+     * Returns information about the next quarterly deadline.
+     */
+    public String getNextQuarterlyDeadlineInfo() {
+        // Returns placeholder - will be enhanced with actual deadline logic
+        return "Q1 2026/27 - Not yet available";
+    }
+
+    // =========================================================================
+    // PS11-005: Button State Fix
+    // =========================================================================
+
+    private final BooleanProperty viewDetailsEnabled = new SimpleBooleanProperty(false);
+
+    {
+        // Bind viewDetailsEnabled to selection state
+        selectedSubmission.addListener((obs, oldVal, newVal) -> {
+            viewDetailsEnabled.set(newVal != null);
+        });
+    }
+
+    /**
+     * Returns whether the "View Details" button should be enabled.
+     * Enabled when a submission is selected.
+     */
+    public boolean isViewDetailsEnabled() {
+        return hasSelection();
+    }
+
+    /**
+     * Returns the view details enabled property for binding.
+     */
+    public BooleanProperty viewDetailsEnabledProperty() {
+        return viewDetailsEnabled;
+    }
+
+    /**
+     * Returns the appropriate tooltip for the "View Details" button.
+     */
+    public String getViewDetailsTooltip() {
+        return hasSelection()
+            ? "View submission details"
+            : "Select a submission to view details";
+    }
+
+    /**
+     * Returns whether the export button should be enabled.
+     * Enabled when there are submissions to export.
+     */
+    public boolean isExportEnabled() {
+        return !submissions.isEmpty();
+    }
+
+    /**
+     * Returns the appropriate tooltip for the export button.
+     */
+    public String getExportTooltip() {
+        return submissions.isEmpty()
+            ? "No submissions to export"
+            : "Export submission history";
     }
 
     // === Private Methods ===

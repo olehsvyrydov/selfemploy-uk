@@ -468,18 +468,36 @@ public class HmrcSubmissionController implements Initializable, MainController.T
         }
     }
 
+    /**
+     * Shows improved quarterly updates placeholder with MTD guidance.
+     * PS11-004: Architecture decision to DEFER quarterly updates feature.
+     */
     private void showQuarterlyComingSoon() {
-        // Quarterly submission view not yet implemented
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Quarterly Updates");
-        alert.setHeaderText("Coming Soon");
+        alert.setHeaderText("Feature Coming Q4 2025");
         alert.setContentText(
-            "Quarterly MTD updates will be available in a future release.\n\n" +
-            "This feature allows you to submit income and expenses quarterly " +
-            "as required by Making Tax Digital regulations."
+            "Quarterly MTD updates will be available in Q4 2025.\n\n" +
+            "WHO NEEDS QUARTERLY UPDATES?\n" +
+            "From April 2026, Making Tax Digital for Income Tax (MTD ITSA) will require\n" +
+            "self-employed individuals with income over " + CURRENCY_SYMBOL + "50,000 to submit quarterly updates.\n\n" +
+            "TIMELINE:\n" +
+            "  - April 2026: Income > " + CURRENCY_SYMBOL + "50,000\n" +
+            "  - April 2027: Income > " + CURRENCY_SYMBOL + "30,000\n" +
+            "  - April 2028: Income > " + CURRENCY_SYMBOL + "20,000\n\n" +
+            "WHAT THIS MEANS:\n" +
+            "Instead of one annual return, you'll submit income and expense\n" +
+            "summaries four times per year (quarterly).\n\n" +
+            "MORE INFORMATION:\n" +
+            "Visit gov.uk/guidance/check-if-youre-eligible-for-making-tax-digital-for-income-tax\n" +
+            "to check your eligibility and register for MTD."
         );
+        alert.getDialogPane().setMinWidth(550);
         alert.showAndWait();
     }
+
+    /** Currency symbol for display */
+    private static final String CURRENCY_SYMBOL = "\u00A3";
 
     @FXML
     void handleSubmissionHistory(MouseEvent event) {

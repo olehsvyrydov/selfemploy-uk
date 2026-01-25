@@ -140,16 +140,40 @@ public class PrivacyNoticeViewModel {
 
     /**
      * Returns the acknowledgment checkbox label text.
+     * Updated per /alex legal consultation (PS11-001).
      */
     public String getAcknowledgmentLabelText() {
-        return "I have read and understand this privacy notice";
+        return "I acknowledge I have been provided with this privacy notice";
     }
 
     /**
      * Returns the continue button text.
+     * In first launch mode: "Continue"
+     * In settings mode: "Acknowledge"
      */
     public String getContinueButtonText() {
-        return "Continue";
+        return firstLaunchMode.get() ? "Continue" : "Acknowledge";
+    }
+
+    /**
+     * Returns the close button text (settings mode only).
+     */
+    public String getCloseButtonText() {
+        return "Close";
+    }
+
+    /**
+     * Returns the toast message for successful browser open.
+     */
+    public String getBrowserOpenedToastMessage() {
+        return "Privacy policy opened in your browser";
+    }
+
+    /**
+     * Returns the toast message for failed browser open.
+     */
+    public String getBrowserOpenFailedToastMessage() {
+        return "Could not open browser. URL copied to clipboard.";
     }
 
     // === Properties ===
