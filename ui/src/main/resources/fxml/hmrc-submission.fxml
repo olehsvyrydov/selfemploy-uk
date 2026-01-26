@@ -59,25 +59,22 @@
                 </HBox>
             </VBox>
 
-            <!-- Quarterly Updates Card (MTD) - PS11-004: Improved placeholder -->
-            <VBox fx:id="quarterlyCard" styleClass="feature-card, feature-card-coming-soon" spacing="12"
+            <!-- Quarterly Updates Card (MTD) - Sprint 10D: Now implemented -->
+            <VBox fx:id="quarterlyCard" styleClass="feature-card" spacing="12"
                   focusTraversable="true"
                   onMouseClicked="#handleQuarterlySubmission"
                   onKeyPressed="#handleQuarterlySubmissionKey"
-                  accessibleText="Quarterly Updates - Coming Q4 2025 - Required for MTD ITSA from April 2026">
+                  accessibleText="Quarterly Updates - Submit quarterly income and expense updates to HMRC">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="&#128197;" styleClass="feature-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="Quarterly Updates" styleClass="feature-title"/>
-                            <Label text="Coming Q4 2025" styleClass="coming-soon-badge"/>
-                        </HBox>
+                        <Label text="Quarterly Updates" styleClass="feature-title"/>
                         <Label text="Submit quarterly income/expense updates (MTD ITSA)" styleClass="feature-description"/>
                     </VBox>
                     <Label text="&#8250;" styleClass="feature-arrow"/>
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <Label text="Required from April 2026 for income &gt; £50,000" styleClass="mtd-info-label"/>
+                    <Label fx:id="quarterlyStatusLabel" text="Required from April 2026 for income &gt; £50,000" styleClass="mtd-info-label"/>
                 </HBox>
             </VBox>
 

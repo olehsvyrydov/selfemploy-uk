@@ -3,6 +3,7 @@ package uk.selfemploy.core.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.ValidationException;
@@ -209,6 +210,29 @@ public class ExpenseService {
 
         return expenseRepository.calculateAllowableTotalForDateRange(
                 businessId, taxYear.startDate(), taxYear.endDate());
+    }
+
+    /**
+     * Gets the total deductible (allowable) expenses for a business within a specific quarter.
+     * Sprint 10D: SE-10D-003 - Cumulative Totals Display
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return Total allowable expense amount for the quarter
+     * @throws ValidationException if any parameter is null
+     */
+    public BigDecimal getDeductibleTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+
+        return expenseRepository.calculateAllowableTotalForDateRange(
+                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
     }
 
     private void validateBusinessId(UUID businessId) {

@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.service;
 
 import uk.selfemploy.common.domain.Income;
+import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.core.exception.ValidationException;
@@ -115,6 +116,27 @@ public class SqliteIncomeService extends IncomeService {
             throw new ValidationException("taxYear", "Tax year cannot be null");
         }
         return repository.getTotalByTaxYear(taxYear);
+    }
+
+    /**
+     * Gets the total income for a specific quarter within a tax year.
+     * Sprint 10D: SE-10D-003 - Cumulative Totals Display
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return Total income amount for the quarter
+     */
+    @Override
+    public BigDecimal getTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        return repository.getTotalForDateRange(quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
     }
 
     /**

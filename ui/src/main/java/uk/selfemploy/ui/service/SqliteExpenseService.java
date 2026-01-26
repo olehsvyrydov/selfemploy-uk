@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.service;
 
 import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.ValidationException;
@@ -128,6 +129,27 @@ public class SqliteExpenseService extends ExpenseService {
             throw new ValidationException("taxYear", "Tax year cannot be null");
         }
         return repository.getAllowableTotalByTaxYear(taxYear);
+    }
+
+    /**
+     * Gets the total deductible expenses for a specific quarter within a tax year.
+     * Sprint 10D: SE-10D-003 - Cumulative Totals Display
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return Total deductible expense amount for the quarter
+     */
+    @Override
+    public BigDecimal getDeductibleTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        return repository.getAllowableTotalForDateRange(quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
     }
 
     /**

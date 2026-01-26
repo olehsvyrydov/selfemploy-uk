@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.ValidationException;
@@ -523,6 +524,64 @@ class ExpenseServiceTest {
             assertThatThrownBy(() -> expenseService.getDeductibleTotal(BUSINESS_ID, null))
                     .isInstanceOf(ValidationException.class)
                     .hasMessageContaining("Tax year");
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Deductible Total By Quarter Tests - Sprint 10D")
+    class GetDeductibleTotalByQuarterTests {
+
+        @Test
+        @DisplayName("should return deductible expenses for Q1")
+        void shouldReturnDeductibleTotalForQ1() {
+            TaxYear taxYear = TaxYear.of(2025);
+            Quarter quarter = Quarter.Q1;
+            BigDecimal expectedTotal = new BigDecimal("800.00");
+            when(expenseRepository.calculateAllowableTotalForDateRange(
+                    BUSINESS_ID, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear)))
+                    .thenReturn(expectedTotal);
+
+            BigDecimal result = expenseService.getDeductibleTotalByQuarter(BUSINESS_ID, taxYear, quarter);
+
+            assertThat(result).isEqualByComparingTo(expectedTotal);
+        }
+
+        @Test
+        @DisplayName("should return zero when no deductible expenses in quarter")
+        void shouldReturnZeroWhenNoDeductibleExpensesInQuarter() {
+            TaxYear taxYear = TaxYear.of(2025);
+            Quarter quarter = Quarter.Q2;
+            when(expenseRepository.calculateAllowableTotalForDateRange(
+                    BUSINESS_ID, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear)))
+                    .thenReturn(BigDecimal.ZERO);
+
+            BigDecimal result = expenseService.getDeductibleTotalByQuarter(BUSINESS_ID, taxYear, quarter);
+
+            assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("should throw ValidationException when businessId is null")
+        void shouldThrowWhenBusinessIdIsNull() {
+            assertThatThrownBy(() -> expenseService.getDeductibleTotalByQuarter(null, TAX_YEAR_2025, Quarter.Q1))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("Business");
+        }
+
+        @Test
+        @DisplayName("should throw ValidationException when taxYear is null")
+        void shouldThrowWhenTaxYearIsNull() {
+            assertThatThrownBy(() -> expenseService.getDeductibleTotalByQuarter(BUSINESS_ID, null, Quarter.Q1))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("Tax year");
+        }
+
+        @Test
+        @DisplayName("should throw ValidationException when quarter is null")
+        void shouldThrowWhenQuarterIsNull() {
+            assertThatThrownBy(() -> expenseService.getDeductibleTotalByQuarter(BUSINESS_ID, TAX_YEAR_2025, null))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("Quarter");
         }
     }
 

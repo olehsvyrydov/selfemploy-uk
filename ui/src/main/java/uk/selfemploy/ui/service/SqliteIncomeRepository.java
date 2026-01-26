@@ -113,6 +113,21 @@ public class SqliteIncomeRepository {
     }
 
     /**
+     * Gets the total income for a specific date range.
+     * Sprint 10D: SE-10D-003 - Cumulative Totals Display
+     *
+     * @param startDate The start date (inclusive)
+     * @param endDate   The end date (inclusive)
+     * @return Total income amount for the date range
+     */
+    public BigDecimal getTotalForDateRange(java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date cannot be null");
+        }
+        return dataStore.calculateTotalIncome(businessId, startDate, endDate);
+    }
+
+    /**
      * Deletes an income entry by ID.
      *
      * @param id The income ID

@@ -457,43 +457,57 @@ public class HmrcSubmissionController implements Initializable, MainController.T
 
     @FXML
     void handleQuarterlySubmission(MouseEvent event) {
-        showQuarterlyComingSoon();
+        openQuarterlyUpdates();
     }
 
     @FXML
     void handleQuarterlySubmissionKey(KeyEvent event) {
         if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
-            showQuarterlyComingSoon();
+            openQuarterlyUpdates();
             event.consume();
         }
     }
 
     /**
-     * Shows improved quarterly updates placeholder with MTD guidance.
-     * PS11-004: Architecture decision to DEFER quarterly updates feature.
+     * Opens the Quarterly Updates dashboard.
+     * Sprint 10D: SE-10D-001, SE-10D-002, SE-10D-003
      */
-    private void showQuarterlyComingSoon() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Quarterly Updates");
-        alert.setHeaderText("Feature Coming Q4 2025");
-        alert.setContentText(
-            "Quarterly MTD updates will be available in Q4 2025.\n\n" +
-            "WHO NEEDS QUARTERLY UPDATES?\n" +
-            "From April 2026, Making Tax Digital for Income Tax (MTD ITSA) will require\n" +
-            "self-employed individuals with income over " + CURRENCY_SYMBOL + "50,000 to submit quarterly updates.\n\n" +
-            "TIMELINE:\n" +
-            "  - April 2026: Income > " + CURRENCY_SYMBOL + "50,000\n" +
-            "  - April 2027: Income > " + CURRENCY_SYMBOL + "30,000\n" +
-            "  - April 2028: Income > " + CURRENCY_SYMBOL + "20,000\n\n" +
-            "WHAT THIS MEANS:\n" +
-            "Instead of one annual return, you'll submit income and expense\n" +
-            "summaries four times per year (quarterly).\n\n" +
-            "MORE INFORMATION:\n" +
-            "Visit gov.uk/guidance/check-if-youre-eligible-for-making-tax-digital-for-income-tax\n" +
-            "to check your eligibility and register for MTD."
-        );
-        alert.getDialogPane().setMinWidth(550);
-        alert.showAndWait();
+    private void openQuarterlyUpdates() {
+        LOG.info("Opening Quarterly Updates view");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/quarterly-updates.fxml"));
+            Parent root = loader.load();
+
+            // Pass tax year to controller
+            Object controller = loader.getController();
+            if (controller instanceof MainController.TaxYearAware && taxYear != null) {
+                ((MainController.TaxYearAware) controller).setTaxYear(taxYear);
+            }
+
+            Stage stage = new Stage();
+            stage.setTitle("Quarterly Updates - UK Self-Employment Manager");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setResizable(true);
+            stage.setMinWidth(700);
+            stage.setMinHeight(700);
+            stage.setWidth(900);
+            stage.setHeight(800);
+
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/css/quarterly-updates.css").toExternalForm());
+
+            stage.setScene(scene);
+            stage.showAndWait();
+
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to load Quarterly Updates view", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to open Quarterly Updates");
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
+        }
     }
 
     /** Currency symbol for display */

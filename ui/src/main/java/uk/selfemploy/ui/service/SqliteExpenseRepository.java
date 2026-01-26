@@ -127,6 +127,21 @@ public class SqliteExpenseRepository {
     }
 
     /**
+     * Gets the allowable (deductible) expenses for a specific date range.
+     * Sprint 10D: SE-10D-003 - Cumulative Totals Display
+     *
+     * @param startDate The start date (inclusive)
+     * @param endDate   The end date (inclusive)
+     * @return Total allowable expenses amount for the date range
+     */
+    public BigDecimal getAllowableTotalForDateRange(java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date cannot be null");
+        }
+        return dataStore.calculateAllowableExpenses(businessId, startDate, endDate);
+    }
+
+    /**
      * Gets expense totals grouped by category for a tax year.
      *
      * @param taxYear The tax year

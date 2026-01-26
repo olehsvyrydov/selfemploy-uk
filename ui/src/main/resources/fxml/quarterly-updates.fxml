@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<!--
+    Quarterly Updates Dashboard - Sprint 10D
+    SE-10D-001: Quarterly Dashboard View
+    SE-10D-002: Quarter Selection Component
+    SE-10D-003: Cumulative Totals Display
+-->
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.QuarterlyUpdatesController"
+            styleClass="quarterly-scroll" fitToWidth="true" hbarPolicy="NEVER">
+
+    <VBox styleClass="quarterly-container" spacing="24">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Back Navigation -->
+        <HBox alignment="CENTER_LEFT">
+            <Button fx:id="backButton" text="&#8592; Back to HMRC Submission"
+                    styleClass="button-link" onAction="#handleBack"/>
+        </HBox>
+
+        <!-- Page Header -->
+        <VBox spacing="8">
+            <Label fx:id="pageTitle" text="Quarterly Updates" styleClass="page-title"/>
+            <Label fx:id="pageSubtitle"
+                   text="Submit your quarterly income and expense updates to HMRC"
+                   styleClass="page-subtitle"/>
+        </VBox>
+
+        <!-- Current Quarter Info Bar -->
+        <HBox fx:id="infoBar" styleClass="info-bar" alignment="CENTER_LEFT" spacing="16">
+            <Label fx:id="taxYearLabel" text="Tax Year: 2025/26" styleClass="info-bar-text"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="currentQuarterLabel" text="Current Quarter: Q4" styleClass="info-bar-highlight"/>
+        </HBox>
+
+        <!-- Quarter Grid (2x2) -->
+        <GridPane fx:id="quarterGrid" styleClass="quarter-grid" hgap="16" vgap="16">
+            <!-- Q1 Card -->
+            <VBox fx:id="q1Card" styleClass="quarter-card" spacing="12"
+                  GridPane.columnIndex="0" GridPane.rowIndex="0"
+                  focusTraversable="true"
+                  accessibleText="Quarter 1">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q1Label" text="Q1" styleClass="quarter-title"/>
+                    <Label fx:id="q1StatusBadge" text="DRAFT" styleClass="status-badge, status-badge-draft"/>
+                </HBox>
+                <Label fx:id="q1DateRange" text="6 Apr - 5 Jul" styleClass="quarter-date-range"/>
+                <Separator/>
+                <VBox spacing="4" styleClass="quarter-financials">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Income:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q1Income" text="£5,000.00" styleClass="quarter-amount"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Expenses:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q1Expenses" text="£800.00" styleClass="quarter-amount"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Net:" styleClass="quarter-label-bold"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q1Net" text="£4,200.00" styleClass="quarter-amount-bold"/>
+                    </HBox>
+                </VBox>
+                <Separator/>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q1Deadline" text="Deadline: 7 Aug 2025" styleClass="quarter-deadline"/>
+                </HBox>
+                <Button fx:id="q1ActionBtn" text="View" styleClass="button-secondary" maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Q2 Card -->
+            <VBox fx:id="q2Card" styleClass="quarter-card" spacing="12"
+                  GridPane.columnIndex="1" GridPane.rowIndex="0"
+                  focusTraversable="true"
+                  accessibleText="Quarter 2">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q2Label" text="Q2" styleClass="quarter-title"/>
+                    <Label fx:id="q2StatusBadge" text="OVERDUE" styleClass="status-badge, status-badge-overdue"/>
+                </HBox>
+                <Label fx:id="q2DateRange" text="6 Jul - 5 Oct" styleClass="quarter-date-range"/>
+                <Separator/>
+                <VBox spacing="4" styleClass="quarter-financials">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Income:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q2Income" text="£4,200.00" styleClass="quarter-amount"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Expenses:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q2Expenses" text="£650.00" styleClass="quarter-amount"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Net:" styleClass="quarter-label-bold"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q2Net" text="£3,550.00" styleClass="quarter-amount-bold"/>
+                    </HBox>
+                </VBox>
+                <Separator/>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q2Deadline" text="Deadline: 7 Nov 2025" styleClass="quarter-deadline, quarter-deadline-overdue"/>
+                </HBox>
+                <Button fx:id="q2ActionBtn" text="Submit Now" styleClass="button-warning" maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Q3 Card -->
+            <VBox fx:id="q3Card" styleClass="quarter-card, quarter-card-current" spacing="12"
+                  GridPane.columnIndex="0" GridPane.rowIndex="1"
+                  focusTraversable="true"
+                  accessibleText="Quarter 3, current quarter">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q3Label" text="Q3" styleClass="quarter-title"/>
+                    <Label text="(Current)" styleClass="quarter-current-badge"/>
+                    <Label fx:id="q3StatusBadge" text="DRAFT" styleClass="status-badge, status-badge-draft"/>
+                </HBox>
+                <Label fx:id="q3DateRange" text="6 Oct - 5 Jan" styleClass="quarter-date-range"/>
+                <Separator/>
+                <VBox spacing="4" styleClass="quarter-financials">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Income:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q3Income" text="£3,100.00" styleClass="quarter-amount"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Expenses:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q3Expenses" text="£400.00" styleClass="quarter-amount"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Net:" styleClass="quarter-label-bold"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q3Net" text="£2,700.00" styleClass="quarter-amount-bold"/>
+                    </HBox>
+                </VBox>
+                <Separator/>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q3Deadline" text="Deadline: 7 Feb 2026" styleClass="quarter-deadline"/>
+                </HBox>
+                <Button fx:id="q3ActionBtn" text="Review" styleClass="button-primary" maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Q4 Card -->
+            <VBox fx:id="q4Card" styleClass="quarter-card, quarter-card-future" spacing="12"
+                  GridPane.columnIndex="1" GridPane.rowIndex="1"
+                  focusTraversable="true"
+                  accessibleText="Quarter 4, future quarter">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q4Label" text="Q4" styleClass="quarter-title"/>
+                    <Label fx:id="q4StatusBadge" text="FUTURE" styleClass="status-badge, status-badge-future"/>
+                </HBox>
+                <Label fx:id="q4DateRange" text="6 Jan - 5 Apr" styleClass="quarter-date-range"/>
+                <Separator/>
+                <VBox spacing="4" styleClass="quarter-financials">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Income:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q4Income" text="--" styleClass="quarter-amount, quarter-amount-future"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Expenses:" styleClass="quarter-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q4Expenses" text="--" styleClass="quarter-amount, quarter-amount-future"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Net:" styleClass="quarter-label-bold"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="q4Net" text="--" styleClass="quarter-amount-bold, quarter-amount-future"/>
+                    </HBox>
+                </VBox>
+                <Separator/>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="q4Deadline" text="Deadline: 7 May 2026" styleClass="quarter-deadline"/>
+                </HBox>
+                <Button fx:id="q4ActionBtn" text="Future" styleClass="button-disabled" maxWidth="Infinity" disable="true"/>
+            </VBox>
+
+            <!-- Column constraints for equal width -->
+            <columnConstraints>
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+            </columnConstraints>
+        </GridPane>
+
+        <!-- Important Information -->
+        <VBox styleClass="info-box" spacing="8">
+            <Label text="&#8505; Important Information" styleClass="info-title"/>
+            <Label text="&#8226; Quarterly submissions show cumulative totals from 6 April"
+                   styleClass="info-text" wrapText="true"/>
+            <Label text="&#8226; Required from April 2026 for self-employed with income over £50,000"
+                   styleClass="info-text" wrapText="true"/>
+            <Label text="&#8226; Ensure your income and expenses are recorded before submitting"
+                   styleClass="info-text" wrapText="true"/>
+        </VBox>
+
+    </VBox>
+</ScrollPane>
