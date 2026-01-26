@@ -109,7 +109,10 @@ public class ExpenseService {
                 description,
                 category,
                 receiptPath,
-                notes
+                notes,
+                existingExpense.bankTransactionRef(),
+                existingExpense.supplierRef(),
+                existingExpense.invoiceNumber()
         );
 
         return expenseRepository.update(updatedExpense);

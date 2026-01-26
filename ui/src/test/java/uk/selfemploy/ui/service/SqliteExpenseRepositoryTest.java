@@ -89,7 +89,10 @@ class SqliteExpenseRepositoryTest {
                     "Updated description",
                     ExpenseCategory.TRAVEL,
                     "/path/to/receipt.pdf",
-                    "Updated notes"
+                    "Updated notes",
+                    null,
+                    null,
+                    null
             );
             repository.save(updated);
 
@@ -365,6 +368,9 @@ class SqliteExpenseRepositoryTest {
                 description,
                 ExpenseCategory.OFFICE_COSTS,
                 null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -377,6 +383,9 @@ class SqliteExpenseRepositoryTest {
                 new BigDecimal("100.00"),
                 "Test expense",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
+                null,
+                null,
                 null,
                 null
         );
@@ -391,6 +400,9 @@ class SqliteExpenseRepositoryTest {
                 "Test expense",
                 ExpenseCategory.OFFICE_COSTS,
                 null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -404,6 +416,9 @@ class SqliteExpenseRepositoryTest {
                 "Test expense - " + category,
                 category,
                 null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -416,6 +431,9 @@ class SqliteExpenseRepositoryTest {
                 amount,
                 "Test expense - " + category,
                 category,
+                null,
+                null,
+                null,
                 null,
                 null
         );

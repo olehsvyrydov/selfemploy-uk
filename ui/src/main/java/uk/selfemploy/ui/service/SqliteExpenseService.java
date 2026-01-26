@@ -79,7 +79,10 @@ public class SqliteExpenseService extends ExpenseService {
                 description,
                 category,
                 receiptPath,
-                notes
+                notes,
+                existingExpense.bankTransactionRef(),
+                existingExpense.supplierRef(),
+                existingExpense.invoiceNumber()
         );
 
         return repository.save(updatedExpense);

@@ -40,6 +40,7 @@ public class ComparisonDialog {
     private static final double DIALOG_WIDTH = 700;
     private static final double PANEL_MIN_WIDTH = 280;
     private static final String CSS_PATH = "/css/import-review.css";
+    private static final String MAIN_CSS_PATH = "/css/main.css";
 
     private final Stage stage;
     private final ImportCandidateViewModel candidate;
@@ -70,6 +71,12 @@ public class ComparisonDialog {
 
         VBox container = buildContent();
         DialogStyler.setupFullyStyledDialog(stage, container, CSS_PATH, DialogStyler.CORNER_RADIUS);
+
+        // Also load main.css to get CSS variable definitions (e.g., -fx-bg-primary)
+        String mainCssUrl = DialogStyler.getCssResourceUrl(MAIN_CSS_PATH);
+        if (mainCssUrl != null) {
+            stage.getScene().getStylesheets().add(0, mainCssUrl);
+        }
 
         setupKeyboardNavigation(container);
     }

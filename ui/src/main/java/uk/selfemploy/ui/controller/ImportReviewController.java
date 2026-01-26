@@ -56,6 +56,7 @@ public class ImportReviewController implements Initializable {
     @FXML private Label likelyCountLabel;
 
     // Bulk actions
+    @FXML private HBox bulkActionBar;
     @FXML private Button importAllNewBtn;
     @FXML private Button skipAllDuplicatesBtn;
     @FXML private Label selectionLabel;
@@ -84,11 +85,53 @@ public class ImportReviewController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        LOG.info("ImportReviewController.initialize() called");
         viewModel = new ImportReviewViewModel();
 
         setupTableColumns();
         setupBindings();
         setupKeyboardNavigation();
+        setupBulkActionButtons();
+
+        LOG.info("Buttons initialized - importAllNewBtn: {}, skipAllDuplicatesBtn: {}",
+                 importAllNewBtn != null ? "OK" : "NULL",
+                 skipAllDuplicatesBtn != null ? "OK" : "NULL");
+    }
+
+    /**
+     * Sets up bulk action buttons with explicit event handlers and bindings.
+     * SE-10C-001: Fix bulk action button click handling.
+     */
+    private void setupBulkActionButtons() {
+        if (importAllNewBtn != null) {
+            // Ensure button receives mouse events (SE-10C-001 fix)
+            importAllNewBtn.setPickOnBounds(true);
+
+            // Set explicit action handler as backup to FXML onAction
+            importAllNewBtn.setOnAction(this::handleImportAllNew);
+
+            // AC5: Disable when no NEW items exist
+            importAllNewBtn.disableProperty().bind(
+                viewModel.newCountProperty().isEqualTo(0)
+            );
+
+            LOG.debug("Import All New button configured - pickOnBounds: true, action handler set");
+        }
+
+        if (skipAllDuplicatesBtn != null) {
+            // Ensure button receives mouse events (SE-10C-001 fix)
+            skipAllDuplicatesBtn.setPickOnBounds(true);
+
+            // Set explicit action handler as backup to FXML onAction
+            skipAllDuplicatesBtn.setOnAction(this::handleSkipAllDuplicates);
+
+            // AC5: Disable when no EXACT items exist
+            skipAllDuplicatesBtn.disableProperty().bind(
+                viewModel.exactCountProperty().isEqualTo(0)
+            );
+
+            LOG.debug("Skip All Duplicates button configured - pickOnBounds: true, action handler set");
+        }
     }
 
     /**
@@ -97,9 +140,16 @@ public class ImportReviewController implements Initializable {
      * @param candidates The list of import candidates
      */
     public void setCandidates(List<ImportCandidateViewModel> candidates) {
+        LOG.info("setCandidates() called with {} candidates", candidates.size());
         viewModel.setCandidates(candidates);
         reviewTable.setItems(viewModel.getCandidates());
         updateState();
+        LOG.info("After updateState() - reviewContent visible: {}, managed: {}",
+                 reviewContent.isVisible(), reviewContent.isManaged());
+        LOG.info("Bulk action bar visible: {}, buttons disabled - importAllNew: {}, skipAllDuplicates: {}",
+                 bulkActionBar != null ? bulkActionBar.isVisible() : "NULL",
+                 importAllNewBtn.isDisable(),
+                 skipAllDuplicatesBtn.isDisable());
     }
 
     /**
@@ -121,6 +171,17 @@ public class ImportReviewController implements Initializable {
      */
     public void setOnBack(Runnable callback) {
         this.onBack = callback;
+    }
+
+    /**
+     * Hides the back button. Use this when there's no previous step to return to
+     * (e.g., when opened directly from Settings > Import Data).
+     */
+    public void hideBackButton() {
+        if (backBtn != null) {
+            backBtn.setVisible(false);
+            backBtn.setManaged(false);
+        }
     }
 
     private void setupTableColumns() {
@@ -362,16 +423,24 @@ public class ImportReviewController implements Initializable {
 
     @FXML
     void handleImportAllNew(ActionEvent event) {
+        LOG.info("handleImportAllNew() called - button was clicked!");
         viewModel.importAllNew();
         updateImportCount();
-        LOG.info("Set all NEW items to IMPORT");
+        if (reviewTable != null) {
+            reviewTable.refresh();
+        }
+        LOG.info("Set all NEW items to IMPORT - count: {}", viewModel.getNewCount());
     }
 
     @FXML
     void handleSkipAllDuplicates(ActionEvent event) {
+        LOG.info("handleSkipAllDuplicates() called - button was clicked!");
         viewModel.skipAllDuplicates();
         updateImportCount();
-        LOG.info("Set all EXACT matches to SKIP");
+        if (reviewTable != null) {
+            reviewTable.refresh();
+        }
+        LOG.info("Set all EXACT matches to SKIP - count: {}", viewModel.getExactCount());
     }
 
     @FXML
@@ -419,8 +488,10 @@ public class ImportReviewController implements Initializable {
      */
     public void setViewModel(ImportReviewViewModel viewModel) {
         this.viewModel = viewModel;
-        reviewTable.setItems(viewModel.getCandidates());
-        setupBindings();
-        updateState();
+        if (reviewTable != null) {
+            reviewTable.setItems(viewModel.getCandidates());
+        }
+        // Re-setup button bindings with new viewModel
+        setupBulkActionButtons();
     }
 }

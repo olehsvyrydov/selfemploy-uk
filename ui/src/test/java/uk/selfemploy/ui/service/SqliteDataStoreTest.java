@@ -186,7 +186,10 @@ class SqliteDataStoreTest {
                     "Updated description",
                     ExpenseCategory.TRAVEL,
                     null,
-                    "Updated notes"
+                    "Updated notes",
+                    null,
+                    null,
+                    null
             );
             dataStore.saveExpense(updated);
 
@@ -328,7 +331,10 @@ class SqliteDataStoreTest {
                     new BigDecimal("5000.00"),
                     "Updated invoice",
                     IncomeCategory.OTHER_INCOME,
-                    "INV-UPDATED"
+                    "INV-UPDATED",
+                    null,
+                    null,
+                    null
             );
             dataStore.saveIncome(updated);
 
@@ -435,6 +441,9 @@ class SqliteDataStoreTest {
                     specialDesc,
                     ExpenseCategory.OFFICE_COSTS,
                     null,
+                    null,
+                    null,
+                    null,
                     null
             );
             dataStore.saveExpense(expense);
@@ -456,7 +465,10 @@ class SqliteDataStoreTest {
                     new BigDecimal("500.00"),
                     unicodeDesc,
                     IncomeCategory.SALES,
-                    "REF-001"
+                    "REF-001",
+                    null,
+                    null,
+                    null
             );
             dataStore.saveIncome(income);
 
@@ -477,7 +489,10 @@ class SqliteDataStoreTest {
                     "Test expense",
                     ExpenseCategory.OFFICE_COSTS,
                     null,  // receiptPath
-                    null   // notes
+                    null,  // notes
+                    null,  // bankTransactionRef
+                    null,  // supplierRef
+                    null   // invoiceNumber
             );
             dataStore.saveExpense(expense);
 
@@ -517,12 +532,12 @@ class SqliteDataStoreTest {
             // Allowable expense
             Expense allowable = new Expense(
                     UUID.randomUUID(), testBusinessId, LocalDate.of(2024, 6, 1),
-                    new BigDecimal("100.00"), "Office supplies", ExpenseCategory.OFFICE_COSTS, null, null
+                    new BigDecimal("100.00"), "Office supplies", ExpenseCategory.OFFICE_COSTS, null, null, null, null, null
             );
             // Non-allowable expense
             Expense nonAllowable = new Expense(
                     UUID.randomUUID(), testBusinessId, LocalDate.of(2024, 7, 1),
-                    new BigDecimal("50.00"), "Entertainment", ExpenseCategory.BUSINESS_ENTERTAINMENT, null, null
+                    new BigDecimal("50.00"), "Entertainment", ExpenseCategory.BUSINESS_ENTERTAINMENT, null, null, null, null, null
             );
 
             dataStore.saveExpense(allowable);
@@ -564,6 +579,9 @@ class SqliteDataStoreTest {
                 description,
                 ExpenseCategory.OFFICE_COSTS,
                 null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -581,6 +599,9 @@ class SqliteDataStoreTest {
                 "Test expense",
                 ExpenseCategory.OFFICE_COSTS,
                 null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -597,7 +618,10 @@ class SqliteDataStoreTest {
                 amount,
                 description,
                 IncomeCategory.SALES,
-                "REF-001"
+                "REF-001",
+                null,
+                null,
+                null
         );
     }
 
@@ -613,7 +637,10 @@ class SqliteDataStoreTest {
                 amount,
                 "Test invoice",
                 IncomeCategory.SALES,
-                "REF-001"
+                "REF-001",
+                null,
+                null,
+                null
         );
     }
 }

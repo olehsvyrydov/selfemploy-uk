@@ -31,6 +31,7 @@ public final class CoreServiceFactory {
     private static PrivacyAcknowledgmentService privacyAcknowledgmentService;
     private static DataExportService dataExportService;
     private static DataImportService dataImportService;
+    private static UiDuplicateDetectionService duplicateDetectionService;
     private static UUID defaultBusinessId;
 
     private CoreServiceFactory() {
@@ -142,6 +143,24 @@ public final class CoreServiceFactory {
     }
 
     /**
+     * Gets or creates the singleton UiDuplicateDetectionService instance.
+     * Used for Import Review UI to detect duplicates before importing.
+     *
+     * @return The UiDuplicateDetectionService instance
+     */
+    public static synchronized UiDuplicateDetectionService getDuplicateDetectionService() {
+        if (duplicateDetectionService == null) {
+            LOG.info("Creating UiDuplicateDetectionService");
+            duplicateDetectionService = new UiDuplicateDetectionService(
+                getIncomeService(),
+                getExpenseService(),
+                getDefaultBusinessId()
+            );
+        }
+        return duplicateDetectionService;
+    }
+
+    /**
      * Gets the default business ID for standalone mode.
      * The business ID is persisted to SQLite so it remains constant across app restarts.
      *
@@ -204,6 +223,7 @@ public final class CoreServiceFactory {
         privacyAcknowledgmentService = null;
         dataExportService = null;
         dataImportService = null;
+        duplicateDetectionService = null;
         defaultBusinessId = null;
         LOG.info("CoreServiceFactory shutdown - data persisted");
     }
@@ -214,6 +234,7 @@ public final class CoreServiceFactory {
     public static boolean isInitialized() {
         return expenseService != null || incomeService != null || receiptStorageService != null
                 || termsAcceptanceService != null || privacyAcknowledgmentService != null
-                || dataExportService != null || dataImportService != null;
+                || dataExportService != null || dataImportService != null
+                || duplicateDetectionService != null;
     }
 }

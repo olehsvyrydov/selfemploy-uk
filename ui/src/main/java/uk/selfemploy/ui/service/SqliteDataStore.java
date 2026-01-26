@@ -364,7 +364,10 @@ public final class SqliteDataStore {
             rs.getString("description"),
             ExpenseCategory.valueOf(rs.getString("category")),
             rs.getString("receipt_path"),
-            rs.getString("notes")
+            rs.getString("notes"),
+            null, // bankTransactionRef - not stored in SQLite yet
+            null, // supplierRef - not stored in SQLite yet
+            null  // invoiceNumber - not stored in SQLite yet
         );
     }
 
@@ -452,7 +455,10 @@ public final class SqliteDataStore {
             new BigDecimal(rs.getString("amount")),
             rs.getString("description"),
             IncomeCategory.valueOf(rs.getString("category")),
-            rs.getString("reference")
+            rs.getString("reference"),
+            null, // bankTransactionRef - not stored in SQLite yet
+            null, // invoiceNumber - not stored in SQLite yet
+            null  // receiptPath - not stored in SQLite yet
         );
     }
 

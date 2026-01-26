@@ -140,6 +140,9 @@ public class IncomeRepository implements PanacheRepositoryBase<IncomeEntity, UUI
         entity.setDescription(income.description());
         entity.setCategory(income.category());
         entity.setReference(income.reference());
+        entity.setBankTransactionRef(income.bankTransactionRef());
+        entity.setInvoiceNumber(income.invoiceNumber());
+        entity.setReceiptPath(income.receiptPath());
         persist(entity);
         return entity.toDomain();
     }
@@ -208,5 +211,40 @@ public class IncomeRepository implements PanacheRepositoryBase<IncomeEntity, UUI
         return find("businessId = ?1 and date >= ?2 and date <= ?3 and " + ACTIVE_FILTER,
                 businessId, startDate, endDate)
             .list();
+    }
+
+    // ===== Duplicate Detection Methods (Sprint 10C - SE-10C-002) =====
+
+    /**
+     * Checks if an active income with the given bank transaction reference exists for the business.
+     *
+     * <p>This method is used for application-level duplicate detection since H2 does not
+     * support partial unique indexes with WHERE clauses.</p>
+     *
+     * @param businessId the business ID
+     * @param bankTransactionRef the bank transaction reference to check
+     * @return true if an active income with this reference exists, false otherwise
+     */
+    public boolean existsByBusinessIdAndBankTransactionRef(UUID businessId, String bankTransactionRef) {
+        if (bankTransactionRef == null || bankTransactionRef.isBlank()) {
+            return false;
+        }
+        return count("businessId = ?1 and bankTransactionRef = ?2 and " + ACTIVE_FILTER,
+                businessId, bankTransactionRef) > 0;
+    }
+
+    /**
+     * Checks if an active income with the given invoice number exists for the business.
+     *
+     * @param businessId the business ID
+     * @param invoiceNumber the invoice number to check
+     * @return true if an active income with this invoice number exists, false otherwise
+     */
+    public boolean existsByBusinessIdAndInvoiceNumber(UUID businessId, String invoiceNumber) {
+        if (invoiceNumber == null || invoiceNumber.isBlank()) {
+            return false;
+        }
+        return count("businessId = ?1 and invoiceNumber = ?2 and " + ACTIVE_FILTER,
+                businessId, invoiceNumber) > 0;
     }
 }

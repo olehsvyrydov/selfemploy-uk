@@ -41,6 +41,16 @@ public class ExpenseEntity {
     @Column(length = 1000)
     private String notes;
 
+    // Unique identifier fields for duplicate detection (Sprint 10C - SE-10C-002)
+    @Column(name = "bank_transaction_ref", length = 100)
+    private String bankTransactionRef;
+
+    @Column(name = "supplier_ref", length = 100)
+    private String supplierRef;
+
+    @Column(name = "invoice_number", length = 50)
+    private String invoiceNumber;
+
     // Soft delete support (Sprint 10B)
     @Column(name = "deleted_at")
     private Instant deletedAt;
@@ -67,6 +77,9 @@ public class ExpenseEntity {
         entity.category = expense.category();
         entity.receiptPath = expense.receiptPath();
         entity.notes = expense.notes();
+        entity.bankTransactionRef = expense.bankTransactionRef();
+        entity.supplierRef = expense.supplierRef();
+        entity.invoiceNumber = expense.invoiceNumber();
         return entity;
     }
 
@@ -82,7 +95,10 @@ public class ExpenseEntity {
             description,
             category,
             receiptPath,
-            notes
+            notes,
+            bankTransactionRef,
+            supplierRef,
+            invoiceNumber
         );
     }
 
@@ -103,6 +119,14 @@ public class ExpenseEntity {
     public void setReceiptPath(String receiptPath) { this.receiptPath = receiptPath; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    // Unique identifier field getters and setters (Sprint 10C - SE-10C-002)
+    public String getBankTransactionRef() { return bankTransactionRef; }
+    public void setBankTransactionRef(String bankTransactionRef) { this.bankTransactionRef = bankTransactionRef; }
+    public String getSupplierRef() { return supplierRef; }
+    public void setSupplierRef(String supplierRef) { this.supplierRef = supplierRef; }
+    public String getInvoiceNumber() { return invoiceNumber; }
+    public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
 
     // Soft delete getters and setters
     public Instant getDeletedAt() { return deletedAt; }

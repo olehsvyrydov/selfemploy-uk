@@ -103,7 +103,10 @@ public class IncomeService {
                 amount,
                 description,
                 category,
-                reference
+                reference,
+                existingIncome.bankTransactionRef(),
+                existingIncome.invoiceNumber(),
+                existingIncome.receiptPath()
         );
 
         return incomeRepository.update(updatedIncome);

@@ -638,6 +638,9 @@ class IncomeListViewModelTest {
             amount,
             description,
             IncomeCategory.SALES,
+            null,
+            null,
+            null,
             null
         );
     }

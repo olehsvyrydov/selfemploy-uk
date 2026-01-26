@@ -101,6 +101,7 @@
 /* ===== Bulk Action Bar ===== */
 .bulk-action-bar {
     -fx-padding: 8 0;
+    -fx-min-height: 48;
 }
 
 .selection-label {

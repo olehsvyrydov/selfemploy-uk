@@ -259,4 +259,132 @@ class ExpenseTest {
             assertThat(expense.isAllowable()).isFalse();
         }
     }
+
+    @Nested
+    @DisplayName("Unique Identifier Fields Tests (SE-10C-002)")
+    class UniqueIdentifierFieldsTests {
+
+        private static final String VALID_BANK_TRANSACTION_REF = "FPS-2025-001234";
+        private static final String VALID_SUPPLIER_REF = "SUP-REF-001";
+        private static final String VALID_INVOICE_NUMBER = "INV-2025-001";
+
+        @Test
+        @DisplayName("should create expense with bank transaction reference")
+        void shouldCreateExpenseWithBankTransactionRef() {
+            Expense expense = Expense.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_RECEIPT_PATH,
+                VALID_NOTES,
+                VALID_BANK_TRANSACTION_REF,
+                null,
+                null
+            );
+
+            assertThat(expense.bankTransactionRef()).isEqualTo(VALID_BANK_TRANSACTION_REF);
+        }
+
+        @Test
+        @DisplayName("should create expense with supplier reference")
+        void shouldCreateExpenseWithSupplierRef() {
+            Expense expense = Expense.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_RECEIPT_PATH,
+                VALID_NOTES,
+                null,
+                VALID_SUPPLIER_REF,
+                null
+            );
+
+            assertThat(expense.supplierRef()).isEqualTo(VALID_SUPPLIER_REF);
+        }
+
+        @Test
+        @DisplayName("should create expense with invoice number")
+        void shouldCreateExpenseWithInvoiceNumber() {
+            Expense expense = Expense.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_RECEIPT_PATH,
+                VALID_NOTES,
+                null,
+                null,
+                VALID_INVOICE_NUMBER
+            );
+
+            assertThat(expense.invoiceNumber()).isEqualTo(VALID_INVOICE_NUMBER);
+        }
+
+        @Test
+        @DisplayName("should create expense with all unique identifier fields")
+        void shouldCreateExpenseWithAllUniqueIdentifierFields() {
+            Expense expense = Expense.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_RECEIPT_PATH,
+                VALID_NOTES,
+                VALID_BANK_TRANSACTION_REF,
+                VALID_SUPPLIER_REF,
+                VALID_INVOICE_NUMBER
+            );
+
+            assertThat(expense.bankTransactionRef()).isEqualTo(VALID_BANK_TRANSACTION_REF);
+            assertThat(expense.supplierRef()).isEqualTo(VALID_SUPPLIER_REF);
+            assertThat(expense.invoiceNumber()).isEqualTo(VALID_INVOICE_NUMBER);
+        }
+
+        @Test
+        @DisplayName("should allow null unique identifier fields (backward compatible)")
+        void shouldAllowNullUniqueIdentifierFields() {
+            Expense expense = Expense.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_RECEIPT_PATH,
+                VALID_NOTES,
+                null,
+                null,
+                null
+            );
+
+            assertThat(expense.bankTransactionRef()).isNull();
+            assertThat(expense.supplierRef()).isNull();
+            assertThat(expense.invoiceNumber()).isNull();
+        }
+
+        @Test
+        @DisplayName("should preserve bank transaction ref with special characters")
+        void shouldPreserveBankTransactionRefWithSpecialCharacters() {
+            String refWithSpecialChars = "FPS/2025-001234#ABC";
+            Expense expense = Expense.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_RECEIPT_PATH,
+                VALID_NOTES,
+                refWithSpecialChars,
+                null,
+                null
+            );
+
+            assertThat(expense.bankTransactionRef()).isEqualTo(refWithSpecialChars);
+        }
+    }
 }

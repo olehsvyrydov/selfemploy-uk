@@ -66,6 +66,9 @@ class TaxSummaryControllerTest {
                 new BigDecimal("25000.00"),
                 "Consulting income",
                 IncomeCategory.SALES,
+                null,
+                null,
+                null,
                 null
             );
             Income income2 = new Income(
@@ -75,6 +78,9 @@ class TaxSummaryControllerTest {
                 new BigDecimal("15000.00"),
                 "Project work",
                 IncomeCategory.SALES,
+                null,
+                null,
+                null,
                 null
             );
 
@@ -85,6 +91,9 @@ class TaxSummaryControllerTest {
                 new BigDecimal("2000.00"),
                 "Office supplies",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
+                null,
+                null,
                 null,
                 null
             );
@@ -115,6 +124,9 @@ class TaxSummaryControllerTest {
                 new BigDecimal("50000.00"),
                 "Annual income",
                 IncomeCategory.SALES,
+                null,
+                null,
+                null,
                 null
             );
 
@@ -145,6 +157,9 @@ class TaxSummaryControllerTest {
                 "Office supplies",
                 ExpenseCategory.OFFICE_COSTS,
                 null,
+                null,
+                null,
+                null,
                 null
             );
             Expense travelExpense = new Expense(
@@ -155,6 +170,9 @@ class TaxSummaryControllerTest {
                 "Train tickets",
                 ExpenseCategory.TRAVEL,
                 null,
+                null,
+                null,
+                null,
                 null
             );
             Expense officeExpense2 = new Expense(
@@ -164,6 +182,9 @@ class TaxSummaryControllerTest {
                 new BigDecimal("200.00"),
                 "Printer ink",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
+                null,
+                null,
                 null,
                 null
             );

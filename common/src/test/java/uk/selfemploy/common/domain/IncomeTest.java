@@ -196,4 +196,126 @@ class IncomeTest {
              .hasMessageContaining("category");
         }
     }
+
+    @Nested
+    @DisplayName("Unique Identifier Fields Tests (SE-10C-002)")
+    class UniqueIdentifierFieldsTests {
+
+        private static final String VALID_BANK_TRANSACTION_REF = "FPS-2025-001234";
+        private static final String VALID_INVOICE_NUMBER = "INV-2025-001";
+        private static final String VALID_RECEIPT_PATH = "/receipts/2025/06/receipt-001.pdf";
+
+        @Test
+        @DisplayName("should create income with bank transaction reference")
+        void shouldCreateIncomeWithBankTransactionRef() {
+            Income income = Income.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_REFERENCE,
+                VALID_BANK_TRANSACTION_REF,
+                null,
+                null
+            );
+
+            assertThat(income.bankTransactionRef()).isEqualTo(VALID_BANK_TRANSACTION_REF);
+        }
+
+        @Test
+        @DisplayName("should create income with invoice number")
+        void shouldCreateIncomeWithInvoiceNumber() {
+            Income income = Income.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_REFERENCE,
+                null,
+                VALID_INVOICE_NUMBER,
+                null
+            );
+
+            assertThat(income.invoiceNumber()).isEqualTo(VALID_INVOICE_NUMBER);
+        }
+
+        @Test
+        @DisplayName("should create income with receipt path")
+        void shouldCreateIncomeWithReceiptPath() {
+            Income income = Income.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_REFERENCE,
+                null,
+                null,
+                VALID_RECEIPT_PATH
+            );
+
+            assertThat(income.receiptPath()).isEqualTo(VALID_RECEIPT_PATH);
+        }
+
+        @Test
+        @DisplayName("should create income with all unique identifier fields")
+        void shouldCreateIncomeWithAllUniqueIdentifierFields() {
+            Income income = Income.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_REFERENCE,
+                VALID_BANK_TRANSACTION_REF,
+                VALID_INVOICE_NUMBER,
+                VALID_RECEIPT_PATH
+            );
+
+            assertThat(income.bankTransactionRef()).isEqualTo(VALID_BANK_TRANSACTION_REF);
+            assertThat(income.invoiceNumber()).isEqualTo(VALID_INVOICE_NUMBER);
+            assertThat(income.receiptPath()).isEqualTo(VALID_RECEIPT_PATH);
+        }
+
+        @Test
+        @DisplayName("should allow null unique identifier fields (backward compatible)")
+        void shouldAllowNullUniqueIdentifierFields() {
+            Income income = Income.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_REFERENCE,
+                null,
+                null,
+                null
+            );
+
+            assertThat(income.bankTransactionRef()).isNull();
+            assertThat(income.invoiceNumber()).isNull();
+            assertThat(income.receiptPath()).isNull();
+        }
+
+        @Test
+        @DisplayName("should preserve bank transaction ref with special characters")
+        void shouldPreserveBankTransactionRefWithSpecialCharacters() {
+            String refWithSpecialChars = "FPS/2025-001234#ABC";
+            Income income = Income.create(
+                VALID_BUSINESS_ID,
+                VALID_DATE,
+                VALID_AMOUNT,
+                VALID_DESCRIPTION,
+                VALID_CATEGORY,
+                VALID_REFERENCE,
+                refWithSpecialChars,
+                null,
+                null
+            );
+
+            assertThat(income.bankTransactionRef()).isEqualTo(refWithSpecialChars);
+        }
+    }
 }

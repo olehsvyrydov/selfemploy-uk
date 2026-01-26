@@ -14,6 +14,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.export.DataExportService;
 import uk.selfemploy.core.export.DataImportService;
@@ -26,13 +28,18 @@ import uk.selfemploy.core.export.ImportType;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.UiDuplicateDetectionService;
+import uk.selfemploy.ui.viewmodel.ImportAction;
+import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -266,10 +273,12 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 Path filePath = file.toPath();
                 String fileName = file.getName().toLowerCase();
 
-                ImportResult result;
+                // Step 1: Parse and validate the file
+                List<Income> importedIncomes;
+                List<Expense> importedExpenses;
 
                 if (fileName.endsWith(".json")) {
-                    // Preview first
+                    // Preview first for validation
                     ImportPreview preview = importService.previewJsonImport(filePath);
                     if (!preview.isValid() && preview.errors() != null && !preview.errors().isEmpty()) {
                         int maxErrors = Math.min(5, preview.errors().size());
@@ -277,7 +286,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             "Found validation errors:\n" + String.join("\n", preview.errors().subList(0, maxErrors)));
                         return;
                     }
-                    result = importService.importJson(businessId, filePath, ImportOptions.defaults());
+                    // Parse the JSON to get income and expense records
+                    var parsedData = importService.parseJsonFile(filePath);
+                    importedIncomes = parsedData.incomes();
+                    importedExpenses = parsedData.expenses();
                 } else if (fileName.endsWith(".csv")) {
                     // For CSV, default to income (could add dialog to choose)
                     ImportPreview preview = importService.previewCsvImport(filePath, ImportType.INCOME);
@@ -287,22 +299,30 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             "Found validation errors:\n" + String.join("\n", preview.errors().subList(0, maxErrors)));
                         return;
                     }
-                    result = importService.importCsv(businessId, filePath, ImportType.INCOME, ImportOptions.defaults());
+                    // For CSV, we only import incomes
+                    importedIncomes = importService.parseCsvFile(filePath, ImportType.INCOME);
+                    importedExpenses = List.of();
                 } else {
                     showError("Import Error", "Unsupported file format. Please use .json or .csv");
                     return;
                 }
 
-                if (result.success()) {
-                    showInfo("Import Successful",
-                        String.format("Imported %d records successfully.\nSkipped: %d",
-                            result.importedCount(), result.skippedCount()));
-                } else {
-                    String errorMsg = result.errors() != null && !result.errors().isEmpty()
-                        ? result.errors().get(0)
-                        : "Unknown error";
-                    showError("Import Failed", errorMsg);
+                // Step 2: Run duplicate detection
+                TaxYear currentTaxYear = taxYear != null ? taxYear : TaxYear.current();
+                UiDuplicateDetectionService dupService = CoreServiceFactory.getDuplicateDetectionService();
+
+                List<ImportCandidateViewModel> candidates = new java.util.ArrayList<>();
+                candidates.addAll(dupService.analyzeIncomes(importedIncomes, currentTaxYear));
+                candidates.addAll(dupService.analyzeExpenses(importedExpenses, currentTaxYear));
+
+                if (candidates.isEmpty()) {
+                    showInfo("Import Empty", "No records found in the file to import.");
+                    return;
                 }
+
+                // Step 3: Show Import Review dialog
+                showImportReviewDialog(candidates, importedIncomes, importedExpenses, businessId, filePath);
+
             } catch (ImportException e) {
                 LOG.log(Level.WARNING, "Import validation failed", e);
                 showError("Import Error", e.getMessage());
@@ -310,6 +330,146 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 LOG.log(Level.SEVERE, "Import failed", e);
                 showError("Import Error", "Failed to import data: " + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Shows the Import Review dialog for user to review duplicate detection results.
+     * BUG-10B-002: Integration fix - Settings import now uses Import Review UI.
+     */
+    private void showImportReviewDialog(List<ImportCandidateViewModel> candidates,
+                                         List<Income> importedIncomes,
+                                         List<Expense> importedExpenses,
+                                         UUID businessId,
+                                         Path filePath) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/import-review.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Import Review - UK Self-Employment Manager");
+            stage.initModality(Modality.APPLICATION_MODAL);
+
+            ImportReviewController controller = loader.getController();
+            controller.setCandidates(candidates);
+
+            // Hide the "Back to Mapping" button since there's no mapping step in Settings import
+            controller.hideBackButton();
+
+            // Set callbacks for import completion
+            controller.setOnImportComplete(approvedCandidates -> {
+                executeApprovedImport(approvedCandidates, importedIncomes, importedExpenses, businessId);
+                stage.close();
+            });
+
+            controller.setOnCancel(() -> {
+                LOG.info("Import cancelled by user");
+                stage.close();
+            });
+
+            // Set dialog size
+            double width = 1000;
+            double height = 700;
+
+            Scene scene = new Scene(root, width, height);
+            var mainCss = getClass().getResource("/css/main.css");
+            var importReviewCss = getClass().getResource("/css/import-review.css");
+            var bankImportCss = getClass().getResource("/css/bank-import.css");
+            if (mainCss != null) {
+                scene.getStylesheets().add(mainCss.toExternalForm());
+            }
+            if (importReviewCss != null) {
+                scene.getStylesheets().add(importReviewCss.toExternalForm());
+            }
+            if (bankImportCss != null) {
+                scene.getStylesheets().add(bankImportCss.toExternalForm());
+            }
+
+            stage.setScene(scene);
+            stage.setMinWidth(800);
+            stage.setMinHeight(600);
+            stage.setResizable(true);
+            stage.showAndWait();
+
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to load Import Review dialog", e);
+            showError("Error", "Failed to open Import Review: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Executes the import for approved candidates only.
+     * BUG-10B-002: Only imports records that user approved in the review.
+     */
+    private void executeApprovedImport(List<ImportCandidateViewModel> approvedCandidates,
+                                        List<Income> importedIncomes,
+                                        List<Expense> importedExpenses,
+                                        UUID businessId) {
+        try {
+            var incomeService = CoreServiceFactory.getIncomeService();
+            var expenseService = CoreServiceFactory.getExpenseService();
+
+            // Build maps for quick lookup
+            Map<UUID, Income> incomeMap = new java.util.HashMap<>();
+            for (Income income : importedIncomes) {
+                incomeMap.put(income.id(), income);
+            }
+            Map<UUID, Expense> expenseMap = new java.util.HashMap<>();
+            for (Expense expense : importedExpenses) {
+                expenseMap.put(expense.id(), expense);
+            }
+
+            int imported = 0;
+            int skipped = 0;
+            int updated = 0;
+
+            for (ImportCandidateViewModel candidate : approvedCandidates) {
+                ImportAction action = candidate.getAction();
+
+                if (action == ImportAction.SKIP) {
+                    skipped++;
+                    continue;
+                }
+
+                if (candidate.isIncome()) {
+                    Income income = incomeMap.get(candidate.getId());
+                    if (income != null) {
+                        if (action == ImportAction.IMPORT) {
+                            incomeService.create(businessId, income.date(), income.amount(),
+                                income.description(), income.category(), income.reference());
+                            imported++;
+                        } else if (action == ImportAction.UPDATE && candidate.getMatchedRecordId() != null) {
+                            // Update existing record
+                            incomeService.update(candidate.getMatchedRecordId(), income.date(), income.amount(),
+                                income.description(), income.category(), income.reference());
+                            updated++;
+                        }
+                    }
+                } else {
+                    Expense expense = expenseMap.get(candidate.getId());
+                    if (expense != null) {
+                        if (action == ImportAction.IMPORT) {
+                            expenseService.create(businessId, expense.date(), expense.amount(),
+                                expense.description(), expense.category(), expense.receiptPath(), expense.notes());
+                            imported++;
+                        } else if (action == ImportAction.UPDATE && candidate.getMatchedRecordId() != null) {
+                            // Update existing record
+                            expenseService.update(candidate.getMatchedRecordId(), expense.date(), expense.amount(),
+                                expense.description(), expense.category(), expense.receiptPath(), expense.notes());
+                            updated++;
+                        }
+                    }
+                }
+            }
+
+            LOG.info("Import completed: " + imported + " imported, " + updated + " updated, " + skipped + " skipped");
+            showInfo("Import Successful",
+                String.format("Import completed successfully.\nImported: %d\nUpdated: %d\nSkipped: %d",
+                    imported, updated, skipped));
+
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to execute approved import", e);
+            showError("Import Error", "Failed to import approved records: " + e.getMessage());
         }
     }
 

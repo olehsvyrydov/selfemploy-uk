@@ -36,7 +36,10 @@ class IncomeTableRowTest {
                 new BigDecimal("2500.00"),
                 "Website redesign",
                 IncomeCategory.SALES,
-                "INV-001"
+                "INV-001",
+                null,
+                null,
+                null
             );
 
             // When
@@ -64,6 +67,9 @@ class IncomeTableRowTest {
                 new BigDecimal("1000.00"),
                 "Consulting services",
                 IncomeCategory.SALES,
+                null,
+                null,
+                null,
                 null
             );
 

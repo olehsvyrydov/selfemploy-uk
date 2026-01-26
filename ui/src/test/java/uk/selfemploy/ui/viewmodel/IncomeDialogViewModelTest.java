@@ -125,7 +125,10 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("2500.00"),
                 "Website redesign",
                 IncomeCategory.SALES,
-                "INV-001"
+                "INV-001",
+                null,
+                null,
+                null
             );
         }
 
@@ -470,6 +473,9 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("1000.00"),
                 "Website design",
                 IncomeCategory.SALES,
+                null,
+                null,
+                null,
                 null
             );
             when(incomeService.create(any(), any(), any(), any(), any(), any())).thenReturn(createdIncome);
@@ -499,7 +505,10 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("2500.00"),
                 "Old description",
                 IncomeCategory.SALES,
-                "INV-001"
+                "INV-001",
+                null,
+                null,
+                null
             );
             viewModel.loadIncome(existingIncome, "Acme Corp", IncomeStatus.PAID);
             viewModel.setDescription("Updated description");
@@ -534,6 +543,9 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("1000.00"),
                 "Website design",
                 IncomeCategory.SALES,
+                null,
+                null,
+                null,
                 null
             );
             when(incomeService.create(any(), any(), any(), any(), any(), any())).thenReturn(createdIncome);
@@ -581,7 +593,10 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("2500.00"),
                 "Website redesign",
                 IncomeCategory.SALES,
-                "INV-001"
+                "INV-001",
+                null,
+                null,
+                null
             );
             viewModel.loadIncome(existingIncome, "Acme Corp", IncomeStatus.PAID);
         }
@@ -667,7 +682,10 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("2500.00"),
                 "Website redesign",
                 IncomeCategory.SALES,
-                "INV-001"
+                "INV-001",
+                null,
+                null,
+                null
             );
             viewModel.loadIncome(existingIncome, "Acme Corp", IncomeStatus.PAID);
 
@@ -730,7 +748,10 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("2500.00"),
                 "Website redesign",
                 IncomeCategory.SALES,
-                "INV-001"
+                "INV-001",
+                null,
+                null,
+                null
             );
 
             // When
@@ -762,7 +783,10 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("2500.00"),
                 "Website redesign",
                 IncomeCategory.SALES,
-                "INV-001"
+                "INV-001",
+                null,
+                null,
+                null
             );
 
             // When

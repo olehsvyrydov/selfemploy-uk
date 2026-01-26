@@ -170,4 +170,265 @@ class ExpenseRepositoryTest {
         assertThat(officeExpenses).hasSize(1);
         assertThat(officeExpenses.get(0).description()).isEqualTo("Office expense");
     }
+
+    // ===== Duplicate Detection by Bank Transaction Reference (SE-10C-002) =====
+
+    @Test
+    @Transactional
+    @DisplayName("should find existing expense by bank transaction reference")
+    void shouldFindByBankTransactionRef() {
+        String bankRef = "FPS-2025-001234";
+        expenseRepository.save(Expense.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("250.00"),
+            "Office supplies",
+            ExpenseCategory.OFFICE_COSTS,
+            null,
+            null,
+            bankRef,
+            null,
+            null
+        ));
+
+        boolean exists = expenseRepository.existsByBusinessIdAndBankTransactionRef(businessId, bankRef);
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should return false when bank transaction reference does not exist")
+    void shouldReturnFalseWhenBankRefNotFound() {
+        boolean exists = expenseRepository.existsByBusinessIdAndBankTransactionRef(
+            businessId, "NONEXISTENT-REF"
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should not find bank transaction ref from different business")
+    void shouldNotFindBankRefFromDifferentBusiness() {
+        String bankRef = "FPS-2025-001234";
+        expenseRepository.save(Expense.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("250.00"),
+            "Office supplies",
+            ExpenseCategory.OFFICE_COSTS,
+            null,
+            null,
+            bankRef,
+            null,
+            null
+        ));
+
+        UUID differentBusinessId = UUID.randomUUID();
+        boolean exists = expenseRepository.existsByBusinessIdAndBankTransactionRef(
+            differentBusinessId, bankRef
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle null bank transaction reference")
+    void shouldHandleNullBankRef() {
+        boolean exists = expenseRepository.existsByBusinessIdAndBankTransactionRef(
+            businessId, null
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle blank bank transaction reference")
+    void shouldHandleBlankBankRef() {
+        boolean exists = expenseRepository.existsByBusinessIdAndBankTransactionRef(
+            businessId, "   "
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    // ===== Duplicate Detection by Supplier Reference (SE-10C-002) =====
+
+    @Test
+    @Transactional
+    @DisplayName("should find existing expense by supplier reference")
+    void shouldFindBySupplierRef() {
+        String supplierRef = "SUP-REF-001";
+        expenseRepository.save(Expense.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("250.00"),
+            "Supplier order",
+            ExpenseCategory.COST_OF_GOODS,
+            null,
+            null,
+            null,
+            supplierRef,
+            null
+        ));
+
+        boolean exists = expenseRepository.existsByBusinessIdAndSupplierRef(businessId, supplierRef);
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should return false when supplier reference does not exist")
+    void shouldReturnFalseWhenSupplierRefNotFound() {
+        boolean exists = expenseRepository.existsByBusinessIdAndSupplierRef(
+            businessId, "NONEXISTENT-SUP"
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle null supplier reference")
+    void shouldHandleNullSupplierRef() {
+        boolean exists = expenseRepository.existsByBusinessIdAndSupplierRef(
+            businessId, null
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle blank supplier reference")
+    void shouldHandleBlankSupplierRef() {
+        boolean exists = expenseRepository.existsByBusinessIdAndSupplierRef(
+            businessId, "   "
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    // ===== Duplicate Detection by Invoice Number (SE-10C-002) =====
+
+    @Test
+    @Transactional
+    @DisplayName("should find existing expense by invoice number")
+    void shouldFindByInvoiceNumber() {
+        String invoiceNumber = "INV-2025-001";
+        expenseRepository.save(Expense.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("250.00"),
+            "Invoice payment",
+            ExpenseCategory.PROFESSIONAL_FEES,
+            null,
+            null,
+            null,
+            null,
+            invoiceNumber
+        ));
+
+        boolean exists = expenseRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, invoiceNumber
+        );
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should return false when invoice number does not exist")
+    void shouldReturnFalseWhenInvoiceNumberNotFound() {
+        boolean exists = expenseRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, "NONEXISTENT-INV"
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle null invoice number")
+    void shouldHandleNullInvoiceNumber() {
+        boolean exists = expenseRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, null
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle blank invoice number")
+    void shouldHandleBlankInvoiceNumber() {
+        boolean exists = expenseRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, "   "
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    // ===== Save Expense with Unique Identifier Fields (SE-10C-002) =====
+
+    @Test
+    @Transactional
+    @DisplayName("should save and retrieve expense with all unique identifier fields")
+    void shouldSaveAndRetrieveWithAllFields() {
+        String bankRef = "FPS-2025-001234";
+        String supplierRef = "SUP-REF-001";
+        String invoiceNumber = "INV-2025-001";
+
+        Expense expense = Expense.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("250.00"),
+            "Full featured expense",
+            ExpenseCategory.OFFICE_COSTS,
+            "/receipts/receipt.pdf",
+            "Notes here",
+            bankRef,
+            supplierRef,
+            invoiceNumber
+        );
+
+        Expense saved = expenseRepository.save(expense);
+
+        List<Expense> found = expenseRepository.findByBusinessId(businessId);
+        assertThat(found).hasSize(1);
+
+        Expense retrieved = found.get(0);
+        assertThat(retrieved.bankTransactionRef()).isEqualTo(bankRef);
+        assertThat(retrieved.supplierRef()).isEqualTo(supplierRef);
+        assertThat(retrieved.invoiceNumber()).isEqualTo(invoiceNumber);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should save expense with null unique identifier fields (backward compatible)")
+    void shouldSaveWithNullUniqueIdentifierFields() {
+        Expense expense = Expense.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("250.00"),
+            "Simple expense",
+            ExpenseCategory.OFFICE_COSTS,
+            null,
+            null
+        );
+
+        Expense saved = expenseRepository.save(expense);
+
+        List<Expense> found = expenseRepository.findByBusinessId(businessId);
+        assertThat(found).hasSize(1);
+
+        Expense retrieved = found.get(0);
+        assertThat(retrieved.bankTransactionRef()).isNull();
+        assertThat(retrieved.supplierRef()).isNull();
+        assertThat(retrieved.invoiceNumber()).isNull();
+    }
 }

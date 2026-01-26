@@ -364,7 +364,10 @@ class CsvImportServiceTest {
                 inv.getArgument(2),
                 inv.getArgument(3),
                 inv.getArgument(4),
-                inv.getArgument(5)
+                inv.getArgument(5),
+                null,
+                null,
+                null
             ));
 
         when(expenseService.create(any(), any(), any(), any(), any(), any(), any()))
@@ -376,7 +379,10 @@ class CsvImportServiceTest {
                 inv.getArgument(3),
                 inv.getArgument(4),
                 inv.getArgument(5),
-                inv.getArgument(6)
+                inv.getArgument(6),
+                null,
+                null,
+                null
             ));
 
         when(batchRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));

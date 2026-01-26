@@ -615,6 +615,9 @@ class QuarterlySubmissionIntegrationTest {
                 amount,
                 "Test income",
                 IncomeCategory.SALES,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -627,6 +630,9 @@ class QuarterlySubmissionIntegrationTest {
                 amount,
                 "Test expense",
                 category,
+                null,
+                null,
+                null,
                 null,
                 null
         );

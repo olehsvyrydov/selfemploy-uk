@@ -123,4 +123,202 @@ class IncomeRepositoryTest {
         assertThat(salesIncomes).hasSize(1);
         assertThat(salesIncomes.get(0).description()).isEqualTo("Sales Income");
     }
+
+    // ===== Duplicate Detection by Bank Transaction Reference (SE-10C-002) =====
+
+    @Test
+    @Transactional
+    @DisplayName("should find existing income by bank transaction reference")
+    void shouldFindByBankTransactionRef() {
+        String bankRef = "FPS-2025-001234";
+        incomeRepository.save(Income.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("1500.00"),
+            "Payment received",
+            IncomeCategory.SALES,
+            null,
+            bankRef,
+            null,
+            null
+        ));
+
+        boolean exists = incomeRepository.existsByBusinessIdAndBankTransactionRef(businessId, bankRef);
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should return false when bank transaction reference does not exist")
+    void shouldReturnFalseWhenBankRefNotFound() {
+        boolean exists = incomeRepository.existsByBusinessIdAndBankTransactionRef(
+            businessId, "NONEXISTENT-REF"
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should not find bank transaction ref from different business")
+    void shouldNotFindBankRefFromDifferentBusiness() {
+        String bankRef = "FPS-2025-001234";
+        incomeRepository.save(Income.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("1500.00"),
+            "Payment received",
+            IncomeCategory.SALES,
+            null,
+            bankRef,
+            null,
+            null
+        ));
+
+        UUID differentBusinessId = UUID.randomUUID();
+        boolean exists = incomeRepository.existsByBusinessIdAndBankTransactionRef(
+            differentBusinessId, bankRef
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle null bank transaction reference")
+    void shouldHandleNullBankRef() {
+        boolean exists = incomeRepository.existsByBusinessIdAndBankTransactionRef(
+            businessId, null
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle blank bank transaction reference")
+    void shouldHandleBlankBankRef() {
+        boolean exists = incomeRepository.existsByBusinessIdAndBankTransactionRef(
+            businessId, "   "
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    // ===== Duplicate Detection by Invoice Number (SE-10C-002) =====
+
+    @Test
+    @Transactional
+    @DisplayName("should find existing income by invoice number")
+    void shouldFindByInvoiceNumber() {
+        String invoiceNumber = "INV-2025-001";
+        incomeRepository.save(Income.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("1500.00"),
+            "Invoice payment",
+            IncomeCategory.SALES,
+            null,
+            null,
+            invoiceNumber,
+            null
+        ));
+
+        boolean exists = incomeRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, invoiceNumber
+        );
+
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should return false when invoice number does not exist")
+    void shouldReturnFalseWhenInvoiceNumberNotFound() {
+        boolean exists = incomeRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, "NONEXISTENT-INV"
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle null invoice number")
+    void shouldHandleNullInvoiceNumber() {
+        boolean exists = incomeRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, null
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should handle blank invoice number")
+    void shouldHandleBlankInvoiceNumber() {
+        boolean exists = incomeRepository.existsByBusinessIdAndInvoiceNumber(
+            businessId, "   "
+        );
+
+        assertThat(exists).isFalse();
+    }
+
+    // ===== Save Income with Unique Identifier Fields (SE-10C-002) =====
+
+    @Test
+    @Transactional
+    @DisplayName("should save and retrieve income with all unique identifier fields")
+    void shouldSaveAndRetrieveWithAllFields() {
+        String bankRef = "FPS-2025-001234";
+        String invoiceNumber = "INV-2025-001";
+        String receiptPath = "/receipts/2025/06/receipt-001.pdf";
+
+        Income income = Income.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("1500.00"),
+            "Full featured income",
+            IncomeCategory.SALES,
+            "REF-001",
+            bankRef,
+            invoiceNumber,
+            receiptPath
+        );
+
+        Income saved = incomeRepository.save(income);
+
+        List<Income> found = incomeRepository.findByBusinessId(businessId);
+        assertThat(found).hasSize(1);
+
+        Income retrieved = found.get(0);
+        assertThat(retrieved.bankTransactionRef()).isEqualTo(bankRef);
+        assertThat(retrieved.invoiceNumber()).isEqualTo(invoiceNumber);
+        assertThat(retrieved.receiptPath()).isEqualTo(receiptPath);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("should save income with null unique identifier fields (backward compatible)")
+    void shouldSaveWithNullUniqueIdentifierFields() {
+        Income income = Income.create(
+            businessId,
+            LocalDate.of(2025, 6, 15),
+            new BigDecimal("1500.00"),
+            "Simple income",
+            IncomeCategory.SALES,
+            null
+        );
+
+        Income saved = incomeRepository.save(income);
+
+        List<Income> found = incomeRepository.findByBusinessId(businessId);
+        assertThat(found).hasSize(1);
+
+        Income retrieved = found.get(0);
+        assertThat(retrieved.bankTransactionRef()).isNull();
+        assertThat(retrieved.invoiceNumber()).isNull();
+        assertThat(retrieved.receiptPath()).isNull();
+    }
 }

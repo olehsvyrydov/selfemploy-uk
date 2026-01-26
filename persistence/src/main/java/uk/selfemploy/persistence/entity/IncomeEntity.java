@@ -37,6 +37,16 @@ public class IncomeEntity {
 
     private String reference;
 
+    // Unique identifier fields for duplicate detection (Sprint 10C - SE-10C-002)
+    @Column(name = "bank_transaction_ref", length = 100)
+    private String bankTransactionRef;
+
+    @Column(name = "invoice_number", length = 50)
+    private String invoiceNumber;
+
+    @Column(name = "receipt_path", length = 500)
+    private String receiptPath;
+
     // Soft delete support (Sprint 10B)
     @Column(name = "deleted_at")
     private Instant deletedAt;
@@ -62,6 +72,9 @@ public class IncomeEntity {
         entity.description = income.description();
         entity.category = income.category();
         entity.reference = income.reference();
+        entity.bankTransactionRef = income.bankTransactionRef();
+        entity.invoiceNumber = income.invoiceNumber();
+        entity.receiptPath = income.receiptPath();
         return entity;
     }
 
@@ -76,7 +89,10 @@ public class IncomeEntity {
             amount,
             description,
             category,
-            reference
+            reference,
+            bankTransactionRef,
+            invoiceNumber,
+            receiptPath
         );
     }
 
@@ -95,6 +111,14 @@ public class IncomeEntity {
     public void setCategory(IncomeCategory category) { this.category = category; }
     public String getReference() { return reference; }
     public void setReference(String reference) { this.reference = reference; }
+
+    // Unique identifier field getters and setters (Sprint 10C - SE-10C-002)
+    public String getBankTransactionRef() { return bankTransactionRef; }
+    public void setBankTransactionRef(String bankTransactionRef) { this.bankTransactionRef = bankTransactionRef; }
+    public String getInvoiceNumber() { return invoiceNumber; }
+    public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
+    public String getReceiptPath() { return receiptPath; }
+    public void setReceiptPath(String receiptPath) { this.receiptPath = receiptPath; }
 
     // Soft delete getters and setters
     public Instant getDeletedAt() { return deletedAt; }

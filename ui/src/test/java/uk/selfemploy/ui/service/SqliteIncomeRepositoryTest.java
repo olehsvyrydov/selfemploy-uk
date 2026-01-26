@@ -87,7 +87,10 @@ class SqliteIncomeRepositoryTest {
                     new BigDecimal("5000.00"),
                     "Updated invoice",
                     IncomeCategory.OTHER_INCOME,
-                    "INV-UPDATED"
+                    "INV-UPDATED",
+                    null,
+                    null,
+                    null
             );
             repository.save(updated);
 
@@ -317,7 +320,10 @@ class SqliteIncomeRepositoryTest {
                 amount,
                 description,
                 IncomeCategory.SALES,
-                "REF-001"
+                "REF-001",
+                null,
+                null,
+                null
         );
     }
 
@@ -329,7 +335,10 @@ class SqliteIncomeRepositoryTest {
                 new BigDecimal("1000.00"),
                 "Test invoice",
                 IncomeCategory.SALES,
-                "REF-001"
+                "REF-001",
+                null,
+                null,
+                null
         );
     }
 
@@ -341,7 +350,10 @@ class SqliteIncomeRepositoryTest {
                 amount,
                 "Test invoice",
                 IncomeCategory.SALES,
-                "REF-001"
+                "REF-001",
+                null,
+                null,
+                null
         );
     }
 
@@ -353,7 +365,10 @@ class SqliteIncomeRepositoryTest {
                 amount,
                 "Test income - " + category,
                 category,
-                "REF-001"
+                "REF-001",
+                null,
+                null,
+                null
         );
     }
 }

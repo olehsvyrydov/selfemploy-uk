@@ -48,7 +48,8 @@
     </VBox>
 
     <!-- Review Content -->
-    <VBox fx:id="reviewContent" spacing="16" VBox.vgrow="ALWAYS">
+    <VBox fx:id="reviewContent" spacing="16" VBox.vgrow="ALWAYS"
+          managed="false" visible="false">
 
         <!-- Summary Bar -->
         <HBox fx:id="summaryBar" styleClass="import-summary-bar" alignment="CENTER_LEFT" spacing="24">
@@ -86,14 +87,17 @@
         </HBox>
 
         <!-- Bulk Actions Bar -->
-        <HBox styleClass="bulk-action-bar" alignment="CENTER_LEFT" spacing="12">
+        <HBox fx:id="bulkActionBar" styleClass="bulk-action-bar" alignment="CENTER_LEFT" spacing="12"
+              minHeight="48" prefHeight="48">
             <Button fx:id="importAllNewBtn" text="Import All New"
                     styleClass="button-success-outline"
                     onAction="#handleImportAllNew"
+                    minWidth="120" minHeight="36"
                     accessibleText="Set all new transactions to import"/>
             <Button fx:id="skipAllDuplicatesBtn" text="Skip All Duplicates"
                     styleClass="button-secondary"
                     onAction="#handleSkipAllDuplicates"
+                    minWidth="140" minHeight="36"
                     accessibleText="Set all exact matches to skip"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="selectionLabel" text="0 selected" styleClass="selection-label"/>
@@ -101,6 +105,7 @@
 
         <!-- Review Table -->
         <TableView fx:id="reviewTable" styleClass="import-table, data-table" VBox.vgrow="ALWAYS"
+                   minHeight="200" prefHeight="400"
                    accessibleText="Import review table with transaction candidates">
             <columns>
                 <TableColumn fx:id="selectColumn" prefWidth="40" sortable="false"/>

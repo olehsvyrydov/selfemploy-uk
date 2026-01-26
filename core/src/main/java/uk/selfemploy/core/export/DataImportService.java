@@ -63,7 +63,7 @@ public class DataImportService {
         validateFilePath(filePath);
 
         try {
-            List<String[]> rows = parseCsvFile(filePath);
+            List<String[]> rows = parseCsvFileInternal(filePath);
             if (rows.isEmpty()) {
                 return ImportPreview.invalid(List.of("File is empty or contains only headers"));
             }
@@ -197,7 +197,7 @@ public class DataImportService {
         validateBusinessId(businessId);
 
         try {
-            List<String[]> rows = parseCsvFile(filePath);
+            List<String[]> rows = parseCsvFileInternal(filePath);
             if (rows.size() <= 1) {
                 return ImportResult.success(0, 0, 0);
             }
@@ -301,6 +301,154 @@ public class DataImportService {
             return ImportResult.failure("Failed to read JSON file: " + e.getMessage());
         }
     }
+
+    /**
+     * Parses a JSON export file and returns the parsed incomes and expenses.
+     * Does not import the records - just parses them for review.
+     *
+     * @param filePath Path to the JSON file
+     * @return Parsed data containing income and expense lists
+     */
+    public ParsedJsonData parseJsonFile(Path filePath) {
+        validateFilePath(filePath);
+
+        try {
+            JsonNode root = objectMapper.readTree(filePath.toFile());
+            List<Income> incomes = new ArrayList<>();
+            List<Expense> expenses = new ArrayList<>();
+
+            // Parse incomes
+            if (root.has("incomes")) {
+                for (JsonNode incomeNode : root.get("incomes")) {
+                    try {
+                        Income income = parseJsonIncomeNode(incomeNode);
+                        incomes.add(income);
+                    } catch (Exception e) {
+                        // Skip invalid records
+                    }
+                }
+            }
+
+            // Parse expenses
+            if (root.has("expenses")) {
+                for (JsonNode expenseNode : root.get("expenses")) {
+                    try {
+                        Expense expense = parseJsonExpenseNode(expenseNode);
+                        expenses.add(expense);
+                    } catch (Exception e) {
+                        // Skip invalid records
+                    }
+                }
+            }
+
+            return new ParsedJsonData(incomes, expenses);
+
+        } catch (IOException e) {
+            throw new ImportException("Failed to read JSON file: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Parses a CSV file and returns a list of Income domain objects.
+     * Does not import the records - just parses them for review.
+     *
+     * @param filePath Path to the CSV file
+     * @param importType Type of data (INCOME or EXPENSE)
+     * @return List of parsed Income objects
+     */
+    public List<Income> parseCsvFile(Path filePath, ImportType importType) {
+        validateFilePath(filePath);
+
+        if (importType != ImportType.INCOME) {
+            throw new IllegalArgumentException("Only INCOME type is supported for CSV parsing");
+        }
+
+        try {
+            List<String[]> rows = parseCsvFileInternal(filePath);
+            List<Income> incomes = new ArrayList<>();
+
+            // Skip header row
+            for (int i = 1; i < rows.size(); i++) {
+                String[] row = rows.get(i);
+                List<String> rowErrors = validateRow(row, importType, i);
+
+                if (rowErrors.isEmpty()) {
+                    try {
+                        LocalDate date = LocalDate.parse(row[0].trim());
+                        BigDecimal amount = new BigDecimal(row[1].trim());
+                        String description = row[2].trim();
+                        IncomeCategory category = IncomeCategory.valueOf(row[3].trim().toUpperCase());
+                        String reference = row.length > 4 ? row[4].trim() : null;
+                        // Use placeholder business ID - will be replaced during actual import
+                        UUID placeholderBusinessId = UUID.fromString("00000000-0000-0000-0000-000000000000");
+                        Income income = new Income(
+                            UUID.randomUUID(),
+                            placeholderBusinessId,
+                            date,
+                            amount,
+                            description,
+                            category,
+                            reference,
+                            null, // bankTransactionRef
+                            null, // invoiceNumber
+                            null  // receiptPath
+                        );
+                        incomes.add(income);
+                    } catch (Exception e) {
+                        // Skip invalid rows
+                    }
+                }
+            }
+
+            return incomes;
+
+        } catch (IOException e) {
+            throw new ImportException("Failed to read CSV file: " + e.getMessage(), e);
+        }
+    }
+
+    private Income parseJsonIncomeNode(JsonNode income) {
+        LocalDate date = LocalDate.parse(income.get("date").asText());
+        BigDecimal amount = new BigDecimal(income.get("amount").asText());
+        String description = income.get("description").asText();
+        IncomeCategory category = IncomeCategory.valueOf(income.get("category").asText().toUpperCase());
+        String reference = income.has("reference") && !income.get("reference").isNull()
+            ? income.get("reference").asText() : null;
+        // Use placeholder business ID - will be replaced during actual import
+        UUID placeholderBusinessId = UUID.fromString("00000000-0000-0000-0000-000000000000");
+        String bankTransactionRef = income.has("bankTransactionRef") && !income.get("bankTransactionRef").isNull()
+            ? income.get("bankTransactionRef").asText() : null;
+        String invoiceNumber = income.has("invoiceNumber") && !income.get("invoiceNumber").isNull()
+            ? income.get("invoiceNumber").asText() : null;
+        String receiptPath = income.has("receiptPath") && !income.get("receiptPath").isNull()
+            ? income.get("receiptPath").asText() : null;
+        return new Income(UUID.randomUUID(), placeholderBusinessId, date, amount, description, category, reference,
+            bankTransactionRef, invoiceNumber, receiptPath);
+    }
+
+    private Expense parseJsonExpenseNode(JsonNode expense) {
+        LocalDate date = LocalDate.parse(expense.get("date").asText());
+        BigDecimal amount = new BigDecimal(expense.get("amount").asText());
+        String description = expense.get("description").asText();
+        ExpenseCategory category = ExpenseCategory.valueOf(expense.get("category").asText().toUpperCase());
+        String notes = expense.has("notes") && !expense.get("notes").isNull()
+            ? expense.get("notes").asText() : null;
+        // Use placeholder business ID - will be replaced during actual import
+        UUID placeholderBusinessId = UUID.fromString("00000000-0000-0000-0000-000000000000");
+        String bankTransactionRef = expense.has("bankTransactionRef") && !expense.get("bankTransactionRef").isNull()
+            ? expense.get("bankTransactionRef").asText() : null;
+        String supplierRef = expense.has("supplierRef") && !expense.get("supplierRef").isNull()
+            ? expense.get("supplierRef").asText() : null;
+        String invoiceNumber = expense.has("invoiceNumber") && !expense.get("invoiceNumber").isNull()
+            ? expense.get("invoiceNumber").asText() : null;
+        return new Expense(UUID.randomUUID(), placeholderBusinessId, date, amount, description, category, null, notes,
+            bankTransactionRef, supplierRef, invoiceNumber);
+    }
+
+    /**
+     * Result record for parsed JSON data.
+     */
+    public record ParsedJsonData(List<Income> incomes, List<Expense> expenses) {}
 
     // Validation methods
 
@@ -471,7 +619,7 @@ public class DataImportService {
 
     // Helper methods
 
-    private List<String[]> parseCsvFile(Path filePath) throws IOException {
+    private List<String[]> parseCsvFileInternal(Path filePath) throws IOException {
         List<String[]> rows = new ArrayList<>();
 
         try (BufferedReader reader = Files.newBufferedReader(filePath)) {

@@ -10,6 +10,13 @@ import java.util.UUID;
  * Represents an expense transaction for a self-employed business.
  *
  * Expenses are mapped to SA103 form boxes based on their category.
+ *
+ * <p>Unique identifier fields (Sprint 10C - SE-10C-002) enable accurate duplicate detection:
+ * <ul>
+ *   <li>bankTransactionRef - Bank statement transaction reference (e.g., "FPS-2025-001234")</li>
+ *   <li>supplierRef - Supplier/vendor reference number</li>
+ *   <li>invoiceNumber - Invoice number from supplier</li>
+ * </ul>
  */
 public record Expense(
     UUID id,
@@ -19,7 +26,10 @@ public record Expense(
     String description,
     ExpenseCategory category,
     String receiptPath,
-    String notes
+    String notes,
+    String bankTransactionRef,
+    String supplierRef,
+    String invoiceNumber
 ) {
     /**
      * Compact constructor for validation.
@@ -33,7 +43,7 @@ public record Expense(
     }
 
     /**
-     * Creates a new expense with a generated ID.
+     * Creates a new expense with a generated ID (backward compatible - no unique identifiers).
      */
     public static Expense create(
             UUID businessId,
@@ -51,7 +61,50 @@ public record Expense(
             description,
             category,
             receiptPath,
-            notes
+            notes,
+            null,
+            null,
+            null
+        );
+    }
+
+    /**
+     * Creates a new expense with a generated ID and unique identifier fields.
+     *
+     * @param businessId the business this expense belongs to
+     * @param date the date of the expense
+     * @param amount the expense amount
+     * @param description description of the expense
+     * @param category the expense category (SA103 box mapping)
+     * @param receiptPath optional path to receipt/proof document
+     * @param notes optional notes about the expense
+     * @param bankTransactionRef optional bank statement transaction reference
+     * @param supplierRef optional supplier/vendor reference
+     * @param invoiceNumber optional invoice number from supplier
+     */
+    public static Expense create(
+            UUID businessId,
+            LocalDate date,
+            BigDecimal amount,
+            String description,
+            ExpenseCategory category,
+            String receiptPath,
+            String notes,
+            String bankTransactionRef,
+            String supplierRef,
+            String invoiceNumber) {
+        return new Expense(
+            UUID.randomUUID(),
+            businessId,
+            date,
+            amount,
+            description,
+            category,
+            receiptPath,
+            notes,
+            bankTransactionRef,
+            supplierRef,
+            invoiceNumber
         );
     }
 
