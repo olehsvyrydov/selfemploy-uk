@@ -16,9 +16,15 @@ public enum MatchType {
     EXACT("EXACT", "!", "#f8d7da", "#721c24"),
 
     /**
-     * Possible duplicate - user should review.
+     * Possible duplicate - description ≥80% similar, same date + amount.
      */
-    LIKELY("LIKELY", "?", "#fff3cd", "#856404");
+    LIKELY("LIKELY", "?", "#fff3cd", "#856404"),
+
+    /**
+     * Same date and amount but different description (<80% similar).
+     * User should review - could be a duplicate with different description.
+     */
+    SIMILAR("SIMILAR", "~", "#cce5ff", "#004085");
 
     private final String displayText;
     private final String icon;

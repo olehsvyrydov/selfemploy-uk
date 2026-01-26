@@ -22,6 +22,7 @@ public class ImportReviewViewModel {
     private final IntegerProperty newCount = new SimpleIntegerProperty(0);
     private final IntegerProperty exactCount = new SimpleIntegerProperty(0);
     private final IntegerProperty likelyCount = new SimpleIntegerProperty(0);
+    private final IntegerProperty similarCount = new SimpleIntegerProperty(0);
     private final IntegerProperty selectedCount = new SimpleIntegerProperty(0);
     private final IntegerProperty importCount = new SimpleIntegerProperty(0);
 
@@ -62,18 +63,20 @@ public class ImportReviewViewModel {
     private void updateCounts() {
         totalCount.set(candidates.size());
 
-        int newCnt = 0, exactCnt = 0, likelyCnt = 0;
+        int newCnt = 0, exactCnt = 0, likelyCnt = 0, similarCnt = 0;
         for (ImportCandidateViewModel candidate : candidates) {
             switch (candidate.getMatchType()) {
                 case NEW -> newCnt++;
                 case EXACT -> exactCnt++;
                 case LIKELY -> likelyCnt++;
+                case SIMILAR -> similarCnt++;
             }
         }
 
         newCount.set(newCnt);
         exactCount.set(exactCnt);
         likelyCount.set(likelyCnt);
+        similarCount.set(similarCnt);
 
         updateSelectedCount();
         updateImportCount();
@@ -203,10 +206,10 @@ public class ImportReviewViewModel {
     // === State Checks ===
 
     /**
-     * Returns true if there are no duplicates found.
+     * Returns true if there are no duplicates or similar records found.
      */
     public boolean hasNoDuplicates() {
-        return exactCount.get() == 0 && likelyCount.get() == 0;
+        return exactCount.get() == 0 && likelyCount.get() == 0 && similarCount.get() == 0;
     }
 
     /**
@@ -266,6 +269,14 @@ public class ImportReviewViewModel {
 
     public IntegerProperty likelyCountProperty() {
         return likelyCount;
+    }
+
+    public int getSimilarCount() {
+        return similarCount.get();
+    }
+
+    public IntegerProperty similarCountProperty() {
+        return similarCount;
     }
 
     public int getSelectedCount() {

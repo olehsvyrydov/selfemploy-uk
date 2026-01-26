@@ -112,16 +112,19 @@ public class UiDuplicateDetectionService {
                 imported.amount(), MatchType.EXACT, match.id(), match);
         }
 
-        // Check fuzzy match
+        // Check fuzzy match (same date + amount)
         Optional<FuzzyMatch> fuzzyMatch = findBestFuzzyMatch(imported.date(), imported.amount(),
             imported.description(), allRecords);
-        if (fuzzyMatch.isPresent() && fuzzyMatch.get().similarity() >= FUZZY_MATCH_THRESHOLD) {
+        if (fuzzyMatch.isPresent()) {
             ExistingRecord match = fuzzyMatch.get().record();
+            // LIKELY: description >= 80% similar, SIMILAR: description < 80% similar
+            MatchType matchType = fuzzyMatch.get().similarity() >= FUZZY_MATCH_THRESHOLD
+                ? MatchType.LIKELY : MatchType.SIMILAR;
             return createCandidate(imported.id(), imported.date(), imported.description(),
-                imported.amount(), MatchType.LIKELY, match.id(), match);
+                imported.amount(), matchType, match.id(), match);
         }
 
-        // No match - new record
+        // No match on date + amount - truly new record
         return createCandidate(imported.id(), imported.date(), imported.description(),
             imported.amount(), MatchType.NEW, null, null);
     }
@@ -139,16 +142,19 @@ public class UiDuplicateDetectionService {
                 imported.amount().negate(), MatchType.EXACT, match.id(), match);
         }
 
-        // Check fuzzy match
+        // Check fuzzy match (same date + amount)
         Optional<FuzzyMatch> fuzzyMatch = findBestFuzzyMatch(imported.date(), imported.amount(),
             imported.description(), allRecords);
-        if (fuzzyMatch.isPresent() && fuzzyMatch.get().similarity() >= FUZZY_MATCH_THRESHOLD) {
+        if (fuzzyMatch.isPresent()) {
             ExistingRecord match = fuzzyMatch.get().record();
+            // LIKELY: description >= 80% similar, SIMILAR: description < 80% similar
+            MatchType matchType = fuzzyMatch.get().similarity() >= FUZZY_MATCH_THRESHOLD
+                ? MatchType.LIKELY : MatchType.SIMILAR;
             return createCandidate(imported.id(), imported.date(), imported.description(),
-                imported.amount().negate(), MatchType.LIKELY, match.id(), match);
+                imported.amount().negate(), matchType, match.id(), match);
         }
 
-        // No match - new record
+        // No match on date + amount - truly new record
         return createCandidate(imported.id(), imported.date(), imported.description(),
             imported.amount().negate(), MatchType.NEW, null, null);
     }
@@ -174,11 +180,11 @@ public class UiDuplicateDetectionService {
                                                      String description, List<ExistingRecord> records) {
         String normalizedDesc = normalizeDescription(description);
 
+        // Find the best match by similarity among records with same date and amount
         return records.stream()
             .filter(r -> r.date().equals(date))
             .filter(r -> r.amount().compareTo(amount) == 0)
             .map(r -> new FuzzyMatch(r, calculateSimilarity(normalizedDesc, normalizeDescription(r.description()))))
-            .filter(fm -> fm.similarity() >= FUZZY_MATCH_THRESHOLD)
             .max(Comparator.comparingDouble(FuzzyMatch::similarity));
     }
 

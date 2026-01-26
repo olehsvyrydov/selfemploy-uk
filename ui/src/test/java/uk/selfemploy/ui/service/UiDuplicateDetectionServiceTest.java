@@ -170,21 +170,22 @@ class UiDuplicateDetectionServiceTest {
         }
 
         @Test
-        @DisplayName("should not match when similarity is below 80%")
-        void shouldNotMatchWhenSimilarityBelowThreshold() {
+        @DisplayName("should detect SIMILAR when similarity is below 80% but date+amount match")
+        void shouldDetectSimilarWhenSimilarityBelowThreshold() {
             // Given
             incomeService.create(BUSINESS_ID, TEST_DATE, new BigDecimal("1000.00"),
                 "Design work", IncomeCategory.SALES, null);
 
-            // When - very different description (<80% similar)
+            // When - very different description (<80% similar) but same date and amount
             Income importedIncome = createIncome(TEST_DATE, new BigDecimal("1000.00"),
                 "Development project");
             List<ImportCandidateViewModel> candidates = duplicateDetectionService
                 .analyzeIncomes(List.of(importedIncome), TAX_YEAR);
 
-            // Then - should be NEW, not LIKELY
+            // Then - should be SIMILAR (same date+amount, different description)
             assertThat(candidates).hasSize(1);
-            assertThat(candidates.get(0).getMatchType()).isEqualTo(MatchType.NEW);
+            assertThat(candidates.get(0).getMatchType()).isEqualTo(MatchType.SIMILAR);
+            assertThat(candidates.get(0).hasMatch()).isTrue();
         }
     }
 
@@ -264,6 +265,72 @@ class UiDuplicateDetectionServiceTest {
             // Then
             assertThat(candidates).hasSize(1);
             assertThat(candidates.get(0).getMatchType()).isEqualTo(MatchType.NEW);
+        }
+    }
+
+    // ========================================================================
+    // TC-DUP-003b: SIMILAR Match Detection (same date+amount, different description)
+    // ========================================================================
+
+    @Nested
+    @DisplayName("TC-DUP-003b: SIMILAR Match Detection")
+    class SimilarMatchDetectionTests {
+
+        @Test
+        @DisplayName("should detect SIMILAR when date and amount match but description is completely different")
+        void shouldDetectSimilarForCompletelyDifferentDescription() {
+            // Given - existing income
+            incomeService.create(BUSINESS_ID, TEST_DATE, new BigDecimal("1500.00"),
+                "Web development project", IncomeCategory.SALES, null);
+
+            // When - same date and amount, but totally different description
+            Income importedIncome = createIncome(TEST_DATE, new BigDecimal("1500.00"),
+                "Bank transfer received");
+            List<ImportCandidateViewModel> candidates = duplicateDetectionService
+                .analyzeIncomes(List.of(importedIncome), TAX_YEAR);
+
+            // Then - should be SIMILAR (same date+amount, different description)
+            assertThat(candidates).hasSize(1);
+            assertThat(candidates.get(0).getMatchType()).isEqualTo(MatchType.SIMILAR);
+            assertThat(candidates.get(0).hasMatch()).isTrue();
+            assertThat(candidates.get(0).getMatchedRecordId()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should detect SIMILAR for expense with different description")
+        void shouldDetectSimilarForExpense() {
+            // Given
+            expenseService.create(BUSINESS_ID, TEST_DATE, new BigDecimal("100.00"),
+                "Train ticket London", ExpenseCategory.TRAVEL, null, null);
+
+            // When - same date and amount, completely different description
+            Expense importedExpense = createExpense(TEST_DATE, new BigDecimal("100.00"),
+                "Card payment TFL");
+            List<ImportCandidateViewModel> candidates = duplicateDetectionService
+                .analyzeExpenses(List.of(importedExpense), TAX_YEAR);
+
+            // Then
+            assertThat(candidates).hasSize(1);
+            assertThat(candidates.get(0).getMatchType()).isEqualTo(MatchType.SIMILAR);
+        }
+
+        @Test
+        @DisplayName("should return matched record details for SIMILAR match")
+        void shouldReturnMatchedRecordDetailsForSimilarMatch() {
+            // Given
+            incomeService.create(BUSINESS_ID, TEST_DATE, new BigDecimal("2000.00"),
+                "Invoice payment ABC Ltd", IncomeCategory.SALES, null);
+
+            // When
+            Income importedIncome = createIncome(TEST_DATE, new BigDecimal("2000.00"),
+                "FPS credit reference XYZ");
+            List<ImportCandidateViewModel> candidates = duplicateDetectionService
+                .analyzeIncomes(List.of(importedIncome), TAX_YEAR);
+
+            // Then
+            assertThat(candidates.get(0).getMatchedRecord()).isNotNull();
+            assertThat(candidates.get(0).getMatchedRecord().getDescription())
+                .isEqualTo("Invoice payment ABC Ltd");
         }
     }
 

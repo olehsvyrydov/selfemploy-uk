@@ -82,6 +82,7 @@ public class ImportCandidateViewModel {
             case NEW -> ImportAction.IMPORT;
             case EXACT -> ImportAction.SKIP;
             case LIKELY -> ImportAction.IMPORT; // Default to import, user should review
+            case SIMILAR -> ImportAction.IMPORT; // Same date+amount, different description - user should review
         };
     }
 
@@ -186,6 +187,7 @@ public class ImportCandidateViewModel {
             case NEW -> "new transaction";
             case EXACT -> "exact duplicate found";
             case LIKELY -> "possible duplicate";
+            case SIMILAR -> "same date and amount, different description";
         };
         return String.format("%s: %s on %s, %s, %s, action: %s",
             type, getDescription(), getFormattedDate(), getFormattedAmount(), status, action.get().getDisplayText());
