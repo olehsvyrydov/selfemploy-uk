@@ -697,6 +697,7 @@
 .text-success { -fx-text-fill: -fx-success; }
 .text-danger { -fx-text-fill: -fx-danger; }
 .text-warning { -fx-text-fill: -fx-warning; }
+.text-info { -fx-text-fill: #5a2d82; }
 
 .mb-10 { -fx-padding: 0 0 10 0; }
 .mb-20 { -fx-padding: 0 0 20 0; }

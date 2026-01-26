@@ -160,6 +160,15 @@
     -fx-text-fill: #856404;
 }
 
+.match-badge-similar {
+    -fx-background-color: #e2d4f0;
+}
+
+.match-badge-similar .match-badge-icon,
+.match-badge-similar .match-badge-text {
+    -fx-text-fill: #5a2d82;
+}
+
 /* ===== Table Row Styling ===== */
 .row-new {
     -fx-background-color: derive(#d4edda, 60%);
@@ -171,6 +180,10 @@
 
 .row-likely {
     -fx-background-color: derive(#fff3cd, 60%);
+}
+
+.row-similar {
+    -fx-background-color: derive(#e2d4f0, 60%);
 }
 
 /* ===== Amount Styling ===== */

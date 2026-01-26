@@ -54,6 +54,7 @@ public class ImportReviewController implements Initializable {
     @FXML private Label newCountLabel;
     @FXML private Label exactCountLabel;
     @FXML private Label likelyCountLabel;
+    @FXML private Label similarCountLabel;
 
     // Bulk actions
     @FXML private HBox bulkActionBar;
@@ -337,6 +338,9 @@ public class ImportReviewController implements Initializable {
 
         viewModel.likelyCountProperty().addListener((obs, oldVal, newVal) ->
             likelyCountLabel.setText(String.valueOf(newVal)));
+
+        viewModel.similarCountProperty().addListener((obs, oldVal, newVal) ->
+            similarCountLabel.setText(String.valueOf(newVal)));
 
         viewModel.selectedCountProperty().addListener((obs, oldVal, newVal) ->
             selectionLabel.setText(newVal + " selected"));

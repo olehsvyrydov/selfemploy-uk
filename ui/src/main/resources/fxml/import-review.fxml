@@ -84,6 +84,14 @@
                     <Label text="Likely Match" styleClass="import-summary-label"/>
                 </VBox>
             </HBox>
+            <Region styleClass="import-summary-divider"/>
+            <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
+                <Label text="~" styleClass="summary-icon, text-info"/>
+                <VBox spacing="2">
+                    <Label fx:id="similarCountLabel" text="0" styleClass="import-summary-count, text-info"/>
+                    <Label text="Similar" styleClass="import-summary-label"/>
+                </VBox>
+            </HBox>
         </HBox>
 
         <!-- Bulk Actions Bar -->
@@ -112,7 +120,7 @@
                 <TableColumn fx:id="dateColumn" text="Date" prefWidth="100"/>
                 <TableColumn fx:id="descriptionColumn" text="Description" minWidth="200"/>
                 <TableColumn fx:id="amountColumn" text="Amount" prefWidth="120"/>
-                <TableColumn fx:id="matchColumn" text="Match" prefWidth="100"/>
+                <TableColumn fx:id="matchColumn" text="Match" prefWidth="120" minWidth="100"/>
                 <TableColumn fx:id="actionColumn" text="Action" prefWidth="140" sortable="false"/>
             </columns>
             <placeholder>

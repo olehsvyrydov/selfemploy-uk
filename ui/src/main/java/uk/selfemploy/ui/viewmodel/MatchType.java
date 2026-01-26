@@ -24,7 +24,7 @@ public enum MatchType {
      * Same date and amount but different description (<80% similar).
      * User should review - could be a duplicate with different description.
      */
-    SIMILAR("SIMILAR", "~", "#cce5ff", "#004085");
+    SIMILAR("SIMILAR", "~", "#e2d4f0", "#5a2d82");
 
     private final String displayText;
     private final String icon;
