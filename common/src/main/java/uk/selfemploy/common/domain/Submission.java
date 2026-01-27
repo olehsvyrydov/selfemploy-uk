@@ -12,6 +12,12 @@ import java.util.UUID;
  * Represents an HMRC submission record.
  *
  * <p>Tracks both quarterly MTD submissions and annual self-assessments.</p>
+ *
+ * <p>Includes taxpayer identifiers for regulatory compliance:
+ * <ul>
+ *   <li>UTR (Unique Taxpayer Reference) - 10 digits</li>
+ *   <li>NINO (National Insurance Number) - stored in uppercase</li>
+ * </ul>
  */
 public record Submission(
     UUID id,
@@ -29,7 +35,9 @@ public record Submission(
     Instant submittedAt,
     Instant updatedAt,
     Instant declarationAcceptedAt,
-    String declarationTextHash
+    String declarationTextHash,
+    String utr,
+    String nino
 ) {
 
     /**
@@ -93,7 +101,54 @@ public record Submission(
             Instant.now(),
             Instant.now(),
             null,  // declarationAcceptedAt - must be set before submission
-            null   // declarationTextHash - must be set before submission
+            null,  // declarationTextHash - must be set before submission
+            null,  // utr
+            null   // nino
+        );
+    }
+
+    /**
+     * Creates a new pending quarterly submission with UTR and NINO.
+     *
+     * @param businessId    the business ID
+     * @param taxYear       the tax year
+     * @param quarter       the quarter
+     * @param totalIncome   total income for the period
+     * @param totalExpenses total expenses for the period
+     * @param utr           Unique Taxpayer Reference (10 digits)
+     * @param nino          National Insurance Number (uppercase)
+     * @return a new pending submission with UTR and NINO
+     */
+    public static Submission createQuarterlyWithUtrAndNino(
+            UUID businessId, TaxYear taxYear, Quarter quarter,
+            BigDecimal totalIncome, BigDecimal totalExpenses,
+            String utr, String nino) {
+        SubmissionType type = switch (quarter) {
+            case Q1 -> SubmissionType.QUARTERLY_Q1;
+            case Q2 -> SubmissionType.QUARTERLY_Q2;
+            case Q3 -> SubmissionType.QUARTERLY_Q3;
+            case Q4 -> SubmissionType.QUARTERLY_Q4;
+        };
+
+        return new Submission(
+            UUID.randomUUID(),
+            businessId,
+            type,
+            taxYear,
+            quarter.getStartDate(taxYear),
+            quarter.getEndDate(taxYear),
+            totalIncome,
+            totalExpenses,
+            totalIncome.subtract(totalExpenses),
+            SubmissionStatus.PENDING,
+            null,
+            null,
+            Instant.now(),
+            Instant.now(),
+            null,
+            null,
+            utr,
+            nino
         );
     }
 
@@ -136,7 +191,9 @@ public record Submission(
             Instant.now(),
             Instant.now(),
             declarationAcceptedAt,
-            declarationTextHash
+            declarationTextHash,
+            null,  // utr
+            null   // nino
         );
     }
 
@@ -161,7 +218,46 @@ public record Submission(
             Instant.now(),
             Instant.now(),
             null,  // declarationAcceptedAt - must be set before submission
-            null   // declarationTextHash - must be set before submission
+            null,  // declarationTextHash - must be set before submission
+            null,  // utr
+            null   // nino
+        );
+    }
+
+    /**
+     * Creates a new pending annual submission with UTR and NINO.
+     *
+     * @param businessId    the business ID
+     * @param taxYear       the tax year
+     * @param totalIncome   total income for the year
+     * @param totalExpenses total expenses for the year
+     * @param utr           Unique Taxpayer Reference (10 digits)
+     * @param nino          National Insurance Number (uppercase)
+     * @return a new pending submission with UTR and NINO
+     */
+    public static Submission createAnnualWithUtrAndNino(
+            UUID businessId, TaxYear taxYear,
+            BigDecimal totalIncome, BigDecimal totalExpenses,
+            String utr, String nino) {
+        return new Submission(
+            UUID.randomUUID(),
+            businessId,
+            SubmissionType.ANNUAL,
+            taxYear,
+            taxYear.startDate(),
+            taxYear.endDate(),
+            totalIncome,
+            totalExpenses,
+            totalIncome.subtract(totalExpenses),
+            SubmissionStatus.PENDING,
+            null,
+            null,
+            Instant.now(),
+            Instant.now(),
+            null,
+            null,
+            utr,
+            nino
         );
     }
 
@@ -196,7 +292,9 @@ public record Submission(
             Instant.now(),
             Instant.now(),
             declarationAcceptedAt,
-            declarationTextHash
+            declarationTextHash,
+            null,  // utr
+            null   // nino
         );
     }
 
@@ -213,7 +311,9 @@ public record Submission(
             submittedAt,
             Instant.now(),
             declarationAcceptedAt,
-            declarationTextHash
+            declarationTextHash,
+            utr,
+            nino
         );
     }
 
@@ -230,7 +330,9 @@ public record Submission(
             submittedAt,
             Instant.now(),
             declarationAcceptedAt,
-            declarationTextHash
+            declarationTextHash,
+            utr,
+            nino
         );
     }
 
@@ -247,7 +349,9 @@ public record Submission(
             submittedAt,
             Instant.now(),
             declarationAcceptedAt,
-            declarationTextHash
+            declarationTextHash,
+            utr,
+            nino
         );
     }
 
@@ -268,7 +372,32 @@ public record Submission(
             submittedAt,
             Instant.now(),
             declarationAcceptedAt,
-            declarationTextHash
+            declarationTextHash,
+            utr,
+            nino
+        );
+    }
+
+    /**
+     * Returns a copy with UTR and NINO set.
+     *
+     * @param utr  Unique Taxpayer Reference (10 digits)
+     * @param nino National Insurance Number (uppercase)
+     * @return a new Submission with UTR and NINO set
+     */
+    public Submission withUtrAndNino(String utr, String nino) {
+        return new Submission(
+            id, businessId, type, taxYear, periodStart, periodEnd,
+            totalIncome, totalExpenses, netProfit,
+            status,
+            hmrcReference,
+            errorMessage,
+            submittedAt,
+            Instant.now(),
+            declarationAcceptedAt,
+            declarationTextHash,
+            utr,
+            nino
         );
     }
 

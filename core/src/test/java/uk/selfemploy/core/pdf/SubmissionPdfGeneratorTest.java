@@ -400,7 +400,9 @@ class SubmissionPdfGeneratorTest {
                 Instant.now(),
                 Instant.now(),
                 Instant.now(), // declarationAcceptedAt
-                "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9" // declarationTextHash
+                "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9", // declarationTextHash
+                "1234567890", // utr
+                "AB123456A"   // nino
         );
     }
 
@@ -421,7 +423,9 @@ class SubmissionPdfGeneratorTest {
                 Instant.now(),
                 Instant.now(),
                 null, // declarationAcceptedAt
-                null  // declarationTextHash
+                null, // declarationTextHash
+                null, // utr
+                null  // nino
         );
     }
 
@@ -442,7 +446,9 @@ class SubmissionPdfGeneratorTest {
                 Instant.now(),
                 Instant.now(),
                 Instant.now(), // declarationAcceptedAt
-                "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9" // declarationTextHash
+                "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9", // declarationTextHash
+                "1234567890", // utr
+                "AB123456A"   // nino
         );
     }
 

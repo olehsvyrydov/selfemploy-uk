@@ -172,7 +172,7 @@
             </VBox>
 
             <!-- Error Message (only for rejected submissions) -->
-            <VBox fx:id="errorSection" styleClass="error-section" spacing="8"
+            <VBox fx:id="errorSection" styleClass="error-section" spacing="12"
                   managed="false" visible="false">
                 <Label text="Error Details" styleClass="detail-section-label"/>
                 <HBox styleClass="error-box" alignment="CENTER_LEFT" spacing="8">
@@ -180,6 +180,22 @@
                     <Label fx:id="detailErrorMessage" text="Invalid calculation reference"
                            styleClass="error-text" wrapText="true"/>
                 </HBox>
+
+                <!-- Error Resolution Guidance (SE-SH-006) -->
+                <VBox fx:id="errorGuidanceBox" styleClass="error-guidance-box" spacing="8"
+                      managed="true" visible="true">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="&#9432;" styleClass="guidance-icon"/>
+                        <Label text="How to resolve this" styleClass="guidance-title"/>
+                    </HBox>
+                    <Label fx:id="errorGuidanceText"
+                           text="Check your submission details and try again."
+                           styleClass="guidance-text" wrapText="true"/>
+                    <Hyperlink fx:id="learnMoreLink" text="Learn more on GOV.UK"
+                               styleClass="guidance-link" onAction="#handleLearnMore"
+                               accessibleText="Open HMRC guidance on Self Assessment corrections"/>
+                </VBox>
+
                 <Button fx:id="retryBtn" text="Retry Submission" styleClass="button-warning"
                         onAction="#handleRetry" disable="true"/>
             </VBox>
@@ -187,7 +203,8 @@
             <!-- Actions -->
             <HBox alignment="CENTER" spacing="12">
                 <Button fx:id="downloadPdfBtn" text="Download PDF" styleClass="button-secondary"
-                        onAction="#handleDownloadPDF" disable="true"/>
+                        onAction="#handleDownloadPDF"
+                        accessibleText="Download PDF confirmation for this submission"/>
                 <Button fx:id="viewDataBtn" text="View Full Data" styleClass="button-secondary"
                         onAction="#handleViewData"/>
             </HBox>

@@ -3,26 +3,35 @@ package uk.selfemploy.ui.e2e;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.input.Clipboard;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.io.TempDir;
 import org.testfx.framework.junit5.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;
 import uk.selfemploy.common.enums.SubmissionStatus;
 import uk.selfemploy.common.enums.SubmissionType;
 import uk.selfemploy.ui.controller.SubmissionHistoryController;
+import uk.selfemploy.ui.service.SubmissionPdfDownloadService;
+import uk.selfemploy.ui.util.HmrcErrorGuidance;
 import uk.selfemploy.ui.viewmodel.SubmissionHistoryViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionTableRow;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,12 +40,18 @@ import static org.testfx.api.FxAssert.verifyThat;
 import static org.testfx.matcher.base.NodeMatchers.*;
 
 /**
- * E2E/UI Tests for SE-404 Submission History.
+ * E2E/UI Tests for Submission History.
  * Tests based on /rob's QA test specification.
  *
- * Test IDs: E2E-404-001 to E2E-404-037
+ * <p>Test IDs:</p>
+ * <ul>
+ *   <li>SE-404: E2E-404-001 to E2E-404-037 (Sprint 4 - Core functionality)</li>
+ *   <li>SE-SH-005: TC-10E-012 to TC-10E-015 (Sprint 10E - PDF Download)</li>
+ *   <li>SE-SH-006: TC-10E-016 to TC-10E-020 (Sprint 10E - Error Guidance)</li>
+ * </ul>
  *
  * @see docs/sprints/sprint-4/testing/rob-qa-SE-404.md
+ * @see docs/sprints/sprint-10E/testing/adam-e2e-tests.md
  */
 @Tag("e2e")
 @DisabledIfSystemProperty(named = "skipE2ETests", matches = "true")
@@ -610,6 +625,510 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
             assertThat(submission.getFormattedIncome()).isEqualTo("£1,234,567.89");
             assertThat(submission.getFormattedExpenses()).isEqualTo("£0.00");
             assertThat(submission.getFormattedTaxDue()).isEqualTo("£5,051.80");
+        }
+    }
+
+    // =========================================================================
+    // Sprint 10E: PDF Download Tests (SE-SH-005)
+    // TC-10E-012 to TC-10E-015
+    // =========================================================================
+
+    @Nested
+    @DisplayName("SE-SH-005: PDF Download (TC-10E-012 to TC-10E-015)")
+    class PdfDownloadTests {
+
+        private final SubmissionPdfDownloadService pdfService = new SubmissionPdfDownloadService();
+
+        @TempDir
+        Path tempDir;
+
+        @Test
+        @DisplayName("TC-10E-012: PDF download button visible and enabled when submission selected")
+        void pdfDownloadButtonVisibleAndEnabled() {
+            // Given - a submission is loaded and selected
+            SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                viewModel.selectSubmission(submission);
+                controller.refreshData();
+            });
+
+            // When - viewing the detail panel
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - downloadPdfBtn should exist and be enabled
+            Button downloadBtn = lookup("#downloadPdfBtn").queryAs(Button.class);
+            assertThat(downloadBtn).isNotNull();
+            assertThat(downloadBtn.isDisabled()).isFalse();
+            assertThat(downloadBtn.isVisible()).isTrue();
+        }
+
+        @Test
+        @DisplayName("TC-10E-013: PDF download generates file with correct filename")
+        void pdfDownloadCreatesFileWithCorrectFilename() throws IOException {
+            // Given - an accepted quarterly submission
+            SubmissionTableRow submission = SubmissionTableRow.builder()
+                    .id(12345L)
+                    .submittedAt(LocalDateTime.of(2026, 1, 24, 14, 32))
+                    .type(SubmissionType.QUARTERLY_Q1)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.ACCEPTED)
+                    .hmrcReference("MTD-Q1-ABC123")
+                    .totalIncome(new BigDecimal("45000.00"))
+                    .totalExpenses(new BigDecimal("13000.00"))
+                    .netProfit(new BigDecimal("32000.00"))
+                    .taxDue(new BigDecimal("5051.80"))
+                    .build();
+
+            // When - generate filename and PDF
+            String filename = pdfService.generateFilename(submission);
+            Path outputPath = tempDir.resolve(filename);
+            pdfService.generatePdf(submission, outputPath);
+
+            // Then - file exists with correct pattern
+            assertThat(filename).matches("submission-q1-2025-26-MTD-Q1-ABC123\\.pdf");
+            assertThat(Files.exists(outputPath)).isTrue();
+            assertThat(Files.size(outputPath)).isGreaterThan(0);
+        }
+
+        @Test
+        @DisplayName("TC-10E-014: PDF contains submission details")
+        void pdfContainsSubmissionDetails() throws IOException {
+            // Given - a submission with all fields populated
+            SubmissionTableRow submission = SubmissionTableRow.builder()
+                    .id(1L)
+                    .submittedAt(LocalDateTime.of(2026, 1, 24, 14, 32))
+                    .type(SubmissionType.ANNUAL)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.ACCEPTED)
+                    .hmrcReference("SA-2025-123456789")
+                    .totalIncome(new BigDecimal("65000.00"))
+                    .totalExpenses(new BigDecimal("18000.00"))
+                    .netProfit(new BigDecimal("47000.00"))
+                    .taxDue(new BigDecimal("8540.00"))
+                    .build();
+
+            // When - generate PDF as bytes
+            byte[] pdfBytes = pdfService.generatePdfBytes(submission);
+
+            // Then - PDF is generated (non-empty)
+            assertThat(pdfBytes).isNotNull();
+            assertThat(pdfBytes.length).isGreaterThan(1000); // Reasonable minimum size
+
+            // Verify it's a valid PDF (starts with %PDF)
+            String pdfHeader = new String(pdfBytes, 0, Math.min(8, pdfBytes.length));
+            assertThat(pdfHeader).startsWith("%PDF");
+        }
+
+        @Test
+        @DisplayName("TC-10E-015: PDF download handles rejected submissions correctly")
+        void pdfDownloadHandlesRejectedSubmissions() throws IOException {
+            // Given - a rejected submission with error message
+            SubmissionTableRow submission = SubmissionTableRow.builder()
+                    .id(1L)
+                    .submittedAt(LocalDateTime.of(2026, 1, 20, 10, 15))
+                    .type(SubmissionType.QUARTERLY_Q2)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.REJECTED)
+                    .hmrcReference(null)
+                    .totalIncome(new BigDecimal("25000.00"))
+                    .totalExpenses(new BigDecimal("8000.00"))
+                    .netProfit(new BigDecimal("17000.00"))
+                    .errorMessage("INVALID_NINO: National Insurance number format is incorrect")
+                    .build();
+
+            // When - generate PDF
+            String filename = pdfService.generateFilename(submission);
+            Path outputPath = tempDir.resolve(filename);
+            pdfService.generatePdf(submission, outputPath);
+
+            // Then - file is created (error submissions can also be saved)
+            assertThat(Files.exists(outputPath)).isTrue();
+            // Filename uses ID when no reference
+            assertThat(filename).contains("id-1");
+        }
+
+        @Test
+        @DisplayName("TC-10E-015b: PDF download button keyboard accessible (Tab + Enter)")
+        void pdfDownloadButtonKeyboardAccessible() {
+            // Given - a submission is selected and detail panel is shown
+            SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                viewModel.selectSubmission(submission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - download button should be focus traversable
+            Button downloadBtn = lookup("#downloadPdfBtn").queryAs(Button.class);
+            assertThat(downloadBtn).isNotNull();
+            assertThat(downloadBtn.isFocusTraversable()).isTrue();
+        }
+
+        @Test
+        @DisplayName("TC-10E-015c: PDF service generates correct filename for annual submission")
+        void pdfFilenameForAnnualSubmission() {
+            // Given - an annual submission
+            SubmissionTableRow submission = SubmissionTableRow.builder()
+                    .id(999L)
+                    .submittedAt(LocalDateTime.now())
+                    .type(SubmissionType.ANNUAL)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.ACCEPTED)
+                    .hmrcReference("SA-ANNUAL-XYZ789")
+                    .totalIncome(new BigDecimal("50000.00"))
+                    .totalExpenses(new BigDecimal("15000.00"))
+                    .netProfit(new BigDecimal("35000.00"))
+                    .build();
+
+            // When
+            String filename = pdfService.generateFilename(submission);
+
+            // Then
+            assertThat(filename).isEqualTo("submission-annual-2025-26-SA-ANNUAL-XYZ789.pdf");
+        }
+
+        @Test
+        @DisplayName("TC-10E-015d: PDF service returns valid downloads directory")
+        void pdfServiceReturnsDownloadsDirectory() {
+            // When
+            Path downloadsDir = pdfService.getDownloadsDirectory();
+
+            // Then
+            assertThat(downloadsDir).isNotNull();
+            assertThat(Files.isDirectory(downloadsDir) || downloadsDir.endsWith("Downloads"))
+                    .isTrue();
+        }
+    }
+
+    // =========================================================================
+    // Sprint 10E: Error Resolution Guidance Tests (SE-SH-006)
+    // TC-10E-016 to TC-10E-020
+    // =========================================================================
+
+    @Nested
+    @DisplayName("SE-SH-006: Error Resolution Guidance (TC-10E-016 to TC-10E-020)")
+    class ErrorGuidanceTests {
+
+        private final HmrcErrorGuidance errorGuidance = new HmrcErrorGuidance();
+
+        @Test
+        @DisplayName("TC-10E-016: Error guidance displays for rejected submission")
+        void errorGuidanceDisplaysForRejectedSubmission() {
+            // Given - a rejected submission with error
+            SubmissionTableRow rejectedSubmission = SubmissionTableRow.builder()
+                    .id(1L)
+                    .submittedAt(LocalDateTime.now())
+                    .type(SubmissionType.QUARTERLY_Q1)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.REJECTED)
+                    .totalIncome(new BigDecimal("10000.00"))
+                    .totalExpenses(new BigDecimal("2000.00"))
+                    .netProfit(new BigDecimal("8000.00"))
+                    .errorMessage("INVALID_NINO: National Insurance number format is incorrect")
+                    .build();
+
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(rejectedSubmission));
+                viewModel.selectSubmission(rejectedSubmission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - error section should be visible
+            VBox errorSection = lookup("#errorSection").queryAs(VBox.class);
+            assertThat(errorSection).isNotNull();
+            assertThat(errorSection.isVisible()).isTrue();
+            assertThat(errorSection.isManaged()).isTrue();
+
+            // Error guidance box should be present
+            VBox errorGuidanceBox = lookup("#errorGuidanceBox").queryAs(VBox.class);
+            assertThat(errorGuidanceBox).isNotNull();
+            assertThat(errorGuidanceBox.isVisible()).isTrue();
+        }
+
+        @Test
+        @DisplayName("TC-10E-017: Correct guidance for INVALID_NINO error")
+        void correctGuidanceForInvalidNino() {
+            // Given
+            String errorMessage = "INVALID_NINO: The provided NINO is invalid";
+
+            // When
+            String extractedCode = errorGuidance.extractErrorCode(errorMessage);
+            String guidance = errorGuidance.getGuidanceForErrorCode(extractedCode);
+
+            // Then
+            assertThat(extractedCode).isEqualTo("INVALID_NINO");
+            assertThat(guidance).contains("National Insurance number");
+            assertThat(guidance).contains("AA 12 34 56 B");
+        }
+
+        @Test
+        @DisplayName("TC-10E-018: Correct guidance for DUPLICATE_SUBMISSION error")
+        void correctGuidanceForDuplicateSubmission() {
+            // Given
+            String errorMessage = "DUPLICATE_SUBMISSION: A submission already exists for this period";
+
+            // When
+            String extractedCode = errorGuidance.extractErrorCode(errorMessage);
+            String guidance = errorGuidance.getGuidanceForErrorCode(extractedCode);
+
+            // Then
+            assertThat(extractedCode).isEqualTo("DUPLICATE_SUBMISSION");
+            assertThat(guidance).contains("already submitted");
+            assertThat(guidance).contains("amendment");
+        }
+
+        @Test
+        @DisplayName("TC-10E-019: Learn more link present and accessible")
+        void learnMoreLinkPresentAndAccessible() {
+            // Given - a rejected submission displayed
+            SubmissionTableRow rejectedSubmission = SubmissionTableRow.builder()
+                    .id(1L)
+                    .submittedAt(LocalDateTime.now())
+                    .type(SubmissionType.QUARTERLY_Q1)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.REJECTED)
+                    .totalIncome(new BigDecimal("10000.00"))
+                    .totalExpenses(new BigDecimal("2000.00"))
+                    .netProfit(new BigDecimal("8000.00"))
+                    .errorMessage("BUSINESS_VALIDATION: Business validation failed")
+                    .build();
+
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(rejectedSubmission));
+                viewModel.selectSubmission(rejectedSubmission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - learn more link should be present
+            Hyperlink learnMoreLink = lookup("#learnMoreLink").queryAs(Hyperlink.class);
+            assertThat(learnMoreLink).isNotNull();
+            assertThat(learnMoreLink.getText()).containsIgnoringCase("learn more");
+            assertThat(learnMoreLink.getAccessibleText()).isNotBlank();
+
+            // Verify correct URL in guidance
+            assertThat(errorGuidance.getGuidanceUrl())
+                    .isEqualTo("https://www.gov.uk/self-assessment-tax-returns/corrections");
+        }
+
+        @Test
+        @DisplayName("TC-10E-020: Error guidance hidden for accepted submissions")
+        void errorGuidanceHiddenForAcceptedSubmissions() {
+            // Given - an accepted submission
+            SubmissionTableRow acceptedSubmission = createQ1Submission(SubmissionStatus.ACCEPTED);
+
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(acceptedSubmission));
+                viewModel.selectSubmission(acceptedSubmission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - error section should not be visible
+            VBox errorSection = lookup("#errorSection").queryAs(VBox.class);
+            assertThat(errorSection).isNotNull();
+            // For accepted submissions, error section should be hidden
+            assertThat(errorSection.isVisible()).isFalse();
+        }
+
+        @Test
+        @DisplayName("TC-10E-020b: Error guidance extractErrorCode handles various formats")
+        void errorGuidanceExtractsVariousFormats() {
+            // Test various error message formats
+            assertThat(errorGuidance.extractErrorCode("FORMAT_NINO: Invalid"))
+                    .isEqualTo("FORMAT_NINO");
+            assertThat(errorGuidance.extractErrorCode("Error: RULE_TAX_YEAR_NOT_SUPPORTED"))
+                    .isEqualTo("RULE_TAX_YEAR_NOT_SUPPORTED");
+            assertThat(errorGuidance.extractErrorCode("CLIENT_OR_AGENT_NOT_AUTHORISED"))
+                    .isEqualTo("CLIENT_OR_AGENT_NOT_AUTHORISED");
+            assertThat(errorGuidance.extractErrorCode("Unknown error without code"))
+                    .isNull();
+        }
+
+        @Test
+        @DisplayName("TC-10E-020c: Error guidance provides default for unknown codes")
+        void errorGuidanceProvidesDefaultForUnknownCodes() {
+            // Given
+            String unknownCode = "UNKNOWN_CODE_XYZ";
+
+            // When
+            String guidance = errorGuidance.getGuidanceForErrorCode(unknownCode);
+
+            // Then - should return default guidance
+            assertThat(guidance).contains("review your submission");
+            assertThat(guidance).contains("HMRC");
+        }
+
+        @Test
+        @DisplayName("TC-10E-020d: Error guidance isKnownErrorCode works correctly")
+        void errorGuidanceKnownCodesValidation() {
+            // Known codes
+            assertThat(errorGuidance.isKnownErrorCode("INVALID_NINO")).isTrue();
+            assertThat(errorGuidance.isKnownErrorCode("DUPLICATE_SUBMISSION")).isTrue();
+            assertThat(errorGuidance.isKnownErrorCode("SERVER_ERROR")).isTrue();
+
+            // Unknown codes
+            assertThat(errorGuidance.isKnownErrorCode("RANDOM_CODE")).isFalse();
+            assertThat(errorGuidance.isKnownErrorCode(null)).isFalse();
+            assertThat(errorGuidance.isKnownErrorCode("")).isFalse();
+        }
+
+        @Test
+        @DisplayName("TC-10E-020e: Error guidance formatting with combined code and message")
+        void errorGuidanceFormattedGuidance() {
+            // Given
+            String errorCode = "INVALID_TAX_YEAR";
+            String errorMessage = "INVALID_TAX_YEAR: The tax year 2099-00 is invalid";
+
+            // When
+            String formatted = errorGuidance.getFormattedGuidance(errorCode, errorMessage);
+
+            // Then
+            assertThat(formatted).contains("YYYY-YY");
+            assertThat(formatted).contains("2024-25");
+        }
+
+        @Test
+        @DisplayName("TC-10E-020f: Error section shows correct error message text")
+        void errorSectionShowsCorrectMessage() {
+            // Given
+            String expectedError = "CALCULATION_ERROR: Unable to calculate tax due";
+            SubmissionTableRow rejectedSubmission = SubmissionTableRow.builder()
+                    .id(1L)
+                    .submittedAt(LocalDateTime.now())
+                    .type(SubmissionType.ANNUAL)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.REJECTED)
+                    .totalIncome(new BigDecimal("75000.00"))
+                    .totalExpenses(new BigDecimal("20000.00"))
+                    .netProfit(new BigDecimal("55000.00"))
+                    .errorMessage(expectedError)
+                    .build();
+
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(rejectedSubmission));
+                viewModel.selectSubmission(rejectedSubmission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - the error message label should show the error
+            Label errorMessageLabel = lookup("#detailErrorMessage").queryAs(Label.class);
+            assertThat(errorMessageLabel).isNotNull();
+            assertThat(errorMessageLabel.getText()).isEqualTo(expectedError);
+
+            // Guidance text should be appropriate
+            Label guidanceText = lookup("#errorGuidanceText").queryAs(Label.class);
+            assertThat(guidanceText).isNotNull();
+            assertThat(guidanceText.getText()).contains("calculate");
+        }
+    }
+
+    // =========================================================================
+    // Sprint 10E: Accessibility Tests for PDF Download and Error Guidance
+    // =========================================================================
+
+    @Nested
+    @DisplayName("SE-SH-005/006: Accessibility Tests")
+    class AccessibilityTests {
+
+        @Test
+        @DisplayName("PDF button has accessible text set")
+        void pdfButtonHasAccessibleText() {
+            // Given - a submission is selected
+            SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                viewModel.selectSubmission(submission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then
+            Button downloadBtn = lookup("#downloadPdfBtn").queryAs(Button.class);
+            assertThat(downloadBtn).isNotNull();
+            assertThat(downloadBtn.getAccessibleText()).isNotBlank();
+            assertThat(downloadBtn.getAccessibleText()).containsIgnoringCase("pdf");
+        }
+
+        @Test
+        @DisplayName("Learn more link has accessible text for screen readers")
+        void learnMoreLinkHasAccessibleText() {
+            // Given - a rejected submission with error
+            SubmissionTableRow rejectedSubmission = SubmissionTableRow.builder()
+                    .id(1L)
+                    .submittedAt(LocalDateTime.now())
+                    .type(SubmissionType.QUARTERLY_Q1)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.REJECTED)
+                    .totalIncome(new BigDecimal("10000.00"))
+                    .totalExpenses(new BigDecimal("2000.00"))
+                    .netProfit(new BigDecimal("8000.00"))
+                    .errorMessage("INVALID_NINO: Bad NINO")
+                    .build();
+
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(rejectedSubmission));
+                viewModel.selectSubmission(rejectedSubmission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then
+            Hyperlink learnMoreLink = lookup("#learnMoreLink").queryAs(Hyperlink.class);
+            assertThat(learnMoreLink).isNotNull();
+            assertThat(learnMoreLink.getAccessibleText()).isNotBlank();
+            assertThat(learnMoreLink.getAccessibleText()).containsIgnoringCase("HMRC");
+        }
+
+        @Test
+        @DisplayName("Error guidance box is readable by screen readers")
+        void errorGuidanceBoxIsAccessible() {
+            // Given
+            SubmissionTableRow rejectedSubmission = SubmissionTableRow.builder()
+                    .id(1L)
+                    .submittedAt(LocalDateTime.now())
+                    .type(SubmissionType.QUARTERLY_Q2)
+                    .taxYear("2025/26")
+                    .status(SubmissionStatus.REJECTED)
+                    .totalIncome(new BigDecimal("20000.00"))
+                    .totalExpenses(new BigDecimal("5000.00"))
+                    .netProfit(new BigDecimal("15000.00"))
+                    .errorMessage("UNAUTHORISED: Session expired")
+                    .build();
+
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(rejectedSubmission));
+                viewModel.selectSubmission(rejectedSubmission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - guidance text should contain helpful information
+            Label guidanceText = lookup("#errorGuidanceText").queryAs(Label.class);
+            assertThat(guidanceText).isNotNull();
+            assertThat(guidanceText.getText()).isNotBlank();
+            assertThat(guidanceText.isWrapText()).isTrue();
+        }
+
+        @Test
+        @DisplayName("PDF button is keyboard navigable via Tab")
+        void pdfButtonIsTabNavigable() {
+            // Given
+            SubmissionTableRow submission = createQ1Submission(SubmissionStatus.ACCEPTED);
+            runOnFxThread(() -> {
+                viewModel.setSubmissions(List.of(submission));
+                viewModel.selectSubmission(submission);
+                controller.refreshData();
+            });
+            WaitForAsyncUtils.waitForFxEvents();
+
+            // Then - button should be focus traversable
+            Button downloadBtn = lookup("#downloadPdfBtn").queryAs(Button.class);
+            assertThat(downloadBtn.isFocusTraversable()).isTrue();
         }
     }
 

@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.controller;
 
+import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -14,12 +15,20 @@ import javafx.scene.layout.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.enums.SubmissionStatus;
+import uk.selfemploy.ui.component.AccessibleLink;
+import uk.selfemploy.ui.component.ToastNotification;
+import uk.selfemploy.ui.service.SubmissionPdfDownloadService;
+import uk.selfemploy.ui.util.HmrcErrorGuidance;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionHistoryViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionTableRow;
 import uk.selfemploy.ui.viewmodel.View;
 
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -80,12 +89,19 @@ public class SubmissionHistoryController implements Initializable {
     @FXML private Label detailTaxDue;
     @FXML private VBox errorSection;
     @FXML private Label detailErrorMessage;
+    @FXML private VBox errorGuidanceBox;
+    @FXML private Label errorGuidanceText;
+    @FXML private Hyperlink learnMoreLink;
     @FXML private Button retryBtn;
     @FXML private Button downloadPdfBtn;
     @FXML private Button viewDataBtn;
 
     private SubmissionHistoryViewModel viewModel;
     private Consumer<View> navigationCallback;
+
+    // Services for PDF download and error guidance (SE-SH-005, SE-SH-006)
+    private final SubmissionPdfDownloadService pdfDownloadService = new SubmissionPdfDownloadService();
+    private final HmrcErrorGuidance errorGuidance = new HmrcErrorGuidance();
 
     /** Guard flag to prevent infinite recursion when updating tax year filter programmatically */
     private boolean updatingTaxYearFilter = false;
@@ -353,13 +369,19 @@ public class SubmissionHistoryController implements Initializable {
         detailProfit.setText(submission.getFormattedProfit());
         detailTaxDue.setText(submission.getFormattedTaxDue());
 
-        // Error section
+        // Error section with guidance (SE-SH-006)
         boolean hasError = submission.isRejected() && submission.hasError();
         errorSection.setVisible(hasError);
         errorSection.setManaged(hasError);
         if (hasError) {
             detailErrorMessage.setText(submission.errorMessage());
+            updateErrorGuidance(submission.errorMessage());
         }
+
+        // Enable/disable PDF download button (SE-SH-005)
+        // PDF can be downloaded for any submission (even rejected/pending)
+        downloadPdfBtn.setDisable(false);
+        downloadPdfBtn.setAccessibleText("Download PDF confirmation for " + submission.getPeriodDisplay());
 
         // Show detail panel, hide list
         submissionsList.setVisible(false);
@@ -460,10 +482,105 @@ public class SubmissionHistoryController implements Initializable {
         // Will be implemented to call the error handling retry service
     }
 
+    /**
+     * Handles PDF download for the currently selected submission.
+     * SE-SH-005: Implement PDF download
+     */
     @FXML
     void handleDownloadPDF(ActionEvent event) {
-        LOG.info("Download PDF requested");
-        // PDF download functionality - to be implemented
+        SubmissionTableRow selected = viewModel.getSelectedSubmission();
+        if (selected == null) {
+            LOG.warn("Download PDF requested but no submission selected");
+            return;
+        }
+
+        LOG.info("Download PDF requested for submission: {}", selected.hmrcReference());
+
+        try {
+            // Generate filename and determine output path
+            String filename = pdfDownloadService.generateFilename(selected);
+            Path downloadsDir = pdfDownloadService.getDownloadsDirectory();
+            Path outputPath = downloadsDir.resolve(filename);
+
+            // Generate and save PDF
+            pdfDownloadService.generatePdf(selected, outputPath);
+
+            LOG.info("PDF saved successfully to: {}", outputPath);
+
+            // Show success feedback via toast notification
+            String toastMessage = "PDF saved to Downloads";
+            ToastNotification.showExternalBrowserToast(toastMessage, outputPath.toString());
+
+            // Optionally open the folder containing the file
+            // openContainingFolder(outputPath);
+
+        } catch (IOException e) {
+            LOG.error("Failed to generate PDF for submission: {}", selected.hmrcReference(), e);
+
+            // Show error dialog
+            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+            errorAlert.setTitle("PDF Generation Failed");
+            errorAlert.setHeaderText("Could not generate PDF");
+            errorAlert.setContentText(
+                "An error occurred while generating the PDF confirmation. " +
+                "Please try again. Error: " + e.getMessage()
+            );
+            errorAlert.showAndWait();
+        } catch (Exception e) {
+            LOG.error("Unexpected error generating PDF: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Updates the error guidance section based on the error message.
+     * SE-SH-006: Error resolution guidance
+     */
+    private void updateErrorGuidance(String errorMessage) {
+        if (errorGuidanceBox == null || errorGuidanceText == null) {
+            // FXML elements not present - may be old FXML version
+            LOG.debug("Error guidance UI elements not available");
+            return;
+        }
+
+        // Extract error code and get guidance
+        String errorCode = errorGuidance.extractErrorCode(errorMessage);
+        String guidanceText = errorGuidance.getFormattedGuidance(errorCode, errorMessage);
+
+        errorGuidanceText.setText(guidanceText);
+        errorGuidanceBox.setVisible(true);
+        errorGuidanceBox.setManaged(true);
+    }
+
+    /**
+     * Handles the "Learn more" link click to open HMRC guidance.
+     * SE-SH-006: Error resolution guidance
+     */
+    @FXML
+    void handleLearnMore(ActionEvent event) {
+        String url = errorGuidance.getGuidanceUrl();
+        LOG.info("Opening HMRC guidance URL: {}", url);
+
+        try {
+            // Try to open in default browser
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(url));
+                ToastNotification.showExternalBrowserToast("Opening HMRC guidance...", url);
+            } else {
+                // Fallback: show URL in dialog
+                showUrlDialog(url);
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to open HMRC guidance URL: {}", url, e);
+            showUrlDialog(url);
+        }
+    }
+
+    private void showUrlDialog(String url) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("HMRC Guidance");
+        alert.setHeaderText("Visit HMRC website for more information");
+        alert.setContentText("Please visit:\n" + url);
+        alert.showAndWait();
     }
 
     @FXML

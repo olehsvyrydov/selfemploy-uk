@@ -267,7 +267,9 @@ class PdfContentVerificationTest {
                 SUBMISSION_TIME,
                 SUBMISSION_TIME,
                 SUBMISSION_TIME, // declarationAcceptedAt
-                "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9" // declarationTextHash
+                "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9", // declarationTextHash
+                null, // utr
+                null  // nino
             );
             TaxLiabilityResult taxResult = createTaxResult();
             Path outputPath = tempDir.resolve("confirmation.pdf");
@@ -587,7 +589,9 @@ class PdfContentVerificationTest {
             SUBMISSION_TIME,
             SUBMISSION_TIME,
             SUBMISSION_TIME, // declarationAcceptedAt
-            "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9" // declarationTextHash
+            "e7b9f3c8a1d2e4f5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9", // declarationTextHash
+            "1234567890", // utr
+            "AB123456A"   // nino
         );
     }
 
@@ -608,7 +612,9 @@ class PdfContentVerificationTest {
             SUBMISSION_TIME,
             SUBMISSION_TIME,
             null, // declarationAcceptedAt
-            null  // declarationTextHash
+            null, // declarationTextHash
+            null, // utr
+            null  // nino
         );
     }
 

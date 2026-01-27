@@ -112,7 +112,9 @@ class ImportUndoServiceTest {
             UUID.randomUUID(), businessId, SubmissionType.ANNUAL,
             taxYear, taxYear.startDate(), taxYear.endDate(),
             new BigDecimal("50000"), new BigDecimal("10000"), new BigDecimal("40000"),
-            status, null, null, FIXED_TIME, FIXED_TIME, null, null
+            status, null, null, FIXED_TIME, FIXED_TIME, null, null,
+            null, // utr
+            null  // nino
         );
     }
 
