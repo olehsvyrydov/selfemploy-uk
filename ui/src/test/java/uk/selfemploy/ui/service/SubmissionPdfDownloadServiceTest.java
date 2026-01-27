@@ -218,7 +218,11 @@ class SubmissionPdfDownloadServiceTest {
             Path downloadsPath = pdfService.getDownloadsDirectory();
 
             assertThat(downloadsPath).isNotNull();
-            assertThat(downloadsPath.toString()).containsIgnoringCase("download");
+            // Path should be absolute and either be Downloads folder or fallback to home
+            assertThat(downloadsPath.isAbsolute()).isTrue();
+            // Should be a valid directory path (either Downloads or home as fallback)
+            String userHome = System.getProperty("user.home");
+            assertThat(downloadsPath.toString()).startsWith(userHome);
         }
 
         @Test
