@@ -153,7 +153,6 @@ drafts/
 *.bak
 
 # Claude Code
-.claude/
 CLAUDE.md
 
 # Documentation (managed separately)
