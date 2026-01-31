@@ -2,17 +2,27 @@ package uk.selfemploy.ui.controller;
 
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.stage.Stage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.enums.SubmissionStatus;
+import uk.selfemploy.common.enums.SubmissionType;
+import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.SqliteSubmissionRepository;
+import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -378,6 +388,179 @@ class AnnualSubmissionControllerTest {
             // Given: Step 3 width (Review Calculation + Declaration)
             // Then: Should be wide enough for 6 declaration rows
             assertThat(STEP_3_WIDTH).isGreaterThanOrEqualTo(1000);
+        }
+    }
+
+    // === BUG-10H-002: SQLite Persistence Tests ===
+
+    @Nested
+    @DisplayName("SQLite Persistence Tests - BUG-10H-002")
+    class SqlitePersistenceTests {
+
+        private UUID testBusinessId;
+
+        @BeforeEach
+        void setUpBusinessId() {
+            testBusinessId = UUID.randomUUID();
+            CoreServiceFactory.setDefaultBusinessIdForTesting(testBusinessId);
+        }
+
+        @AfterEach
+        void cleanUp() {
+            CoreServiceFactory.shutdown();
+        }
+
+        @Test
+        @DisplayName("should save annual submission to SQLite when businessId is valid")
+        void shouldSaveAnnualSubmissionToSqliteWhenBusinessIdIsValid() {
+            // Given: A controller with initialized submission data
+            AnnualSubmissionController testController = new AnnualSubmissionController();
+            AnnualSubmissionViewModel viewModel = new AnnualSubmissionViewModel();
+            viewModel.setTotalIncome(new BigDecimal("50000.00"));
+            viewModel.setTotalExpenses(new BigDecimal("10000.00"));
+            viewModel.setNetProfit(new BigDecimal("40000.00"));
+            viewModel.startSubmission(TaxYear.of(2025));
+
+            // Inject the viewModel into controller using reflection (since initialize() is FXML)
+            try {
+                java.lang.reflect.Field viewModelField = AnnualSubmissionController.class.getDeclaredField("viewModel");
+                viewModelField.setAccessible(true);
+                viewModelField.set(testController, viewModel);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to set viewModel", e);
+            }
+
+            String hmrcReference = "SA-12345678";
+
+            // When: Saving to SQLite
+            testController.saveSubmissionToSqlite(hmrcReference);
+
+            // Then: Submission should be saved to repository
+            SqliteSubmissionRepository repository = new SqliteSubmissionRepository(testBusinessId);
+            List<SubmissionRecord> submissions = repository.findAll();
+
+            assertThat(submissions).hasSize(1);
+            SubmissionRecord saved = submissions.get(0);
+            assertThat(saved.hmrcReference()).isEqualTo(hmrcReference);
+            assertThat(saved.type()).isEqualTo(SubmissionType.ANNUAL.name());
+            assertThat(saved.status()).isEqualTo(SubmissionStatus.ACCEPTED.name());
+            assertThat(saved.totalIncome()).isEqualByComparingTo(new BigDecimal("50000.00"));
+            assertThat(saved.totalExpenses()).isEqualByComparingTo(new BigDecimal("10000.00"));
+            assertThat(saved.netProfit()).isEqualByComparingTo(new BigDecimal("40000.00"));
+            assertThat(saved.taxYearStart()).isEqualTo(2025);
+        }
+
+        @Test
+        @DisplayName("should handle null businessId gracefully without throwing")
+        void shouldHandleNullBusinessIdGracefully() {
+            // Given: No business ID set
+            CoreServiceFactory.setDefaultBusinessIdForTesting(null);
+
+            AnnualSubmissionController testController = new AnnualSubmissionController();
+            AnnualSubmissionViewModel viewModel = new AnnualSubmissionViewModel();
+            viewModel.setTotalIncome(new BigDecimal("50000.00"));
+            viewModel.startSubmission(TaxYear.of(2025));
+
+            try {
+                java.lang.reflect.Field viewModelField = AnnualSubmissionController.class.getDeclaredField("viewModel");
+                viewModelField.setAccessible(true);
+                viewModelField.set(testController, viewModel);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to set viewModel", e);
+            }
+
+            // When/Then: Should not throw, just log warning
+            testController.saveSubmissionToSqlite("SA-12345678");
+            // If we get here without exception, the test passes
+        }
+
+        @Test
+        @DisplayName("should handle null taxYear gracefully without throwing")
+        void shouldHandleNullTaxYearGracefully() {
+            // Given: Controller with no taxYear set
+            AnnualSubmissionController testController = new AnnualSubmissionController();
+            AnnualSubmissionViewModel viewModel = new AnnualSubmissionViewModel();
+            viewModel.setTotalIncome(new BigDecimal("50000.00"));
+            // Do NOT call startSubmission - taxYear will be null
+
+            try {
+                java.lang.reflect.Field viewModelField = AnnualSubmissionController.class.getDeclaredField("viewModel");
+                viewModelField.setAccessible(true);
+                viewModelField.set(testController, viewModel);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to set viewModel", e);
+            }
+
+            // When/Then: Should not throw, just log warning
+            testController.saveSubmissionToSqlite("SA-12345678");
+            // If we get here without exception, the test passes
+        }
+
+        @Test
+        @DisplayName("should set correct period dates from tax year")
+        void shouldSetCorrectPeriodDatesFromTaxYear() {
+            // Given: Controller with tax year 2025 (2025-04-06 to 2026-04-05)
+            AnnualSubmissionController testController = new AnnualSubmissionController();
+            AnnualSubmissionViewModel viewModel = new AnnualSubmissionViewModel();
+            viewModel.setTotalIncome(new BigDecimal("50000.00"));
+            viewModel.setTotalExpenses(new BigDecimal("10000.00"));
+            viewModel.setNetProfit(new BigDecimal("40000.00"));
+            viewModel.startSubmission(TaxYear.of(2025));
+
+            try {
+                java.lang.reflect.Field viewModelField = AnnualSubmissionController.class.getDeclaredField("viewModel");
+                viewModelField.setAccessible(true);
+                viewModelField.set(testController, viewModel);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to set viewModel", e);
+            }
+
+            String hmrcReference = "SA-PERIOD-TEST";
+
+            // When: Saving to SQLite
+            testController.saveSubmissionToSqlite(hmrcReference);
+
+            // Then: Period dates should match tax year
+            SqliteSubmissionRepository repository = new SqliteSubmissionRepository(testBusinessId);
+            List<SubmissionRecord> submissions = repository.findAll();
+
+            assertThat(submissions).hasSize(1);
+            SubmissionRecord saved = submissions.get(0);
+
+            TaxYear expectedTaxYear = TaxYear.of(2025);
+            assertThat(saved.periodStart()).isEqualTo(expectedTaxYear.startDate());
+            assertThat(saved.periodEnd()).isEqualTo(expectedTaxYear.endDate());
+        }
+
+        @Test
+        @DisplayName("should generate unique submission ID for each save")
+        void shouldGenerateUniqueSubmissionIdForEachSave() {
+            // Given: Controller with data
+            AnnualSubmissionController testController = new AnnualSubmissionController();
+            AnnualSubmissionViewModel viewModel = new AnnualSubmissionViewModel();
+            viewModel.setTotalIncome(new BigDecimal("50000.00"));
+            viewModel.setTotalExpenses(new BigDecimal("10000.00"));
+            viewModel.setNetProfit(new BigDecimal("40000.00"));
+            viewModel.startSubmission(TaxYear.of(2025));
+
+            try {
+                java.lang.reflect.Field viewModelField = AnnualSubmissionController.class.getDeclaredField("viewModel");
+                viewModelField.setAccessible(true);
+                viewModelField.set(testController, viewModel);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to set viewModel", e);
+            }
+
+            // When: Saving twice
+            testController.saveSubmissionToSqlite("SA-FIRST");
+            testController.saveSubmissionToSqlite("SA-SECOND");
+
+            // Then: Each should have unique ID
+            SqliteSubmissionRepository repository = new SqliteSubmissionRepository(testBusinessId);
+            List<SubmissionRecord> submissions = repository.findAll();
+
+            assertThat(submissions).hasSize(2);
+            assertThat(submissions.get(0).id()).isNotEqualTo(submissions.get(1).id());
         }
     }
 }

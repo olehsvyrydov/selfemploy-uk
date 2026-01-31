@@ -64,6 +64,26 @@
     -fx-color-accent-500: #fd7e14;
     -fx-color-purple-500: #6f42c1;
 
+    /* ----- HMRC Connection Status Tokens (Sprint 12) ----- */
+    /* Unified colors for connection status across Settings and HMRC Submission */
+    -fx-hmrc-connected-bg: #d4edda;
+    -fx-hmrc-connected-border: #28a745;
+    -fx-hmrc-connected-text: #155724;
+
+    -fx-hmrc-warning-bg: #fff3cd;
+    -fx-hmrc-warning-border: #ffc107;
+    -fx-hmrc-warning-text: #856404;
+
+    -fx-hmrc-error-bg: #f8d7da;
+    -fx-hmrc-error-border: #dc3545;
+    -fx-hmrc-error-text: #721c24;
+
+    -fx-hmrc-info-bg: #e6f0ff;
+    -fx-hmrc-info-border: #0066cc;
+    -fx-hmrc-info-text: #004085;
+
+    -fx-hmrc-session-expired-text: #856404;
+
     /* ----- Typography Tokens (1.25 Modular Scale) ----- */
     -fx-font-size-xs: 10px;
     -fx-font-size-sm: 12px;
@@ -370,6 +390,14 @@
 }
 
 /* ===== Dashboard Specific ===== */
+
+/* Personalized Greeting */
+.dashboard-greeting {
+    -fx-font-size: 16px;
+    -fx-text-fill: -fx-text-secondary;
+    -fx-padding: 0 0 4 0;
+}
+
 .dashboard-scroll {
     -fx-background-color: transparent;
     -fx-background-color: -fx-bg-secondary;
@@ -1787,6 +1815,32 @@
     -fx-border-color: #28a745;
     -fx-border-radius: 0 12 12 0;
     -fx-background-radius: 0 12 12 0;
+}
+
+/* HMRC section - teal/green accent for government services */
+.settings-card-hmrc {
+    -fx-border-width: 0 0 0 4;
+    -fx-border-color: #00703c;
+    -fx-border-radius: 0 12 12 0;
+    -fx-background-radius: 0 12 12 0;
+}
+
+/* Connected status label */
+.connected-status {
+    -fx-text-fill: #28a745;
+    -fx-font-weight: bold;
+}
+
+/* Session expired status label */
+.session-expired-status {
+    -fx-text-fill: #dc3545;
+    -fx-font-weight: bold;
+}
+
+/* Needs verification status label (amber) */
+.needs-verification-status {
+    -fx-text-fill: #856404;
+    -fx-font-weight: bold;
 }
 
 /* About section - primary blue accent */

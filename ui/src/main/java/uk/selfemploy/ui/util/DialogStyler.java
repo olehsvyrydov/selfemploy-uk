@@ -142,6 +142,10 @@ public final class DialogStyler {
      * applied to a parent wrapper, not the clipped container itself,
      * as the clip will cut off the shadow.</p>
      *
+     * <p><b>GTK Warning Fix:</b> The clip dimensions are only set when
+     * the container has positive dimensions. Setting clip dimensions to 0
+     * before layout is computed causes GTK resize warnings on Linux.</p>
+     *
      * @param container the region to apply the rounded clip to
      * @param radius the corner radius in pixels
      */
@@ -151,10 +155,15 @@ public final class DialogStyler {
         clip.setArcHeight(radius * 2);
         container.setClip(clip);
 
-        // Bind clip size to container size
+        // Bind clip size to container size, but only when dimensions are positive.
+        // This prevents GTK resize warnings on Linux when setting clip to 0x0.
         container.layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
-            clip.setWidth(newBounds.getWidth());
-            clip.setHeight(newBounds.getHeight());
+            double width = newBounds.getWidth();
+            double height = newBounds.getHeight();
+            if (width > 0 && height > 0) {
+                clip.setWidth(width);
+                clip.setHeight(height);
+            }
         });
     }
 

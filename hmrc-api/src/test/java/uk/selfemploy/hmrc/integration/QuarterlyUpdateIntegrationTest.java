@@ -598,6 +598,187 @@ class QuarterlyUpdateIntegrationTest {
         }
     }
 
+    // ==================== Cumulative Endpoint Tests (2025-26+) ====================
+
+    @Nested
+    @DisplayName("QTR-012: Cumulative Endpoint (Tax Year 2025-26+)")
+    class CumulativeEndpoint {
+
+        @Test
+        @DisplayName("QTR-012-01: Successfully submit via PUT /cumulative endpoint")
+        void successfullySubmitViaCumulativeEndpoint() throws Exception {
+            // Given - Cumulative endpoint uses PUT with taxYear query parameter
+            stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative"))
+                .withQueryParam("taxYear", equalTo("2025-26"))
+                .withHeader("Authorization", matching("Bearer .+"))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                    .withBody("""
+                        {
+                            "periodId": "CUM-2025-26-ABC123DEF456"
+                        }
+                        """)));
+
+            String requestBody = buildCumulativeUpdateJson(
+                new BigDecimal("10000.00"), new BigDecimal("2500.00"));
+
+            // When
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(wireMockServer.baseUrl() +
+                    "/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative?taxYear=2025-26"))
+                .header("Content-Type", JSON_CONTENT_TYPE)
+                .header("Authorization", "Bearer " + ACCESS_TOKEN)
+                .header("Accept", "application/vnd.hmrc.5.0+json")
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Then
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.body()).contains("periodId");
+        }
+
+        @Test
+        @DisplayName("QTR-012-02: Cumulative request body has no periodDates wrapper")
+        void cumulativeRequestBodyHasNoPeriodDatesWrapper() throws Exception {
+            // Given
+            stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative"))
+                .withQueryParam("taxYear", equalTo("2025-26"))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                    .withBody("{\"periodId\": \"CUM-2025-26-XYZ\"}")));
+
+            String requestBody = buildCumulativeUpdateJson(
+                new BigDecimal("15000.00"), new BigDecimal("3000.00"));
+
+            // When
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(wireMockServer.baseUrl() +
+                    "/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative?taxYear=2025-26"))
+                .header("Content-Type", JSON_CONTENT_TYPE)
+                .header("Authorization", "Bearer " + ACCESS_TOKEN)
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Then - Verify NO periodDates in request body
+            verify(putRequestedFor(urlPathMatching("/individuals/business/self-employment/.*/cumulative"))
+                .withRequestBody(notContaining("periodDates"))
+                .withRequestBody(notContaining("periodStartDate"))
+                .withRequestBody(notContaining("periodEndDate"))
+                .withRequestBody(containing("periodIncome"))
+                .withRequestBody(containing("periodExpenses")));
+        }
+
+        @Test
+        @DisplayName("QTR-012-03: Uses v5.0 Accept header for cumulative endpoint")
+        void usesV5AcceptHeaderForCumulativeEndpoint() throws Exception {
+            // Given - Both period and cumulative endpoints use v5.0
+            stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative"))
+                .withQueryParam("taxYear", equalTo("2025-26"))
+                .withHeader("Accept", equalTo("application/vnd.hmrc.5.0+json"))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                    .withBody("{\"periodId\": \"CUM-2025-26-V5\"}")));
+
+            String requestBody = buildCumulativeUpdateJson(
+                new BigDecimal("20000.00"), new BigDecimal("5000.00"));
+
+            // When
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(wireMockServer.baseUrl() +
+                    "/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative?taxYear=2025-26"))
+                .header("Content-Type", JSON_CONTENT_TYPE)
+                .header("Authorization", "Bearer " + ACCESS_TOKEN)
+                .header("Accept", "application/vnd.hmrc.5.0+json")
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Then
+            assertThat(response.statusCode()).isEqualTo(200);
+
+            verify(putRequestedFor(urlPathMatching("/individuals/business/self-employment/.*/cumulative"))
+                .withHeader("Accept", equalTo("application/vnd.hmrc.5.0+json")));
+        }
+
+        @Test
+        @DisplayName("QTR-012-04: Cumulative endpoint validation error returns 422")
+        void cumulativeEndpointValidationErrorReturns422() throws Exception {
+            // Given
+            stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + NINO_VALIDATION_ERROR + "/" + TEST_BUSINESS_ID + "/cumulative"))
+                .withQueryParam("taxYear", equalTo("2025-26"))
+                .willReturn(aResponse()
+                    .withStatus(422)
+                    .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                    .withBody("""
+                        {
+                            "code": "FORMAT_VALUE",
+                            "message": "The value must be between 0 and 99999999999.99"
+                        }
+                        """)));
+
+            String requestBody = buildCumulativeUpdateJson(
+                new BigDecimal("-1000.00"), new BigDecimal("500.00"));
+
+            // When
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(wireMockServer.baseUrl() +
+                    "/individuals/business/self-employment/" + NINO_VALIDATION_ERROR + "/" + TEST_BUSINESS_ID + "/cumulative?taxYear=2025-26"))
+                .header("Content-Type", JSON_CONTENT_TYPE)
+                .header("Authorization", "Bearer " + ACCESS_TOKEN)
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Then
+            assertThat(response.statusCode()).isEqualTo(422);
+            assertThat(response.body()).contains("FORMAT_VALUE");
+        }
+
+        @Test
+        @DisplayName("QTR-012-05: Missing taxYear query parameter returns 400")
+        void missingTaxYearQueryParameterReturns400() throws Exception {
+            // Given
+            stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative"))
+                .withQueryParam("taxYear", absent())
+                .willReturn(aResponse()
+                    .withStatus(400)
+                    .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                    .withBody("""
+                        {
+                            "code": "MISSING_PARAMETER",
+                            "message": "taxYear query parameter is required"
+                        }
+                        """)));
+
+            String requestBody = buildCumulativeUpdateJson(
+                new BigDecimal("10000.00"), new BigDecimal("2500.00"));
+
+            // When - request WITHOUT taxYear query param
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(wireMockServer.baseUrl() +
+                    "/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID + "/cumulative"))
+                .header("Content-Type", JSON_CONTENT_TYPE)
+                .header("Authorization", "Bearer " + ACCESS_TOKEN)
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Then
+            assertThat(response.statusCode()).isEqualTo(400);
+            assertThat(response.body()).contains("MISSING_PARAMETER");
+        }
+    }
+
     // ==================== Helper Methods ====================
 
     private HttpResponse<String> sendPostRequest(String path, String body) throws Exception {
@@ -640,5 +821,37 @@ class QuarterlyUpdateIntegrationTest {
                 }
             }
             """.formatted(fromDate, toDate, turnover, totalExpenses);
+    }
+
+    /**
+     * Builds JSON for cumulative endpoint (no periodDates wrapper).
+     * Used for tax year 2025-26+ with PUT /cumulative?taxYear=YYYY-YY endpoint.
+     */
+    private String buildCumulativeUpdateJson(BigDecimal turnover, BigDecimal totalExpenses) {
+        return """
+            {
+                "periodIncome": {
+                    "turnover": %s,
+                    "other": 0.00
+                },
+                "periodExpenses": {
+                    "costOfGoodsBought": 0.00,
+                    "cisPaymentsToSubcontractors": 0.00,
+                    "staffCosts": 0.00,
+                    "travelCosts": %s,
+                    "premisesRunningCosts": 0.00,
+                    "maintenanceCosts": 0.00,
+                    "adminCosts": 0.00,
+                    "advertisingCosts": 0.00,
+                    "businessEntertainmentCosts": 0.00,
+                    "interest": 0.00,
+                    "financialCharges": 0.00,
+                    "badDebt": 0.00,
+                    "professionalFees": 0.00,
+                    "depreciation": 0.00,
+                    "other": 0.00
+                }
+            }
+            """.formatted(turnover, totalExpenses);
     }
 }

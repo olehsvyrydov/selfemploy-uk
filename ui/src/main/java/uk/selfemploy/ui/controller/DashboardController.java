@@ -14,6 +14,8 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.GreetingService;
+import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel.ActivityItem;
 import uk.selfemploy.ui.viewmodel.Deadline;
@@ -45,6 +47,9 @@ public class DashboardController implements Initializable, MainController.TaxYea
     @FXML private Label profitValue;
     @FXML private Label taxValue;
 
+    // Greeting
+    @FXML private Label greetingLabel;
+
     // Tax year progress
     @FXML private Label taxYearBadge;
     @FXML private ProgressBar yearProgress;
@@ -58,6 +63,7 @@ public class DashboardController implements Initializable, MainController.TaxYea
     @FXML private Label emptyActivityLabel;
 
     private final DashboardViewModel viewModel = new DashboardViewModel();
+    private final GreetingService greetingService = new GreetingService();
 
     // Service dependencies (SE-207, SE-208)
     private IncomeService incomeService;
@@ -70,6 +76,7 @@ public class DashboardController implements Initializable, MainController.TaxYea
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        updateGreeting();
         bindMetricCards();
         bindYearProgress();
         populateDeadlines();
@@ -83,6 +90,24 @@ public class DashboardController implements Initializable, MainController.TaxYea
                 populateDeadlines();
             }
         });
+    }
+
+    /**
+     * Updates the greeting label with personalized time-based message.
+     * Loads display name from settings and shows greeting like:
+     * - "Good morning, Sarah!" (if name is set)
+     * - "Good morning!" (if no name)
+     */
+    private void updateGreeting() {
+        if (greetingLabel != null) {
+            String displayName = null;
+            try {
+                displayName = SqliteDataStore.getInstance().loadDisplayName();
+            } catch (Exception e) {
+                // Silently ignore - greeting works without name
+            }
+            greetingLabel.setText(greetingService.getPersonalizedGreeting(displayName));
+        }
     }
 
     private void bindMetricCards() {
@@ -378,6 +403,7 @@ public class DashboardController implements Initializable, MainController.TaxYea
 
     @Override
     public void refreshData() {
+        updateGreeting();
         loadDashboardData();
     }
 

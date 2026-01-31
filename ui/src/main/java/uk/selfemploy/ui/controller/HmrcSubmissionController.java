@@ -1,38 +1,28 @@
 package uk.selfemploy.ui.controller;
 
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
-import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
-import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
-import uk.selfemploy.ui.service.OAuthServiceFactory;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
@@ -42,18 +32,15 @@ import java.util.logging.Logger;
 /**
  * Controller for the HMRC Submission hub page.
  * Provides navigation to Annual Submission, Quarterly Updates, and Submission History.
+ *
+ * <p>Sprint 13: Connection management removed from this page.
+ * OAuth authentication now happens automatically during submission via AutoOAuthSubmissionService.
+ * NINO setup is done in Settings page.</p>
  */
 public class HmrcSubmissionController implements Initializable, MainController.TaxYearAware {
 
     private static final Logger LOG = Logger.getLogger(HmrcSubmissionController.class.getName());
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("d MMMM yyyy");
-
-    @FXML private HBox connectionStatus;
-    @FXML private Label statusIcon;
-    @FXML private Label statusTitle;
-    @FXML private Label statusMessage;
-    @FXML private Button connectButton;
-    @FXML private Button testButton;
 
     @FXML private Label annualDeadlineLabel;
     @FXML private Label quarterlyStatusLabel;
@@ -65,7 +52,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     @FXML private VBox historyCard;
 
     private TaxYear taxYear;
-    private boolean isConnected = false;
+    private Runnable navigateToSettings;
 
     // Services for loading financial data
     private IncomeService incomeService;
@@ -78,7 +65,6 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeServices();
-        updateConnectionStatus();
         updateDeadlines();
     }
 
@@ -104,27 +90,16 @@ public class HmrcSubmissionController implements Initializable, MainController.T
         updateDeadlines();
     }
 
-    private void updateConnectionStatus() {
-        if (statusIcon != null) {
-            statusIcon.setText("●");
-            statusIcon.setStyle(isConnected ? "-fx-text-fill: #28a745;" : "-fx-text-fill: #dc3545;");
-        }
-        if (statusTitle != null) {
-            statusTitle.setText(isConnected ? "Connected to HMRC" : "Not Connected");
-        }
-        if (statusMessage != null) {
-            statusMessage.setText(isConnected
-                ? "Your account is linked and ready to submit"
-                : "Click 'Connect' to authorize with HMRC via Government Gateway");
-        }
-        if (connectButton != null) {
-            connectButton.setText(isConnected ? "Disconnect" : "Connect to HMRC");
-        }
-        if (connectionStatus != null) {
-            connectionStatus.setStyle(isConnected
-                ? "-fx-background-color: #d4edda; -fx-border-color: #28a745;"
-                : "-fx-background-color: #fff3cd; -fx-border-color: #ffc107;");
-        }
+    /**
+     * Sets a callback to navigate to the Settings page.
+     *
+     * <p>SE-10E-003: Passed through to QuarterlyUpdatesController for
+     * the "Open Settings" button in submission error dialogs.</p>
+     *
+     * @param navigateToSettings callback to navigate to Settings
+     */
+    public void setNavigateToSettings(Runnable navigateToSettings) {
+        this.navigateToSettings = navigateToSettings;
     }
 
     private void updateDeadlines() {
@@ -161,22 +136,6 @@ public class HmrcSubmissionController implements Initializable, MainController.T
      */
     public TaxYear getTaxYear() {
         return taxYear;
-    }
-
-    /**
-     * Returns whether the controller is connected to HMRC.
-     */
-    public boolean isConnected() {
-        return isConnected;
-    }
-
-    /**
-     * Sets the connection status.
-     * Package-private for testing.
-     */
-    void setConnected(boolean connected) {
-        this.isConnected = connected;
-        updateConnectionStatus();
     }
 
     /**
@@ -272,172 +231,6 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     }
 
     @FXML
-    void handleTestConnection() {
-        LOG.info("Testing HMRC API connection using open endpoint");
-
-        if (testButton != null) {
-            testButton.setDisable(true);
-            testButton.setText("Testing...");
-        }
-
-        // Use HMRC's open "Hello World" endpoint to test connectivity
-        String testUrl = "https://test-api.service.hmrc.gov.uk/hello/world";
-
-        // Run in background thread to not block UI
-        new Thread(() -> {
-            try {
-                HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .build();
-
-                HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(testUrl))
-                    .header("Accept", "application/vnd.hmrc.1.0+json")
-                    .timeout(Duration.ofSeconds(30))
-                    .GET()
-                    .build();
-
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                Platform.runLater(() -> {
-                    if (testButton != null) {
-                        testButton.setDisable(false);
-                        testButton.setText("Test API Connection");
-                    }
-
-                    if (response.statusCode() == 200) {
-                        LOG.info("HMRC API test successful: " + response.body());
-                        showSuccess("Connection Successful",
-                            "Successfully connected to HMRC Sandbox API!\n\n" +
-                            "Response: " + response.body() + "\n\n" +
-                            "Your network can reach HMRC servers.");
-                    } else {
-                        LOG.warning("HMRC API test failed: HTTP " + response.statusCode());
-                        showError("Connection Issue",
-                            "Received HTTP " + response.statusCode() + " from HMRC.\n\n" +
-                            "Response: " + response.body());
-                    }
-                });
-
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "HMRC API test failed", e);
-                Platform.runLater(() -> {
-                    if (testButton != null) {
-                        testButton.setDisable(false);
-                        testButton.setText("Test API Connection");
-                    }
-                    showError("Connection Failed",
-                        "Could not reach HMRC servers:\n\n" + e.getMessage() +
-                        "\n\nCheck your internet connection and firewall settings.");
-                });
-            }
-        }).start();
-    }
-
-    @FXML
-    void handleConnect() {
-        if (isConnected) {
-            // Disconnect
-            isConnected = false;
-            updateConnectionStatus();
-            LOG.info("Disconnected from HMRC");
-        } else {
-            // Show connection dialog
-            showOAuthDialog();
-        }
-    }
-
-    private void showOAuthDialog() {
-        // Check if credentials are configured
-        if (!OAuthServiceFactory.isConfigured()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Configuration Required");
-            alert.setHeaderText("HMRC Credentials Not Configured");
-            alert.setContentText(
-                "To connect to HMRC, you need to configure your credentials:\n\n" +
-                "1. Create a .env file in the project root\n" +
-                "2. Add your HMRC_CLIENT_ID and HMRC_CLIENT_SECRET\n" +
-                "3. Restart the application\n\n" +
-                "Get credentials from: https://developer.service.hmrc.gov.uk"
-            );
-            alert.showAndWait();
-            return;
-        }
-
-        // Show info dialog
-        Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
-        infoAlert.setTitle("Connect to HMRC");
-        infoAlert.setHeaderText("HMRC Authorization");
-        infoAlert.setContentText(
-            "A browser window will open for you to log in via Government Gateway.\n\n" +
-            "After logging in, grant permission for this app to submit on your behalf.\n\n" +
-            "Note: Using HMRC Sandbox for testing."
-        );
-        infoAlert.showAndWait();
-
-        // Start OAuth flow
-        LOG.info("Starting OAuth authentication flow");
-
-        HmrcOAuthService oauthService;
-        try {
-            oauthService = OAuthServiceFactory.getOAuthService();
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to initialize OAuth service", e);
-            showError("Initialization Error",
-                "Failed to initialize HMRC connection:\n\n" + e.getMessage());
-            return;
-        }
-
-        // Disable connect button while authenticating
-        if (connectButton != null) {
-            connectButton.setDisable(true);
-            connectButton.setText("Connecting...");
-        }
-
-        LOG.info("Calling OAuth authenticate()...");
-        oauthService.authenticate()
-            .thenAccept(tokens -> {
-                LOG.info("OAuth authentication successful");
-                Platform.runLater(() -> {
-                    isConnected = true;
-                    updateConnectionStatus();
-                    showSuccess("Connected to HMRC",
-                        "Your account has been successfully linked.\n" +
-                        "You can now submit your Self Assessment.");
-                });
-            })
-            .exceptionally(error -> {
-                LOG.log(Level.WARNING, "OAuth authentication failed", error);
-                Platform.runLater(() -> {
-                    if (connectButton != null) {
-                        connectButton.setDisable(false);
-                    }
-                    updateConnectionStatus();
-                    showError("Connection Failed",
-                        "Failed to connect to HMRC:\n\n" + error.getMessage() +
-                        "\n\nPlease check your credentials and try again.");
-                });
-                return null;
-            });
-    }
-
-    private void showSuccess(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
-    }
-
-    private void showError(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
-    }
-
-    @FXML
     void handleAnnualSubmission(MouseEvent event) {
         openAnnualSubmission();
     }
@@ -478,12 +271,6 @@ public class HmrcSubmissionController implements Initializable, MainController.T
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/quarterly-updates.fxml"));
             Parent root = loader.load();
 
-            // Pass tax year to controller
-            Object controller = loader.getController();
-            if (controller instanceof MainController.TaxYearAware && taxYear != null) {
-                ((MainController.TaxYearAware) controller).setTaxYear(taxYear);
-            }
-
             Stage stage = new Stage();
             stage.setTitle("Quarterly Updates - UK Self-Employment Manager");
             stage.initModality(Modality.APPLICATION_MODAL);
@@ -492,6 +279,22 @@ public class HmrcSubmissionController implements Initializable, MainController.T
             stage.setMinHeight(700);
             stage.setWidth(900);
             stage.setHeight(800);
+
+            // Pass tax year and back callback to controller
+            Object controller = loader.getController();
+            if (controller instanceof MainController.TaxYearAware && taxYear != null) {
+                ((MainController.TaxYearAware) controller).setTaxYear(taxYear);
+            }
+            if (controller instanceof QuarterlyUpdatesController quarterlyController) {
+                quarterlyController.setOnBack(stage::close);
+                // SE-10E-003: Wire "Open Settings" - close this modal then navigate to settings
+                if (navigateToSettings != null) {
+                    quarterlyController.setNavigateToSettings(() -> {
+                        stage.close();
+                        navigateToSettings.run();
+                    });
+                }
+            }
 
             Scene scene = new Scene(root);
             scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
@@ -509,9 +312,6 @@ public class HmrcSubmissionController implements Initializable, MainController.T
             alert.showAndWait();
         }
     }
-
-    /** Currency symbol for display */
-    private static final String CURRENCY_SYMBOL = "\u00A3";
 
     @FXML
     void handleSubmissionHistory(MouseEvent event) {

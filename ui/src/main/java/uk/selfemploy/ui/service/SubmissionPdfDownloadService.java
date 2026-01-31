@@ -103,6 +103,18 @@ public class SubmissionPdfDownloadService {
      * @throws IOException if PDF generation or file writing fails
      */
     public void generatePdf(SubmissionTableRow submission, Path outputPath) throws IOException {
+        generatePdf(submission, outputPath, null);
+    }
+
+    /**
+     * Generates a PDF file with optional display name and saves it to the specified path.
+     *
+     * @param submission  the submission to generate PDF for
+     * @param outputPath  the path to save the PDF to
+     * @param displayName optional display name to include in header (can be null/empty)
+     * @throws IOException if PDF generation or file writing fails
+     */
+    public void generatePdf(SubmissionTableRow submission, Path outputPath, String displayName) throws IOException {
         if (submission == null) {
             throw new IllegalArgumentException("Submission is required");
         }
@@ -116,7 +128,7 @@ public class SubmissionPdfDownloadService {
         }
 
         try (OutputStream fos = Files.newOutputStream(outputPath)) {
-            generatePdfToStream(submission, fos);
+            generatePdfToStream(submission, fos, displayName);
         }
     }
 
@@ -128,12 +140,24 @@ public class SubmissionPdfDownloadService {
      * @throws IOException if PDF generation fails
      */
     public byte[] generatePdfBytes(SubmissionTableRow submission) throws IOException {
+        return generatePdfBytes(submission, null);
+    }
+
+    /**
+     * Generates a PDF as a byte array with optional display name.
+     *
+     * @param submission  the submission to generate PDF for
+     * @param displayName optional display name to include in header (can be null/empty)
+     * @return the PDF document as a byte array
+     * @throws IOException if PDF generation fails
+     */
+    public byte[] generatePdfBytes(SubmissionTableRow submission, String displayName) throws IOException {
         if (submission == null) {
             throw new IllegalArgumentException("Submission is required");
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        generatePdfToStream(submission, baos);
+        generatePdfToStream(submission, baos, displayName);
         return baos.toByteArray();
     }
 
@@ -168,6 +192,10 @@ public class SubmissionPdfDownloadService {
     }
 
     private void generatePdfToStream(SubmissionTableRow submission, OutputStream outputStream) throws IOException {
+        generatePdfToStream(submission, outputStream, null);
+    }
+
+    private void generatePdfToStream(SubmissionTableRow submission, OutputStream outputStream, String displayName) throws IOException {
         Document document = new Document(PageSize.A4, 50, 50, 50, 50);
 
         try {
@@ -175,7 +203,7 @@ public class SubmissionPdfDownloadService {
             document.open();
 
             // Add content sections
-            addHeader(document, submission);
+            addHeader(document, submission, displayName);
             addStatusSection(document, submission);
             addReferenceSection(document, submission);
             addFinancialSummary(document, submission);
@@ -195,7 +223,7 @@ public class SubmissionPdfDownloadService {
         }
     }
 
-    private void addHeader(Document document, SubmissionTableRow submission) throws DocumentException {
+    private void addHeader(Document document, SubmissionTableRow submission, String displayName) throws DocumentException {
         // Logo placeholder
         PdfPTable headerTable = new PdfPTable(2);
         headerTable.setWidthPercentage(100);
@@ -225,6 +253,13 @@ public class SubmissionPdfDownloadService {
             ? submission.type().getDisplayName()
             : "HMRC Submission";
         titlePara.add(new Chunk(subtitle, HEADER_FONT));
+
+        // Add display name if provided
+        if (displayName != null && !displayName.isBlank()) {
+            titlePara.add(Chunk.NEWLINE);
+            titlePara.add(new Chunk("Prepared for: " + displayName.trim(), NORMAL_FONT));
+        }
+
         titleCell.addElement(titlePara);
         headerTable.addCell(titleCell);
 

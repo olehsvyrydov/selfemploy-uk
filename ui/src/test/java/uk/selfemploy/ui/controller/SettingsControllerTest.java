@@ -5,6 +5,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,6 +17,8 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.service.SqliteDataStore;
+import uk.selfemploy.ui.service.SqliteTestSupport;
 
 import java.util.List;
 
@@ -45,8 +49,19 @@ class SettingsControllerTest {
 
     private SettingsController controller;
 
+    @BeforeAll
+    static void setUpClass() {
+        SqliteTestSupport.setUpTestEnvironment();
+    }
+
+    @AfterAll
+    static void tearDownClass() {
+        SqliteTestSupport.tearDownTestEnvironment();
+    }
+
     @BeforeEach
     void setUp() {
+        SqliteTestSupport.resetTestData();
         controller = new SettingsController();
     }
 
@@ -332,6 +347,150 @@ class SettingsControllerTest {
 
             // Then
             assertThat(canImport1).isEqualTo(canImport2);
+        }
+    }
+
+    // ========================================================================
+    // Display Name Management Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Display Name Management")
+    class DisplayNameManagement {
+
+        @Test
+        @DisplayName("should return empty display name initially")
+        void shouldReturnEmptyDisplayNameInitially() {
+            assertThat(controller.getDisplayName()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should store display name when set")
+        void shouldStoreDisplayName() {
+            // When
+            controller.setDisplayName("Sarah");
+
+            // Then
+            assertThat(controller.getDisplayName()).isEqualTo("Sarah");
+        }
+
+        @Test
+        @DisplayName("should update display name when changed")
+        void shouldUpdateDisplayNameWhenChanged() {
+            // Given
+            controller.setDisplayName("Sarah");
+
+            // When
+            controller.setDisplayName("John Smith");
+
+            // Then
+            assertThat(controller.getDisplayName()).isEqualTo("John Smith");
+        }
+
+        @Test
+        @DisplayName("should handle null display name by setting to empty string")
+        void shouldHandleNullDisplayName() {
+            // Given
+            controller.setDisplayName("Sarah");
+
+            // When
+            controller.setDisplayName(null);
+
+            // Then
+            assertThat(controller.getDisplayName()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should trim whitespace from display name")
+        void shouldTrimWhitespaceFromDisplayName() {
+            // When
+            controller.setDisplayName("  Sarah  ");
+
+            // Then
+            assertThat(controller.getDisplayName()).isEqualTo("Sarah");
+        }
+
+        @Test
+        @DisplayName("should format display name for greeting")
+        void shouldFormatDisplayNameForGreeting() {
+            // Given
+            controller.setDisplayName("Sarah");
+
+            // When
+            String formatted = controller.getFormattedDisplayName();
+
+            // Then
+            assertThat(formatted).isEqualTo("Sarah");
+        }
+
+        @Test
+        @DisplayName("should return placeholder when no display name set")
+        void shouldReturnPlaceholderWhenNoDisplayName() {
+            // When
+            String formatted = controller.getFormattedDisplayName();
+
+            // Then
+            assertThat(formatted).isEqualTo("Not set");
+        }
+
+        @Test
+        @DisplayName("should return placeholder when display name is empty")
+        void shouldReturnPlaceholderWhenDisplayNameEmpty() {
+            // Given
+            controller.setDisplayName("");
+
+            // When
+            String formatted = controller.getFormattedDisplayName();
+
+            // Then
+            assertThat(formatted).isEqualTo("Not set");
+        }
+
+        @Test
+        @DisplayName("should handle special characters in display name")
+        void shouldHandleSpecialCharactersInDisplayName() {
+            // When
+            controller.setDisplayName("O'Brien-Smith");
+
+            // Then
+            assertThat(controller.getDisplayName()).isEqualTo("O'Brien-Smith");
+        }
+
+        @Test
+        @DisplayName("should handle unicode characters in display name")
+        void shouldHandleUnicodeCharactersInDisplayName() {
+            // When
+            controller.setDisplayName("Émile François");
+
+            // Then
+            assertThat(controller.getDisplayName()).isEqualTo("Émile François");
+        }
+
+        @Test
+        @DisplayName("should return true when display name is set")
+        void shouldReturnTrueWhenDisplayNameIsSet() {
+            // When
+            controller.setDisplayName("Sarah");
+
+            // Then
+            assertThat(controller.hasDisplayName()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when display name is not set")
+        void shouldReturnFalseWhenDisplayNameIsNotSet() {
+            // Then
+            assertThat(controller.hasDisplayName()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when display name is empty")
+        void shouldReturnFalseWhenDisplayNameIsEmpty() {
+            // When
+            controller.setDisplayName("");
+
+            // Then
+            assertThat(controller.hasDisplayName()).isFalse();
         }
     }
 
@@ -741,6 +900,494 @@ class SettingsControllerTest {
 
             // Then
             assertThat(controller.getTaxYear()).isEqualTo(year2030);
+        }
+    }
+
+    // ========================================================================
+    // Sandbox Mode Detection Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Sandbox Mode Detection")
+    class SandboxModeDetection {
+
+        @Test
+        @DisplayName("should detect sandbox mode when URL contains test-api")
+        void shouldDetectSandboxModeWhenUrlContainsTestApi() {
+            // Given
+            String sandboxUrl = "https://test-api.service.hmrc.gov.uk";
+
+            // When
+            boolean isSandbox = controller.isSandboxMode(sandboxUrl);
+
+            // Then
+            assertThat(isSandbox).isTrue();
+        }
+
+        @Test
+        @DisplayName("should detect production mode when URL does not contain test-api")
+        void shouldDetectProductionModeWhenUrlDoesNotContainTestApi() {
+            // Given
+            String productionUrl = "https://api.service.hmrc.gov.uk";
+
+            // When
+            boolean isSandbox = controller.isSandboxMode(productionUrl);
+
+            // Then
+            assertThat(isSandbox).isFalse();
+        }
+
+        @Test
+        @DisplayName("should handle null URL gracefully")
+        void shouldHandleNullUrlGracefully() {
+            // When
+            boolean isSandbox = controller.isSandboxMode(null);
+
+            // Then - default to production mode (safer)
+            assertThat(isSandbox).isFalse();
+        }
+
+        @Test
+        @DisplayName("should handle empty URL gracefully")
+        void shouldHandleEmptyUrlGracefully() {
+            // When
+            boolean isSandbox = controller.isSandboxMode("");
+
+            // Then - default to production mode (safer)
+            assertThat(isSandbox).isFalse();
+        }
+
+        @Test
+        @DisplayName("should be case insensitive for test-api detection")
+        void shouldBeCaseInsensitiveForTestApiDetection() {
+            // Given
+            String mixedCaseUrl = "https://TEST-API.service.hmrc.gov.uk";
+
+            // When
+            boolean isSandbox = controller.isSandboxMode(mixedCaseUrl);
+
+            // Then
+            assertThat(isSandbox).isTrue();
+        }
+    }
+
+    // ========================================================================
+    // Sandbox Fallback Business ID Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Sandbox Fallback Business ID")
+    class SandboxFallbackBusinessId {
+
+        @Test
+        @DisplayName("should return sandbox test business ID constant")
+        void shouldReturnSandboxTestBusinessIdConstant() {
+            // When
+            String fallbackId = controller.getSandboxFallbackBusinessId();
+
+            // Then
+            assertThat(fallbackId).isEqualTo("XAIS12345678901");
+        }
+
+        @Test
+        @DisplayName("sandbox fallback business ID should match HMRC test format")
+        void sandboxFallbackBusinessIdShouldMatchHmrcTestFormat() {
+            // When
+            String fallbackId = controller.getSandboxFallbackBusinessId();
+
+            // Then - HMRC business ID format: X[A-Z0-9]{1}IS[0-9]{11}
+            assertThat(fallbackId).matches("^X[A-Z0-9]{1}IS[0-9]{11}$");
+        }
+    }
+
+    // ========================================================================
+    // NINO Verification Status Tests (BUG FIX: Invalid NINO shows green ticks)
+    // ========================================================================
+
+    @Nested
+    @DisplayName("NINO Verification Status")
+    class NinoVerificationStatus {
+
+        @Test
+        @DisplayName("should return UNVERIFIED when NINO is using sandbox fallback")
+        void shouldReturnUnverifiedWhenNinoUsingSandboxFallback() {
+            // Given - NINO is saved but not verified by HMRC (404 response)
+            controller.setNino("KP467718D");
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.SANDBOX_FALLBACK);
+
+            // When
+            SettingsController.NinoVerificationStatus status = controller.getNinoVerificationStatus();
+
+            // Then - should indicate sandbox fallback (unverified)
+            assertThat(status).isEqualTo(SettingsController.NinoVerificationStatus.SANDBOX_FALLBACK);
+        }
+
+        @Test
+        @DisplayName("should return VERIFIED when NINO was confirmed by HMRC")
+        void shouldReturnVerifiedWhenNinoConfirmedByHmrc() {
+            // Given - NINO was actually verified by HMRC (200 response with business ID)
+            controller.setNino("QQ123456A");
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.VERIFIED);
+
+            // When
+            SettingsController.NinoVerificationStatus status = controller.getNinoVerificationStatus();
+
+            // Then
+            assertThat(status).isEqualTo(SettingsController.NinoVerificationStatus.VERIFIED);
+        }
+
+        @Test
+        @DisplayName("should return NOT_VERIFIED when NINO has not been checked")
+        void shouldReturnNotVerifiedWhenNinoNotChecked() {
+            // Given - NINO saved but never verified
+            controller.setNino("QQ123456A");
+
+            // When
+            SettingsController.NinoVerificationStatus status = controller.getNinoVerificationStatus();
+
+            // Then
+            assertThat(status).isEqualTo(SettingsController.NinoVerificationStatus.NOT_VERIFIED);
+        }
+
+        @Test
+        @DisplayName("should return FAILED when NINO verification returned error")
+        void shouldReturnFailedWhenNinoVerificationFailed() {
+            // Given - NINO verification returned 401/403 (mismatch)
+            controller.setNino("QQ123456A");
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.FAILED);
+
+            // When
+            SettingsController.NinoVerificationStatus status = controller.getNinoVerificationStatus();
+
+            // Then
+            assertThat(status).isEqualTo(SettingsController.NinoVerificationStatus.FAILED);
+        }
+
+        @Test
+        @DisplayName("isNinoVerified should return true only for VERIFIED status")
+        void isNinoVerifiedShouldReturnTrueOnlyForVerifiedStatus() {
+            // VERIFIED
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.VERIFIED);
+            assertThat(controller.isNinoVerified()).isTrue();
+
+            // SANDBOX_FALLBACK - not truly verified
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.SANDBOX_FALLBACK);
+            assertThat(controller.isNinoVerified()).isFalse();
+
+            // NOT_VERIFIED
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.NOT_VERIFIED);
+            assertThat(controller.isNinoVerified()).isFalse();
+
+            // FAILED
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.FAILED);
+            assertThat(controller.isNinoVerified()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should provide descriptive message for sandbox fallback status")
+        void shouldProvideDescriptiveMessageForSandboxFallbackStatus() {
+            // Given
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.SANDBOX_FALLBACK);
+
+            // When
+            String message = controller.getNinoVerificationMessage();
+
+            // Then - should indicate sandbox fallback clearly
+            assertThat(message).containsIgnoringCase("sandbox");
+            assertThat(message).containsIgnoringCase("not verified");
+        }
+    }
+
+    // ========================================================================
+    // NINO Change Detection Tests (Bug Fix: Changing NINO in sandbox mode)
+    // ========================================================================
+
+    @Nested
+    @DisplayName("NINO Change Detection")
+    class NinoChangeDetection {
+
+        @Test
+        @DisplayName("should detect when current NINO differs from connected NINO")
+        void shouldDetectNinoChange() {
+            // Given - connected with one NINO
+            SqliteDataStore.getInstance().saveConnectedNino("QQ123456A");
+            // User changes to a different NINO
+            SqliteDataStore.getInstance().saveNino("AB654321D");
+
+            // When
+            boolean hasChanged = controller.hasNinoChangedSinceConnection();
+
+            // Then
+            assertThat(hasChanged).isTrue();
+        }
+
+        @Test
+        @DisplayName("should not detect change when NINO is the same")
+        void shouldNotDetectChangeWhenNinoIsSame() {
+            // Given - connected and current NINO are the same
+            SqliteDataStore.getInstance().saveConnectedNino("QQ123456A");
+            SqliteDataStore.getInstance().saveNino("QQ123456A");
+
+            // When
+            boolean hasChanged = controller.hasNinoChangedSinceConnection();
+
+            // Then
+            assertThat(hasChanged).isFalse();
+        }
+
+        @Test
+        @DisplayName("should not detect change when no connected NINO exists (first connection)")
+        void shouldNotDetectChangeOnFirstConnection() {
+            // Given - no connected NINO (first time connecting)
+            SqliteDataStore.getInstance().saveNino("QQ123456A");
+            // No saveConnectedNino called
+
+            // When
+            boolean hasChanged = controller.hasNinoChangedSinceConnection();
+
+            // Then - first connection, no change to detect
+            assertThat(hasChanged).isFalse();
+        }
+
+        @Test
+        @DisplayName("should handle case-insensitive NINO comparison")
+        void shouldHandleCaseInsensitiveNinoComparison() {
+            // Given
+            SqliteDataStore.getInstance().saveConnectedNino("qq123456a");
+            SqliteDataStore.getInstance().saveNino("QQ123456A");
+
+            // When
+            boolean hasChanged = controller.hasNinoChangedSinceConnection();
+
+            // Then - same NINO, different case
+            assertThat(hasChanged).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return NINO_CHANGED status when NINO differs in sandbox")
+        void shouldReturnNinoChangedStatusInSandbox() {
+            // Given
+            SqliteDataStore.getInstance().saveConnectedNino("QQ123456A");
+            SqliteDataStore.getInstance().saveNino("AB654321D");
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.NINO_CHANGED);
+
+            // When
+            SettingsController.NinoVerificationStatus status = controller.getNinoVerificationStatus();
+
+            // Then
+            assertThat(status).isEqualTo(SettingsController.NinoVerificationStatus.NINO_CHANGED);
+        }
+
+        @Test
+        @DisplayName("should provide descriptive message for NINO changed status")
+        void shouldProvideDescriptiveMessageForNinoChanged() {
+            // Given
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.NINO_CHANGED);
+
+            // When
+            String message = controller.getNinoVerificationMessage();
+
+            // Then
+            assertThat(message).containsIgnoringCase("changed");
+            assertThat(message).containsIgnoringCase("sandbox");
+        }
+
+        @Test
+        @DisplayName("should not detect change after connected NINO is updated to new value")
+        void shouldNotDetectChangeAfterConnectedNinoUpdated() {
+            // Given - initially connected with one NINO
+            SqliteDataStore.getInstance().saveConnectedNino("QQ123456A");
+            // User changes to a new NINO
+            SqliteDataStore.getInstance().saveNino("AB654321D");
+
+            // Verify change is detected
+            assertThat(controller.hasNinoChangedSinceConnection()).isTrue();
+
+            // When - connected NINO is updated to the new value (simulating what happens
+            // after user acknowledges the NINO change warning)
+            SqliteDataStore.getInstance().saveConnectedNino("AB654321D");
+
+            // Then - no change should be detected anymore
+            assertThat(controller.hasNinoChangedSinceConnection()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should detect change again if user changes NINO after acknowledgment")
+        void shouldDetectChangeAgainIfUserChangesNinoAfterAcknowledgment() {
+            // Given - user initially connected with NINO_A
+            SqliteDataStore.getInstance().saveConnectedNino("QQ123456A");
+            SqliteDataStore.getInstance().saveNino("QQ123456A");
+            assertThat(controller.hasNinoChangedSinceConnection()).isFalse();
+
+            // User changes to NINO_B and reconnects
+            SqliteDataStore.getInstance().saveNino("AB654321D");
+            assertThat(controller.hasNinoChangedSinceConnection()).isTrue();
+
+            // User acknowledges, connected NINO updated
+            SqliteDataStore.getInstance().saveConnectedNino("AB654321D");
+            assertThat(controller.hasNinoChangedSinceConnection()).isFalse();
+
+            // When - user changes to NINO_C
+            SqliteDataStore.getInstance().saveNino("CD789012B");
+
+            // Then - change should be detected again
+            assertThat(controller.hasNinoChangedSinceConnection()).isTrue();
+        }
+    }
+
+    // ========================================================================
+    // NINO Management Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("NINO Management")
+    class NinoManagement {
+
+        @Test
+        @DisplayName("should return empty NINO initially")
+        void shouldReturnEmptyNinoInitially() {
+            assertThat(controller.getNino()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should store NINO when set")
+        void shouldStoreNino() {
+            // When
+            controller.setNino("QQ123456A");
+
+            // Then
+            assertThat(controller.getNino()).isEqualTo("QQ123456A");
+        }
+
+        @Test
+        @DisplayName("should uppercase NINO when set")
+        void shouldUppercaseNinoWhenSet() {
+            // When
+            controller.setNino("qq123456a");
+
+            // Then
+            assertThat(controller.getNino()).isEqualTo("QQ123456A");
+        }
+
+        @Test
+        @DisplayName("should strip spaces from NINO when set")
+        void shouldStripSpacesFromNinoWhenSet() {
+            // When
+            controller.setNino("QQ 12 34 56 A");
+
+            // Then
+            assertThat(controller.getNino()).isEqualTo("QQ123456A");
+        }
+
+        @Test
+        @DisplayName("should handle null NINO by setting to empty string")
+        void shouldHandleNullNino() {
+            // Given
+            controller.setNino("QQ123456A");
+
+            // When
+            controller.setNino(null);
+
+            // Then
+            assertThat(controller.getNino()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should format NINO for display with spaces")
+        void shouldFormatNinoForDisplayWithSpaces() {
+            // Given
+            controller.setNino("QQ123456A");
+
+            // When
+            String formatted = controller.getFormattedNino();
+
+            // Then - NINO format: "QQ 12 34 56 A"
+            assertThat(formatted).isEqualTo("QQ 12 34 56 A");
+        }
+
+        @Test
+        @DisplayName("should return placeholder when no NINO set")
+        void shouldReturnPlaceholderWhenNoNino() {
+            // When
+            String formatted = controller.getFormattedNino();
+
+            // Then
+            assertThat(formatted).isEqualTo("Not set");
+        }
+    }
+
+    // ========================================================================
+    // NINO Validation Tests
+    // ========================================================================
+
+    @Nested
+    @DisplayName("NINO Validation")
+    class NinoValidation {
+
+        @Test
+        @DisplayName("should validate valid NINO format")
+        void shouldValidateValidNinoFormat() {
+            // AB123456C is a valid NINO (A and B are allowed, C is valid suffix)
+            assertThat(controller.isValidNino("AB123456C")).isTrue();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"AA123456A", "AB123456B", "AC123456C", "AE123456D"})
+        @DisplayName("should validate various valid NINOs with different suffix letters")
+        void shouldValidateVariousValidNinos(String nino) {
+            assertThat(controller.isValidNino(nino)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should validate NINO with spaces")
+        void shouldValidateNinoWithSpaces() {
+            assertThat(controller.isValidNino("AB 12 34 56 A")).isTrue();
+        }
+
+        @Test
+        @DisplayName("should validate lowercase NINO")
+        void shouldValidateLowercaseNino() {
+            assertThat(controller.isValidNino("ab123456a")).isTrue();
+        }
+
+        @Test
+        @DisplayName("should reject empty NINO")
+        void shouldRejectEmptyNino() {
+            assertThat(controller.isValidNino("")).isFalse();
+        }
+
+        @Test
+        @DisplayName("should reject null NINO")
+        void shouldRejectNullNino() {
+            assertThat(controller.isValidNino(null)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should reject NINO with invalid first letter D")
+        void shouldRejectNinoWithInvalidFirstLetterD() {
+            // D is an invalid first letter per HMRC rules
+            assertThat(controller.isValidNino("DA123456A")).isFalse();
+        }
+
+        @Test
+        @DisplayName("should reject NINO with invalid first letter Q")
+        void shouldRejectNinoWithInvalidFirstLetterQ() {
+            // Q is an invalid first letter per HMRC rules
+            assertThat(controller.isValidNino("QA123456A")).isFalse();
+        }
+
+        @Test
+        @DisplayName("should reject NINO with invalid suffix E")
+        void shouldRejectNinoWithInvalidSuffixE() {
+            // Only A, B, C, D are valid suffixes
+            assertThat(controller.isValidNino("AB123456E")).isFalse();
+        }
+
+        @Test
+        @DisplayName("should reject NINO with wrong length")
+        void shouldRejectNinoWithWrongLength() {
+            assertThat(controller.isValidNino("AB12345A")).isFalse();
+            assertThat(controller.isValidNino("AB1234567A")).isFalse();
         }
     }
 

@@ -23,19 +23,6 @@
             <Label text="Submit your tax returns to HMRC via Making Tax Digital" styleClass="page-subtitle"/>
         </VBox>
 
-        <!-- HMRC Connection Status -->
-        <HBox fx:id="connectionStatus" styleClass="status-banner" alignment="CENTER_LEFT" spacing="12">
-            <Label fx:id="statusIcon" text="●" styleClass="status-icon"/>
-            <VBox spacing="2" HBox.hgrow="ALWAYS">
-                <Label fx:id="statusTitle" text="HMRC Connection" styleClass="status-title"/>
-                <Label fx:id="statusMessage" text="Not connected - Click 'Connect' to authorize with HMRC" styleClass="status-message"/>
-            </VBox>
-            <VBox spacing="8">
-                <Button fx:id="connectButton" text="Connect to HMRC" styleClass="button-primary" onAction="#handleConnect"/>
-                <Button fx:id="testButton" text="Test API Connection" styleClass="button-secondary" onAction="#handleTestConnection"/>
-            </VBox>
-        </HBox>
-
         <!-- Submission Options -->
         <VBox spacing="16">
             <Label text="Submission Options" styleClass="section-title"/>

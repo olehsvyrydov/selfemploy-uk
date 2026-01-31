@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -225,6 +226,32 @@ public final class SqliteDataStore {
                 )
             """);
 
+            // Submissions table for BUG-10H-001: Submission History persistence
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS submissions (
+                    id TEXT PRIMARY KEY,
+                    business_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    tax_year_start INTEGER NOT NULL,
+                    period_start TEXT NOT NULL,
+                    period_end TEXT NOT NULL,
+                    total_income TEXT NOT NULL,
+                    total_expenses TEXT NOT NULL,
+                    net_profit TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    hmrc_reference TEXT,
+                    error_message TEXT,
+                    submitted_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
+                    CHECK (type IN ('QUARTERLY_Q1', 'QUARTERLY_Q2', 'QUARTERLY_Q3', 'QUARTERLY_Q4', 'ANNUAL')),
+                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED'))
+                )
+            """);
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_tax_year ON submissions(tax_year_start)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status)");
+
             LOG.info("Database tables initialized");
         }
     }
@@ -254,13 +281,24 @@ public final class SqliteDataStore {
     }
 
     private void saveSetting(String key, String value) {
-        String sql = "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, key);
-            pstmt.setString(2, value);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save setting: " + key, e);
+        if (value == null) {
+            // Delete the setting if value is null (to clear it)
+            String sql = "DELETE FROM settings WHERE key = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, key);
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                LOG.log(Level.SEVERE, "Failed to delete setting: " + key, e);
+            }
+        } else {
+            String sql = "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, key);
+                pstmt.setString(2, value);
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                LOG.log(Level.SEVERE, "Failed to save setting: " + key, e);
+            }
         }
     }
 
@@ -276,6 +314,216 @@ public final class SqliteDataStore {
             LOG.log(Level.WARNING, "Failed to load setting: " + key, e);
         }
         return null;
+    }
+
+    // === NINO Operations ===
+
+    /**
+     * Saves the National Insurance Number.
+     * The NINO is normalised to uppercase before storage.
+     *
+     * @param nino the NINO (e.g., "QQ123456C"), or null to clear
+     */
+    public synchronized void saveNino(String nino) {
+        saveSetting("nino", nino != null ? nino.toUpperCase() : null);
+    }
+
+    /**
+     * Loads the stored National Insurance Number.
+     *
+     * @return the NINO, or null if not set
+     */
+    public synchronized String loadNino() {
+        return loadSetting("nino");
+    }
+
+    // === Display Name Operations ===
+
+    /**
+     * Saves the user's display name for personalization.
+     *
+     * @param displayName the display name (e.g., "Sarah", "John Smith"), or null to clear
+     */
+    public synchronized void saveDisplayName(String displayName) {
+        saveSetting("display_name", displayName);
+    }
+
+    /**
+     * Loads the stored display name.
+     *
+     * @return the display name, or null if not set
+     */
+    public synchronized String loadDisplayName() {
+        return loadSetting("display_name");
+    }
+
+    // === UTR Operations ===
+
+    /**
+     * Saves the Unique Taxpayer Reference.
+     *
+     * @param utr the UTR (10 digits), or null to clear
+     */
+    public synchronized void saveUtr(String utr) {
+        saveSetting("utr", utr);
+    }
+
+    /**
+     * Loads the stored Unique Taxpayer Reference.
+     *
+     * @return the UTR, or null if not set
+     */
+    public synchronized String loadUtr() {
+        return loadSetting("utr");
+    }
+
+    // === OAuth Token Operations (Sprint 12) ===
+
+    /**
+     * Saves OAuth tokens to persistent storage.
+     * Note: Tokens should be encrypted in production (TD-XXX).
+     *
+     * @param accessToken the OAuth access token
+     * @param refreshToken the OAuth refresh token
+     * @param expiresIn seconds until access token expires
+     * @param tokenType the token type (usually "bearer")
+     * @param scope the granted scopes
+     * @param issuedAt when the tokens were issued
+     */
+    public synchronized void saveOAuthTokens(String accessToken, String refreshToken,
+                                             long expiresIn, String tokenType,
+                                             String scope, Instant issuedAt) {
+        saveSetting("oauth_access_token", accessToken);
+        saveSetting("oauth_refresh_token", refreshToken);
+        saveSetting("oauth_expires_in", String.valueOf(expiresIn));
+        saveSetting("oauth_token_type", tokenType);
+        saveSetting("oauth_scope", scope);
+        saveSetting("oauth_issued_at", issuedAt != null ? issuedAt.toString() : null);
+        LOG.info("OAuth tokens saved to persistent storage");
+    }
+
+    /**
+     * Loads OAuth tokens from persistent storage.
+     *
+     * @return array of [accessToken, refreshToken, expiresIn, tokenType, scope, issuedAt],
+     *         or null if not stored
+     */
+    public synchronized String[] loadOAuthTokens() {
+        String accessToken = loadSetting("oauth_access_token");
+        if (accessToken == null) {
+            return null;
+        }
+        return new String[] {
+            accessToken,
+            loadSetting("oauth_refresh_token"),
+            loadSetting("oauth_expires_in"),
+            loadSetting("oauth_token_type"),
+            loadSetting("oauth_scope"),
+            loadSetting("oauth_issued_at")
+        };
+    }
+
+    /**
+     * Clears stored OAuth tokens.
+     */
+    public synchronized void clearOAuthTokens() {
+        saveSetting("oauth_access_token", null);
+        saveSetting("oauth_refresh_token", null);
+        saveSetting("oauth_expires_in", null);
+        saveSetting("oauth_token_type", null);
+        saveSetting("oauth_scope", null);
+        saveSetting("oauth_issued_at", null);
+        LOG.info("OAuth tokens cleared from persistent storage");
+    }
+
+    /**
+     * Checks if OAuth tokens are stored.
+     *
+     * @return true if tokens are stored
+     */
+    public synchronized boolean hasOAuthTokens() {
+        return loadSetting("oauth_access_token") != null;
+    }
+
+    // === HMRC Business ID Operations ===
+
+    /**
+     * Saves the HMRC-assigned business ID (e.g., "XAIS12345678901").
+     * This is different from the local UUID business ID used for SQLite FK relationships.
+     *
+     * @param hmrcBusinessId the HMRC business ID, or null to clear
+     */
+    public synchronized void saveHmrcBusinessId(String hmrcBusinessId) {
+        saveSetting("hmrc_business_id", hmrcBusinessId);
+    }
+
+    /**
+     * Loads the stored HMRC business ID.
+     *
+     * @return the HMRC business ID, or null if not set
+     */
+    public synchronized String loadHmrcBusinessId() {
+        return loadSetting("hmrc_business_id");
+    }
+
+    /**
+     * Saves the HMRC trading name associated with the business.
+     *
+     * @param tradingName the trading name, or null to clear
+     */
+    public synchronized void saveHmrcTradingName(String tradingName) {
+        saveSetting("hmrc_trading_name", tradingName);
+    }
+
+    /**
+     * Loads the stored HMRC trading name.
+     *
+     * @return the trading name, or null if not set
+     */
+    public synchronized String loadHmrcTradingName() {
+        return loadSetting("hmrc_trading_name");
+    }
+
+    /**
+     * Saves the NINO verification status.
+     * When true, the NINO has been verified by HMRC (200 response with business ID).
+     * When false, the NINO was not verified (404, 401, or using sandbox fallback).
+     *
+     * @param verified true if NINO was verified by HMRC, false otherwise
+     */
+    public synchronized void saveNinoVerified(boolean verified) {
+        saveSetting("nino_verified", verified ? "true" : "false");
+    }
+
+    /**
+     * Loads the NINO verification status.
+     *
+     * @return true if NINO was verified by HMRC, false otherwise (default false)
+     */
+    public synchronized boolean isNinoVerified() {
+        String value = loadSetting("nino_verified");
+        return "true".equalsIgnoreCase(value);
+    }
+
+    /**
+     * Saves the NINO that was used when the HMRC connection was established.
+     * This is used to detect if the user changes their NINO after connecting.
+     * In sandbox mode, we cannot verify if a new NINO is valid, so we track
+     * the original connected NINO to warn users about changes.
+     *
+     * @param nino the NINO used during connection, or null to clear
+     */
+    public synchronized void saveConnectedNino(String nino) {
+        saveSetting("connected_nino", nino);
+    }
+
+    /**
+     * Loads the NINO that was used when the HMRC connection was established.
+     *
+     * @return the connected NINO, or null if not set
+     */
+    public synchronized String loadConnectedNino() {
+        return loadSetting("connected_nino");
     }
 
     // === Expense Operations ===
@@ -903,5 +1151,165 @@ public final class SqliteDataStore {
             LOG.log(Level.WARNING, "Failed to get Privacy acknowledgment timestamp", e);
         }
         return Optional.empty();
+    }
+
+    // === Submission Operations (BUG-10H-001) ===
+
+    /**
+     * Saves a submission record to the database.
+     * Uses INSERT OR REPLACE to handle updates.
+     *
+     * @param submission The submission record to save
+     */
+    public synchronized void saveSubmission(SubmissionRecord submission) {
+        String sql = """
+            INSERT OR REPLACE INTO submissions
+            (id, business_id, type, tax_year_start, period_start, period_end,
+             total_income, total_expenses, net_profit, status, hmrc_reference,
+             error_message, submitted_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, submission.id());
+            pstmt.setString(2, submission.businessId());
+            pstmt.setString(3, submission.type());
+            pstmt.setInt(4, submission.taxYearStart());
+            pstmt.setString(5, submission.periodStart().toString());
+            pstmt.setString(6, submission.periodEnd().toString());
+            pstmt.setString(7, submission.totalIncome().toPlainString());
+            pstmt.setString(8, submission.totalExpenses().toPlainString());
+            pstmt.setString(9, submission.netProfit().toPlainString());
+            pstmt.setString(10, submission.status());
+            pstmt.setString(11, submission.hmrcReference());
+            pstmt.setString(12, submission.errorMessage());
+            pstmt.setString(13, submission.submittedAt().toString());
+            pstmt.executeUpdate();
+            LOG.fine("Saved submission: " + submission.id());
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save submission: " + submission.id(), e);
+        }
+    }
+
+    /**
+     * Finds all submissions for a business, ordered by submitted_at descending.
+     *
+     * @param businessId The business ID
+     * @return List of submissions, newest first
+     */
+    public synchronized List<SubmissionRecord> findSubmissionsByBusinessId(UUID businessId) {
+        List<SubmissionRecord> submissions = new ArrayList<>();
+        String sql = "SELECT * FROM submissions WHERE business_id = ? ORDER BY submitted_at DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                submissions.add(mapSubmission(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find submissions by business ID", e);
+        }
+        return submissions;
+    }
+
+    /**
+     * Finds a submission by ID.
+     *
+     * @param id The submission ID
+     * @return The submission if found
+     */
+    public synchronized Optional<SubmissionRecord> findSubmissionById(String id) {
+        String sql = "SELECT * FROM submissions WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapSubmission(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to find submission: " + id, e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Finds submissions by tax year for a business.
+     *
+     * @param businessId   The business ID
+     * @param taxYearStart The tax year start (e.g., 2025 for 2025/26)
+     * @return List of submissions for the tax year
+     */
+    public synchronized List<SubmissionRecord> findSubmissionsByTaxYear(UUID businessId, int taxYearStart) {
+        List<SubmissionRecord> submissions = new ArrayList<>();
+        String sql = "SELECT * FROM submissions WHERE business_id = ? AND tax_year_start = ? ORDER BY submitted_at DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setInt(2, taxYearStart);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                submissions.add(mapSubmission(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find submissions by tax year", e);
+        }
+        return submissions;
+    }
+
+    /**
+     * Deletes a submission by ID.
+     *
+     * @param id The submission ID
+     * @return true if deleted, false if not found
+     */
+    public synchronized boolean deleteSubmission(String id) {
+        String sql = "DELETE FROM submissions WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, id);
+            int affected = pstmt.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to delete submission: " + id, e);
+            return false;
+        }
+    }
+
+    /**
+     * Counts submissions for a business.
+     *
+     * @param businessId The business ID
+     * @return The count of submissions
+     */
+    public synchronized long countSubmissions(UUID businessId) {
+        String sql = "SELECT COUNT(*) FROM submissions WHERE business_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to count submissions", e);
+        }
+        return 0;
+    }
+
+    /**
+     * Maps a ResultSet row to a SubmissionRecord.
+     */
+    private SubmissionRecord mapSubmission(ResultSet rs) throws SQLException {
+        return new SubmissionRecord(
+            rs.getString("id"),
+            rs.getString("business_id"),
+            rs.getString("type"),
+            rs.getInt("tax_year_start"),
+            LocalDate.parse(rs.getString("period_start")),
+            LocalDate.parse(rs.getString("period_end")),
+            new BigDecimal(rs.getString("total_income")),
+            new BigDecimal(rs.getString("total_expenses")),
+            new BigDecimal(rs.getString("net_profit")),
+            rs.getString("status"),
+            rs.getString("hmrc_reference"),
+            rs.getString("error_message"),
+            Instant.parse(rs.getString("submitted_at"))
+        );
     }
 }

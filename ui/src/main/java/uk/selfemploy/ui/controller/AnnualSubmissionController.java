@@ -5,9 +5,15 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
+import uk.selfemploy.common.domain.Submission;
 import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.enums.SubmissionStatus;
+import uk.selfemploy.common.enums.SubmissionType;
 import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.SqliteSubmissionRepository;
+import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionDeclarationViewModel;
 
@@ -20,6 +26,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Controller for the Annual Self Assessment Submission view.
@@ -37,6 +46,7 @@ import java.util.Locale;
  */
 public class AnnualSubmissionController {
 
+    private static final Logger LOG = Logger.getLogger(AnnualSubmissionController.class.getName());
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     // === FXML Injected Elements ===
@@ -580,6 +590,8 @@ public class AnnualSubmissionController {
                 // Keep calculation visible, disable all buttons
                 calculateButton.setDisable(true);
                 reviewButton.setDisable(true);
+                // Unbind before setting - submitButton is bound to declarationViewModel.isCompleteProperty()
+                submitButton.disableProperty().unbind();
                 submitButton.setDisable(true);
                 // Disable all 6 declaration checkboxes during submission (SE-512)
                 if (declarationViewModel != null) {
@@ -607,7 +619,22 @@ public class AnnualSubmissionController {
                 // Error panel is shown via binding
                 calculateButton.setDisable(false);
                 reviewButton.setDisable(false);
-                submitButton.setDisable(false);
+                // Rebind to original binding - submitButton disabled until all declarations complete
+                if (declarationViewModel != null) {
+                    submitButton.disableProperty().bind(declarationViewModel.isCompleteProperty().not());
+                } else {
+                    submitButton.setDisable(false);
+                }
+                // Re-enable checkboxes
+                if (declarationViewModel != null) {
+                    declarationViewModel.disabledProperty().set(false);
+                }
+                decl1Checkbox.setDisable(false);
+                decl2Checkbox.setDisable(false);
+                decl3Checkbox.setDisable(false);
+                decl4Checkbox.setDisable(false);
+                decl5Checkbox.setDisable(false);
+                decl6Checkbox.setDisable(false);
             }
         }
     }
@@ -671,6 +698,12 @@ public class AnnualSubmissionController {
                 Thread.sleep(3000); // Simulate network delay
 
                 javafx.application.Platform.runLater(() -> {
+                    // Generate HMRC reference
+                    String hmrcReference = "SA-" + viewModel.getSagaId().toString().substring(0, 8).toUpperCase();
+
+                    // BUG-10H-002: Save submission to SQLite for history persistence
+                    saveSubmissionToSqlite(hmrcReference);
+
                     viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
                     viewModel.setLoading(false);
                 });
@@ -683,5 +716,73 @@ public class AnnualSubmissionController {
                 });
             }
         }).start();
+    }
+
+    /**
+     * Saves the annual submission to SQLite for history persistence.
+     * BUG-10H-002: Annual submissions were not being saved to history.
+     *
+     * <p>Package-private for testing.</p>
+     *
+     * @param hmrcReference The HMRC reference for the submission
+     */
+    void saveSubmissionToSqlite(String hmrcReference) {
+        try {
+            UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+            if (businessId == null) {
+                LOG.warning("Cannot save annual submission: businessId is null");
+                return;
+            }
+
+            TaxYear taxYear = viewModel.getTaxYear();
+            if (taxYear == null) {
+                LOG.warning("Cannot save annual submission: taxYear is null");
+                return;
+            }
+
+            // Get declaration details if available
+            Instant declarationAcceptedAt = null;
+            String declarationTextHash = null;
+            if (declarationViewModel != null && declarationViewModel.isCompleteProperty().get()) {
+                var declaration = declarationViewModel.buildDeclaration();
+                if (declaration.isPresent()) {
+                    declarationAcceptedAt = declaration.get().completedAt();
+                    // Use declaration ID as a unique identifier for the declaration
+                    declarationTextHash = declaration.get().declarationId();
+                }
+            }
+
+            // Create domain Submission object
+            Submission submission = new Submission(
+                UUID.randomUUID(),
+                businessId,
+                SubmissionType.ANNUAL,
+                taxYear,
+                taxYear.startDate(),
+                taxYear.endDate(),
+                viewModel.getTotalIncome(),
+                viewModel.getTotalExpenses(),
+                viewModel.getNetProfit(),
+                SubmissionStatus.ACCEPTED,
+                hmrcReference,
+                null, // errorMessage
+                Instant.now(),
+                Instant.now(),
+                declarationAcceptedAt != null ? declarationAcceptedAt : Instant.now(),
+                declarationTextHash,
+                null, // utr
+                null  // nino
+            );
+
+            // Convert to persistence record and save
+            SqliteSubmissionRepository repository = new SqliteSubmissionRepository(businessId);
+            SubmissionRecord record = SubmissionRecord.fromDomainSubmission(submission);
+            repository.save(record);
+
+            LOG.info("Annual submission saved to SQLite: id=" + record.id() + ", reference=" + hmrcReference);
+
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to save annual submission to SQLite (non-fatal): " + e.getMessage(), e);
+        }
     }
 }

@@ -209,6 +209,56 @@ class SubmissionPdfDownloadServiceTest {
     }
 
     @Nested
+    @DisplayName("Display Name in PDF")
+    class DisplayNamePdfTests {
+
+        @Test
+        @DisplayName("should generate PDF with display name in header")
+        void shouldGeneratePdfWithDisplayNameInHeader() throws Exception {
+            SubmissionTableRow submission = createAcceptedAnnualSubmission();
+            Path outputPath = tempDir.resolve("test-with-name.pdf");
+
+            pdfService.generatePdf(submission, outputPath, "Sarah Johnson");
+
+            assertThat(outputPath).exists();
+            assertThat(Files.size(outputPath)).isGreaterThan(0);
+        }
+
+        @Test
+        @DisplayName("should generate PDF without display name when null")
+        void shouldGeneratePdfWithoutDisplayNameWhenNull() throws Exception {
+            SubmissionTableRow submission = createAcceptedAnnualSubmission();
+            Path outputPath = tempDir.resolve("test-no-name.pdf");
+
+            pdfService.generatePdf(submission, outputPath, null);
+
+            assertThat(outputPath).exists();
+        }
+
+        @Test
+        @DisplayName("should generate PDF without display name when empty")
+        void shouldGeneratePdfWithoutDisplayNameWhenEmpty() throws Exception {
+            SubmissionTableRow submission = createAcceptedAnnualSubmission();
+            Path outputPath = tempDir.resolve("test-empty-name.pdf");
+
+            pdfService.generatePdf(submission, outputPath, "");
+
+            assertThat(outputPath).exists();
+        }
+
+        @Test
+        @DisplayName("should generate PDF bytes with display name")
+        void shouldGeneratePdfBytesWithDisplayName() throws Exception {
+            SubmissionTableRow submission = createAcceptedAnnualSubmission();
+
+            byte[] pdfBytes = pdfService.generatePdfBytes(submission, "John Smith");
+
+            assertThat(pdfBytes).isNotNull();
+            assertThat(pdfBytes.length).isGreaterThan(0);
+        }
+    }
+
+    @Nested
     @DisplayName("Downloads Path Resolution")
     class DownloadsPathTests {
 

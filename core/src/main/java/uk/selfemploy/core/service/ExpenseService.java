@@ -12,6 +12,7 @@ import uk.selfemploy.persistence.repository.ExpenseRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -232,6 +233,50 @@ public class ExpenseService {
         }
 
         return expenseRepository.calculateAllowableTotalForDateRange(
+                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    /**
+     * Finds all expenses for a business within a specific quarter.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return List of expenses within the quarter
+     * @throws ValidationException if any parameter is null
+     */
+    public List<Expense> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+
+        return expenseRepository.findByDateRange(
+                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    /**
+     * Gets expense totals grouped by category for a business within a specific quarter.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return Map of expense categories to totals
+     * @throws ValidationException if any parameter is null
+     */
+    public Map<ExpenseCategory, BigDecimal> getTotalsByCategoryByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+
+        return expenseRepository.calculateTotalsByCategoryForDateRange(
                 businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
     }
 

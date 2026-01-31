@@ -111,6 +111,17 @@ public record TaxYear(
         return LocalDate.of(startYear + 2, Month.JANUARY, 31);
     }
 
+    /**
+     * Returns the tax year in HMRC API format (e.g., "2025-26").
+     * This is used in HMRC MTD API endpoint URLs.
+     *
+     * @return the tax year in "YYYY-YY" format with hyphen separator
+     */
+    public String hmrcFormat() {
+        int endYearShort = (startYear + 1) % 100;
+        return String.format("%d-%02d", startYear, endYearShort);
+    }
+
     private static void validateYear(int year) {
         if (year < MIN_YEAR || year > MAX_YEAR) {
             throw new IllegalArgumentException(

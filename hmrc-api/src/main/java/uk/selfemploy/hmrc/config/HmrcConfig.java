@@ -82,7 +82,7 @@ public interface HmrcConfig {
     /**
      * Timeout in seconds for OAuth flow.
      */
-    @WithDefault("300")
+    @WithDefault("120")
     int authTimeoutSeconds();
 
     /**

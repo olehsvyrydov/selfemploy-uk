@@ -30,6 +30,26 @@
         <VBox styleClass="settings-section, settings-section-profile" spacing="16">
             <Label text="Profile" styleClass="section-title"/>
 
+            <!-- Display Name Setting (optional, personalization) -->
+            <VBox styleClass="settings-card, settings-card-profile" spacing="12">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <FontIcon iconLiteral="fas-user" iconSize="20" styleClass="settings-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Display Name" styleClass="settings-label"/>
+                        <Label fx:id="displayNameLabel" text="Not set" styleClass="settings-value"/>
+                    </VBox>
+                </HBox>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField fx:id="displayNameField"
+                               promptText="e.g., Sarah, John Smith, or just your first name"
+                               styleClass="utr-field" HBox.hgrow="ALWAYS"
+                               accessibleText="Enter your preferred display name"/>
+                    <Button fx:id="saveDisplayNameButton" text="Save" styleClass="button-secondary" onAction="#handleSaveDisplayName"/>
+                </HBox>
+                <Label text="Optional. How would you like to be addressed? This appears on your dashboard greeting and PDF reports."
+                       styleClass="settings-hint" wrapText="true"/>
+            </VBox>
+
             <!-- UTR Setting -->
             <VBox styleClass="settings-card, settings-card-profile" spacing="12">
                 <HBox alignment="CENTER_LEFT" spacing="12">
@@ -45,8 +65,70 @@
                                accessibleText="Enter your 10-digit Unique Taxpayer Reference"/>
                     <Button fx:id="saveUtrButton" text="Save" styleClass="button-secondary" onAction="#handleSaveUtr"/>
                 </HBox>
-                <Label text="Your UTR is required for HMRC submissions. Find it on your Self Assessment notices or online account."
+                <Label text="Optional. Your UTR may be required for future annual Self Assessment submissions. Currently, MTD quarterly updates use NINO instead. Find your UTR on Self Assessment notices or your HMRC online account."
                        styleClass="settings-hint" wrapText="true"/>
+            </VBox>
+
+            <!-- NINO Setting -->
+            <VBox styleClass="settings-card, settings-card-profile" spacing="12">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <FontIcon iconLiteral="fas-id-card" iconSize="20" styleClass="settings-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="National Insurance Number (NINO)" styleClass="settings-label"/>
+                        <Label fx:id="ninoLabel" text="Not set" styleClass="settings-value"/>
+                    </VBox>
+                </HBox>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField fx:id="ninoField" promptText="e.g. QQ 12 34 56 A"
+                               styleClass="utr-field" HBox.hgrow="ALWAYS"
+                               accessibleText="Enter your National Insurance Number"/>
+                    <Button fx:id="saveNinoButton" text="Save" styleClass="button-secondary" onAction="#handleSaveNino"/>
+                </HBox>
+                <Label text="Required. Your NINO is essential for all MTD submissions to HMRC. Find it on payslips, P60, tax letters, or the HMRC app."
+                       styleClass="settings-hint" wrapText="true"/>
+            </VBox>
+        </VBox>
+
+        <!-- HMRC Connection Setup Section -->
+        <VBox styleClass="settings-section, settings-section-hmrc" spacing="16">
+            <Label text="HMRC Connection Setup" styleClass="section-title"/>
+
+            <VBox styleClass="settings-card, settings-card-hmrc" spacing="12">
+                <!-- Status Display -->
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <FontIcon fx:id="hmrcStatusIcon" iconLiteral="fas-link" iconSize="20" styleClass="settings-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Connection Status" styleClass="settings-label"/>
+                        <Label fx:id="hmrcConnectionStatusLabel" text="Not set up" styleClass="settings-value"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Setup Instructions -->
+                <Label fx:id="hmrcSetupInstructions"
+                       text="Set up your HMRC connection to enable MTD submissions. This is a one-time setup that verifies your NINO and connects to your HMRC account."
+                       styleClass="settings-hint" wrapText="true"/>
+
+                <!-- Action Buttons -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Button fx:id="hmrcSetupButton" text="Connect &amp; Verify" styleClass="button-primary" onAction="#handleHmrcSetup"/>
+                    <Button fx:id="hmrcDisconnectButton" text="Disconnect" styleClass="button-secondary" onAction="#handleHmrcDisconnect" visible="false" managed="false"/>
+                </HBox>
+
+                <!-- Setup Checklist (shows progress) -->
+                <VBox fx:id="hmrcSetupChecklist" spacing="4" visible="false" managed="false">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <FontIcon fx:id="checkNino" iconLiteral="fas-circle" iconSize="12"/>
+                        <Label text="NINO saved" styleClass="settings-hint"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <FontIcon fx:id="checkOAuth" iconLiteral="fas-circle" iconSize="12"/>
+                        <Label text="HMRC connected" styleClass="settings-hint"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <FontIcon fx:id="checkProfile" iconLiteral="fas-circle" iconSize="12"/>
+                        <Label text="Business profile synced" styleClass="settings-hint"/>
+                    </HBox>
+                </VBox>
             </VBox>
         </VBox>
 

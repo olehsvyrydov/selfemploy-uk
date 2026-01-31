@@ -263,10 +263,25 @@ public class DeadlineNotificationService {
             .filter(n -> !n.isRead() && (!n.isSnoozed() || n.isSnoozeExpired()))
             .count();
 
-        // Always update synchronously for test determinism.
-        // IntegerProperty.set() is thread-safe for property binding.
-        // UI components bound to this property will receive change events correctly.
-        unreadCount.set(count);
+        // JavaFX property listeners may update UI components, which must happen on
+        // the JavaFX Application Thread. If we're on a background thread (e.g., from
+        // the scheduler or a CompletableFuture callback), we must use Platform.runLater()
+        // to safely update the property and avoid IllegalStateException.
+        //
+        // Note: In unit tests where the JavaFX toolkit isn't initialized,
+        // Platform.isFxApplicationThread() will throw IllegalStateException.
+        // We catch this and update synchronously, which is safe in non-UI contexts.
+        try {
+            if (javafx.application.Platform.isFxApplicationThread()) {
+                unreadCount.set(count);
+            } else {
+                javafx.application.Platform.runLater(() -> unreadCount.set(count));
+            }
+        } catch (IllegalStateException e) {
+            // JavaFX toolkit not initialized (e.g., in unit tests without Application)
+            // Safe to update synchronously since there's no UI thread to conflict with
+            unreadCount.set(count);
+        }
     }
 
     // === Scheduling ===

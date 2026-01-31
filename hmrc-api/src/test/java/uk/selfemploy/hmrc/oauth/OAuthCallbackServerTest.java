@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException;
+import uk.selfemploy.hmrc.exception.HmrcOAuthException.OAuthError;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -213,6 +214,100 @@ class OAuthCallbackServerTest {
 
             assertThat(response.toLowerCase()).contains("success");
             assertThat(response.toLowerCase()).contains("authenticated");
+        }
+    }
+
+    @Nested
+    @DisplayName("Stop Future Completion")
+    class StopFutureCompletion {
+
+        @Test
+        @DisplayName("should complete future with USER_CANCELLED when stop is called before callback")
+        void shouldCompleteFutureWithUserCancelledOnStop() throws Exception {
+            CompletableFuture<String> future = server.startAndAwaitCallback("test-state");
+            waitForServerRunning();
+
+            // Stop without sending a callback - simulates user cancellation
+            server.stop();
+
+            // The future should complete exceptionally with USER_CANCELLED
+            assertThatThrownBy(() -> future.get(5, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCauseInstanceOf(HmrcOAuthException.class)
+                .cause()
+                .extracting(e -> ((HmrcOAuthException) e).getError())
+                .isEqualTo(OAuthError.USER_CANCELLED);
+        }
+
+        @Test
+        @DisplayName("should not overwrite already completed future on stop")
+        void shouldNotOverwriteCompletedFutureOnStop() throws Exception {
+            String state = "valid-state";
+            CompletableFuture<String> future = server.startAndAwaitCallback(state);
+            waitForServerRunning();
+
+            // Complete normally via callback first
+            sendCallback("auth_code_xyz", state);
+            String code = future.get(5, TimeUnit.SECONDS);
+            assertThat(code).isEqualTo("auth_code_xyz");
+
+            // Stop should not overwrite the already-completed future
+            server.stop();
+
+            // Future should still have the original successful result
+            assertThat(future.get(1, TimeUnit.SECONDS)).isEqualTo("auth_code_xyz");
+        }
+
+        @Test
+        @DisplayName("should resolve CompletableFuture chain when stop is called externally")
+        void shouldResolveChainWhenStopCalledExternally() throws Exception {
+            CompletableFuture<String> future = server.startAndAwaitCallback("state-123");
+            waitForServerRunning();
+
+            // Chain a downstream handler that recovers from the exception
+            CompletableFuture<String> chained = future
+                .exceptionally(error -> {
+                    // error may be the HmrcOAuthException directly or wrapped in CompletionException
+                    Throwable cause = error.getCause() != null ? error.getCause() : error;
+                    return "cancelled:" + cause.getClass().getSimpleName();
+                });
+
+            // Stop externally (simulates cancel button click)
+            server.stop();
+
+            // The chained future should resolve (not hang)
+            String result = chained.get(5, TimeUnit.SECONDS);
+            assertThat(result).contains("cancelled");
+            assertThat(result).contains("HmrcOAuthException");
+        }
+
+        @Test
+        @DisplayName("should not complete future with USER_CANCELLED if already timed out")
+        void shouldNotOverwriteTimeoutWithUserCancelled() throws Exception {
+            // Short timeout server
+            OAuthCallbackServer shortTimeoutServer = new OAuthCallbackServer(vertx, TEST_PORT + 2, "/oauth/callback", 1);
+
+            try {
+                CompletableFuture<String> future = shortTimeoutServer.startAndAwaitCallback("state");
+
+                // Wait for timeout to fire
+                Thread.sleep(2000);
+
+                // Future should have completed with TIMEOUT (not USER_CANCELLED)
+                assertThat(future.isCompletedExceptionally()).isTrue();
+
+                assertThatThrownBy(() -> future.get(1, TimeUnit.SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(HmrcOAuthException.class)
+                    .cause()
+                    .extracting(e -> ((HmrcOAuthException) e).getError())
+                    .isEqualTo(OAuthError.TIMEOUT);
+
+                // Additional stop should not throw or change result
+                shortTimeoutServer.stop();
+            } finally {
+                shortTimeoutServer.stop();
+            }
         }
     }
 

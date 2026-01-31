@@ -13,12 +13,15 @@
     <VBox fx:id="dashboardContainer" styleClass="dashboard-container" spacing="24">
         <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
 
-        <!-- Page Header -->
-        <HBox alignment="CENTER_LEFT" spacing="15">
-            <Label text="Dashboard" styleClass="page-title"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="taxYearBadge" text="Tax Year 2025/26" styleClass="tax-year-badge"/>
-        </HBox>
+        <!-- Page Header with Personalized Greeting -->
+        <VBox spacing="4">
+            <Label fx:id="greetingLabel" text="Good morning!" styleClass="dashboard-greeting"/>
+            <HBox alignment="CENTER_LEFT" spacing="15">
+                <Label text="Dashboard" styleClass="page-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="taxYearBadge" text="Tax Year 2025/26" styleClass="tax-year-badge"/>
+            </HBox>
+        </VBox>
 
         <!-- Metric Cards Grid - SE-810: Keyboard accessible cards -->
         <GridPane fx:id="metricsGrid" styleClass="metrics-grid" hgap="20" vgap="20">

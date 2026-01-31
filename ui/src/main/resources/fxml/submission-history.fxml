@@ -5,6 +5,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.collections.FXCollections?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <ScrollPane xmlns:fx="http://javafx.com/fxml/1"
@@ -60,23 +61,31 @@
             </VBox>
         </HBox>
 
+        <!-- Loading State (shown while fetching from SQLite) -->
+        <VBox fx:id="loadingState" alignment="CENTER" spacing="12"
+              managed="false" visible="false">
+            <padding><Insets topRightBottomLeft="40"/></padding>
+            <ProgressIndicator fx:id="loadingIndicator" prefWidth="40" prefHeight="40"/>
+            <Label text="Loading submissions..." styleClass="loading-text"/>
+        </VBox>
+
         <!-- Submissions List Container -->
         <VBox fx:id="submissionsList" styleClass="submissions-list" spacing="12">
             <!-- Dynamic content - submission cards populated by controller -->
         </VBox>
 
-        <!-- Empty State (shown when no submissions) - PS11-005 Redesigned -->
+        <!-- Empty State (shown when no submissions) - using Ikonli icons -->
         <VBox fx:id="emptyState" styleClass="empty-state-container" alignment="CENTER"
               spacing="16" managed="false" visible="false">
-            <!-- Document Icon -->
-            <Label text="&#128196;" styleClass="empty-state-icon"/>
+            <!-- Document Icon - using Ikonli FontAwesome5 -->
+            <FontIcon iconLiteral="fas-inbox" iconSize="48" styleClass="empty-state-icon"/>
             <Label text="No Submissions Yet" styleClass="empty-state-title"/>
             <Label text="Your HMRC submission history will appear here once you submit your first quarterly or annual return."
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER"/>
 
-            <!-- Info Box explaining prerequisites (PS11-005) -->
+            <!-- Info Box explaining prerequisites - using Ikonli -->
             <HBox fx:id="infoBox" styleClass="info-box" spacing="12" alignment="CENTER_LEFT" maxWidth="400">
-                <Label text="&#9432;" styleClass="info-icon"/>
+                <FontIcon iconLiteral="fas-info-circle" iconSize="16" styleClass="info-icon"/>
                 <VBox spacing="4">
                     <Label text="Getting Started" styleClass="info-title"/>
                     <Label fx:id="infoBoxMessage"
@@ -85,7 +94,7 @@
                 </VBox>
             </HBox>
 
-            <!-- Primary action button - navigates to HMRC Submission (PS11-005) -->
+            <!-- Primary action button - navigates to HMRC Submission -->
             <Button fx:id="goToHmrcBtn" text="Go to HMRC Submission" styleClass="button-primary"
                     onAction="#handleGoToHmrcSubmission"
                     accessibleText="Navigate to HMRC Submission page to connect your account"/>
@@ -171,21 +180,21 @@
                 </VBox>
             </VBox>
 
-            <!-- Error Message (only for rejected submissions) -->
+            <!-- Error Message (only for rejected submissions) - using Ikonli icons -->
             <VBox fx:id="errorSection" styleClass="error-section" spacing="12"
                   managed="false" visible="false">
                 <Label text="Error Details" styleClass="detail-section-label"/>
                 <HBox styleClass="error-box" alignment="CENTER_LEFT" spacing="8">
-                    <Label text="!" styleClass="error-icon"/>
+                    <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="14" styleClass="error-icon"/>
                     <Label fx:id="detailErrorMessage" text="Invalid calculation reference"
                            styleClass="error-text" wrapText="true"/>
                 </HBox>
 
-                <!-- Error Resolution Guidance (SE-SH-006) -->
+                <!-- Error Resolution Guidance - using Ikonli -->
                 <VBox fx:id="errorGuidanceBox" styleClass="error-guidance-box" spacing="8"
                       managed="true" visible="true">
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label text="&#9432;" styleClass="guidance-icon"/>
+                        <FontIcon iconLiteral="fas-lightbulb" iconSize="14" styleClass="guidance-icon"/>
                         <Label text="How to resolve this" styleClass="guidance-title"/>
                     </HBox>
                     <Label fx:id="errorGuidanceText"
@@ -205,8 +214,6 @@
                 <Button fx:id="downloadPdfBtn" text="Download PDF" styleClass="button-secondary"
                         onAction="#handleDownloadPDF"
                         accessibleText="Download PDF confirmation for this submission"/>
-                <Button fx:id="viewDataBtn" text="View Full Data" styleClass="button-secondary"
-                        onAction="#handleViewData"/>
             </HBox>
         </VBox>
 

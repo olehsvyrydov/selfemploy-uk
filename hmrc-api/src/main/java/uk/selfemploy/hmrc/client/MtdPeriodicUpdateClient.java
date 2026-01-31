@@ -3,6 +3,7 @@ package uk.selfemploy.hmrc.client;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import uk.selfemploy.common.dto.CumulativeSummary;
 import uk.selfemploy.common.dto.PeriodicUpdate;
 import uk.selfemploy.hmrc.client.dto.HmrcSubmissionResponse;
 
@@ -56,5 +57,32 @@ public interface MtdPeriodicUpdateClient {
             @PathParam("periodId") String periodId,
             @HeaderParam("Authorization") String authorization,
             PeriodicUpdate periodicUpdate
+    );
+
+    /**
+     * Submits a cumulative update for a self-employment business (tax year 2025-26+).
+     *
+     * <p>This endpoint is used for tax years 2025-26 onwards. Unlike the period endpoint,
+     * the tax year is provided as a query parameter and the request body does NOT contain
+     * periodDates - it uses the flat {@link CumulativeSummary} structure.</p>
+     *
+     * <p>Both this endpoint and the period endpoint use the same API version (v5.0).</p>
+     *
+     * @param nino National Insurance Number
+     * @param businessId HMRC business ID
+     * @param taxYear Tax year in format "YYYY-YY" (e.g., "2025-26")
+     * @param authorization Bearer token
+     * @param cumulativeSummary The cumulative income and expense data
+     * @return HMRC submission response with period reference
+     * @see CumulativeSummary for the flat DTO structure
+     */
+    @PUT
+    @Path("/{nino}/{businessId}/cumulative")
+    HmrcSubmissionResponse submitCumulativeUpdate(
+            @PathParam("nino") String nino,
+            @PathParam("businessId") String businessId,
+            @QueryParam("taxYear") String taxYear,
+            @HeaderParam("Authorization") String authorization,
+            CumulativeSummary cumulativeSummary
     );
 }

@@ -282,6 +282,28 @@ class HmrcOAuthServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("Cancel Authentication")
+    class CancelAuthentication {
+
+        @Test
+        @DisplayName("should stop callback server when cancelAuthentication is called")
+        void shouldStopCallbackServerOnCancel() {
+            oAuthService.cancelAuthentication();
+
+            verify(callbackServer).stop();
+        }
+
+        @Test
+        @DisplayName("should be safe to call cancelAuthentication when not authenticating")
+        void shouldBeSafeToCallCancelWhenNotAuthenticating() {
+            // Should not throw even when no authentication is in progress
+            oAuthService.cancelAuthentication();
+
+            verify(callbackServer).stop();
+        }
+    }
+
     private OAuthTokens createTestTokens() {
         return OAuthTokens.create(
             "test_access_token",

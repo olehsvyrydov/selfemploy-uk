@@ -505,6 +505,302 @@ class SqliteDataStoreTest {
     }
 
     @Nested
+    @DisplayName("UTR Persistence")
+    class UtrPersistence {
+
+        @Test
+        @DisplayName("should save and load UTR")
+        void shouldSaveAndLoadUtr() {
+            dataStore.saveUtr("1234567890");
+            String loaded = dataStore.loadUtr();
+
+            assertThat(loaded).isEqualTo("1234567890");
+        }
+
+        @Test
+        @DisplayName("should return null when no UTR saved")
+        void shouldReturnNullWhenNoUtrSaved() {
+            String loaded = dataStore.loadUtr();
+
+            assertThat(loaded).isNull();
+        }
+
+        @Test
+        @DisplayName("should overwrite existing UTR")
+        void shouldOverwriteExistingUtr() {
+            dataStore.saveUtr("1234567890");
+            dataStore.saveUtr("0987654321");
+            String loaded = dataStore.loadUtr();
+
+            assertThat(loaded).isEqualTo("0987654321");
+        }
+
+        @Test
+        @DisplayName("should handle saving empty string UTR")
+        void shouldHandleSavingEmptyStringUtr() {
+            dataStore.saveUtr("1234567890");
+            dataStore.saveUtr("");
+            String loaded = dataStore.loadUtr();
+
+            assertThat(loaded).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should persist UTR independently of NINO")
+        void shouldPersistUtrIndependentlyOfNino() {
+            dataStore.saveUtr("1234567890");
+            dataStore.saveNino("QQ123456C");
+
+            assertThat(dataStore.loadUtr()).isEqualTo("1234567890");
+            assertThat(dataStore.loadNino()).isEqualTo("QQ123456C");
+        }
+    }
+
+    @Nested
+    @DisplayName("Display Name Persistence")
+    class DisplayNamePersistence {
+
+        @Test
+        @DisplayName("should save and load display name")
+        void shouldSaveAndLoadDisplayName() {
+            dataStore.saveDisplayName("Sarah");
+            String loaded = dataStore.loadDisplayName();
+
+            assertThat(loaded).isEqualTo("Sarah");
+        }
+
+        @Test
+        @DisplayName("should return null when no display name saved")
+        void shouldReturnNullWhenNoDisplayNameSaved() {
+            String loaded = dataStore.loadDisplayName();
+
+            assertThat(loaded).isNull();
+        }
+
+        @Test
+        @DisplayName("should overwrite existing display name")
+        void shouldOverwriteExistingDisplayName() {
+            dataStore.saveDisplayName("Sarah");
+            dataStore.saveDisplayName("John Smith");
+            String loaded = dataStore.loadDisplayName();
+
+            assertThat(loaded).isEqualTo("John Smith");
+        }
+
+        @Test
+        @DisplayName("should handle saving empty string display name")
+        void shouldHandleSavingEmptyStringDisplayName() {
+            dataStore.saveDisplayName("Sarah");
+            dataStore.saveDisplayName("");
+            String loaded = dataStore.loadDisplayName();
+
+            assertThat(loaded).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should handle saving null display name")
+        void shouldHandleSavingNullDisplayName() {
+            dataStore.saveDisplayName("Sarah");
+            dataStore.saveDisplayName(null);
+            String loaded = dataStore.loadDisplayName();
+
+            assertThat(loaded).isNull();
+        }
+
+        @Test
+        @DisplayName("should persist display name independently of other settings")
+        void shouldPersistDisplayNameIndependentlyOfOtherSettings() {
+            dataStore.saveDisplayName("Sarah");
+            dataStore.saveUtr("1234567890");
+            dataStore.saveNino("QQ123456C");
+
+            assertThat(dataStore.loadDisplayName()).isEqualTo("Sarah");
+            assertThat(dataStore.loadUtr()).isEqualTo("1234567890");
+            assertThat(dataStore.loadNino()).isEqualTo("QQ123456C");
+        }
+
+        @Test
+        @DisplayName("should handle unicode characters in display name")
+        void shouldHandleUnicodeCharactersInDisplayName() {
+            String unicodeName = "Émile François";
+            dataStore.saveDisplayName(unicodeName);
+            String loaded = dataStore.loadDisplayName();
+
+            assertThat(loaded).isEqualTo(unicodeName);
+        }
+
+        @Test
+        @DisplayName("should handle special characters in display name")
+        void shouldHandleSpecialCharactersInDisplayName() {
+            String specialName = "O'Brien-Smith";
+            dataStore.saveDisplayName(specialName);
+            String loaded = dataStore.loadDisplayName();
+
+            assertThat(loaded).isEqualTo(specialName);
+        }
+    }
+
+    @Nested
+    @DisplayName("HMRC Business ID Persistence")
+    class HmrcBusinessIdPersistence {
+
+        @Test
+        @DisplayName("should save and load HMRC business ID")
+        void shouldSaveAndLoadHmrcBusinessId() {
+            dataStore.saveHmrcBusinessId("XAIS12345678901");
+            String loaded = dataStore.loadHmrcBusinessId();
+
+            assertThat(loaded).isEqualTo("XAIS12345678901");
+        }
+
+        @Test
+        @DisplayName("should return null when no HMRC business ID saved")
+        void shouldReturnNullWhenNoHmrcBusinessIdSaved() {
+            String loaded = dataStore.loadHmrcBusinessId();
+
+            assertThat(loaded).isNull();
+        }
+
+        @Test
+        @DisplayName("should save and load HMRC trading name")
+        void shouldSaveAndLoadHmrcTradingName() {
+            dataStore.saveHmrcTradingName("Test Business");
+            String loaded = dataStore.loadHmrcTradingName();
+
+            assertThat(loaded).isEqualTo("Test Business");
+        }
+
+        @Test
+        @DisplayName("should overwrite existing HMRC business ID")
+        void shouldOverwriteExistingHmrcBusinessId() {
+            dataStore.saveHmrcBusinessId("XAIS12345678901");
+            dataStore.saveHmrcBusinessId("XAIS99999999999");
+            String loaded = dataStore.loadHmrcBusinessId();
+
+            assertThat(loaded).isEqualTo("XAIS99999999999");
+        }
+    }
+
+    @Nested
+    @DisplayName("NINO Verification Status Persistence")
+    class NinoVerificationStatusPersistence {
+
+        @Test
+        @DisplayName("should save and load NINO verified status as true")
+        void shouldSaveAndLoadNinoVerifiedAsTrue() {
+            dataStore.saveNinoVerified(true);
+            boolean verified = dataStore.isNinoVerified();
+
+            assertThat(verified).isTrue();
+        }
+
+        @Test
+        @DisplayName("should save and load NINO verified status as false")
+        void shouldSaveAndLoadNinoVerifiedAsFalse() {
+            dataStore.saveNinoVerified(false);
+            boolean verified = dataStore.isNinoVerified();
+
+            assertThat(verified).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when no verification status saved")
+        void shouldReturnFalseWhenNoVerificationStatusSaved() {
+            // No verification status saved - default should be false (unverified)
+            boolean verified = dataStore.isNinoVerified();
+
+            assertThat(verified).isFalse();
+        }
+
+        @Test
+        @DisplayName("should overwrite existing verification status")
+        void shouldOverwriteExistingVerificationStatus() {
+            dataStore.saveNinoVerified(true);
+            assertThat(dataStore.isNinoVerified()).isTrue();
+
+            dataStore.saveNinoVerified(false);
+            assertThat(dataStore.isNinoVerified()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should persist verification status independently of business ID")
+        void shouldPersistVerificationStatusIndependentlyOfBusinessId() {
+            dataStore.saveHmrcBusinessId("XAIS12345678901");
+            dataStore.saveNinoVerified(true);
+
+            assertThat(dataStore.loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
+            assertThat(dataStore.isNinoVerified()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Connected NINO Tracking")
+    class ConnectedNinoTracking {
+
+        @Test
+        @DisplayName("should save and load connected NINO")
+        void shouldSaveAndLoadConnectedNino() {
+            dataStore.saveConnectedNino("QQ123456A");
+            String loaded = dataStore.loadConnectedNino();
+
+            assertThat(loaded).isEqualTo("QQ123456A");
+        }
+
+        @Test
+        @DisplayName("should return null when no connected NINO saved")
+        void shouldReturnNullWhenNoConnectedNinoSaved() {
+            String loaded = dataStore.loadConnectedNino();
+
+            assertThat(loaded).isNull();
+        }
+
+        @Test
+        @DisplayName("should overwrite existing connected NINO")
+        void shouldOverwriteExistingConnectedNino() {
+            dataStore.saveConnectedNino("QQ123456A");
+            dataStore.saveConnectedNino("AB654321D");
+            String loaded = dataStore.loadConnectedNino();
+
+            assertThat(loaded).isEqualTo("AB654321D");
+        }
+
+        @Test
+        @DisplayName("should clear connected NINO when null is saved")
+        void shouldClearConnectedNinoWhenNullIsSaved() {
+            dataStore.saveConnectedNino("QQ123456A");
+            dataStore.saveConnectedNino(null);
+            String loaded = dataStore.loadConnectedNino();
+
+            assertThat(loaded).isNull();
+        }
+
+        @Test
+        @DisplayName("should detect when current NINO differs from connected NINO")
+        void shouldDetectWhenCurrentNinoDiffersFromConnectedNino() {
+            dataStore.saveConnectedNino("QQ123456A");
+            dataStore.saveNino("AB654321D");
+
+            String connected = dataStore.loadConnectedNino();
+            String current = dataStore.loadNino();
+
+            assertThat(connected).isNotEqualTo(current);
+        }
+
+        @Test
+        @DisplayName("should persist connected NINO independently of current NINO")
+        void shouldPersistConnectedNinoIndependentlyOfCurrentNino() {
+            dataStore.saveNino("QQ123456A");
+            dataStore.saveConnectedNino("QQ123456A");
+            dataStore.saveNino("AB654321D"); // User changes NINO
+
+            // Connected NINO should remain unchanged
+            assertThat(dataStore.loadConnectedNino()).isEqualTo("QQ123456A");
+            // Current NINO should be the new value
+            assertThat(dataStore.loadNino()).isEqualTo("AB654321D");
+        }
+    }
+
+    @Nested
     @DisplayName("Aggregation Queries")
     class AggregationQueries {
 

@@ -210,6 +210,41 @@ public class IncomeService {
                 businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
     }
 
+    /**
+     * Finds all incomes for a business within a specific quarter.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return List of incomes within the quarter
+     * @throws ValidationException if any parameter is null
+     */
+    public List<Income> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+
+        return incomeRepository.findByDateRange(
+                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    /**
+     * Counts all incomes for a business within a specific quarter.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return Count of income transactions within the quarter
+     * @throws ValidationException if any parameter is null
+     */
+    public int countByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        return findByQuarter(businessId, taxYear, quarter).size();
+    }
+
     private void validateBusinessId(UUID businessId) {
         if (businessId == null) {
             throw new ValidationException("businessId", "Business ID cannot be null");

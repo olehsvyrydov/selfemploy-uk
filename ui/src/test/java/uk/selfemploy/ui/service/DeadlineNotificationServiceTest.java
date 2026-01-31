@@ -390,6 +390,78 @@ class DeadlineNotificationServiceTest {
         }
     }
 
+    // === Thread Safety ===
+
+    @Nested
+    @DisplayName("Thread Safety")
+    class ThreadSafetyTests {
+
+        @Test
+        @DisplayName("updateUnreadCount can be called from background thread without exception")
+        void updateUnreadCountCanBeCalledFromBackgroundThread() throws Exception {
+            // This test verifies that updateUnreadCount() handles threading correctly
+            // by not throwing IllegalStateException when called from a background thread
+            CountDownLatch latch = new CountDownLatch(1);
+            final Exception[] caughtException = {null};
+
+            // Add a notification first (to have something to count)
+            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            service.triggerNotification(deadline, 7);
+
+            // Now trigger updateUnreadCount from a background thread
+            Thread backgroundThread = new Thread(() -> {
+                try {
+                    // Mark as read to trigger updateUnreadCount
+                    DeadlineNotification notification = service.getNotificationHistory().get(0);
+                    service.markAsRead(notification.id());
+                } catch (Exception e) {
+                    caughtException[0] = e;
+                } finally {
+                    latch.countDown();
+                }
+            });
+
+            backgroundThread.start();
+            boolean completed = latch.await(5, TimeUnit.SECONDS);
+
+            assertThat(completed).isTrue();
+            assertThat(caughtException[0]).isNull();
+            assertThat(service.getUnreadCount()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("unreadCount property updates correctly when called from any thread")
+        void unreadCountPropertyUpdatesCorrectly() throws Exception {
+            CountDownLatch latch = new CountDownLatch(1);
+            final int[] observedCount = {-1};
+
+            // Add two notifications
+            Deadline d1 = Deadline.of("D1", LocalDate.now().plusDays(30));
+            Deadline d2 = Deadline.of("D2", LocalDate.now().plusDays(7));
+            service.triggerNotification(d1, 30);
+            service.triggerNotification(d2, 7);
+
+            assertThat(service.getUnreadCount()).isEqualTo(2);
+
+            // Mark one as read from background thread
+            Thread backgroundThread = new Thread(() -> {
+                try {
+                    DeadlineNotification first = service.getNotificationHistory().get(0);
+                    service.markAsRead(first.id());
+                    observedCount[0] = service.getUnreadCount();
+                } finally {
+                    latch.countDown();
+                }
+            });
+
+            backgroundThread.start();
+            boolean completed = latch.await(5, TimeUnit.SECONDS);
+
+            assertThat(completed).isTrue();
+            assertThat(observedCount[0]).isEqualTo(1);
+        }
+    }
+
     // === Duplicate Prevention ===
 
     @Nested

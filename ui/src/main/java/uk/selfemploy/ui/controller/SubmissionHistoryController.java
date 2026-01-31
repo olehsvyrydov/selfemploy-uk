@@ -1,25 +1,28 @@
 package uk.selfemploy.ui.controller;
 
-import javafx.application.HostServices;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.enums.SubmissionStatus;
-import uk.selfemploy.ui.component.AccessibleLink;
 import uk.selfemploy.ui.component.ToastNotification;
+import uk.selfemploy.ui.service.SqliteDataStore;
+import uk.selfemploy.ui.service.SqliteSubmissionRepository;
 import uk.selfemploy.ui.service.SubmissionPdfDownloadService;
+import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.util.HmrcErrorGuidance;
-import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionHistoryViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionTableRow;
 import uk.selfemploy.ui.viewmodel.View;
@@ -31,6 +34,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -94,7 +98,6 @@ public class SubmissionHistoryController implements Initializable {
     @FXML private Hyperlink learnMoreLink;
     @FXML private Button retryBtn;
     @FXML private Button downloadPdfBtn;
-    @FXML private Button viewDataBtn;
 
     private SubmissionHistoryViewModel viewModel;
     private Consumer<View> navigationCallback;
@@ -106,16 +109,97 @@ public class SubmissionHistoryController implements Initializable {
     /** Guard flag to prevent infinite recursion when updating tax year filter programmatically */
     private boolean updatingTaxYearFilter = false;
 
-    /** Tooltip messages for disabled button states */
-    private static final String TOOLTIP_NOT_CONNECTED = "Connect to HMRC first to submit returns";
-    private static final String TOOLTIP_NO_DATA = "Add income or expenses first to submit";
+    /** Loading indicator for async SQLite operations */
+    @FXML private VBox loadingState;
+    @FXML private ProgressIndicator loadingIndicator;
+
+    /** Submission repository for SQLite persistence (BUG-10H-001) */
+    private SqliteSubmissionRepository submissionRepository;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         viewModel = new SubmissionHistoryViewModel();
         setupTaxYearFilter();
         setupBindings();
-        updateView();
+
+        // BUG-10H-001: Load submissions from SQLite
+        loadSubmissionsFromDatabase();
+    }
+
+    /**
+     * Loads submissions from SQLite database asynchronously.
+     * Shows loading state while fetching data.
+     * BUG-10H-001: Submission History persistence
+     */
+    private void loadSubmissionsFromDatabase() {
+        // Get business ID from settings
+        UUID businessId = SqliteDataStore.getInstance().loadBusinessId();
+        if (businessId == null) {
+            LOG.debug("No business ID set, showing empty state");
+            updateView();
+            return;
+        }
+
+        // Show loading state if available
+        showLoadingState();
+
+        // Load asynchronously to not block UI
+        Task<List<SubmissionTableRow>> loadTask = new Task<>() {
+            @Override
+            protected List<SubmissionTableRow> call() {
+                submissionRepository = new SqliteSubmissionRepository(businessId);
+                return submissionRepository.findAll()
+                    .stream()
+                    .map(SubmissionRecord::toTableRow)
+                    .toList();
+            }
+        };
+
+        loadTask.setOnSucceeded(event -> {
+            List<SubmissionTableRow> submissions = loadTask.getValue();
+            LOG.info("Loaded {} submissions from SQLite", submissions.size());
+            viewModel.setSubmissions(submissions);
+            hideLoadingState();
+            updateView();
+        });
+
+        loadTask.setOnFailed(event -> {
+            LOG.error("Failed to load submissions from SQLite", loadTask.getException());
+            hideLoadingState();
+            updateView();
+        });
+
+        Thread thread = new Thread(loadTask);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Shows the loading state indicator.
+     */
+    private void showLoadingState() {
+        if (loadingState != null) {
+            loadingState.setVisible(true);
+            loadingState.setManaged(true);
+        }
+        if (submissionsList != null) {
+            submissionsList.setVisible(false);
+            submissionsList.setManaged(false);
+        }
+        if (emptyState != null) {
+            emptyState.setVisible(false);
+            emptyState.setManaged(false);
+        }
+    }
+
+    /**
+     * Hides the loading state indicator.
+     */
+    private void hideLoadingState() {
+        if (loadingState != null) {
+            loadingState.setVisible(false);
+            loadingState.setManaged(false);
+        }
     }
 
     /**
@@ -253,14 +337,13 @@ public class SubmissionHistoryController implements Initializable {
         Region spacer1 = new Region();
         HBox.setHgrow(spacer1, Priority.ALWAYS);
 
-        // Status Badge
+        // Status Badge - using FontIcon for cross-platform icons (BUG-10H-001)
         HBox statusBadge = new HBox();
         statusBadge.getStyleClass().addAll("status-badge", submission.getStatusStyleClass());
         statusBadge.setAlignment(Pos.CENTER);
         statusBadge.setSpacing(6);
 
-        Label statusIcon = new Label(getStatusIconText(submission.status()));
-        statusIcon.getStyleClass().add("status-icon");
+        Node statusIcon = getStatusIcon(submission.status());
         Label statusText = new Label(submission.getStatusDisplay());
         statusText.getStyleClass().add("status-text");
         statusBadge.getChildren().addAll(statusIcon, statusText);
@@ -307,14 +390,14 @@ public class SubmissionHistoryController implements Initializable {
 
         card.getChildren().addAll(topRow, separator, bottomRow);
 
-        // Error row for rejected submissions
+        // Error row for rejected submissions - using FontIcon (BUG-10H-001)
         if (submission.isRejected() && submission.hasError()) {
             HBox errorRow = new HBox();
             errorRow.getStyleClass().add("error-row");
             errorRow.setAlignment(Pos.CENTER_LEFT);
             errorRow.setSpacing(8);
 
-            Label errorIcon = new Label("!");
+            FontIcon errorIcon = FontIcon.of(FontAwesomeSolid.EXCLAMATION_TRIANGLE, 14);
             errorIcon.getStyleClass().add("error-icon");
             Label errorMessage = new Label(submission.errorMessage());
             errorMessage.getStyleClass().add("error-text");
@@ -327,6 +410,31 @@ public class SubmissionHistoryController implements Initializable {
         return card;
     }
 
+    /**
+     * Creates a FontIcon for the submission status.
+     * Uses Ikonli FontAwesome5 icons for cross-platform compatibility.
+     * BUG-10H-001: Replace emoji icons per /aura design review.
+     *
+     * @param status The submission status
+     * @return A FontIcon representing the status
+     */
+    private Node getStatusIcon(SubmissionStatus status) {
+        if (status == null) return new Label("");
+        FontIcon icon = switch (status) {
+            case ACCEPTED -> FontIcon.of(FontAwesomeSolid.CHECK_CIRCLE, 14);
+            case REJECTED -> FontIcon.of(FontAwesomeSolid.TIMES_CIRCLE, 14);
+            case PENDING -> FontIcon.of(FontAwesomeSolid.CLOCK, 14);
+            case SUBMITTED -> FontIcon.of(FontAwesomeSolid.PAPER_PLANE, 14);
+        };
+        icon.getStyleClass().add("status-icon");
+        return icon;
+    }
+
+    /**
+     * @deprecated Use {@link #getStatusIcon(SubmissionStatus)} instead.
+     * Kept for backward compatibility with existing code.
+     */
+    @Deprecated
     private String getStatusIconText(SubmissionStatus status) {
         if (status == null) return "";
         return switch (status) {
@@ -348,10 +456,12 @@ public class SubmissionHistoryController implements Initializable {
         detailTypeBadge.getStyleClass().removeIf(s -> s.startsWith("type-"));
         detailTypeBadge.getStyleClass().add(submission.getTypeStyleClass());
 
-        // Status card
+        // Status card - using FontIcon (BUG-10H-001)
         statusCard.getStyleClass().removeIf(s -> s.startsWith("status-"));
         statusCard.getStyleClass().add(submission.getStatusStyleClass());
-        detailStatusIcon.setText(getStatusIconText(submission.status()));
+        // Set graphic on the label instead of text for proper icon rendering
+        detailStatusIcon.setGraphic(getStatusIcon(submission.status()));
+        detailStatusIcon.setText(""); // Clear any text
         detailStatusText.setText(submission.getStatusDisplay());
         detailStatusDate.setText(submission.getStatusDisplay() + " on " + submission.getFormattedDateTime());
 
@@ -416,9 +526,7 @@ public class SubmissionHistoryController implements Initializable {
     @FXML
     void handleRefresh(ActionEvent event) {
         LOG.info("Refreshing submission history");
-        // In production, this would reload data from the service
-        // For now, just update the view
-        updateView();
+        loadSubmissionsFromDatabase();
     }
 
     @FXML
@@ -484,7 +592,11 @@ public class SubmissionHistoryController implements Initializable {
 
     /**
      * Handles PDF download for the currently selected submission.
-     * SE-SH-005: Implement PDF download
+     * SE-SH-005: Implement PDF download with auto-open functionality.
+     *
+     * <p>After generating the PDF, attempts to open it automatically using
+     * the system's default PDF viewer. Falls back to showing a "saved to Downloads"
+     * message if opening fails (e.g., headless environment, no PDF viewer).</p>
      */
     @FXML
     void handleDownloadPDF(ActionEvent event) {
@@ -507,12 +619,11 @@ public class SubmissionHistoryController implements Initializable {
 
             LOG.info("PDF saved successfully to: {}", outputPath);
 
-            // Show success feedback via toast notification
-            String toastMessage = "PDF saved to Downloads";
-            ToastNotification.showExternalBrowserToast(toastMessage, outputPath.toString());
+            // Show toast immediately - don't wait for PDF viewer to open
+            ToastNotification.showExternalBrowserToast("Opening PDF...", outputPath.toString());
 
-            // Optionally open the folder containing the file
-            // openContainingFolder(outputPath);
+            // Open PDF asynchronously on a background thread to avoid blocking UI
+            tryOpenPdfAsync(outputPath);
 
         } catch (IOException e) {
             LOG.error("Failed to generate PDF for submission: {}", selected.hmrcReference(), e);
@@ -529,6 +640,39 @@ public class SubmissionHistoryController implements Initializable {
         } catch (Exception e) {
             LOG.error("Unexpected error generating PDF: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Attempts to open the PDF file using the system's default PDF viewer.
+     * Runs on a background thread to avoid blocking the JavaFX Application Thread.
+     *
+     * @param pdfPath Path to the PDF file to open
+     */
+    private void tryOpenPdfAsync(Path pdfPath) {
+        // Run Desktop.open() on a background thread - it can block on Linux
+        Thread openThread = new Thread(() -> {
+            try {
+                if (Desktop.isDesktopSupported()) {
+                    Desktop desktop = Desktop.getDesktop();
+                    if (desktop.isSupported(Desktop.Action.OPEN)) {
+                        desktop.open(pdfPath.toFile());
+                        LOG.info("PDF opened successfully: {}", pdfPath);
+                    } else {
+                        LOG.debug("Desktop OPEN action not supported on this platform");
+                    }
+                } else {
+                    LOG.debug("Desktop not supported (headless environment)");
+                }
+            } catch (IOException e) {
+                LOG.warn("Failed to open PDF (no suitable viewer?): {}", e.getMessage());
+            } catch (UnsupportedOperationException e) {
+                LOG.debug("Desktop operations not supported: {}", e.getMessage());
+            } catch (SecurityException e) {
+                LOG.warn("Security restriction prevented opening PDF: {}", e.getMessage());
+            }
+        }, "PDF-Opener");
+        openThread.setDaemon(true);
+        openThread.start();
     }
 
     /**
@@ -560,19 +704,25 @@ public class SubmissionHistoryController implements Initializable {
         String url = errorGuidance.getGuidanceUrl();
         LOG.info("Opening HMRC guidance URL: {}", url);
 
-        try {
-            // Try to open in default browser
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(new URI(url));
-                ToastNotification.showExternalBrowserToast("Opening HMRC guidance...", url);
-            } else {
-                // Fallback: show URL in dialog
-                showUrlDialog(url);
+        // Run on background thread to avoid blocking the UI
+        Thread browserThread = new Thread(() -> {
+            try {
+                // Try to open in default browser
+                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                    Desktop.getDesktop().browse(new URI(url));
+                    Platform.runLater(() ->
+                        ToastNotification.showExternalBrowserToast("Opening HMRC guidance...", url));
+                } else {
+                    // Fallback: show URL in dialog
+                    Platform.runLater(() -> showUrlDialog(url));
+                }
+            } catch (Exception e) {
+                LOG.error("Failed to open HMRC guidance URL: {}", url, e);
+                Platform.runLater(() -> showUrlDialog(url));
             }
-        } catch (Exception e) {
-            LOG.error("Failed to open HMRC guidance URL: {}", url, e);
-            showUrlDialog(url);
-        }
+        }, "browser-launcher");
+        browserThread.setDaemon(true);
+        browserThread.start();
     }
 
     private void showUrlDialog(String url) {
@@ -581,53 +731,6 @@ public class SubmissionHistoryController implements Initializable {
         alert.setHeaderText("Visit HMRC website for more information");
         alert.setContentText("Please visit:\n" + url);
         alert.showAndWait();
-    }
-
-    @FXML
-    void handleViewData(ActionEvent event) {
-        LOG.info("View full data requested");
-        SubmissionTableRow selected = viewModel.getSelectedSubmission();
-        if (selected != null) {
-            // Show JSON data in a dialog - to be implemented
-            showDataDialog(selected);
-        }
-    }
-
-    private void showDataDialog(SubmissionTableRow submission) {
-        Alert dialog = new Alert(Alert.AlertType.INFORMATION);
-        dialog.setTitle("Submission Data");
-        dialog.setHeaderText("Submission: " + submission.getPeriodDisplay());
-
-        String data = String.format("""
-            Reference: %s
-            Tax Year: %s
-            Type: %s
-            Status: %s
-            Submitted: %s
-
-            Income: %s
-            Expenses: %s
-            Net Profit: %s
-            Tax Due: %s
-            """,
-            submission.getReferenceDisplay(),
-            submission.taxYear(),
-            submission.getTypeDisplayName(),
-            submission.getStatusDisplay(),
-            submission.getFormattedDateTime(),
-            submission.getFormattedIncome(),
-            submission.getFormattedExpenses(),
-            submission.getFormattedProfit(),
-            submission.getFormattedTaxDue()
-        );
-
-        TextArea textArea = new TextArea(data);
-        textArea.setEditable(false);
-        textArea.setWrapText(true);
-        textArea.setPrefRowCount(12);
-
-        dialog.getDialogPane().setContent(textArea);
-        dialog.showAndWait();
     }
 
     /**

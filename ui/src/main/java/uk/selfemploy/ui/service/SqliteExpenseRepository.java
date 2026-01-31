@@ -5,6 +5,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -86,6 +87,21 @@ public class SqliteExpenseRepository {
     }
 
     /**
+     * Finds expenses by date range.
+     * SE-10G-003: Used by findByQuarter() and getTotalsByCategoryByQuarter().
+     *
+     * @param startDate The start date (inclusive)
+     * @param endDate   The end date (inclusive)
+     * @return Expenses within the date range
+     */
+    public List<Expense> findByDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date cannot be null");
+        }
+        return dataStore.findExpensesByDateRange(businessId, startDate, endDate);
+    }
+
+    /**
      * Finds expenses by category.
      *
      * @param category The category to filter by
@@ -134,7 +150,7 @@ public class SqliteExpenseRepository {
      * @param endDate   The end date (inclusive)
      * @return Total allowable expenses amount for the date range
      */
-    public BigDecimal getAllowableTotalForDateRange(java.time.LocalDate startDate, java.time.LocalDate endDate) {
+    public BigDecimal getAllowableTotalForDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }

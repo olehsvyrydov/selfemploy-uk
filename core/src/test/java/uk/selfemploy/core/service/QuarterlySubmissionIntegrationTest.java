@@ -275,7 +275,7 @@ class QuarterlySubmissionIntegrationTest {
             ArgumentCaptor<PeriodicUpdate> captor = ArgumentCaptor.forClass(PeriodicUpdate.class);
             verify(mtdClient).submitPeriodicUpdate(any(), any(), any(), captor.capture());
 
-            assertThat(captor.getValue().periodIncome().getTotal())
+            assertThat(captor.getValue().periodIncome().calculateTotal())
                     .isEqualByComparingTo(new BigDecimal("12500.00"));
         }
 

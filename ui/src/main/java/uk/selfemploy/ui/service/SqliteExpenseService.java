@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * SQLite-backed implementation of ExpenseService.
@@ -150,6 +151,53 @@ public class SqliteExpenseService extends ExpenseService {
             throw new ValidationException("quarter", "Quarter cannot be null");
         }
         return repository.getAllowableTotalForDateRange(quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    /**
+     * Finds all expenses for a business within a specific quarter.
+     * SE-10G-003: Override to use SQLite repository instead of null parent repository.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return List of expenses within the quarter
+     */
+    @Override
+    public List<Expense> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        return repository.findByDateRange(quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    /**
+     * Gets expense totals grouped by category for a specific quarter.
+     * SE-10G-003: Override to use SQLite repository instead of null parent repository.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return Map of expense categories to totals
+     */
+    @Override
+    public Map<ExpenseCategory, BigDecimal> getTotalsByCategoryByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        List<Expense> expenses = repository.findByDateRange(quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+        return expenses.stream()
+                .collect(Collectors.groupingBy(
+                        Expense::category,
+                        Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
+                ));
     }
 
     /**

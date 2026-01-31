@@ -88,10 +88,10 @@ public class OAuthCallbackServer {
     private ScheduledExecutorService timeoutExecutor;
 
     /**
-     * Creates callback server with default 5-minute timeout.
+     * Creates callback server with default 2-minute timeout.
      */
     public OAuthCallbackServer(Vertx vertx, int port, String callbackPath) {
-        this(vertx, port, callbackPath, 300);
+        this(vertx, port, callbackPath, 120);
     }
 
     /**
@@ -160,7 +160,11 @@ public class OAuthCallbackServer {
     }
 
     /**
-     * Stops the callback server.
+     * Stops the callback server and completes the pending future with USER_CANCELLED
+     * if it has not already been completed (by a successful callback, error, or timeout).
+     *
+     * <p>This ensures the CompletableFuture chain always resolves when stop() is called
+     * externally, preventing the UI from hanging indefinitely.</p>
      */
     public void stop() {
         if (!running.getAndSet(false)) {
@@ -168,6 +172,15 @@ public class OAuthCallbackServer {
         }
 
         log.debug("Stopping OAuth callback server");
+
+        // Complete the pending future with USER_CANCELLED if not already done.
+        // This must happen BEFORE shutting down the executor/server to ensure
+        // the future chain resolves for any waiting callers.
+        CompletableFuture<String> future = callbackFuture.get();
+        if (future != null && !future.isDone()) {
+            future.completeExceptionally(new HmrcOAuthException(OAuthError.USER_CANCELLED));
+            log.debug("Completed callback future with USER_CANCELLED");
+        }
 
         if (timeoutExecutor != null) {
             timeoutExecutor.shutdownNow();

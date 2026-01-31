@@ -32,6 +32,7 @@ public final class CoreServiceFactory {
     private static DataExportService dataExportService;
     private static DataImportService dataImportService;
     private static UiDuplicateDetectionService duplicateDetectionService;
+    private static UiQuarterlySubmissionService quarterlySubmissionService;
     private static UUID defaultBusinessId;
 
     private CoreServiceFactory() {
@@ -161,6 +162,33 @@ public final class CoreServiceFactory {
     }
 
     /**
+     * Gets or creates the singleton UiQuarterlySubmissionService instance.
+     * Configured with NINO from SQLite settings and the default business ID.
+     *
+     * @return The UiQuarterlySubmissionService instance
+     */
+    public static synchronized UiQuarterlySubmissionService getQuarterlySubmissionService() {
+        if (quarterlySubmissionService == null) {
+            LOG.info("Creating UiQuarterlySubmissionService");
+            quarterlySubmissionService = new UiQuarterlySubmissionService();
+            // Load HMRC business ID from SQLite if previously synced
+            String hmrcBusinessId = SqliteDataStore.getInstance().loadHmrcBusinessId();
+            if (hmrcBusinessId != null && !hmrcBusinessId.isBlank()) {
+                quarterlySubmissionService.setHmrcBusinessId(hmrcBusinessId);
+                LOG.info("Loaded HMRC business ID from settings");
+            }
+
+            // Load NINO from SQLite if previously saved
+            String nino = SqliteDataStore.getInstance().loadNino();
+            if (nino != null && !nino.isBlank()) {
+                quarterlySubmissionService.setNino(nino);
+                LOG.info("Loaded NINO from settings");
+            }
+        }
+        return quarterlySubmissionService;
+    }
+
+    /**
      * Gets the default business ID for standalone mode.
      * The business ID is persisted to SQLite so it remains constant across app restarts.
      *
@@ -224,6 +252,7 @@ public final class CoreServiceFactory {
         dataExportService = null;
         dataImportService = null;
         duplicateDetectionService = null;
+        quarterlySubmissionService = null;
         defaultBusinessId = null;
         LOG.info("CoreServiceFactory shutdown - data persisted");
     }
@@ -235,6 +264,16 @@ public final class CoreServiceFactory {
         return expenseService != null || incomeService != null || receiptStorageService != null
                 || termsAcceptanceService != null || privacyAcknowledgmentService != null
                 || dataExportService != null || dataImportService != null
-                || duplicateDetectionService != null;
+                || duplicateDetectionService != null || quarterlySubmissionService != null;
+    }
+
+    /**
+     * Sets the default business ID for testing purposes only.
+     * This method bypasses SQLite persistence and should only be used in tests.
+     *
+     * @param businessId The business ID to set
+     */
+    public static synchronized void setDefaultBusinessIdForTesting(UUID businessId) {
+        defaultBusinessId = businessId;
     }
 }

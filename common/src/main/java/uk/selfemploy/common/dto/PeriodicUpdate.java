@@ -12,17 +12,26 @@ import java.time.LocalDate;
  * DTO for HMRC MTD Periodic Update submission.
  *
  * <p>Represents the data structure required by HMRC's Self Assessment MTD API
- * for quarterly periodic updates.</p>
+ * for quarterly periodic updates. For API v5.0, dates must be wrapped in a
+ * periodDates object.</p>
  *
- * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-api">HMRC MTD API</a>
+ * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api/5.0">HMRC MTD API</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PeriodicUpdate(
-    @JsonProperty("periodFromDate") LocalDate periodFromDate,
-    @JsonProperty("periodToDate") LocalDate periodToDate,
+    @JsonProperty("periodDates") PeriodDates periodDates,
     @JsonProperty("periodIncome") PeriodIncome periodIncome,
     @JsonProperty("periodExpenses") PeriodExpenses periodExpenses
 ) {
+
+    /**
+     * Constructor that takes individual dates (for backward compatibility).
+     * Creates the PeriodDates wrapper automatically.
+     */
+    public PeriodicUpdate(LocalDate periodFromDate, LocalDate periodToDate,
+                          PeriodIncome periodIncome, PeriodExpenses periodExpenses) {
+        this(new PeriodDates(periodFromDate, periodToDate), periodIncome, periodExpenses);
+    }
 
     /**
      * Creates a PeriodicUpdate for a specific quarter.
@@ -44,15 +53,40 @@ public record PeriodicUpdate(
     }
 
     /**
+     * Returns the period start date.
+     */
+    public LocalDate periodFromDate() {
+        return periodDates != null ? periodDates.periodStartDate() : null;
+    }
+
+    /**
+     * Returns the period end date.
+     */
+    public LocalDate periodToDate() {
+        return periodDates != null ? periodDates.periodEndDate() : null;
+    }
+
+    /**
      * Calculates the net profit for this period.
+     * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
      *
      * @return Total income minus total expenses
      */
-    public BigDecimal getNetProfit() {
-        BigDecimal totalIncome = periodIncome != null ? periodIncome.getTotal() : BigDecimal.ZERO;
-        BigDecimal totalExpenses = periodExpenses != null ? periodExpenses.getTotal() : BigDecimal.ZERO;
+    public BigDecimal calculateNetProfit() {
+        BigDecimal totalIncome = periodIncome != null ? periodIncome.calculateTotal() : BigDecimal.ZERO;
+        BigDecimal totalExpenses = periodExpenses != null ? periodExpenses.calculateTotal() : BigDecimal.ZERO;
         return totalIncome.subtract(totalExpenses);
     }
+
+    /**
+     * Period dates wrapper for HMRC API v5.0.
+     * HMRC expects dates to be nested in a periodDates object.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record PeriodDates(
+        @JsonProperty("periodStartDate") LocalDate periodStartDate,
+        @JsonProperty("periodEndDate") LocalDate periodEndDate
+    ) {}
 
     /**
      * Income breakdown for the period.
@@ -75,7 +109,11 @@ public record PeriodicUpdate(
             return new PeriodIncome(turnover, BigDecimal.ZERO);
         }
 
-        public BigDecimal getTotal() {
+        /**
+         * Returns total income.
+         * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
+         */
+        public BigDecimal calculateTotal() {
             return turnover.add(other);
         }
     }
@@ -136,8 +174,9 @@ public record PeriodicUpdate(
 
         /**
          * Calculates total expenses.
+         * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
          */
-        public BigDecimal getTotal() {
+        public BigDecimal calculateTotal() {
             return costOfGoodsBought
                 .add(cisPaymentsToSubcontractors)
                 .add(staffCosts)
@@ -157,9 +196,10 @@ public record PeriodicUpdate(
 
         /**
          * Calculates total allowable expenses (excludes depreciation and business entertainment).
+         * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
          */
-        public BigDecimal getAllowableTotal() {
-            return getTotal()
+        public BigDecimal calculateAllowableTotal() {
+            return calculateTotal()
                 .subtract(depreciation)
                 .subtract(businessEntertainmentCosts);
         }

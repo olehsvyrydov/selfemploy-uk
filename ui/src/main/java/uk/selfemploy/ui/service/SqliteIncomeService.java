@@ -140,6 +140,41 @@ public class SqliteIncomeService extends IncomeService {
     }
 
     /**
+     * Finds all income for a business within a specific quarter.
+     * SE-10G-003: Override to use SQLite repository instead of null parent repository.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return List of income within the quarter
+     */
+    @Override
+    public List<Income> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        return repository.findByDateRange(quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    /**
+     * Counts all income for a business within a specific quarter.
+     * SE-10G-003: Override to use SQLite repository instead of null parent repository.
+     *
+     * @param businessId The business ID
+     * @param taxYear    The tax year
+     * @param quarter    The quarter
+     * @return Count of income transactions within the quarter
+     */
+    @Override
+    public int countByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        return findByQuarter(businessId, taxYear, quarter).size();
+    }
+
+    /**
      * Returns the count of all income entries.
      */
     public long count() {

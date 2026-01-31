@@ -211,6 +211,78 @@ public final class HmrcWireMockStubs {
                 .withBody(loadFixture("quarterly-update-success.json"))));
     }
 
+    // ==================== Cumulative Update Stubs (2025-26+) ====================
+
+    /**
+     * Stubs successful cumulative update submission (for tax year 2025-26+).
+     *
+     * <p>The cumulative endpoint uses PUT with taxYear query parameter.</p>
+     */
+    public static void stubCumulativeUpdateSuccess(String nino, String businessId, String taxYear) {
+        stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + nino + "/" + businessId + "/cumulative"))
+            .withQueryParam("taxYear", equalTo(taxYear))
+            .withHeader("Authorization", matching("Bearer .+"))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                .withBody("""
+                    {
+                        "periodId": "CUM-%s-ABC123DEF456"
+                    }
+                    """.formatted(taxYear))));
+    }
+
+    /**
+     * Stubs cumulative update with validation error.
+     */
+    public static void stubCumulativeUpdateValidationError(String nino, String businessId, String taxYear) {
+        stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + nino + "/" + businessId + "/cumulative"))
+            .withQueryParam("taxYear", equalTo(taxYear))
+            .willReturn(aResponse()
+                .withStatus(422)
+                .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                .withBody("""
+                    {
+                        "code": "FORMAT_VALUE",
+                        "message": "The value must be between 0 and 99999999999.99"
+                    }
+                    """)));
+    }
+
+    /**
+     * Stubs cumulative update with missing taxYear parameter error.
+     */
+    public static void stubCumulativeUpdateMissingTaxYear(String nino, String businessId) {
+        stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + nino + "/" + businessId + "/cumulative"))
+            .withQueryParam("taxYear", absent())
+            .willReturn(aResponse()
+                .withStatus(400)
+                .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                .withBody("""
+                    {
+                        "code": "MISSING_PARAMETER",
+                        "message": "taxYear query parameter is required"
+                    }
+                    """)));
+    }
+
+    /**
+     * Stubs cumulative update for server error scenario.
+     */
+    public static void stubCumulativeUpdateServerError(String nino, String businessId, String taxYear) {
+        stubFor(put(urlPathEqualTo("/individuals/business/self-employment/" + nino + "/" + businessId + "/cumulative"))
+            .withQueryParam("taxYear", equalTo(taxYear))
+            .willReturn(aResponse()
+                .withStatus(500)
+                .withHeader("Content-Type", JSON_CONTENT_TYPE)
+                .withBody("""
+                    {
+                        "code": "SERVER_ERROR",
+                        "message": "An unexpected error occurred on the server"
+                    }
+                    """)));
+    }
+
     // ==================== Annual Return Stubs ====================
 
     /**

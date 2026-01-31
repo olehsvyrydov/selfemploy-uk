@@ -1,5 +1,7 @@
 package uk.selfemploy.ui.controller;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.service.SqliteTestSupport;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,13 +23,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Comprehensive unit tests for HmrcSubmissionController.
+ * Unit tests for HmrcSubmissionController.
  * Tests the controller logic for the HMRC Submission hub page.
+ *
+ * <p>Sprint 13: Connection management tests removed as OAuth is now
+ * handled automatically during submission via AutoOAuthSubmissionService.</p>
  *
  * <p>Test Categories:
  * <ul>
  *   <li>Initialization Tests - Controller setup and service initialization</li>
- *   <li>Connection Status Tests - HMRC connection state management</li>
  *   <li>Tax Year Management Tests - Tax year handling and deadline display</li>
  *   <li>Quarter Status Tests - MTD quarterly submission status</li>
  *   <li>Service Integration Tests - Financial data loading via services</li>
@@ -47,8 +52,19 @@ class HmrcSubmissionControllerTest {
 
     private UUID businessId;
 
+    @BeforeAll
+    static void setUpClass() {
+        SqliteTestSupport.setUpTestEnvironment();
+    }
+
+    @AfterAll
+    static void tearDownClass() {
+        SqliteTestSupport.tearDownTestEnvironment();
+    }
+
     @BeforeEach
     void setUp() {
+        SqliteTestSupport.resetTestData();
         controller = new HmrcSubmissionController();
         taxYear = TaxYear.of(2025);
         businessId = UUID.randomUUID();
@@ -98,55 +114,6 @@ class HmrcSubmissionControllerTest {
             assertThat(controller.getIncomeService()).isSameAs(incomeService);
             assertThat(controller.getExpenseService()).isSameAs(expenseService);
             assertThat(controller.getBusinessId()).isEqualTo(businessId);
-        }
-    }
-
-    @Nested
-    @DisplayName("Connection Status Tests")
-    class ConnectionStatusTests {
-
-        @Test
-        @DisplayName("should be disconnected initially")
-        void shouldBeDisconnectedInitially() {
-            assertThat(controller.isConnected()).isFalse();
-        }
-
-        @Test
-        @DisplayName("should update connection status when connected")
-        void shouldUpdateConnectionStatusWhenConnected() {
-            // When
-            controller.setConnected(true);
-
-            // Then
-            assertThat(controller.isConnected()).isTrue();
-        }
-
-        @Test
-        @DisplayName("should update connection status when disconnected")
-        void shouldUpdateConnectionStatusWhenDisconnected() {
-            // Given - connected state
-            controller.setConnected(true);
-
-            // When
-            controller.setConnected(false);
-
-            // Then
-            assertThat(controller.isConnected()).isFalse();
-        }
-
-        @Test
-        @DisplayName("should toggle connection status correctly")
-        void shouldToggleConnectionStatusCorrectly() {
-            // Initially disconnected
-            assertThat(controller.isConnected()).isFalse();
-
-            // Connect
-            controller.setConnected(true);
-            assertThat(controller.isConnected()).isTrue();
-
-            // Disconnect
-            controller.setConnected(false);
-            assertThat(controller.isConnected()).isFalse();
         }
     }
 
@@ -761,8 +728,6 @@ class HmrcSubmissionControllerTest {
         }
     }
 
-    // === HMRC Page Keyboard Accessibility Tests (KB-020 to KB-027) ===
-
     @Nested
     @DisplayName("Keyboard Accessibility Tests")
     class KeyboardAccessibilityTests {
@@ -772,21 +737,14 @@ class HmrcSubmissionControllerTest {
         void annualSubmissionCardShouldSupportKeyboardHandlers() {
             // Given: HmrcSubmissionController
             // Then: Should implement methods for keyboard events
-            // The controller has handleAnnualSubmissionKey method for Enter/Space handling
             assertThat(controller).isNotNull();
 
             // Verify controller class has the key handler method
             boolean hasKeyHandler = false;
-            try {
-                controller.getClass().getDeclaredMethod("handleAnnualSubmissionKey", javafx.scene.input.KeyEvent.class);
-                hasKeyHandler = true;
-            } catch (NoSuchMethodException e) {
-                // Method not accessible - check via reflection with different access
-                for (var method : controller.getClass().getDeclaredMethods()) {
-                    if (method.getName().equals("handleAnnualSubmissionKey")) {
-                        hasKeyHandler = true;
-                        break;
-                    }
+            for (var method : controller.getClass().getDeclaredMethods()) {
+                if (method.getName().equals("handleAnnualSubmissionKey")) {
+                    hasKeyHandler = true;
+                    break;
                 }
             }
             assertThat(hasKeyHandler)
@@ -797,8 +755,6 @@ class HmrcSubmissionControllerTest {
         @Test
         @DisplayName("KB-021: Controller should support quarterly updates keyboard handler")
         void quarterlyUpdatesCardShouldSupportKeyboardHandler() {
-            // Given: HmrcSubmissionController
-            // Then: Should have quarterly submission key handler
             boolean hasKeyHandler = false;
             for (var method : controller.getClass().getDeclaredMethods()) {
                 if (method.getName().equals("handleQuarterlySubmissionKey")) {
@@ -814,9 +770,6 @@ class HmrcSubmissionControllerTest {
         @Test
         @DisplayName("KB-022: Controller should have method to open annual submission")
         void enterKeyShouldOpenAnnualSubmission() {
-            // Given: HmrcSubmissionController
-            // Then: Should have method to handle opening annual submission
-            // The handleAnnualSubmission method is called when Enter/Space is pressed
             boolean hasOpenMethod = false;
             for (var method : controller.getClass().getDeclaredMethods()) {
                 if (method.getName().equals("openAnnualSubmission") ||
@@ -833,12 +786,10 @@ class HmrcSubmissionControllerTest {
         @Test
         @DisplayName("KB-023: Controller should have method for quarterly updates")
         void enterKeyShouldOpenQuarterlyUpdates() {
-            // Given: HmrcSubmissionController
-            // Then: Should have handler for quarterly submission
             boolean hasHandler = false;
             for (var method : controller.getClass().getDeclaredMethods()) {
-                if (method.getName().equals("showQuarterlyComingSoon") ||
-                    method.getName().equals("handleQuarterlySubmission")) {
+                if (method.getName().equals("handleQuarterlySubmission") ||
+                    method.getName().equals("openQuarterlyUpdates")) {
                     hasHandler = true;
                     break;
                 }
@@ -851,33 +802,14 @@ class HmrcSubmissionControllerTest {
         @Test
         @DisplayName("KB-024: Key handlers should check for Enter and Space keys")
         void spaceKeyShouldActivateCards() {
-            // This test verifies the key event handling logic pattern
-            // The handlers check: event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE
-
             // Verify KeyCode enum has required values
             assertThat(javafx.scene.input.KeyCode.ENTER).isNotNull();
             assertThat(javafx.scene.input.KeyCode.SPACE).isNotNull();
-
-            // The actual key handling is done in handleAnnualSubmissionKey which:
-            // 1. Checks for ENTER or SPACE
-            // 2. Calls openAnnualSubmission()
-            // 3. Consumes the event
         }
 
         @Test
         @DisplayName("KB-025: Tab order should follow visual layout (cards in VBox)")
         void tabOrderShouldFollowVisualLayout() {
-            // The tab order in HMRC page follows the visual layout:
-            // 1. Connection status / buttons
-            // 2. Annual submission card
-            // 3. Quarterly updates card
-            // 4. Submission history card
-
-            // This is ensured by:
-            // - Cards are in a VBox (vertical layout)
-            // - focusTraversable="true" is set on each card in FXML
-            // - Tab traverses in document order
-
             // Verify controller is properly initialized
             assertThat(controller).isNotNull();
         }
@@ -885,9 +817,6 @@ class HmrcSubmissionControllerTest {
         @Test
         @DisplayName("KB-026: Controller should initialize without null pointer exceptions")
         void focusIndicatorShouldBeVisibleOnHmrcCards() {
-            // Focus indicators are CSS-based and applied via :focused pseudo-class
-            // This test verifies controller can be created without issues
-
             // Given: New controller instance
             HmrcSubmissionController freshController = new HmrcSubmissionController();
 
@@ -902,11 +831,6 @@ class HmrcSubmissionControllerTest {
         @Test
         @DisplayName("KB-027: Non-activation keys should not trigger navigation")
         void escapeKeyShouldNotTriggerNavigation() {
-            // The key handlers only respond to ENTER and SPACE
-            // Other keys like ESCAPE, TAB, etc. are not handled
-
-            // Verify by checking the key codes that ARE handled
-            // ENTER and SPACE are the only activation keys
             javafx.scene.input.KeyCode[] activationKeys = {
                 javafx.scene.input.KeyCode.ENTER,
                 javafx.scene.input.KeyCode.SPACE
@@ -922,8 +846,6 @@ class HmrcSubmissionControllerTest {
         }
     }
 
-    // === Card Focusability Tests ===
-
     @Nested
     @DisplayName("Card Focusability Tests")
     class CardFocusabilityTests {
@@ -931,12 +853,6 @@ class HmrcSubmissionControllerTest {
         @Test
         @DisplayName("Controller should support FXML card injection")
         void controllerShouldSupportFxmlCardInjection() {
-            // The controller has @FXML annotated VBox fields for cards:
-            // - annualCard
-            // - quarterlyCard
-            // - historyCard
-
-            // Verify the controller class has these fields
             boolean hasAnnualCard = false;
             boolean hasQuarterlyCard = false;
             boolean hasHistoryCard = false;

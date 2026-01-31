@@ -173,6 +173,11 @@ public class MainController implements Initializable {
                     );
                 }
 
+                // SE-10E-003: Wire "Open Settings" callback for HMRC submission error dialogs
+                if (controller instanceof HmrcSubmissionController hmrcController) {
+                    hmrcController.setNavigateToSettings(() -> loadView(View.SETTINGS));
+                }
+
                 viewCache.put(view, viewNode);
             } catch (IOException e) {
                 showError("Failed to load view: " + view.getTitle(), e);

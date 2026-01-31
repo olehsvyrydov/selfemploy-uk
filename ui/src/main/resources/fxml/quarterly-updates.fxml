@@ -72,7 +72,7 @@
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label fx:id="q1Deadline" text="Deadline: 7 Aug 2025" styleClass="quarter-deadline"/>
                 </HBox>
-                <Button fx:id="q1ActionBtn" text="View" styleClass="button-secondary" maxWidth="Infinity"/>
+                <Button fx:id="q1ActionBtn" text="View" styleClass="button-secondary" maxWidth="Infinity" onAction="#handleQ1Action"/>
             </VBox>
 
             <!-- Q2 Card -->
@@ -107,7 +107,7 @@
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label fx:id="q2Deadline" text="Deadline: 7 Nov 2025" styleClass="quarter-deadline, quarter-deadline-overdue"/>
                 </HBox>
-                <Button fx:id="q2ActionBtn" text="Submit Now" styleClass="button-warning" maxWidth="Infinity"/>
+                <Button fx:id="q2ActionBtn" text="Submit Now" styleClass="button-warning" maxWidth="Infinity" onAction="#handleQ2Action"/>
             </VBox>
 
             <!-- Q3 Card -->
@@ -143,7 +143,7 @@
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label fx:id="q3Deadline" text="Deadline: 7 Feb 2026" styleClass="quarter-deadline"/>
                 </HBox>
-                <Button fx:id="q3ActionBtn" text="Review" styleClass="button-primary" maxWidth="Infinity"/>
+                <Button fx:id="q3ActionBtn" text="Review" styleClass="button-primary" maxWidth="Infinity" onAction="#handleQ3Action"/>
             </VBox>
 
             <!-- Q4 Card -->
@@ -178,7 +178,7 @@
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label fx:id="q4Deadline" text="Deadline: 7 May 2026" styleClass="quarter-deadline"/>
                 </HBox>
-                <Button fx:id="q4ActionBtn" text="Future" styleClass="button-disabled" maxWidth="Infinity" disable="true"/>
+                <Button fx:id="q4ActionBtn" text="Future" styleClass="button-disabled" maxWidth="Infinity" disable="true" onAction="#handleQ4Action"/>
             </VBox>
 
             <!-- Column constraints for equal width -->

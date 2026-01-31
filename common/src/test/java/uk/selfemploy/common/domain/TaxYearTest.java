@@ -231,4 +231,45 @@ class TaxYearTest {
             assertThat(taxYear.paymentDeadline()).isEqualTo(LocalDate.of(2027, 1, 31));
         }
     }
+
+    @Nested
+    @DisplayName("HMRC Format Tests")
+    class HmrcFormatTests {
+
+        @ParameterizedTest
+        @CsvSource({
+            "2020, 2020-21",
+            "2021, 2021-22",
+            "2022, 2022-23",
+            "2023, 2023-24",
+            "2024, 2024-25",
+            "2025, 2025-26",
+            "2026, 2026-27",
+            "2099, 2099-00"
+        })
+        @DisplayName("should format tax year for HMRC API (hyphen-separated)")
+        void shouldFormatForHmrcApi(int startYear, String expectedFormat) {
+            TaxYear taxYear = TaxYear.of(startYear);
+
+            assertThat(taxYear.hmrcFormat()).isEqualTo(expectedFormat);
+        }
+
+        @Test
+        @DisplayName("should use hyphen separator for HMRC format")
+        void shouldUseHyphenSeparator() {
+            TaxYear taxYear = TaxYear.of(2025);
+
+            assertThat(taxYear.hmrcFormat()).contains("-");
+            assertThat(taxYear.hmrcFormat()).doesNotContain("/");
+        }
+
+        @Test
+        @DisplayName("should pad single-digit end year with zero")
+        void shouldPadSingleDigitEndYear() {
+            TaxYear taxYear2099 = TaxYear.of(2099);
+
+            // 2100 mod 100 = 0, so should be formatted as "2099-00"
+            assertThat(taxYear2099.hmrcFormat()).isEqualTo("2099-00");
+        }
+    }
 }

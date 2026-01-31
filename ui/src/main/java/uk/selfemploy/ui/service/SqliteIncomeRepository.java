@@ -5,6 +5,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,6 +86,21 @@ public class SqliteIncomeRepository {
     }
 
     /**
+     * Finds income by date range.
+     * SE-10G-003: Used by findByQuarter() and countByQuarter().
+     *
+     * @param startDate The start date (inclusive)
+     * @param endDate   The end date (inclusive)
+     * @return Income within the date range
+     */
+    public List<Income> findByDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date cannot be null");
+        }
+        return dataStore.findIncomeByDateRange(businessId, startDate, endDate);
+    }
+
+    /**
      * Finds income by category.
      *
      * @param category The category to filter by
@@ -120,7 +136,7 @@ public class SqliteIncomeRepository {
      * @param endDate   The end date (inclusive)
      * @return Total income amount for the date range
      */
-    public BigDecimal getTotalForDateRange(java.time.LocalDate startDate, java.time.LocalDate endDate) {
+    public BigDecimal getTotalForDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }

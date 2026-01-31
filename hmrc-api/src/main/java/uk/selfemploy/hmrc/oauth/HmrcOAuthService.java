@@ -33,6 +33,7 @@ public class HmrcOAuthService {
     private final SecureRandom secureRandom;
 
     private final AtomicReference<OAuthTokens> currentTokens = new AtomicReference<>();
+    private final AtomicReference<String> currentAuthUrl = new AtomicReference<>();
 
     public HmrcOAuthService(HmrcConfig config,
                            OAuthCallbackServer callbackServer,
@@ -69,6 +70,7 @@ public class HmrcOAuthService {
         // Build authorization URL
         LOG.info("Building auth URL...");
         String authUrl = buildAuthorizationUrl(state);
+        currentAuthUrl.set(authUrl);
         LOG.info("Auth URL built (length=" + authUrl.length() + ")");
 
         LOG.info("Starting OAuth2 authentication flow");
@@ -193,6 +195,53 @@ public class HmrcOAuthService {
                 currentTokens.set(tokens);
                 return tokens;
             });
+    }
+
+    /**
+     * Cancels an in-progress authentication flow.
+     * Stops the callback server, which completes the pending future with USER_CANCELLED,
+     * causing the CompletableFuture chain to resolve with an error.
+     *
+     * <p>Safe to call even when no authentication is in progress.</p>
+     */
+    public void cancelAuthentication() {
+        LOG.info("Cancelling OAuth authentication flow");
+        callbackServer.stop();
+    }
+
+    /**
+     * Re-opens the browser with the current authorization URL.
+     * Use this if the user accidentally closed the browser during OAuth flow.
+     *
+     * <p>This only works if an authentication flow is currently in progress
+     * (i.e., after authenticate() was called but before completion).</p>
+     *
+     * @return true if the browser was opened, false if no auth URL is available
+     */
+    public boolean reopenBrowser() {
+        String authUrl = currentAuthUrl.get();
+        if (authUrl == null || authUrl.isEmpty()) {
+            LOG.warning("Cannot reopen browser: no authorization URL available");
+            return false;
+        }
+
+        LOG.info("Re-opening browser for OAuth");
+        try {
+            browserLauncher.openUrl(authUrl);
+            return true;
+        } catch (HmrcOAuthException e) {
+            LOG.warning("Failed to reopen browser: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets the current authorization URL if an OAuth flow is in progress.
+     *
+     * @return the authorization URL, or null if no flow is in progress
+     */
+    public String getCurrentAuthUrl() {
+        return currentAuthUrl.get();
     }
 
     /**

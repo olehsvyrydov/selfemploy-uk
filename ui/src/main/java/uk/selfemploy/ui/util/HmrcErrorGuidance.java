@@ -1,5 +1,11 @@
 package uk.selfemploy.ui.util;
 
+import uk.selfemploy.core.exception.SubmissionException;
+
+import javax.net.ssl.SSLHandshakeException;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -49,6 +55,31 @@ public class HmrcErrorGuidance {
      * Mapping of HMRC error codes to user-friendly help text.
      */
     private static final Map<String, String> ERROR_GUIDANCE = Map.ofEntries(
+        // Pre-validation error codes (SE-10E-002)
+        Map.entry("NINO_REQUIRED",
+            "Your National Insurance Number is required for MTD submissions. " +
+            "Go to Settings > Profile and enter your NINO."),
+
+        Map.entry("BUSINESS_ID_REQUIRED",
+            "Your HMRC business profile needs to be synced. " +
+            "Go to Settings and reconnect to HMRC to retrieve your business registration details."),
+
+        Map.entry("DECLARATION_REQUIRED",
+            "You must tick all confirmation checkboxes before submitting to HMRC."),
+
+        // Auth error codes (SE-10E-002)
+        Map.entry("TOKEN_EXPIRED",
+            "Your HMRC connection has expired. " +
+            "Go to Settings > HMRC Connection and sign in again with your Government Gateway credentials."),
+
+        Map.entry("NOT_CONNECTED",
+            "You are not connected to HMRC. " +
+            "Go to Settings > HMRC Connection and sign in with your Government Gateway credentials."),
+
+        Map.entry("AUTH_FAILED",
+            "Your Government Gateway credentials were rejected by HMRC. " +
+            "Please reconnect via Settings > HMRC Connection."),
+
         // Direct error codes from requirements
         Map.entry("INVALID_NINO",
             "Check your National Insurance number is correct. " +
@@ -122,8 +153,13 @@ public class HmrcErrorGuidance {
 
         // Resource error codes
         Map.entry("MATCHING_RESOURCE_NOT_FOUND",
-            "The record could not be found at HMRC. " +
-            "Please verify your submission details."),
+            "Your HMRC business profile has not been synced yet. " +
+            "Go to Settings and reconnect to HMRC to fetch your business registration details. " +
+            "This is a one-time setup after connecting."),
+
+        Map.entry("HMRC_PROFILE_NOT_SYNCED",
+            "Your HMRC business profile needs to be synced before submitting. " +
+            "Go to Settings and reconnect to HMRC to fetch your business details."),
 
         // Server error codes
         Map.entry("SERVER_ERROR",
@@ -139,6 +175,77 @@ public class HmrcErrorGuidance {
      * Set of known error codes for quick lookup.
      */
     private static final Set<String> KNOWN_CODES = ERROR_GUIDANCE.keySet();
+
+    /**
+     * Mapping of error codes to dialog header titles.
+     * Falls back to "Submission Failed" for unknown codes.
+     */
+    private static final Map<String, String> ERROR_TITLES = Map.ofEntries(
+        Map.entry("NINO_REQUIRED", "National Insurance Number Not Set"),
+        Map.entry("BUSINESS_ID_REQUIRED", "HMRC Business Profile Not Synced"),
+        Map.entry("DECLARATION_REQUIRED", "Declaration Not Accepted"),
+        Map.entry("TOKEN_EXPIRED", "HMRC Session Expired"),
+        Map.entry("NOT_CONNECTED", "Not Connected to HMRC"),
+        Map.entry("AUTH_FAILED", "HMRC Authentication Failed"),
+        Map.entry("INVALID_NINO", "Invalid National Insurance Number"),
+        Map.entry("DUPLICATE_SUBMISSION", "Already Submitted"),
+        Map.entry("RULE_ALREADY_EXISTS", "Already Submitted"),
+        Map.entry("RULE_PERIODIC_UPDATE_FOR_PERIOD_SUBMITTED", "Already Submitted"),
+        Map.entry("MATCHING_RESOURCE_NOT_FOUND", "HMRC Business Profile Not Synced"),
+        Map.entry("HMRC_PROFILE_NOT_SYNCED", "HMRC Profile Not Synced"),
+        Map.entry("SERVER_ERROR", "HMRC Service Unavailable"),
+        Map.entry("SERVICE_UNAVAILABLE", "HMRC Service Unavailable")
+    );
+
+    /**
+     * Error codes that can be resolved by visiting Settings.
+     * When one of these codes is encountered, the dialog shows an "Open Settings" button.
+     */
+    private static final Set<String> SETTINGS_ERROR_CODES = Set.of(
+        "NINO_REQUIRED",
+        "BUSINESS_ID_REQUIRED",
+        "TOKEN_EXPIRED",
+        "NOT_CONNECTED",
+        "AUTH_FAILED",
+        "CLIENT_OR_AGENT_NOT_AUTHORISED",
+        "UNAUTHORISED",
+        "MATCHING_RESOURCE_NOT_FOUND",
+        "HMRC_PROFILE_NOT_SYNCED"
+    );
+
+    /**
+     * Network exception types that indicate connection problems.
+     */
+    private static final Set<Class<? extends Throwable>> NETWORK_EXCEPTION_TYPES = Set.of(
+        SSLHandshakeException.class,
+        ConnectException.class,
+        SocketTimeoutException.class,
+        UnknownHostException.class
+    );
+
+    /**
+     * Patterns in exception messages that indicate network errors.
+     */
+    private static final Pattern NETWORK_MESSAGE_PATTERN =
+        Pattern.compile("(?i)(network\s+error|connection\s+timeout|ssl\s+handshake)");
+
+    /**
+     * Title for network-related errors.
+     */
+    private static final String NETWORK_ERROR_TITLE = "Connection Error";
+
+    /**
+     * User-friendly message for network errors.
+     */
+    private static final String NETWORK_ERROR_MESSAGE =
+        "Could not connect to HMRC. The service may be temporarily unavailable.";
+
+    /**
+     * Actionable guidance for network errors.
+     */
+    private static final String NETWORK_ERROR_GUIDANCE =
+        "Please check your internet connection and try again. " +
+        "If the problem persists, HMRC services may be temporarily unavailable.";
 
     /**
      * Returns user-friendly guidance text for the given HMRC error code.
@@ -228,5 +335,113 @@ public class HmrcErrorGuidance {
             return false;
         }
         return KNOWN_CODES.contains(errorCode.toUpperCase().trim());
+    }
+
+    /**
+     * Returns a dialog-specific title for the given error code.
+     *
+     * <p>SE-10E-002: Maps known error codes to descriptive dialog titles.
+     * Falls back to "Submission Failed" for unknown or null codes.</p>
+     *
+     * @param errorCode the error code (case-insensitive)
+     * @return a dialog title appropriate for the error
+     */
+    public String getTitle(String errorCode) {
+        if (errorCode == null) {
+            return "Submission Failed";
+        }
+        return ERROR_TITLES.getOrDefault(errorCode.toUpperCase().trim(), "Submission Failed");
+    }
+
+    /**
+     * Checks if the given error code represents an error fixable via Settings.
+     *
+     * <p>SE-10E-002: Settings errors include missing NINO, expired tokens,
+     * and authentication failures - all resolvable by the user in the Settings page.</p>
+     *
+     * @param errorCode the error code to check
+     * @return true if the error can be fixed via Settings
+     */
+    public boolean isSettingsError(String errorCode) {
+        if (errorCode == null) {
+            return false;
+        }
+        return SETTINGS_ERROR_CODES.contains(errorCode.toUpperCase().trim());
+    }
+
+    /**
+     * Builds a complete {@link SubmissionErrorDisplay} for rendering the error dialog.
+     *
+     * <p>SE-10E-002: This is the main entry point for the error dialog redesign.
+     * It extracts the error code from the exception, looks up guidance, title,
+     * and action hints, and returns a fully populated display record.</p>
+     *
+     * @param exception the exception from the failed submission (may be null)
+     * @return a display record with all information needed to render the error dialog
+     */
+    public SubmissionErrorDisplay buildErrorDisplay(Throwable exception) {
+        String errorMessage = exception != null ? exception.getMessage() : null;
+        boolean retryable = exception instanceof SubmissionException se && se.isRetryable();
+
+        // Check for network errors first
+        if (isNetworkError(exception)) {
+            return new SubmissionErrorDisplay(
+                NETWORK_ERROR_TITLE, NETWORK_ERROR_MESSAGE, NETWORK_ERROR_GUIDANCE,
+                null, retryable, false);
+        }
+
+        String errorCode = extractErrorCode(errorMessage);
+        String guidance = getFormattedGuidance(errorCode, errorMessage);
+        String title = getTitle(errorCode);
+        boolean settingsError = errorCode != null && SETTINGS_ERROR_CODES.contains(errorCode.toUpperCase().trim());
+
+        // Differentiate message from guidance:
+        // - message: the original exception message (what went wrong)
+        // - guidance: the looked-up actionable steps (what to do about it)
+        String message;
+        if (errorMessage != null && !errorMessage.isBlank()) {
+            message = errorMessage;
+        } else {
+            message = guidance;
+        }
+
+        return new SubmissionErrorDisplay(title, message, guidance, errorCode, retryable, settingsError);
+    }
+
+    /**
+     * Checks if the given exception represents a network connectivity error.
+     *
+     * <p>Inspects the exception and its cause chain for known network exception types
+     * (SSLHandshakeException, ConnectException, SocketTimeoutException, UnknownHostException)
+     * and also checks the exception message for network-related keywords.</p>
+     *
+     * @param exception the exception to check
+     * @return true if this is a network-related error
+     */
+    boolean isNetworkError(Throwable exception) {
+        if (exception == null) {
+            return false;
+        }
+
+        // Check exception message for network patterns
+        String message = exception.getMessage();
+        if (message != null && NETWORK_MESSAGE_PATTERN.matcher(message).find()) {
+            return true;
+        }
+
+        // Check cause chain for network exception types (up to 5 levels deep)
+        Throwable cause = exception.getCause();
+        int depth = 0;
+        while (cause != null && depth < 5) {
+            for (Class<? extends Throwable> networkType : NETWORK_EXCEPTION_TYPES) {
+                if (networkType.isInstance(cause)) {
+                    return true;
+                }
+            }
+            cause = cause.getCause();
+            depth++;
+        }
+
+        return false;
     }
 }
