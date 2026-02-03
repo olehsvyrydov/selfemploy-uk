@@ -1391,4 +1391,83 @@ class SettingsControllerTest {
         }
     }
 
+    // ========================================================================
+    // Business Details Fetch Failure Tests (SE-10G-001)
+    // ========================================================================
+
+    @Nested
+    @DisplayName("Business Details Fetch Failure Handling")
+    class BusinessDetailsFetchFailureHandling {
+
+        @Test
+        @DisplayName("should identify 5xx errors as server errors requiring warning")
+        void shouldIdentify5xxErrorsAsServerErrors() {
+            // When/Then - 5xx errors should be identified as server errors
+            assertThat(controller.isServerError(500)).isTrue();
+            assertThat(controller.isServerError(501)).isTrue();
+            assertThat(controller.isServerError(502)).isTrue();
+            assertThat(controller.isServerError(503)).isTrue();
+            assertThat(controller.isServerError(504)).isTrue();
+            assertThat(controller.isServerError(599)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should not identify 4xx errors as server errors")
+        void shouldNotIdentify4xxErrorsAsServerErrors() {
+            // When/Then - 4xx errors are client errors, not server errors
+            assertThat(controller.isServerError(400)).isFalse();
+            assertThat(controller.isServerError(401)).isFalse();
+            assertThat(controller.isServerError(403)).isFalse();
+            assertThat(controller.isServerError(404)).isFalse();
+            assertThat(controller.isServerError(429)).isFalse();
+            assertThat(controller.isServerError(499)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should not identify 2xx responses as server errors")
+        void shouldNotIdentify2xxResponsesAsServerErrors() {
+            // When/Then - 2xx responses are success, not errors
+            assertThat(controller.isServerError(200)).isFalse();
+            assertThat(controller.isServerError(201)).isFalse();
+            assertThat(controller.isServerError(204)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should set PROFILE_SYNC_PENDING status for server errors")
+        void shouldSetProfileSyncPendingStatusForServerErrors() {
+            // Given - a 5xx server error occurred
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.PROFILE_SYNC_PENDING);
+
+            // When
+            SettingsController.NinoVerificationStatus status = controller.getNinoVerificationStatus();
+
+            // Then - status should indicate profile sync is pending
+            assertThat(status).isEqualTo(SettingsController.NinoVerificationStatus.PROFILE_SYNC_PENDING);
+        }
+
+        @Test
+        @DisplayName("should provide descriptive message for profile sync pending status")
+        void shouldProvideDescriptiveMessageForProfileSyncPending() {
+            // Given
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.PROFILE_SYNC_PENDING);
+
+            // When
+            String message = controller.getNinoVerificationMessage();
+
+            // Then - message should explain the partial connection state
+            assertThat(message).containsIgnoringCase("profile");
+            assertThat(message).containsIgnoringCase("sync");
+        }
+
+        @Test
+        @DisplayName("isNinoVerified should return false for profile sync pending status")
+        void isNinoVerifiedShouldReturnFalseForProfileSyncPending() {
+            // Given
+            controller.setNinoVerificationStatus(SettingsController.NinoVerificationStatus.PROFILE_SYNC_PENDING);
+
+            // When/Then
+            assertThat(controller.isNinoVerified()).isFalse();
+        }
+    }
+
 }

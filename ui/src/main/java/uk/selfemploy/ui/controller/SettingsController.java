@@ -105,7 +105,14 @@ public class SettingsController implements Initializable, MainController.TaxYear
          * In sandbox mode, we cannot verify if the new NINO is valid.
          * User should be warned that their NINO change cannot be verified.
          */
-        NINO_CHANGED
+        NINO_CHANGED,
+
+        /**
+         * OAuth succeeded but business profile sync failed due to server error (5xx).
+         * The connection is partially established - user can proceed but should be aware
+         * that profile data will sync on first submission.
+         */
+        PROFILE_SYNC_PENDING
     }
 
     // === FXML Injected Fields ===
@@ -387,6 +394,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
             case FAILED -> "NINO verification failed - NINO doesn't match HMRC account";
             case SANDBOX_FALLBACK -> "NINO not verified - Using sandbox test data";
             case NINO_CHANGED -> "NINO changed since last connection - Sandbox cannot verify new NINO";
+            case PROFILE_SYNC_PENDING -> "Connected - Business profile sync pending (will retry on first submission)";
         };
     }
 
@@ -433,6 +441,18 @@ public class SettingsController implements Initializable, MainController.TaxYear
             return false; // Default to production mode (safer)
         }
         return apiBaseUrl.toLowerCase().contains("test-api");
+    }
+
+    /**
+     * Checks if the given HTTP status code indicates a server error (5xx).
+     * Server errors indicate temporary issues on HMRC's side that may resolve
+     * and should be treated differently from client errors (4xx).
+     *
+     * @param statusCode the HTTP status code to check
+     * @return true if the status code is in the 5xx range (500-599)
+     */
+    public boolean isServerError(int statusCode) {
+        return statusCode >= 500 && statusCode < 600;
     }
 
     /**
@@ -763,20 +783,39 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     }
                 } else {
                     LOG.warning("Failed to fetch business details: " + response.statusCode() + " - " + response.body());
+                    int statusCode = response.statusCode();
                     Platform.runLater(() -> {
-                        setNinoVerificationStatus(NinoVerificationStatus.NOT_VERIFIED);
-                        completeSetup(true, "Connected (profile sync pending)");
-                        showInfo("HMRC Connected",
-                                "Connected to HMRC. Business profile will sync on first submission.\n\n" +
-                                "Note: If you're using sandbox mode, ensure test data is set up.");
+                        if (isServerError(statusCode)) {
+                            // 5xx server error: OAuth worked but HMRC had a temporary issue
+                            setNinoVerificationStatus(NinoVerificationStatus.PROFILE_SYNC_PENDING);
+                            completeSetup(true, "Connected (profile sync pending)");
+                            showWarning("HMRC Partially Connected",
+                                    "Connected to HMRC but business profile sync failed.\n\n" +
+                                    "Your OAuth authentication was successful, but HMRC returned a " +
+                                    "server error (" + statusCode + ") when fetching your profile.\n\n" +
+                                    "Your profile will sync automatically on your first submission, " +
+                                    "or you can try reconnecting later.");
+                        } else {
+                            // 4xx client error: different handling
+                            setNinoVerificationStatus(NinoVerificationStatus.NOT_VERIFIED);
+                            completeSetup(true, "Connected (profile sync pending)");
+                            showInfo("HMRC Connected",
+                                    "Connected to HMRC. Business profile will sync on first submission.\n\n" +
+                                    "Note: If you're using sandbox mode, ensure test data is set up.");
+                        }
                     });
                 }
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "Failed to fetch business profile", e);
                 Platform.runLater(() -> {
+                    setNinoVerificationStatus(NinoVerificationStatus.PROFILE_SYNC_PENDING);
                     completeSetup(true, "Connected (profile sync pending)");
-                    showInfo("HMRC Connected",
-                            "Connected to HMRC. Business profile will sync on first submission.");
+                    showWarning("HMRC Partially Connected",
+                            "Connected to HMRC but business profile sync failed.\n\n" +
+                            "Your OAuth authentication was successful, but there was an error " +
+                            "fetching your profile.\n\n" +
+                            "Your profile will sync automatically on your first submission, " +
+                            "or you can try reconnecting later.");
                 });
             }
         });
