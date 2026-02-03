@@ -457,9 +457,17 @@ class DefaultPluginEventBusTest {
             int iterations = 100;
             CountDownLatch latch = new CountDownLatch(iterations);
             List<String> received = Collections.synchronizedList(new ArrayList<>());
+            CountDownLatch subscriberReady = new CountDownLatch(1);
 
-            // Subscriber thread
+            // Add initial subscriber to ensure at least one is ready before publishing
+            eventBus.subscribe(TestEvent.class, event -> {
+                received.add(event.getMessage());
+                latch.countDown();
+            });
+
+            // Subscriber thread adds more subscribers concurrently
             Thread subscriber = new Thread(() -> {
+                subscriberReady.countDown();
                 for (int i = 0; i < iterations / 2; i++) {
                     eventBus.subscribe(TestEvent.class, event -> {
                         received.add(event.getMessage());
@@ -470,6 +478,12 @@ class DefaultPluginEventBusTest {
 
             // Publisher thread
             Thread publisher = new Thread(() -> {
+                try {
+                    // Wait for subscriber thread to start
+                    subscriberReady.await(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 for (int i = 0; i < iterations; i++) {
                     eventBus.publish(new TestEvent("source", "msg-" + i));
                 }
@@ -484,7 +498,7 @@ class DefaultPluginEventBusTest {
             // Wait for some deliveries
             latch.await(1, TimeUnit.SECONDS);
 
-            // Some messages should have been received
+            // Some messages should have been received (at least by the initial subscriber)
             assertThat(received).isNotEmpty();
         }
     }
