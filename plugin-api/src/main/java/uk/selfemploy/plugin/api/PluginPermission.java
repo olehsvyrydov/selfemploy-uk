@@ -156,6 +156,25 @@ public enum PluginPermission {
         "Clipboard Access",
         "Allows the plugin to read from and write to the system clipboard",
         Sensitivity.LOW
+    ),
+
+    /**
+     * Permission to provide services to other plugins.
+     *
+     * <p>Required for plugins that want to register services with the
+     * {@link ServiceRegistry}. This allows the plugin to expose functionality
+     * that other plugins can consume.</p>
+     *
+     * <p>Consuming services (via {@link ServiceRegistry#getService} or
+     * {@link ServiceRegistry#getServices}) does not require this permission.</p>
+     *
+     * @see ServiceRegistry
+     * @see PluginService
+     */
+    SERVICE_PROVIDER(
+        "Service Provider",
+        "Allows the plugin to register services that other plugins can consume",
+        Sensitivity.MEDIUM
     );
 
     /**

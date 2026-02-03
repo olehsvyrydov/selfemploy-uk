@@ -95,6 +95,17 @@ class PluginPermissionTest {
             assertThat(PluginPermission.UI_EXTENSION.getDisplayName())
                 .isEqualTo("UI Extension");
         }
+
+        @Test
+        @DisplayName("SERVICE_PROVIDER permission exists")
+        void serviceProviderPermission() {
+            assertThat(PluginPermission.SERVICE_PROVIDER)
+                .isNotNull();
+            assertThat(PluginPermission.SERVICE_PROVIDER.getDisplayName())
+                .isEqualTo("Service Provider");
+            assertThat(PluginPermission.SERVICE_PROVIDER.getDescription())
+                .contains("register services");
+        }
     }
 
     @Nested
@@ -154,6 +165,13 @@ class PluginPermissionTest {
         void uiExtensionIsLowSensitivity() {
             assertThat(PluginPermission.UI_EXTENSION.getSensitivity())
                 .isEqualTo(PluginPermission.Sensitivity.LOW);
+        }
+
+        @Test
+        @DisplayName("SERVICE_PROVIDER is MEDIUM sensitivity")
+        void serviceProviderIsMediumSensitivity() {
+            assertThat(PluginPermission.SERVICE_PROVIDER.getSensitivity())
+                .isEqualTo(PluginPermission.Sensitivity.MEDIUM);
         }
     }
 

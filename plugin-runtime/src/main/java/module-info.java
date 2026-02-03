@@ -26,8 +26,15 @@ module uk.selfemploy.plugin.runtime {
     requires uk.selfemploy.plugin.api;
     requires org.slf4j;
 
+    // JSON serialization for revocation list
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.datatype.jsr310;
+
     // Exported packages
     exports uk.selfemploy.plugin.runtime;
+
+    // Open to Jackson for JSON serialization of revocation list
+    opens uk.selfemploy.plugin.runtime to com.fasterxml.jackson.databind;
 
     // ServiceLoader support for plugin discovery
     uses uk.selfemploy.plugin.api.Plugin;

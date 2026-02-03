@@ -2,6 +2,8 @@ package uk.selfemploy.plugin.runtime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.plugin.extension.ConflictResolutionPolicy;
+import uk.selfemploy.plugin.extension.ExtensionConflictResolver;
 import uk.selfemploy.plugin.extension.ExtensionPoint;
 
 import java.util.ArrayList;
@@ -61,6 +63,40 @@ public class ExtensionRegistry {
      */
     private final Map<String, Set<ExtensionEntry<?>>> extensionsByPlugin =
         new ConcurrentHashMap<>();
+
+    /**
+     * Conflict resolver for ordering extensions.
+     * COND-1105-D: Resolver is injected.
+     */
+    private final ExtensionConflictResolver conflictResolver;
+
+    /**
+     * Default conflict resolution policy.
+     * COND-1105-A: Default policy is PRIORITY_ORDER.
+     */
+    private ConflictResolutionPolicy defaultPolicy = ConflictResolutionPolicy.PRIORITY_ORDER;
+
+    /**
+     * Creates a new ExtensionRegistry with the default conflict resolver.
+     */
+    public ExtensionRegistry() {
+        this(new DefaultExtensionConflictResolver());
+    }
+
+    /**
+     * Creates a new ExtensionRegistry with the specified conflict resolver.
+     *
+     * <p>COND-1105-D: Conflict resolver is injected into ExtensionRegistry.</p>
+     *
+     * @param conflictResolver the resolver to use for ordering extensions
+     * @throws NullPointerException if conflictResolver is null
+     */
+    public ExtensionRegistry(ExtensionConflictResolver conflictResolver) {
+        this.conflictResolver = Objects.requireNonNull(
+            conflictResolver,
+            "conflictResolver must not be null"
+        );
+    }
 
     /**
      * Registers an extension for the given type.
@@ -167,17 +203,69 @@ public class ExtensionRegistry {
     }
 
     /**
-     * Returns all registered extensions of the given type.
+     * Returns all registered extensions of the given type, sorted by the default policy.
      *
-     * <p>The returned list is unmodifiable. The order of extensions is
-     * the order in which they were registered.</p>
+     * <p>The returned list is unmodifiable. Extensions are ordered according to
+     * the default conflict resolution policy (PRIORITY_ORDER).</p>
+     *
+     * <p>COND-1105-A: Default policy is PRIORITY_ORDER.</p>
+     * <p>COND-1105-C: Equal priority preserves registration order (stable sort).</p>
      *
      * @param <T>  the extension point type
      * @param type the extension point class
      * @return unmodifiable list of extensions, never null
      */
-    @SuppressWarnings("unchecked")
     public <T extends ExtensionPoint> List<T> getExtensions(Class<T> type) {
+        return getExtensions(type, defaultPolicy);
+    }
+
+    /**
+     * Returns all registered extensions of the given type, sorted by the specified policy.
+     *
+     * <p>The returned list is unmodifiable. Extensions are ordered according to
+     * the specified conflict resolution policy.</p>
+     *
+     * @param <T>    the extension point type
+     * @param type   the extension point class
+     * @param policy the conflict resolution policy to apply
+     * @return unmodifiable list of extensions, never null
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends ExtensionPoint> List<T> getExtensions(
+            Class<T> type,
+            ConflictResolutionPolicy policy) {
+        Objects.requireNonNull(type, "type must not be null");
+        Objects.requireNonNull(policy, "policy must not be null");
+
+        List<ExtensionEntry<?>> entries = extensions.get(type);
+        if (entries == null || entries.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Extract extensions from entries
+        List<T> unsorted = new ArrayList<>(entries.size());
+        for (ExtensionEntry<?> entry : entries) {
+            unsorted.add((T) entry.extension());
+        }
+
+        // Apply conflict resolution
+        List<T> sorted = conflictResolver.resolve(unsorted, policy);
+        return Collections.unmodifiableList(sorted);
+    }
+
+    /**
+     * Returns all registered extensions of the given type in registration order.
+     *
+     * <p>This method bypasses conflict resolution and returns extensions in
+     * the order they were registered. Useful for debugging or when you need
+     * to inspect raw registration order.</p>
+     *
+     * @param <T>  the extension point type
+     * @param type the extension point class
+     * @return unmodifiable list of extensions in registration order, never null
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends ExtensionPoint> List<T> getExtensionsUnordered(Class<T> type) {
         Objects.requireNonNull(type, "type must not be null");
 
         List<ExtensionEntry<?>> entries = extensions.get(type);
@@ -243,6 +331,34 @@ public class ExtensionRegistry {
         extensions.clear();
         extensionsByPlugin.clear();
         LOG.debug("Cleared all registered extensions");
+    }
+
+    /**
+     * Returns the conflict resolver used by this registry.
+     *
+     * @return the conflict resolver, never null
+     */
+    public ExtensionConflictResolver getConflictResolver() {
+        return conflictResolver;
+    }
+
+    /**
+     * Returns the default conflict resolution policy.
+     *
+     * @return the default policy, never null
+     */
+    public ConflictResolutionPolicy getDefaultPolicy() {
+        return defaultPolicy;
+    }
+
+    /**
+     * Sets the default conflict resolution policy.
+     *
+     * @param policy the new default policy
+     * @throws NullPointerException if policy is null
+     */
+    public void setDefaultPolicy(ConflictResolutionPolicy policy) {
+        this.defaultPolicy = Objects.requireNonNull(policy, "policy must not be null");
     }
 
     /**

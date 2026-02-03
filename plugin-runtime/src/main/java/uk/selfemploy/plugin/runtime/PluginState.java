@@ -5,17 +5,21 @@ package uk.selfemploy.plugin.runtime;
  *
  * <h2>State Diagram</h2>
  * <pre>
- * DISCOVERED --> LOADED --> ENABLED
- *                  |           |
- *                  v           v
- *               FAILED     DISABLED
- *                  |           |
- *                  v           v
- *               UNLOADED <-----+
+ *              +---> BLOCKED ---+
+ *              |                |
+ * DISCOVERED --+---> LOADED --> ENABLED
+ *              |       |           |
+ *              |       v           v
+ *              +---> FAILED     DISABLED
+ *                      |           |
+ *                      v           v
+ *                   UNLOADED <-----+
  * </pre>
  *
  * <h2>State Transitions</h2>
  * <ul>
+ *   <li>{@code DISCOVERED -> BLOCKED}: Plugin has unresolved dependencies</li>
+ *   <li>{@code BLOCKED -> LOADED}: Dependencies resolved, plugin can load</li>
  *   <li>{@code DISCOVERED -> LOADED}: Plugin loaded successfully</li>
  *   <li>{@code DISCOVERED -> FAILED}: Plugin load failed</li>
  *   <li>{@code LOADED -> ENABLED}: Plugin enabled</li>
@@ -36,6 +40,12 @@ public enum PluginState {
      * This is the initial state when a plugin is first found.
      */
     DISCOVERED("Discovered"),
+
+    /**
+     * Plugin is blocked from loading due to unresolved dependencies.
+     * The plugin will transition to LOADED when dependencies become available.
+     */
+    BLOCKED("Blocked"),
 
     /**
      * Plugin has been loaded and onLoad() called successfully.
@@ -90,7 +100,8 @@ public enum PluginState {
      */
     public boolean canTransitionTo(PluginState target) {
         return switch (this) {
-            case DISCOVERED -> target == LOADED || target == FAILED;
+            case DISCOVERED -> target == LOADED || target == FAILED || target == BLOCKED;
+            case BLOCKED -> target == LOADED || target == UNLOADED; // When dependency becomes available
             case LOADED -> target == ENABLED || target == UNLOADED || target == FAILED;
             case ENABLED -> target == DISABLED;
             case DISABLED -> target == ENABLED || target == UNLOADED;
