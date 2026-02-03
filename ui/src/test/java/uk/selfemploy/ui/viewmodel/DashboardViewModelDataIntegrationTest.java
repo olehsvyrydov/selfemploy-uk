@@ -172,9 +172,9 @@ class DashboardViewModelDataIntegrationTest {
         void shouldCalculateExpensesThisMonth() {
             // Given - expense entries including some from this month
             LocalDate today = LocalDate.now();
-            LocalDate thisMonth = today.withDayOfMonth(1);
 
-            Expense thisMonthExpense = createExpense(thisMonth.plusDays(5), new BigDecimal("1500.00"));
+            // Use today for this month's expense (guaranteed not in future)
+            Expense thisMonthExpense = createExpense(today, new BigDecimal("1500.00"));
             Expense lastMonthExpense = createExpense(today.minusMonths(1), new BigDecimal("800.00"));
 
             when(incomeService.findByTaxYear(eq(businessId), any(TaxYear.class)))
