@@ -49,7 +49,8 @@ public class ExclusionRulesEngine {
         // Cash withdrawals (unverifiable business use)
         EXCLUSION_RULES.put("atm", "CASH_WITHDRAWAL");
         EXCLUSION_RULES.put("cash withdrawal", "CASH_WITHDRAWAL");
-        EXCLUSION_RULES.put("cash ", "CASH_WITHDRAWAL");
+        EXCLUSION_RULES.put("cash w/d", "CASH_WITHDRAWAL");
+        EXCLUSION_RULES.put("cashpoint", "CASH_WITHDRAWAL");
     }
 
     /**

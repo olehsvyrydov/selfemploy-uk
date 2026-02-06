@@ -97,8 +97,8 @@ public final class ErrorTolerantCsvParser {
         int lineNumber = 0;
 
         try (BufferedReader reader = Files.newBufferedReader(csvFile, charset)) {
-            // Skip header line
-            reader.readLine();
+            // Read and cache header line
+            String headerLine = reader.readLine();
             lineNumber++;
 
             // Read all remaining lines
@@ -116,10 +116,8 @@ public final class ErrorTolerantCsvParser {
                 String dataLine = dataLines.get(i);
                 int originalLineNumber = i + 2; // +2 for 1-based + header
                 try {
-                    // Create a temp file with header + single data line
                     Path tempFile = Files.createTempFile("csv_parse_", ".csv");
                     try {
-                        String headerLine = Files.readAllLines(csvFile, charset).get(0);
                         Files.writeString(tempFile, headerLine + "\n" + dataLine + "\n", charset);
                         List<ImportedTransaction> parsed = parser.parse(tempFile, charset);
                         transactions.addAll(parsed);

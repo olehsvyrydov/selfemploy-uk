@@ -160,13 +160,70 @@ class ExclusionRulesEngineTest {
         }
 
         @Test
-        @DisplayName("CASH keyword triggers exclusion")
-        void cashKeyword() {
+        @DisplayName("CASH WITHDRAWAL keyword triggers exclusion")
+        void cashWithdrawalKeyword() {
             BankTransaction tx = createTransaction("CASH WITHDRAWAL", new BigDecimal("-100.00"));
 
             ExclusionResult result = engine.evaluate(tx);
 
             assertThat(result.shouldExclude()).isTrue();
+        }
+
+        @Test
+        @DisplayName("CASH W/D abbreviation triggers exclusion")
+        void cashWdAbbreviation() {
+            BankTransaction tx = createTransaction("CASH W/D HIGH ST", new BigDecimal("-50.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isTrue();
+            assertThat(result.reason()).contains("CASH_WITHDRAWAL");
+        }
+
+        @Test
+        @DisplayName("CASHPOINT triggers exclusion")
+        void cashpointKeyword() {
+            BankTransaction tx = createTransaction("CASHPOINT 12345", new BigDecimal("-200.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isTrue();
+            assertThat(result.reason()).contains("CASH_WITHDRAWAL");
+        }
+    }
+
+    @Nested
+    @DisplayName("False positive prevention")
+    class FalsePositivePrevention {
+
+        @Test
+        @DisplayName("CASHBACK should not be excluded")
+        void cashbackNotExcluded() {
+            BankTransaction tx = createTransaction("TESCO CASHBACK", new BigDecimal("-5.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
+
+        @Test
+        @DisplayName("CASH & CARRY should not be excluded")
+        void cashAndCarryNotExcluded() {
+            BankTransaction tx = createTransaction("CASH & CARRY LTD", new BigDecimal("-150.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
+
+        @Test
+        @DisplayName("CASH CONVERTERS should not be excluded")
+        void cashConvertersNotExcluded() {
+            BankTransaction tx = createTransaction("CASH CONVERTERS", new BigDecimal("-25.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
         }
     }
 
