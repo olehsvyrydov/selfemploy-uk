@@ -91,6 +91,28 @@ public class ColumnMapping {
                 mapping.setCategoryColumn("Category");
                 mapping.setDateFormat("dd/MM/yyyy");
             }
+            case REVOLUT -> {
+                mapping.setDateColumn("Completed Date");
+                mapping.setDescriptionColumn("Description");
+                mapping.setSeparateAmountColumns(false);
+                mapping.setAmountColumn("Amount");
+                mapping.setDateFormat("yyyy-MM-dd HH:mm:ss");
+            }
+            case SANTANDER -> {
+                mapping.setDateColumn("Date");
+                mapping.setDescriptionColumn("Description");
+                mapping.setSeparateAmountColumns(false);
+                mapping.setAmountColumn("Amount");
+                mapping.setDateFormat("dd/MM/yyyy");
+            }
+            case METRO_BANK -> {
+                mapping.setDateColumn("Date");
+                mapping.setDescriptionColumn("Description");
+                mapping.setSeparateAmountColumns(true);
+                mapping.setIncomeColumn("Money in");
+                mapping.setExpenseColumn("Money out");
+                mapping.setDateFormat("dd/MM/yyyy");
+            }
             case UNKNOWN -> {
                 // Leave empty for manual mapping
             }

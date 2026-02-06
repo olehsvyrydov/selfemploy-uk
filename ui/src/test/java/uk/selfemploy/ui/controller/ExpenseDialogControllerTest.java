@@ -114,6 +114,7 @@ class ExpenseDialogControllerTest {
                 "Monthly subscription",
                 null,
                 null,
+                null,
                 null
             );
         }
@@ -320,6 +321,7 @@ class ExpenseDialogControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -417,6 +419,7 @@ class ExpenseDialogControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -429,7 +432,7 @@ class ExpenseDialogControllerTest {
                     ExpenseCategory cat = invocation.getArgument(4);
                     String receipt = invocation.getArgument(5);
                     String notes = invocation.getArgument(6);
-                    return new Expense(id, businessId, date, amount, desc, cat, receipt, notes, null, null, null);
+                    return new Expense(id, businessId, date, amount, desc, cat, receipt, notes, null, null, null, null);
                 });
         }
 
@@ -465,6 +468,7 @@ class ExpenseDialogControllerTest {
                 new BigDecimal("54.99"),
                 "Adobe Creative Cloud",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,
@@ -541,6 +545,7 @@ class ExpenseDialogControllerTest {
                 new BigDecimal("50.00"),
                 "Test",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,
@@ -1228,6 +1233,7 @@ class ExpenseDialogControllerTest {
                 new BigDecimal("54.99"),
                 "Office Supplies",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,

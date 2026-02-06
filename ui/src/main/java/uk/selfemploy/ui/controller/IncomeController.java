@@ -32,6 +32,12 @@ import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.viewmodel.IncomeListViewModel;
 import uk.selfemploy.ui.viewmodel.IncomeTableRow;
 
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -366,6 +372,43 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     @FXML
     void handleAddIncome(ActionEvent event) {
         openIncomeDialog(null);
+    }
+
+    @FXML
+    void handleImportBankStatement(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
+            Parent root = loader.load();
+
+            BankImportWizardController controller = loader.getController();
+
+            Stage wizardStage = new Stage();
+            wizardStage.setTitle("Import Bank Statement");
+            wizardStage.initModality(Modality.WINDOW_MODAL);
+            wizardStage.initOwner(incomeContainer.getScene().getWindow());
+            wizardStage.setWidth(1000);
+            wizardStage.setHeight(700);
+            wizardStage.setMinWidth(800);
+            wizardStage.setMinHeight(600);
+
+            Scene scene = new Scene(root);
+            String mainCss = getClass().getResource("/css/main.css").toExternalForm();
+            scene.getStylesheets().add(mainCss);
+            String bankImportCss = getClass().getResource("/css/bank-import.css").toExternalForm();
+            scene.getStylesheets().add(bankImportCss);
+
+            wizardStage.setScene(scene);
+            controller.setDialogStage(wizardStage);
+            controller.setOnImportCallback(importedRows -> {
+                LOG.info("Bank import completed with {} transactions", importedRows.size());
+                refreshData();
+            });
+
+            wizardStage.showAndWait();
+        } catch (Exception e) {
+            LOG.error("Failed to open Bank Import Wizard", e);
+            showError("Failed to open Bank Import Wizard", e);
+        }
     }
 
     private void handleEditIncome(IncomeTableRow row) {

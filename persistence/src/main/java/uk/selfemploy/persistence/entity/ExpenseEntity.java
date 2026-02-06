@@ -51,6 +51,9 @@ public class ExpenseEntity {
     @Column(name = "invoice_number", length = 50)
     private String invoiceNumber;
 
+    @Column(name = "bank_transaction_id")
+    private UUID bankTransactionId;
+
     // Soft delete support (Sprint 10B)
     @Column(name = "deleted_at")
     private Instant deletedAt;
@@ -80,6 +83,7 @@ public class ExpenseEntity {
         entity.bankTransactionRef = expense.bankTransactionRef();
         entity.supplierRef = expense.supplierRef();
         entity.invoiceNumber = expense.invoiceNumber();
+        entity.bankTransactionId = expense.bankTransactionId();
         return entity;
     }
 
@@ -98,7 +102,8 @@ public class ExpenseEntity {
             notes,
             bankTransactionRef,
             supplierRef,
-            invoiceNumber
+            invoiceNumber,
+            bankTransactionId
         );
     }
 
@@ -127,6 +132,8 @@ public class ExpenseEntity {
     public void setSupplierRef(String supplierRef) { this.supplierRef = supplierRef; }
     public String getInvoiceNumber() { return invoiceNumber; }
     public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
+    public UUID getBankTransactionId() { return bankTransactionId; }
+    public void setBankTransactionId(UUID bankTransactionId) { this.bankTransactionId = bankTransactionId; }
 
     // Soft delete getters and setters
     public Instant getDeletedAt() { return deletedAt; }

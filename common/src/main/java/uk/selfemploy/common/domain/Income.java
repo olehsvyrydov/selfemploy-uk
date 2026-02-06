@@ -28,7 +28,8 @@ public record Income(
     String reference,
     String bankTransactionRef,
     String invoiceNumber,
-    String receiptPath
+    String receiptPath,
+    UUID bankTransactionId
 ) {
     /**
      * Compact constructor for validation.
@@ -59,6 +60,7 @@ public record Income(
             description,
             category,
             reference,
+            null,
             null,
             null,
             null
@@ -98,7 +100,8 @@ public record Income(
             reference,
             bankTransactionRef,
             invoiceNumber,
-            receiptPath
+            receiptPath,
+            null
         );
     }
 

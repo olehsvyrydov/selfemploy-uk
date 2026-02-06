@@ -113,6 +113,11 @@ public enum HelpTopic {
     SECURITY_PRIVACY,
 
     /**
+     * Bank statement import - how to import CSV files from your bank.
+     */
+    BANK_IMPORT,
+
+    /**
      * Frequently Asked Questions.
      */
     FAQ

@@ -367,6 +367,7 @@ class CsvImportServiceTest {
                 inv.getArgument(5),
                 null,
                 null,
+                null,
                 null
             ));
 
@@ -380,6 +381,7 @@ class CsvImportServiceTest {
                 inv.getArgument(4),
                 inv.getArgument(5),
                 inv.getArgument(6),
+                null,
                 null,
                 null,
                 null

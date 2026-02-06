@@ -106,6 +106,7 @@ public final class TestDataFixtures {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -124,6 +125,7 @@ public final class TestDataFixtures {
                 category,
                 receiptPath,
                 notes,
+                null,
                 null,
                 null,
                 null
@@ -180,6 +182,7 @@ public final class TestDataFixtures {
                 description,
                 category,
                 reference,
+                null,
                 null,
                 null,
                 null

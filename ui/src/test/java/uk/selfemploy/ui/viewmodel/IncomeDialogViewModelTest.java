@@ -128,6 +128,7 @@ class IncomeDialogViewModelTest {
                 "INV-001",
                 null,
                 null,
+                null,
                 null
             );
         }
@@ -476,6 +477,7 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
             when(incomeService.create(any(), any(), any(), any(), any(), any())).thenReturn(createdIncome);
@@ -506,6 +508,7 @@ class IncomeDialogViewModelTest {
                 "Old description",
                 IncomeCategory.SALES,
                 "INV-001",
+                null,
                 null,
                 null,
                 null
@@ -543,6 +546,7 @@ class IncomeDialogViewModelTest {
                 new BigDecimal("1000.00"),
                 "Website design",
                 IncomeCategory.SALES,
+                null,
                 null,
                 null,
                 null,
@@ -594,6 +598,7 @@ class IncomeDialogViewModelTest {
                 "Website redesign",
                 IncomeCategory.SALES,
                 "INV-001",
+                null,
                 null,
                 null,
                 null
@@ -685,6 +690,7 @@ class IncomeDialogViewModelTest {
                 "INV-001",
                 null,
                 null,
+                null,
                 null
             );
             viewModel.loadIncome(existingIncome, "Acme Corp", IncomeStatus.PAID);
@@ -751,6 +757,7 @@ class IncomeDialogViewModelTest {
                 "INV-001",
                 null,
                 null,
+                null,
                 null
             );
 
@@ -784,6 +791,7 @@ class IncomeDialogViewModelTest {
                 "Website redesign",
                 IncomeCategory.SALES,
                 "INV-001",
+                null,
                 null,
                 null,
                 null

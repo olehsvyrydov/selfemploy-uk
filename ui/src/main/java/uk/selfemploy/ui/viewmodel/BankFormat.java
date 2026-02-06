@@ -41,6 +41,22 @@ public enum BankFormat {
     MONZO("Monzo", "Transaction ID, Date, Time, Type, Name, Emoji, Category, Amount, Currency, Notes"),
 
     /**
+     * Revolut - columns: Type, Product, Started Date, Completed Date, Description,
+     * Amount, Fee, Currency, State, Balance
+     */
+    REVOLUT("Revolut", "Type, Product, Started Date, Completed Date, Description, Amount, Fee, Currency, State, Balance"),
+
+    /**
+     * Santander Bank - columns: Date, Description, Amount, Balance
+     */
+    SANTANDER("Santander", "Date, Description, Amount, Balance"),
+
+    /**
+     * Metro Bank - columns: Date, Transaction type, Description, Money out, Money in, Balance
+     */
+    METRO_BANK("Metro Bank", "Date, Transaction type, Description, Money out, Money in, Balance"),
+
+    /**
      * Unknown or custom format - requires manual column mapping
      */
     UNKNOWN("Unknown", "Custom format - manual mapping required");

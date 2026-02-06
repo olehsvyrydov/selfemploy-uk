@@ -114,7 +114,8 @@ public class ExpenseService {
                 notes,
                 existingExpense.bankTransactionRef(),
                 existingExpense.supplierRef(),
-                existingExpense.invoiceNumber()
+                existingExpense.invoiceNumber(),
+                existingExpense.bankTransactionId()
         );
 
         return expenseRepository.update(updatedExpense);

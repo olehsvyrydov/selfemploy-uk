@@ -29,7 +29,8 @@ public record Expense(
     String notes,
     String bankTransactionRef,
     String supplierRef,
-    String invoiceNumber
+    String invoiceNumber,
+    UUID bankTransactionId
 ) {
     /**
      * Compact constructor for validation.
@@ -62,6 +63,7 @@ public record Expense(
             category,
             receiptPath,
             notes,
+            null,
             null,
             null,
             null
@@ -104,7 +106,8 @@ public record Expense(
             notes,
             bankTransactionRef,
             supplierRef,
-            invoiceNumber
+            invoiceNumber,
+            null
         );
     }
 

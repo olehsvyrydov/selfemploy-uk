@@ -199,6 +199,17 @@ public class BankImportWizardViewModel {
     private BankFormat detectFormat(List<String> headers) {
         Set<String> headerSet = new HashSet<>(headers);
 
+        // Revolut: Type, Product, Started Date, Completed Date, Description, Amount, Fee, Currency, State, Balance
+        if (headerSet.contains("Started Date") && headerSet.contains("Completed Date")) {
+            return BankFormat.REVOLUT;
+        }
+
+        // Metro Bank: Date, Transaction type, Description, Money out, Money in, Balance
+        // Must be checked BEFORE Barclays since both have Money out/Money in
+        if (headerSet.contains("Transaction type") && headerSet.contains("Money out") && headerSet.contains("Money in")) {
+            return BankFormat.METRO_BANK;
+        }
+
         // Barclays: Date, Type, Description, Money out, Money in, Balance
         if (headerSet.contains("Money out") && headerSet.contains("Money in")) {
             return BankFormat.BARCLAYS;
@@ -227,6 +238,13 @@ public class BankImportWizardViewModel {
         // Monzo: Transaction ID, Date, Time, Type, Name, Emoji, Category, Amount
         if (headerSet.contains("Transaction ID") && headerSet.contains("Emoji")) {
             return BankFormat.MONZO;
+        }
+
+        // Santander: Date, Description, Amount, Balance (generic - check last)
+        if (headerSet.contains("Date") && headerSet.contains("Description")
+                && headerSet.contains("Amount") && headerSet.contains("Balance")
+                && headerSet.size() == 4) {
+            return BankFormat.SANTANDER;
         }
 
         return BankFormat.UNKNOWN;

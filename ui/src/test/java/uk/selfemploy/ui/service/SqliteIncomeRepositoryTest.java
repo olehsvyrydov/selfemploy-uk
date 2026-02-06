@@ -90,6 +90,7 @@ class SqliteIncomeRepositoryTest {
                     "INV-UPDATED",
                     null,
                     null,
+                    null,
                     null
             );
             repository.save(updated);
@@ -323,6 +324,7 @@ class SqliteIncomeRepositoryTest {
                 "REF-001",
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -336,6 +338,7 @@ class SqliteIncomeRepositoryTest {
                 "Test invoice",
                 IncomeCategory.SALES,
                 "REF-001",
+                null,
                 null,
                 null,
                 null
@@ -353,6 +356,7 @@ class SqliteIncomeRepositoryTest {
                 "REF-001",
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -366,6 +370,7 @@ class SqliteIncomeRepositoryTest {
                 "Test income - " + category,
                 category,
                 "REF-001",
+                null,
                 null,
                 null,
                 null

@@ -574,11 +574,14 @@ class ExpenseListViewModelTest {
 
         return Arrays.asList(
             new Expense(UUID.randomUUID(), businessId, date1, new BigDecimal("54.99"),
-                "Adobe Creative Cloud", ExpenseCategory.OFFICE_COSTS, null, null, null, null, null),
+                "Adobe Creative Cloud", ExpenseCategory.OFFICE_COSTS, null, null, null, null, null,
+                null),
             new Expense(UUID.randomUUID(), businessId, date2, new BigDecimal("45.00"),
-                "Train to client meeting", ExpenseCategory.TRAVEL, null, null, null, null, null),
+                "Train to client meeting", ExpenseCategory.TRAVEL, null, null, null, null, null,
+                null),
             new Expense(UUID.randomUUID(), businessId, date3, new BigDecimal("250.00"),
-                "Equipment depreciation", ExpenseCategory.DEPRECIATION, null, null, null, null, null)
+                "Equipment depreciation", ExpenseCategory.DEPRECIATION, null, null, null, null, null,
+                null)
         );
     }
 
@@ -591,6 +594,7 @@ class ExpenseListViewModelTest {
                 new BigDecimal("10.00"),
                 "Test expense " + i,
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,

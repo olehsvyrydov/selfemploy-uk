@@ -666,6 +666,7 @@ class UiDuplicateDetectionServiceTest {
             null,
             null,
             null,
+            null,
             null
         );
     }
@@ -678,6 +679,7 @@ class UiDuplicateDetectionServiceTest {
             amount,
             description,
             ExpenseCategory.OFFICE_COSTS,
+            null,
             null,
             null,
             null,

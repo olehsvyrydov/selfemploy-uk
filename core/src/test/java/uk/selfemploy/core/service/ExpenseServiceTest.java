@@ -102,7 +102,8 @@ class ExpenseServiceTest {
             // Any date between 2000 and 2100 is considered valid for tax year purposes
             LocalDate dateInPast = LocalDate.of(2020, 6, 15);
             Expense expectedExpense = new Expense(
-                    UUID.randomUUID(), BUSINESS_ID, dateInPast, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null);
+                    UUID.randomUUID(), BUSINESS_ID, dateInPast, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null,
+                    null);
             when(expenseRepository.save(any(Expense.class))).thenReturn(expectedExpense);
 
             Expense result = expenseService.create(
@@ -168,7 +169,8 @@ class ExpenseServiceTest {
         void shouldAcceptDescriptionWith100Chars() {
             String maxDescription = "A".repeat(100);
             Expense expectedExpense = new Expense(
-                    UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, maxDescription, VALID_CATEGORY, null, null, null, null, null);
+                    UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, maxDescription, VALID_CATEGORY, null, null, null, null, null,
+                    null);
             when(expenseRepository.save(any(Expense.class))).thenReturn(expectedExpense);
 
             Expense result = expenseService.create(
@@ -191,7 +193,8 @@ class ExpenseServiceTest {
         @DisplayName("should accept all valid SA103 expense categories")
         void shouldAcceptAllValidCategories(ExpenseCategory category) {
             Expense expectedExpense = new Expense(
-                    UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, VALID_DESCRIPTION, category, null, null, null, null, null);
+                    UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, VALID_DESCRIPTION, category, null, null, null, null, null,
+                    null);
             when(expenseRepository.save(any(Expense.class))).thenReturn(expectedExpense);
 
             Expense result = expenseService.create(
@@ -258,7 +261,8 @@ class ExpenseServiceTest {
             Expense updatedExpense = new Expense(
                     existingExpense.id(), BUSINESS_ID, VALID_DATE, new BigDecimal("750.00"),
                     "Updated description", ExpenseCategory.TRAVEL, "/new/receipt.pdf", "Updated notes",
-                    null, null, null);
+                    null, null, null,
+                    null);
 
             when(expenseRepository.findByIdAsDomain(existingExpense.id())).thenReturn(Optional.of(existingExpense));
             when(expenseRepository.update(any(Expense.class))).thenReturn(updatedExpense);
@@ -596,7 +600,8 @@ class ExpenseServiceTest {
             TaxYear currentTaxYear = TaxYear.current();
             LocalDate startDate = currentTaxYear.startDate();
             Expense expectedExpense = new Expense(
-                    UUID.randomUUID(), BUSINESS_ID, startDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null);
+                    UUID.randomUUID(), BUSINESS_ID, startDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null,
+                    null);
             when(expenseRepository.save(any(Expense.class))).thenReturn(expectedExpense);
 
             Expense result = expenseService.create(
@@ -612,7 +617,8 @@ class ExpenseServiceTest {
             TaxYear previousTaxYear = TaxYear.current().previous();
             LocalDate endDate = previousTaxYear.endDate();
             Expense expectedExpense = new Expense(
-                    UUID.randomUUID(), BUSINESS_ID, endDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null);
+                    UUID.randomUUID(), BUSINESS_ID, endDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null,
+                    null);
             when(expenseRepository.save(any(Expense.class))).thenReturn(expectedExpense);
 
             Expense result = expenseService.create(
@@ -631,7 +637,8 @@ class ExpenseServiceTest {
                 midDate = LocalDate.now();
             }
             Expense expectedExpense = new Expense(
-                    UUID.randomUUID(), BUSINESS_ID, midDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null);
+                    UUID.randomUUID(), BUSINESS_ID, midDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null,
+                    null);
             when(expenseRepository.save(any(Expense.class))).thenReturn(expectedExpense);
 
             final LocalDate testDate = midDate;
@@ -647,7 +654,8 @@ class ExpenseServiceTest {
             TaxYear previousTaxYear = TaxYear.current().previous();
             LocalDate dateInPreviousTaxYear = previousTaxYear.startDate().plusMonths(3);
             Expense expectedExpense = new Expense(
-                    UUID.randomUUID(), BUSINESS_ID, dateInPreviousTaxYear, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null);
+                    UUID.randomUUID(), BUSINESS_ID, dateInPreviousTaxYear, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null, null, null, null, null,
+                    null);
             when(expenseRepository.save(any(Expense.class))).thenReturn(expectedExpense);
 
             Expense result = expenseService.create(
@@ -666,7 +674,8 @@ class ExpenseServiceTest {
         void shouldIdentifyDepreciationAsNonAllowable() {
             Expense expense = new Expense(
                     UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, VALID_DESCRIPTION,
-                    ExpenseCategory.DEPRECIATION, null, null, null, null, null);
+                    ExpenseCategory.DEPRECIATION, null, null, null, null, null,
+                    null);
 
             assertThat(expense.isAllowable()).isFalse();
         }
@@ -676,7 +685,8 @@ class ExpenseServiceTest {
         void shouldIdentifyOfficeCostsAsAllowable() {
             Expense expense = new Expense(
                     UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, VALID_DESCRIPTION,
-                    ExpenseCategory.OFFICE_COSTS, null, null, null, null, null);
+                    ExpenseCategory.OFFICE_COSTS, null, null, null, null, null,
+                    null);
 
             assertThat(expense.isAllowable()).isTrue();
         }
@@ -686,7 +696,8 @@ class ExpenseServiceTest {
         void shouldIdentifyTravelAsAllowable() {
             Expense expense = new Expense(
                     UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, VALID_DESCRIPTION,
-                    ExpenseCategory.TRAVEL, null, null, null, null, null);
+                    ExpenseCategory.TRAVEL, null, null, null, null, null,
+                    null);
 
             assertThat(expense.isAllowable()).isTrue();
         }
@@ -702,6 +713,7 @@ class ExpenseServiceTest {
                 VALID_CATEGORY,
                 "/receipts/receipt.pdf",
                 "Tax deductible",
+                null,
                 null,
                 null,
                 null

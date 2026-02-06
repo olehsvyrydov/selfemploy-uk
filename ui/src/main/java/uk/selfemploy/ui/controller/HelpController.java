@@ -62,6 +62,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         CATEGORY_TOPICS = new LinkedHashMap<>();
         CATEGORY_TOPICS.put("User Guide", Arrays.asList(
             HelpTopic.GETTING_STARTED,
+            HelpTopic.BANK_IMPORT,
             HelpTopic.HMRC_CONNECTION,
             HelpTopic.SECURITY_PRIVACY,
             HelpTopic.FAQ
@@ -102,6 +103,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         TOPIC_DISPLAY_NAMES.put(HelpTopic.SA103_FORM, "SA103 Form");
         // User Guide topics
         TOPIC_DISPLAY_NAMES.put(HelpTopic.GETTING_STARTED, "Getting Started");
+        TOPIC_DISPLAY_NAMES.put(HelpTopic.BANK_IMPORT, "Bank Statement Import");
         TOPIC_DISPLAY_NAMES.put(HelpTopic.HMRC_CONNECTION, "HMRC Connection");
         TOPIC_DISPLAY_NAMES.put(HelpTopic.SECURITY_PRIVACY, "Security & Privacy");
         TOPIC_DISPLAY_NAMES.put(HelpTopic.FAQ, "FAQ");
@@ -134,6 +136,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         TOPIC_DESCRIPTIONS.put(HelpTopic.SA103_FORM, "Self-employment supplementary pages");
         // User Guide topics
         TOPIC_DESCRIPTIONS.put(HelpTopic.GETTING_STARTED, "Quick overview of app features and first steps");
+        TOPIC_DESCRIPTIONS.put(HelpTopic.BANK_IMPORT, "Import CSV bank statements from 9 major UK banks");
         TOPIC_DESCRIPTIONS.put(HelpTopic.HMRC_CONNECTION, "How OAuth2 works and password safety");
         TOPIC_DESCRIPTIONS.put(HelpTopic.SECURITY_PRIVACY, "Local storage, encryption and data handling");
         TOPIC_DESCRIPTIONS.put(HelpTopic.FAQ, "Common questions and answers");
@@ -154,6 +157,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         TOPIC_ICONS.put(HelpTopic.SA103_FORM, FontAwesomeSolid.FILE_ALT);
         // User Guide topics
         TOPIC_ICONS.put(HelpTopic.GETTING_STARTED, FontAwesomeSolid.ROCKET);
+        TOPIC_ICONS.put(HelpTopic.BANK_IMPORT, FontAwesomeSolid.FILE_UPLOAD);
         TOPIC_ICONS.put(HelpTopic.HMRC_CONNECTION, FontAwesomeSolid.LINK);
         TOPIC_ICONS.put(HelpTopic.SECURITY_PRIVACY, FontAwesomeSolid.LOCK);
         TOPIC_ICONS.put(HelpTopic.FAQ, FontAwesomeSolid.QUESTION_CIRCLE);
@@ -362,6 +366,36 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
             • Office Costs (Box 23)
             • Professional Fees (Box 26)
             • Other Expenses (Box 28)
+
+            Bank Statement Import
+            ━━━━━━━━━━━━━━━━━━━━━
+            Save time by importing transactions directly from your bank's CSV export \
+            instead of entering them manually.
+
+            Supported Banks:
+            • Barclays, HSBC, Lloyds, Nationwide, Starling, Monzo
+            • Revolut, Santander, Metro Bank
+            • Any other bank via manual column mapping
+
+            How to Import:
+            1. Download a CSV statement from your online banking
+            2. Open the Import Wizard from Income or Expenses page
+            3. Drag and drop your CSV file (or click Browse)
+            4. The app auto-detects your bank and maps columns
+            5. Preview transactions - assign or confirm categories
+            6. Click Import to add them to your records
+
+            Smart Features:
+            • Duplicate detection prevents importing the same transactions twice
+            • Category suggestions based on transaction descriptions
+            • Business vs personal filtering to skip personal spending
+            • Full import history with undo capability
+
+            Tips:
+            • Always download CSV format (not PDF or OFX)
+            • Revolut: only completed GBP transactions are imported
+            • Metro Bank: transaction type and description are combined
+            • Review all suggested categories before confirming
 
             Understanding HMRC Connection
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -581,6 +615,12 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     void handleGettingStartedClick(MouseEvent event) {
         LOG.info("Help topic clicked: Getting Started");
         showHelpDialog(HelpTopic.GETTING_STARTED, DialogSize.MEDIUM);
+    }
+
+    @FXML
+    void handleBankImportClick(MouseEvent event) {
+        LOG.info("Help topic clicked: Bank Statement Import");
+        showHelpDialog(HelpTopic.BANK_IMPORT, DialogSize.MEDIUM);
     }
 
     @FXML

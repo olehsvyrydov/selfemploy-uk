@@ -314,6 +314,7 @@ class DataExportServiceTest {
                 "Business trip",
                 null,
                 null,
+                null,
                 null
             );
             when(expenseService.findByTaxYear(eq(BUSINESS_ID), any(TaxYear.class)))
@@ -763,6 +764,7 @@ class DataExportServiceTest {
             "REF-001",
             null,
             null,
+            null,
             null
         );
     }
@@ -779,6 +781,7 @@ class DataExportServiceTest {
             null,
             null,
             null,
+            null,
             null
         );
     }
@@ -791,6 +794,7 @@ class DataExportServiceTest {
             new BigDecimal(amount),
             description,
             category,
+            null,
             null,
             null,
             null,

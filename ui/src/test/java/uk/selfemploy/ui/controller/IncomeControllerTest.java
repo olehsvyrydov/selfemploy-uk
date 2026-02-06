@@ -698,6 +698,7 @@ class IncomeControllerTest {
             null,
             null,
             null,
+            null,
             null
         );
     }
@@ -712,6 +713,7 @@ class IncomeControllerTest {
             new BigDecimal(amount),
             "Client payment - " + status.name(),
             IncomeCategory.SALES,
+            null,
             null,
             null,
             null,

@@ -9,6 +9,7 @@ import uk.selfemploy.common.enums.ImportAuditStatus;
 import uk.selfemploy.common.enums.ImportAuditType;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -65,6 +66,18 @@ public class ImportAuditEntity {
     @Column(name = "undone_by")
     private String undoneBy;
 
+    @Column(name = "original_file_path", length = 500)
+    private String originalFilePath;
+
+    @Column(name = "original_file_encrypted")
+    private Boolean originalFileEncrypted;
+
+    @Column(name = "retention_until")
+    private LocalDate retentionUntil;
+
+    @Column(name = "imported_by")
+    private String importedBy;
+
     // Default constructor for JPA
     public ImportAuditEntity() {}
 
@@ -86,6 +99,10 @@ public class ImportAuditEntity {
         entity.status = audit.status();
         entity.undoneAt = audit.undoneAt();
         entity.undoneBy = audit.undoneBy();
+        entity.originalFilePath = audit.originalFilePath();
+        entity.originalFileEncrypted = audit.originalFileEncrypted();
+        entity.retentionUntil = audit.retentionUntil();
+        entity.importedBy = audit.importedBy();
         return entity;
     }
 
@@ -106,7 +123,11 @@ public class ImportAuditEntity {
             deserializeUuidList(recordIdsJson),
             status,
             undoneAt,
-            undoneBy
+            undoneBy,
+            originalFilePath,
+            originalFileEncrypted,
+            retentionUntil,
+            importedBy
         );
     }
 
@@ -171,4 +192,16 @@ public class ImportAuditEntity {
 
     public String getUndoneBy() { return undoneBy; }
     public void setUndoneBy(String undoneBy) { this.undoneBy = undoneBy; }
+
+    public String getOriginalFilePath() { return originalFilePath; }
+    public void setOriginalFilePath(String originalFilePath) { this.originalFilePath = originalFilePath; }
+
+    public Boolean getOriginalFileEncrypted() { return originalFileEncrypted; }
+    public void setOriginalFileEncrypted(Boolean originalFileEncrypted) { this.originalFileEncrypted = originalFileEncrypted; }
+
+    public LocalDate getRetentionUntil() { return retentionUntil; }
+    public void setRetentionUntil(LocalDate retentionUntil) { this.retentionUntil = retentionUntil; }
+
+    public String getImportedBy() { return importedBy; }
+    public void setImportedBy(String importedBy) { this.importedBy = importedBy; }
 }

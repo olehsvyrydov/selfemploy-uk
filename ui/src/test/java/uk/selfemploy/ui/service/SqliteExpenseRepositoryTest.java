@@ -92,6 +92,7 @@ class SqliteExpenseRepositoryTest {
                     "Updated notes",
                     null,
                     null,
+                    null,
                     null
             );
             repository.save(updated);
@@ -371,6 +372,7 @@ class SqliteExpenseRepositoryTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -383,6 +385,7 @@ class SqliteExpenseRepositoryTest {
                 new BigDecimal("100.00"),
                 "Test expense",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,
@@ -403,6 +406,7 @@ class SqliteExpenseRepositoryTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -419,6 +423,7 @@ class SqliteExpenseRepositoryTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -431,6 +436,7 @@ class SqliteExpenseRepositoryTest {
                 amount,
                 "Test expense - " + category,
                 category,
+                null,
                 null,
                 null,
                 null,

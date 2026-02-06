@@ -107,7 +107,8 @@ public class IncomeService {
                 reference,
                 existingIncome.bankTransactionRef(),
                 existingIncome.invoiceNumber(),
-                existingIncome.receiptPath()
+                existingIncome.receiptPath(),
+                existingIncome.bankTransactionId()
         );
 
         return incomeRepository.update(updatedIncome);

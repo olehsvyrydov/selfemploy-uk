@@ -89,6 +89,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -123,6 +124,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -151,6 +153,7 @@ class DuplicateDetectorTest {
                 new BigDecimal("100.00"),
                 "Client Payment",
                 IncomeCategory.SALES,
+                null,
                 null,
                 null,
                 null,
@@ -191,6 +194,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -223,6 +227,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
 
@@ -252,6 +257,7 @@ class DuplicateDetectorTest {
                 new BigDecimal("100.00"),
                 "CLIENT PAYMENT",
                 IncomeCategory.SALES,
+                null,
                 null,
                 null,
                 null,
@@ -318,6 +324,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
+                null,
                 null
             );
             Expense existingExpense = new Expense(
@@ -327,6 +334,7 @@ class DuplicateDetectorTest {
                 new BigDecimal("50.00"),
                 "AMAZON",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,

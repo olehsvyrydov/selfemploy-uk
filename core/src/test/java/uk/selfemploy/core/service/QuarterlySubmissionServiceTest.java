@@ -824,6 +824,7 @@ class QuarterlySubmissionServiceTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -836,6 +837,7 @@ class QuarterlySubmissionServiceTest {
                 amount,
                 "Test expense",
                 category,
+                null,
                 null,
                 null,
                 null,

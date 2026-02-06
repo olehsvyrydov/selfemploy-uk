@@ -538,6 +538,7 @@ class DataImportServiceTest {
             "REF-001",
             null,
             null,
+            null,
             null
         );
     }
@@ -550,6 +551,7 @@ class DataImportServiceTest {
             new BigDecimal(amount),
             description,
             ExpenseCategory.OFFICE_COSTS,
+            null,
             null,
             null,
             null,

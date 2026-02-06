@@ -79,7 +79,8 @@ public class SqliteIncomeService extends IncomeService {
                 reference,
                 existingIncome.bankTransactionRef(),
                 existingIncome.invoiceNumber(),
-                existingIncome.receiptPath()
+                existingIncome.receiptPath(),
+                existingIncome.bankTransactionId()
         );
 
         return repository.save(updatedIncome);

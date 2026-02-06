@@ -8,18 +8,21 @@
 <!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.BankImportWizardController"
-      styleClass="wizard-container" spacing="24" prefWidth="1000">
-    <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+      styleClass="wizard-container" spacing="0" prefWidth="1000">
 
-    <!-- Wizard Header -->
-    <VBox spacing="8">
-        <Label text="Import Bank Transactions" styleClass="page-title"/>
-        <Label text="Import your bank statement CSV to quickly add transactions"
-               styleClass="page-subtitle"/>
-    </VBox>
+    <!-- Fixed Header -->
+    <VBox spacing="24" styleClass="wizard-header-section">
+        <padding><Insets top="30" right="30" bottom="0" left="30"/></padding>
 
-    <!-- Progress Indicator -->
-    <HBox fx:id="progressIndicator" styleClass="wizard-progress" alignment="CENTER" spacing="0">
+        <!-- Wizard Header -->
+        <VBox spacing="8">
+            <Label text="Import Bank Transactions" styleClass="page-title"/>
+            <Label text="Import your bank statement CSV to quickly add transactions"
+                   styleClass="page-subtitle"/>
+        </VBox>
+
+        <!-- Progress Indicator -->
+        <HBox fx:id="progressIndicator" styleClass="wizard-progress" alignment="CENTER" spacing="0">
         <VBox fx:id="step1Circle" styleClass="progress-step, step-active" alignment="CENTER" spacing="4">
             <StackPane styleClass="step-circle">
                 <Label text="1" styleClass="step-number"/>
@@ -48,6 +51,13 @@
             <Label text="Confirm" styleClass="step-label"/>
         </VBox>
     </HBox>
+    </VBox>
+
+    <!-- Scrollable Content Area -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
+                styleClass="wizard-scroll-pane">
+    <VBox spacing="0">
+    <padding><Insets top="24" right="30" bottom="24" left="30"/></padding>
 
     <!-- Step 1 Content: File Selection -->
     <VBox fx:id="step1Content" styleClass="wizard-content" spacing="20" VBox.vgrow="ALWAYS">
@@ -424,8 +434,12 @@
 
     </VBox>
 
-    <!-- Wizard Footer -->
+    </VBox>
+    </ScrollPane>
+
+    <!-- Fixed Footer -->
     <HBox styleClass="wizard-footer" alignment="CENTER_RIGHT" spacing="12">
+        <padding><Insets top="12" right="30" bottom="12" left="30"/></padding>
         <Button fx:id="cancelBtn" text="Cancel" styleClass="button-secondary"
                 onAction="#handleCancel"/>
         <Region HBox.hgrow="ALWAYS"/>

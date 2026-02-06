@@ -23,6 +23,8 @@ import javafx.util.StringConverter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
@@ -35,6 +37,12 @@ import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.viewmodel.ExpenseListViewModel;
 import uk.selfemploy.ui.viewmodel.ExpenseTableRow;
 
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
@@ -45,6 +53,8 @@ import java.util.UUID;
  * Manages display of expenses, filtering, pagination, and dialog opening.
  */
 public class ExpenseController implements Initializable, MainController.TaxYearAware, Refreshable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ExpenseController.class);
 
     // Summary labels
     @FXML private Label totalValue;
@@ -451,6 +461,43 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     @FXML
     void handleAddExpense(ActionEvent event) {
         openExpenseDialog(null);
+    }
+
+    @FXML
+    void handleImportBankStatement(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
+            Parent root = loader.load();
+
+            BankImportWizardController controller = loader.getController();
+
+            Stage wizardStage = new Stage();
+            wizardStage.setTitle("Import Bank Statement");
+            wizardStage.initModality(Modality.WINDOW_MODAL);
+            wizardStage.initOwner(expenseContainer.getScene().getWindow());
+            wizardStage.setWidth(1000);
+            wizardStage.setHeight(700);
+            wizardStage.setMinWidth(800);
+            wizardStage.setMinHeight(600);
+
+            Scene scene = new Scene(root);
+            String mainCss = getClass().getResource("/css/main.css").toExternalForm();
+            scene.getStylesheets().add(mainCss);
+            String bankImportCss = getClass().getResource("/css/bank-import.css").toExternalForm();
+            scene.getStylesheets().add(bankImportCss);
+
+            wizardStage.setScene(scene);
+            controller.setDialogStage(wizardStage);
+            controller.setOnImportCallback(importedRows -> {
+                LOG.info("Bank import completed with {} transactions", importedRows.size());
+                refreshData();
+            });
+
+            wizardStage.showAndWait();
+        } catch (Exception e) {
+            LOG.error("Failed to open Bank Import Wizard", e);
+            showError("Failed to open Bank Import Wizard", e);
+        }
     }
 
     @FXML

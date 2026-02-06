@@ -46,6 +46,16 @@
                 <Label text="›" styleClass="help-topic-chevron"/>
             </HBox>
 
+            <!-- Bank Statement Import -->
+            <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12" onMouseClicked="#handleBankImportClick">
+                <Label text="BI" styleClass="help-topic-badge, badge-violet"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Bank Statement Import" styleClass="help-topic-title"/>
+                    <Label text="Import CSV bank statements from 9 major UK banks" styleClass="help-topic-desc"/>
+                </VBox>
+                <Label text="&#x203A;" styleClass="help-topic-chevron"/>
+            </HBox>
+
             <!-- HMRC Connection -->
             <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12" onMouseClicked="#handleHmrcConnectionClick">
                 <Label text="HC" styleClass="help-topic-badge, badge-violet"/>

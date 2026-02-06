@@ -418,11 +418,14 @@ class ExpenseControllerTest {
             // Given
             List<Expense> expenses = List.of(
                 new Expense(UUID.randomUUID(), businessId, LocalDate.of(2025, 6, 10),
-                    new BigDecimal("50.00"), "Adobe subscription", ExpenseCategory.OFFICE_COSTS, null, null, null, null, null),
+                    new BigDecimal("50.00"), "Adobe subscription", ExpenseCategory.OFFICE_COSTS, null, null, null, null, null,
+                    null),
                 new Expense(UUID.randomUUID(), businessId, LocalDate.of(2025, 6, 10),
-                    new BigDecimal("100.00"), "Adobe training travel", ExpenseCategory.TRAVEL, null, null, null, null, null),
+                    new BigDecimal("100.00"), "Adobe training travel", ExpenseCategory.TRAVEL, null, null, null, null, null,
+                    null),
                 new Expense(UUID.randomUUID(), businessId, LocalDate.of(2025, 6, 10),
-                    new BigDecimal("50.00"), "Microsoft Office", ExpenseCategory.OFFICE_COSTS, null, null, null, null, null)
+                    new BigDecimal("50.00"), "Microsoft Office", ExpenseCategory.OFFICE_COSTS, null, null, null, null, null,
+                    null)
             );
             when(expenseService.findByTaxYear(any(), any())).thenReturn(expenses);
             when(expenseService.getTotalByTaxYear(any(), any())).thenReturn(BigDecimal.ZERO);
@@ -495,6 +498,7 @@ class ExpenseControllerTest {
                 new BigDecimal("54.99"),
                 "Test expense",
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,
@@ -781,6 +785,7 @@ class ExpenseControllerTest {
             null,
             null,
             null,
+            null,
             null
         );
     }
@@ -793,6 +798,7 @@ class ExpenseControllerTest {
             new BigDecimal(amount),
             "Test expense for " + category.name(),
             category,
+            null,
             null,
             null,
             null,
@@ -813,6 +819,7 @@ class ExpenseControllerTest {
             null,
             null,
             null,
+            null,
             null
         );
     }
@@ -826,6 +833,7 @@ class ExpenseControllerTest {
                 new BigDecimal("10.00"),
                 "Test expense " + i,
                 ExpenseCategory.OFFICE_COSTS,
+                null,
                 null,
                 null,
                 null,

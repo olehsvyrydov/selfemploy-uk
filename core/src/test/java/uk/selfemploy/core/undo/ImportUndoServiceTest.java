@@ -94,7 +94,8 @@ class ImportUndoServiceTest {
             id, BUSINESS_ID, importTime,
             "test.csv", "hash123", type,
             recordIds.size(), recordIds.size(), 0,
-            recordIds, ImportAuditStatus.ACTIVE, null, null
+            recordIds, ImportAuditStatus.ACTIVE, null, null,
+            null, null, null, null
         );
     }
 
@@ -103,7 +104,8 @@ class ImportUndoServiceTest {
             id, BUSINESS_ID, importTime,
             "test.csv", "hash123", ImportAuditType.CSV_INCOME,
             5, 5, 0, List.of(),
-            ImportAuditStatus.UNDONE, FIXED_TIME, "user"
+            ImportAuditStatus.UNDONE, FIXED_TIME, "user",
+            null, null, null, null
         );
     }
 

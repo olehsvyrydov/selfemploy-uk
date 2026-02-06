@@ -100,7 +100,8 @@ class IncomeServiceTest {
             LocalDate dateInPast = LocalDate.of(2020, 6, 15);
             Income expectedIncome = new Income(
                     UUID.randomUUID(), BUSINESS_ID, dateInPast, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null,
-                    null, null, null);
+                    null, null, null,
+                    null);
             when(incomeRepository.save(any(Income.class))).thenReturn(expectedIncome);
 
             Income result = incomeService.create(
@@ -167,7 +168,8 @@ class IncomeServiceTest {
             String maxDescription = "A".repeat(100);
             Income expectedIncome = new Income(
                     UUID.randomUUID(), BUSINESS_ID, VALID_DATE, VALID_AMOUNT, maxDescription, VALID_CATEGORY, null,
-                    null, null, null);
+                    null, null, null,
+                    null);
             when(incomeRepository.save(any(Income.class))).thenReturn(expectedIncome);
 
             Income result = incomeService.create(
@@ -243,7 +245,8 @@ class IncomeServiceTest {
             Income updatedIncome = new Income(
                     existingIncome.id(), BUSINESS_ID, VALID_DATE, new BigDecimal("2000.00"),
                     "Updated description", IncomeCategory.OTHER_INCOME, "REF-002",
-                    null, null, null);
+                    null, null, null,
+                    null);
 
             when(incomeRepository.findByIdAsDomain(existingIncome.id())).thenReturn(Optional.of(existingIncome));
             when(incomeRepository.update(any(Income.class))).thenReturn(updatedIncome);
@@ -530,7 +533,8 @@ class IncomeServiceTest {
             LocalDate startDate = currentTaxYear.startDate();
             Income expectedIncome = new Income(
                     UUID.randomUUID(), BUSINESS_ID, startDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null,
-                    null, null, null);
+                    null, null, null,
+                    null);
             when(incomeRepository.save(any(Income.class))).thenReturn(expectedIncome);
 
             Income result = incomeService.create(
@@ -547,7 +551,8 @@ class IncomeServiceTest {
             LocalDate endDate = previousTaxYear.endDate();
             Income expectedIncome = new Income(
                     UUID.randomUUID(), BUSINESS_ID, endDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null,
-                    null, null, null);
+                    null, null, null,
+                    null);
             when(incomeRepository.save(any(Income.class))).thenReturn(expectedIncome);
 
             Income result = incomeService.create(
@@ -567,7 +572,8 @@ class IncomeServiceTest {
             }
             Income expectedIncome = new Income(
                     UUID.randomUUID(), BUSINESS_ID, midDate, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null,
-                    null, null, null);
+                    null, null, null,
+                    null);
             when(incomeRepository.save(any(Income.class))).thenReturn(expectedIncome);
 
             final LocalDate testDate = midDate;
@@ -584,7 +590,8 @@ class IncomeServiceTest {
             LocalDate dateInPreviousTaxYear = previousTaxYear.startDate().plusMonths(3);
             Income expectedIncome = new Income(
                     UUID.randomUUID(), BUSINESS_ID, dateInPreviousTaxYear, VALID_AMOUNT, VALID_DESCRIPTION, VALID_CATEGORY, null,
-                    null, null, null);
+                    null, null, null,
+                    null);
             when(incomeRepository.save(any(Income.class))).thenReturn(expectedIncome);
 
             Income result = incomeService.create(
@@ -603,6 +610,7 @@ class IncomeServiceTest {
                 VALID_DESCRIPTION,
                 VALID_CATEGORY,
                 "REF-001",
+                null,
                 null,
                 null,
                 null

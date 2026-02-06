@@ -68,6 +68,18 @@
     -fx-translate-y: -12;
 }
 
+/* ===== Wizard Scroll Pane ===== */
+.wizard-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.wizard-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
 /* ===== Wizard Content ===== */
 .wizard-content {
     -fx-background-color: -fx-bg-primary;
@@ -225,9 +237,9 @@
 
 /* ===== Wizard Footer ===== */
 .wizard-footer {
-    -fx-padding: 20 0 0 0;
     -fx-border-color: #dee2e6;
     -fx-border-width: 1 0 0 0;
+    -fx-background-color: -fx-bg-secondary;
 }
 
 /* ===== Info Banner ===== */

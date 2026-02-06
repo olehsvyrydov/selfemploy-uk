@@ -421,6 +421,33 @@ public class HelpService {
                         "• Only HMRC receives data (when you submit)")
                 .build());
 
+        helpContent.put(HelpTopic.BANK_IMPORT, HelpContent.builder()
+                .title("Bank Statement Import")
+                .body("Import transactions directly from your bank's CSV export.\n\n" +
+                        "Supported Banks:\n" +
+                        "• Barclays, HSBC, Lloyds, Nationwide\n" +
+                        "• Starling, Monzo, Revolut\n" +
+                        "• Santander, Metro Bank\n" +
+                        "• Any bank (manual column mapping)\n\n" +
+                        "How It Works:\n" +
+                        "1. Export a CSV statement from your online banking\n" +
+                        "2. Open the Import Wizard from Income or Expenses\n" +
+                        "3. Drag & drop your CSV file (or browse)\n" +
+                        "4. The app auto-detects your bank format\n" +
+                        "5. Review transactions and assign categories\n" +
+                        "6. Confirm to import into your records\n\n" +
+                        "Key Features:\n" +
+                        "• Auto-detection: recognises 9 major UK banks\n" +
+                        "• Duplicate detection: flags already-imported transactions\n" +
+                        "• Smart categorisation: suggests SA103 categories\n" +
+                        "• Import history: view and undo past imports\n\n" +
+                        "Tips:\n" +
+                        "• Download CSV (not PDF) from your bank\n" +
+                        "• Include the full date range you need\n" +
+                        "• Review suggested categories before confirming\n" +
+                        "• Personal transactions can be skipped during import")
+                .build());
+
         helpContent.put(HelpTopic.FAQ, HelpContent.builder()
                 .title("Frequently Asked Questions")
                 .body("Common Questions:\n\n" +

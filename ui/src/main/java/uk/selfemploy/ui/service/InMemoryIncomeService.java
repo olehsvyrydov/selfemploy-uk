@@ -72,7 +72,8 @@ public class InMemoryIncomeService extends IncomeService {
             reference,
             existingIncome.bankTransactionRef(),
             existingIncome.invoiceNumber(),
-            existingIncome.receiptPath()
+            existingIncome.receiptPath(),
+            existingIncome.bankTransactionId()
         );
 
         storage.put(id, updatedIncome);

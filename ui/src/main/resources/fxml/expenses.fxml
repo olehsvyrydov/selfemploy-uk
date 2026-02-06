@@ -17,6 +17,8 @@
         <HBox alignment="CENTER_LEFT" spacing="15">
             <Label text="Expenses" styleClass="page-title"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Import CSV" styleClass="button-secondary"
+                    onAction="#handleImportBankStatement"/>
             <Button fx:id="addExpenseBtn" text="+ Add Expense"
                     styleClass="button-warning" onAction="#handleAddExpense"/>
         </HBox>
