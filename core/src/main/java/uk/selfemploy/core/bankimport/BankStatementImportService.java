@@ -152,7 +152,7 @@ public class BankStatementImportService {
                     size, MAX_FILE_SIZE_BYTES));
             }
         } catch (IOException e) {
-            // If we can't read the size, continue and let parsing fail if needed
+            throw new CsvParseException("Unable to read file: " + csvFile.getFileName(), e);
         }
     }
 
@@ -162,7 +162,9 @@ public class BankStatementImportService {
             var digest = java.security.MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(content);
             return bytesToHex(hash);
-        } catch (Exception e) {
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        } catch (IOException e) {
             return null;
         }
     }

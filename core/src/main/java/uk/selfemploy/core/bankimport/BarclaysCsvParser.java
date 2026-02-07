@@ -131,7 +131,12 @@ public class BarclaysCsvParser implements BankCsvParser {
             char c = line.charAt(i);
 
             if (c == '"') {
-                inQuotes = !inQuotes;
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    current.append('"');
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
             } else if (c == ',' && !inQuotes) {
                 fields.add(current.toString());
                 current = new StringBuilder();
@@ -210,7 +215,7 @@ public class BarclaysCsvParser implements BankCsvParser {
     private BigDecimal cleanAndParseAmount(String amountStr) {
         String cleaned = amountStr
             .replace("GBP", "")
-            .replace("GBP", "")
+            .replace("£", "")
             .replace(",", "")
             .trim();
 

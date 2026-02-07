@@ -1078,6 +1078,7 @@ class BankImportWizardE2ETest {
                 amount.abs(),
                 type,
                 category,
+                type == TransactionType.INCOME ? uk.selfemploy.common.enums.IncomeCategory.SALES : null,
                 isDuplicate,
                 confidence,
                 TransactionStatus.OK

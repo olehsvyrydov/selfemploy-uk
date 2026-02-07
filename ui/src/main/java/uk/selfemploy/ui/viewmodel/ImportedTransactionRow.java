@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.common.enums.IncomeCategory;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -20,7 +21,8 @@ import java.util.UUID;
  * @param description Transaction description from the bank
  * @param amount Transaction amount (always positive, type indicates direction)
  * @param type Whether this is income or expense
- * @param category Assigned expense category (null if uncategorized)
+ * @param category Assigned expense category (null if uncategorized or income)
+ * @param incomeCategory Assigned income category (null if expense)
  * @param isDuplicate True if this transaction already exists in the database
  * @param confidence Auto-categorization confidence (0-100)
  * @param status Row status for visual indication
@@ -32,6 +34,7 @@ public record ImportedTransactionRow(
     BigDecimal amount,
     TransactionType type,
     ExpenseCategory category,
+    IncomeCategory incomeCategory,
     boolean isDuplicate,
     int confidence,
     TransactionStatus status
@@ -41,6 +44,7 @@ public record ImportedTransactionRow(
 
     /**
      * Creates a new transaction row with a generated UUID.
+     * Income defaults to SALES category; expenses use the provided category.
      */
     public static ImportedTransactionRow create(
             LocalDate date,
@@ -51,6 +55,7 @@ public record ImportedTransactionRow(
             boolean isDuplicate,
             int confidence
     ) {
+        IncomeCategory incCat = (type == TransactionType.INCOME) ? IncomeCategory.SALES : null;
         TransactionStatus status = determineStatus(category, isDuplicate, confidence);
         return new ImportedTransactionRow(
                 UUID.randomUUID(),
@@ -59,6 +64,7 @@ public record ImportedTransactionRow(
                 amount.abs(),
                 type,
                 category,
+                incCat,
                 isDuplicate,
                 confidence,
                 status
@@ -71,7 +77,16 @@ public record ImportedTransactionRow(
     public ImportedTransactionRow withCategory(ExpenseCategory newCategory) {
         TransactionStatus newStatus = determineStatus(newCategory, isDuplicate, 100);
         return new ImportedTransactionRow(
-                id, date, description, amount, type, newCategory, isDuplicate, 100, newStatus
+                id, date, description, amount, type, newCategory, incomeCategory, isDuplicate, 100, newStatus
+        );
+    }
+
+    /**
+     * Creates a copy with an updated income category.
+     */
+    public ImportedTransactionRow withIncomeCategory(IncomeCategory newIncomeCategory) {
+        return new ImportedTransactionRow(
+                id, date, description, amount, type, category, newIncomeCategory, isDuplicate, confidence, status
         );
     }
 
@@ -81,7 +96,7 @@ public record ImportedTransactionRow(
     public ImportedTransactionRow withDuplicateStatus(boolean newIsDuplicate) {
         TransactionStatus newStatus = determineStatus(category, newIsDuplicate, confidence);
         return new ImportedTransactionRow(
-                id, date, description, amount, type, category, newIsDuplicate, confidence, newStatus
+                id, date, description, amount, type, category, incomeCategory, newIsDuplicate, confidence, newStatus
         );
     }
 

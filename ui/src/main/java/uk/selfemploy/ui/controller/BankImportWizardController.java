@@ -21,18 +21,24 @@ import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.viewmodel.*;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.function.Consumer;
+
+import uk.selfemploy.ui.service.CsvTransactionParser;
 
 /**
  * Controller for the CSV Bank Import Wizard.
@@ -43,6 +49,8 @@ import java.util.function.Consumer;
 public class BankImportWizardController implements Initializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(BankImportWizardController.class);
+    private static final int MAX_IMPORT_DESCRIPTION_LENGTH = 100;
+    private static final long MAX_CSV_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
     // === Wizard Progress ===
     @FXML private HBox progressIndicator;
@@ -634,11 +642,20 @@ public class BankImportWizardController implements Initializable {
     }
 
     private void loadCsvFile(File file) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            // Read first line as headers
+        // Reject files larger than 50 MB to prevent memory issues
+        if (file.length() > MAX_CSV_FILE_SIZE) {
+            showError("File too large",
+                new IllegalArgumentException("Maximum file size is 50 MB. Selected file is "
+                    + formatFileSize(file.length()) + "."));
+            return;
+        }
+
+        try (var reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            // Read first line as headers using proper CSV parsing (handles quoted headers)
             String headerLine = reader.readLine();
             if (headerLine != null) {
-                List<String> headers = Arrays.asList(headerLine.split(","));
+                String[] parsed = CsvTransactionParser.parseCsvLine(headerLine);
+                List<String> headers = Arrays.stream(parsed).map(String::trim).toList();
                 viewModel.setCsvHeaders(headers);
 
                 // Count rows
@@ -874,61 +891,148 @@ public class BankImportWizardController implements Initializable {
     @FXML
     void handleImport(ActionEvent event) {
         viewModel.setImporting(true);
-
-        // Simulate import progress (in real implementation, this would call backend service)
-        simulateImport();
+        performImport();
     }
 
-    private void simulateImport() {
-        // This would be replaced with actual backend service call
-        javafx.animation.Timeline timeline = new javafx.animation.Timeline();
-        for (int i = 0; i <= 10; i++) {
-            final double progress = i / 10.0;
-            timeline.getKeyFrames().add(
-                    new javafx.animation.KeyFrame(
-                            javafx.util.Duration.millis(i * 200),
-                            e -> viewModel.setImportProgress(progress)
-                    )
-            );
+    private void performImport() {
+        List<ImportedTransactionRow> toImport = viewModel.getTransactionsToImport();
+        if (toImport.isEmpty()) {
+            viewModel.setImporting(false);
+            showError("Nothing to import", new IllegalStateException("No transactions to import"));
+            return;
         }
 
-        timeline.setOnFinished(e -> {
-            viewModel.setImporting(false);
-            showSuccessToast("Import completed successfully!");
+        UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+        IncomeService incomeService = CoreServiceFactory.getIncomeService();
+        ExpenseService expenseService = CoreServiceFactory.getExpenseService();
 
-            if (onImportCallback != null) {
-                onImportCallback.accept(viewModel.getTransactionsToImport());
+        // Run import on a background thread to keep the UI responsive
+        Thread importThread = new Thread(() -> {
+            try {
+                int imported = 0;
+                int errors = 0;
+
+                for (int i = 0; i < toImport.size(); i++) {
+                    ImportedTransactionRow row = toImport.get(i);
+                    try {
+                        // Truncate description to service limit (100 chars) to avoid validation errors
+                        String description = row.description();
+                        if (description.length() > MAX_IMPORT_DESCRIPTION_LENGTH) {
+                            description = description.substring(0, MAX_IMPORT_DESCRIPTION_LENGTH);
+                        }
+
+                        if (row.type() == TransactionType.INCOME) {
+                            IncomeCategory incomeCategory = row.incomeCategory() != null
+                                ? row.incomeCategory()
+                                : IncomeCategory.SALES;
+                            incomeService.create(
+                                businessId,
+                                row.date(),
+                                row.amount(),
+                                description,
+                                incomeCategory,
+                                null
+                            );
+                        } else {
+                            ExpenseCategory category = row.category() != null
+                                ? row.category()
+                                : ExpenseCategory.OTHER_EXPENSES;
+                            expenseService.create(
+                                businessId,
+                                row.date(),
+                                row.amount(),
+                                description,
+                                category,
+                                null,
+                                null
+                            );
+                        }
+                        imported++;
+                    } catch (Exception e) {
+                        errors++;
+                        LOG.error("Failed to import transaction: {}", row.description(), e);
+                    }
+
+                    // Update progress on the FX thread
+                    final double progress = (i + 1.0) / toImport.size();
+                    javafx.application.Platform.runLater(() -> viewModel.setImportProgress(progress));
+                }
+
+                final int finalImported = imported;
+                final int finalErrors = errors;
+
+                javafx.application.Platform.runLater(() -> {
+                    viewModel.setImporting(false);
+
+                    if (finalErrors > 0) {
+                        showSuccessToast(String.format(
+                            "Imported %d transaction(s). %d failed.", finalImported, finalErrors));
+                    } else {
+                        showSuccessToast(String.format(
+                            "Successfully imported %d transaction(s).", finalImported));
+                    }
+
+                    if (onImportCallback != null) {
+                        onImportCallback.accept(toImport);
+                    }
+
+                    if (dialogStage != null) {
+                        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
+                        delay.setOnFinished(evt -> dialogStage.close());
+                        delay.play();
+                    }
+                });
+            } catch (Exception e) {
+                LOG.error("Import failed unexpectedly", e);
+                javafx.application.Platform.runLater(() -> {
+                    viewModel.setImporting(false);
+                    showError("Import failed", e);
+                });
             }
+        }, "bank-import-thread");
 
-            if (dialogStage != null) {
-                PauseTransition delay = new PauseTransition(Duration.seconds(1));
-                delay.setOnFinished(evt -> dialogStage.close());
-                delay.play();
-            }
-        });
-
-        timeline.play();
+        importThread.setDaemon(true);
+        importThread.start();
     }
 
     private void parseTransactions() {
-        // This would be replaced with actual CSV parsing using the column mapping
-        // For now, we'll use the transactions that were added to the view model
-        // In a real implementation, we'd parse the CSV file here
+        File file = viewModel.getSelectedFile();
+        if (file == null) {
+            LOG.warn("No file selected for parsing");
+            return;
+        }
 
-        LOG.info("Parsing {} rows from CSV with mapping: date={}, desc={}, amount={}",
-                viewModel.getRowCount(),
+        LOG.info("Parsing CSV file: {} with mapping: date={}, desc={}, amount={}",
+                file.getName(),
                 viewModel.getColumnMapping().getDateColumn(),
                 viewModel.getColumnMapping().getDescriptionColumn(),
                 viewModel.getColumnMapping().getAmountColumn());
 
-        // The actual parsing would happen here, creating ImportedTransactionRow objects
-        // This is a placeholder - the real implementation would:
-        // 1. Read CSV file
-        // 2. Apply column mapping
-        // 3. Parse dates, amounts
-        // 4. Detect income vs expense
-        // 5. Auto-categorize using description matching
-        // 6. Check for duplicates against existing database
+        CsvTransactionParser csvParser = new CsvTransactionParser();
+        CsvTransactionParser.ParseResult result = csvParser.parse(
+            file.toPath(), viewModel.getColumnMapping());
+
+        viewModel.setTransactions(result.transactions());
+
+        if (!result.warnings().isEmpty()) {
+            LOG.warn("CSV parse warnings: {}", result.warnings());
+            String warningMessage = result.warnings().size() + " row(s) could not be parsed.";
+            showParseWarning(warningMessage, result.warnings());
+        }
+
+        LOG.info("Parsed {} transactions ({} warnings)",
+                result.transactions().size(), result.warnings().size());
+    }
+
+    private void showParseWarning(String summary, List<String> details) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Parse Warnings");
+        alert.setHeaderText(summary);
+        alert.setContentText(String.join("\n", details.subList(0, Math.min(details.size(), 10))));
+        if (details.size() > 10) {
+            alert.setContentText(alert.getContentText() + "\n... and " + (details.size() - 10) + " more");
+        }
+        alert.showAndWait();
     }
 
     private void refreshConfirmSummary() {
