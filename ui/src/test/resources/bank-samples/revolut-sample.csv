@@ -1,0 +1,11 @@
+Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+CARD_PAYMENT,Current,2025-01-15,2025-01-15,Google Workspace Subscription,-11.99,0.00,GBP,COMPLETED,4988.01
+TRANSFER,Current,2025-01-17,2025-01-17,Client Payment Received,3500.00,0.00,GBP,COMPLETED,8488.01
+CARD_PAYMENT,Current,2025-01-20,2025-01-20,Train Ticket London to Manchester,-85.00,0.00,GBP,COMPLETED,8403.01
+CARD_PAYMENT,Current,2025-01-22,2025-01-22,Ryman Stationery,-23.47,0.00,GBP,COMPLETED,8379.54
+TRANSFER,Current,2025-01-25,2025-01-25,Retainer Fee January,2000.00,0.00,GBP,COMPLETED,10379.54
+CARD_PAYMENT,Current,2025-01-28,2025-01-28,Adobe Creative Cloud,-54.99,0.00,GBP,COMPLETED,10324.55
+TRANSFER,Current,2025-01-30,2025-01-30,Workshop Facilitation Fee,750.00,0.00,GBP,COMPLETED,11074.55
+CARD_PAYMENT,Current,2025-02-02,2025-02-02,Accountancy Software Annual,-199.00,0.00,GBP,COMPLETED,10875.55
+CARD_PAYMENT,Current,2025-02-05,,Pending Transaction Description,-50.00,0.00,GBP,PENDING,10825.55
+CARD_PAYMENT,Current,,2025-02-invaliddate,Missing Start Date,-30.00,0.00,GBP,COMPLETED,10795.55

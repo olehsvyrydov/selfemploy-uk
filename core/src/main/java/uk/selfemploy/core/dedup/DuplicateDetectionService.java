@@ -2,15 +2,14 @@ package uk.selfemploy.core.dedup;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.apache.commons.text.similarity.LevenshteinDistance;
 import uk.selfemploy.core.bankimport.ImportedTransaction;
+import uk.selfemploy.core.reconciliation.MatchingUtils;
 import uk.selfemploy.persistence.entity.ExpenseEntity;
 import uk.selfemploy.persistence.entity.IncomeEntity;
 import uk.selfemploy.persistence.repository.ExpenseRepository;
 import uk.selfemploy.persistence.repository.IncomeRepository;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -30,19 +29,17 @@ import java.util.*;
 public class DuplicateDetectionService {
 
     private static final int MAX_LEVENSHTEIN_DISTANCE = 3;
-    private static final double FUZZY_MATCH_THRESHOLD = 0.80;
+    private static final double FUZZY_MATCH_THRESHOLD = MatchingUtils.LIKELY_THRESHOLD;
     private static final BigDecimal AMOUNT_TOLERANCE = new BigDecimal("0.05"); // 5%
 
     private final IncomeRepository incomeRepository;
     private final ExpenseRepository expenseRepository;
-    private final LevenshteinDistance levenshteinDistance;
 
     @Inject
     public DuplicateDetectionService(IncomeRepository incomeRepository,
                                      ExpenseRepository expenseRepository) {
         this.incomeRepository = incomeRepository;
         this.expenseRepository = expenseRepository;
-        this.levenshteinDistance = new LevenshteinDistance();
     }
 
     /**
@@ -127,13 +124,13 @@ public class DuplicateDetectionService {
      */
     private Optional<FuzzyMatch> findLikelyMatch(ImportedTransaction imported, List<ExistingRecord> records) {
         BigDecimal importAmount = imported.amount().abs();
-        String normalizedImportDesc = normalizeDescription(imported.description());
+        String normalizedImportDesc = MatchingUtils.normalizeDescription(imported.description());
 
         return records.stream()
             .filter(r -> r.date().equals(imported.date()))
             .filter(r -> r.amount().compareTo(importAmount) == 0)
-            .map(r -> new FuzzyMatch(r, calculateSimilarity(normalizedImportDesc,
-                normalizeDescription(r.description()))))
+            .map(r -> new FuzzyMatch(r, MatchingUtils.calculateSimilarity(normalizedImportDesc,
+                MatchingUtils.normalizeDescription(r.description()))))
             .filter(fm -> fm.similarity() >= FUZZY_MATCH_THRESHOLD)
             .max(Comparator.comparingDouble(FuzzyMatch::similarity));
     }
@@ -156,56 +153,19 @@ public class DuplicateDetectionService {
     }
 
     /**
-     * Calculates string similarity using Levenshtein distance.
-     *
-     * @return similarity score between 0.0 and 1.0
-     */
-    private double calculateSimilarity(String s1, String s2) {
-        if (s1.equals(s2)) {
-            return 1.0;
-        }
-
-        int distance = levenshteinDistance.apply(s1, s2);
-        int maxLength = Math.max(s1.length(), s2.length());
-
-        if (maxLength == 0) {
-            return 1.0;
-        }
-
-        return 1.0 - ((double) distance / maxLength);
-    }
-
-    /**
      * Creates an exact match key for a transaction.
+     * Delegates to shared MatchingUtils for consistent normalization.
      */
     private String createExactKey(ImportedTransaction tx) {
-        String normalizedDesc = normalizeDescription(tx.description());
-        BigDecimal amount = tx.amount().abs();
-        return String.format("%s|%s|%s",
-            tx.date().toString(),
-            amount.stripTrailingZeros().toPlainString(),
-            normalizedDesc);
+        return MatchingUtils.createExactKey(tx.date(), tx.amount().abs(), tx.description());
     }
 
     /**
      * Creates an exact match key for an existing record.
+     * Delegates to shared MatchingUtils for consistent normalization.
      */
     private String createExactKey(ExistingRecord record) {
-        String normalizedDesc = normalizeDescription(record.description());
-        return String.format("%s|%s|%s",
-            record.date().toString(),
-            record.amount().stripTrailingZeros().toPlainString(),
-            normalizedDesc);
-    }
-
-    /**
-     * Normalizes a description for comparison.
-     */
-    private String normalizeDescription(String description) {
-        if (description == null) {
-            return "";
-        }
-        return description.toLowerCase().trim().replaceAll("\\s+", " ");
+        return MatchingUtils.createExactKey(record.date(), record.amount(), record.description());
     }
 
     /**

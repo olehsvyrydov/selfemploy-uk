@@ -231,13 +231,16 @@ class SqliteBankTransactionServiceTest {
     // === Delete Tests ===
 
     @Test
-    void delete_shouldRemoveTransaction() {
+    void delete_shouldSoftDeleteTransaction() {
         BankTransaction tx = createTestTransaction("Delete me", new BigDecimal("10"));
         service.save(tx);
         assertThat(service.count()).isEqualTo(1);
 
         boolean deleted = service.delete(tx.id());
         assertThat(deleted).isTrue();
+        // After soft-delete, the transaction should not appear in findAll
+        assertThat(service.findAll()).isEmpty();
+        // But count of active transactions should be zero
         assertThat(service.count()).isZero();
     }
 
@@ -250,6 +253,21 @@ class SqliteBankTransactionServiceTest {
     void delete_shouldRejectNull() {
         assertThatThrownBy(() -> service.delete(null))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // === Retention Policy Enforcement Tests ===
+
+    @Test
+    void delete_shouldSoftDeleteWithTimestamp() {
+        BankTransaction tx = createTestTransaction("Soft delete me", new BigDecimal("25.00"));
+        service.save(tx);
+
+        Instant beforeDelete = Instant.now();
+        boolean deleted = service.delete(tx.id());
+        assertThat(deleted).isTrue();
+
+        // The transaction should no longer be visible to normal queries
+        assertThat(service.findAll()).isEmpty();
     }
 
     // === Nullable Fields Roundtrip ===
@@ -274,6 +292,123 @@ class SqliteBankTransactionServiceTest {
         assertThat(loaded.confidenceScore()).isEqualByComparingTo(new BigDecimal("0.85"));
         assertThat(loaded.suggestedCategory()).isEqualTo(ExpenseCategory.TRAVEL);
         assertThat(loaded.isBusiness()).isNull();
+    }
+
+    // === Modification Log Tests (audit trail for all state changes) ===
+
+    @Nested
+    @DisplayName("modification audit log")
+    class ModificationLog {
+
+        @Test
+        @DisplayName("categorizeAsExpense should log CATEGORIZED modification")
+        void categorizeAsExpense_shouldLogModification() {
+            BankTransaction tx = createTestTransaction("Expense item", new BigDecimal("-45.00"));
+            service.save(tx);
+
+            UUID expenseId = UUID.randomUUID();
+            service.categorizeAsExpense(tx.id(), expenseId, Instant.now());
+
+            List<Map<String, String>> logs = SqliteDataStore.getInstance()
+                    .findModificationLogs(tx.id());
+            assertThat(logs).hasSize(1);
+            assertThat(logs.get(0).get("modification_type")).isEqualTo("CATEGORIZED");
+            assertThat(logs.get(0).get("field_name")).isEqualTo("review_status");
+            assertThat(logs.get(0).get("previous_value")).isEqualTo("PENDING");
+            assertThat(logs.get(0).get("new_value")).isEqualTo("CATEGORIZED");
+            assertThat(logs.get(0).get("modified_by")).isEqualTo("local-user");
+        }
+
+        @Test
+        @DisplayName("categorizeAsIncome should log CATEGORIZED modification")
+        void categorizeAsIncome_shouldLogModification() {
+            BankTransaction tx = createTestTransaction("Income item", new BigDecimal("500.00"));
+            service.save(tx);
+
+            UUID incomeId = UUID.randomUUID();
+            service.categorizeAsIncome(tx.id(), incomeId, Instant.now());
+
+            List<Map<String, String>> logs = SqliteDataStore.getInstance()
+                    .findModificationLogs(tx.id());
+            assertThat(logs).hasSize(1);
+            assertThat(logs.get(0).get("modification_type")).isEqualTo("CATEGORIZED");
+        }
+
+        @Test
+        @DisplayName("exclude should log EXCLUDED modification")
+        void exclude_shouldLogModification() {
+            BankTransaction tx = createTestTransaction("Exclude me", new BigDecimal("10.00"));
+            service.save(tx);
+
+            service.exclude(tx.id(), "Personal transaction", Instant.now());
+
+            List<Map<String, String>> logs = SqliteDataStore.getInstance()
+                    .findModificationLogs(tx.id());
+            assertThat(logs).hasSize(1);
+            assertThat(logs.get(0).get("modification_type")).isEqualTo("EXCLUDED");
+            assertThat(logs.get(0).get("previous_value")).isEqualTo("PENDING");
+            assertThat(logs.get(0).get("new_value")).isEqualTo("EXCLUDED");
+        }
+
+        @Test
+        @DisplayName("setBusinessFlag should log BUSINESS_PERSONAL_CHANGED modification")
+        void setBusinessFlag_shouldLogModification() {
+            BankTransaction tx = createTestTransaction("Business item", new BigDecimal("-30.00"));
+            service.save(tx);
+
+            service.setBusinessFlag(tx.id(), true, Instant.now());
+
+            List<Map<String, String>> logs = SqliteDataStore.getInstance()
+                    .findModificationLogs(tx.id());
+            assertThat(logs).hasSize(1);
+            assertThat(logs.get(0).get("modification_type")).isEqualTo("BUSINESS_PERSONAL_CHANGED");
+            assertThat(logs.get(0).get("field_name")).isEqualTo("is_business");
+            assertThat(logs.get(0).get("new_value")).isEqualTo("true");
+        }
+
+        @Test
+        @DisplayName("skip should log modification")
+        void skip_shouldLogModification() {
+            BankTransaction tx = createTestTransaction("Skip me", new BigDecimal("10.00"));
+            service.save(tx);
+
+            service.skip(tx.id(), Instant.now());
+
+            List<Map<String, String>> logs = SqliteDataStore.getInstance()
+                    .findModificationLogs(tx.id());
+            assertThat(logs).hasSize(1);
+            assertThat(logs.get(0).get("modification_type")).isEqualTo("EXCLUDED");
+            assertThat(logs.get(0).get("new_value")).isEqualTo("SKIPPED");
+        }
+
+        @Test
+        @DisplayName("delete should log modification")
+        void delete_shouldLogModification() {
+            BankTransaction tx = createTestTransaction("Delete me", new BigDecimal("10.00"));
+            service.save(tx);
+
+            service.delete(tx.id());
+
+            List<Map<String, String>> logs = SqliteDataStore.getInstance()
+                    .findModificationLogs(tx.id());
+            assertThat(logs).hasSize(1);
+            assertThat(logs.get(0).get("modification_type")).isEqualTo("EXCLUDED");
+            assertThat(logs.get(0).get("field_name")).isEqualTo("deleted_at");
+        }
+
+        @Test
+        @DisplayName("multiple state changes should create multiple log entries")
+        void multipleChanges_shouldCreateMultipleLogs() {
+            BankTransaction tx = createTestTransaction("Multi change", new BigDecimal("-15.00"));
+            service.save(tx);
+
+            service.setBusinessFlag(tx.id(), true, Instant.now());
+            service.setBusinessFlag(tx.id(), false, Instant.now());
+
+            List<Map<String, String>> logs = SqliteDataStore.getInstance()
+                    .findModificationLogs(tx.id());
+            assertThat(logs).hasSize(2);
+        }
     }
 
     // === Helpers ===

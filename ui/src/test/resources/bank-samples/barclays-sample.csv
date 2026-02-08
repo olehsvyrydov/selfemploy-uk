@@ -1,0 +1,11 @@
+Date,Type,Description,Money out,Money in,Balance
+15/01/2025,DEB,Acme Ltd Invoice Payment,,2500.00,5200.00
+17/01/2025,DEB,TFL Travel Charge,45.50,,5154.50
+20/01/2025,BGC,Freelance Project Fee,,1200.00,6354.50
+22/01/2025,DEB,Office Supplies Staples,89.99,,6264.51
+25/01/2025,DEB,Monthly Mobile Phone Bill,35.00,,6229.51
+28/01/2025,DEB,Cloud Hosting Service,150.00,,6079.51
+30/01/2025,BGC,Consulting Income,,3200.00,9279.51
+02/02/2025,DEB,Professional Indemnity Insurance,420.00,,8859.51
+05/02/2025,DEB,,75.00,,8784.51
+10/02/2025,DEB,Invalid Row Missing Data,not_a_number,,8784.51

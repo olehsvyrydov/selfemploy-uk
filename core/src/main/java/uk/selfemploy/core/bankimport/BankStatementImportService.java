@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -38,9 +40,23 @@ public class BankStatementImportService {
 
     static final long MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
+    /**
+     * Retention period in years for bank import data.
+     * Required by Taxes Management Act 1970 s.12B: self-employed
+     * must keep records for 5 years from the 31 January filing deadline,
+     * effectively 6 years from end of tax year.
+     */
+    static final long RETENTION_YEARS = 6;
+
+    /**
+     * Default user identity for local (desktop) imports.
+     */
+    static final String LOCAL_USER_IDENTITY = "local-user";
+
     private final BankFormatDetector formatDetector;
     private final BankTransactionRepository bankTransactionRepository;
     private final ImportAuditRepository importAuditRepository;
+    private final ExclusionRulesEngine exclusionRulesEngine;
     private final Clock clock;
 
     @Inject
@@ -48,10 +64,12 @@ public class BankStatementImportService {
             BankFormatDetector formatDetector,
             BankTransactionRepository bankTransactionRepository,
             ImportAuditRepository importAuditRepository,
+            ExclusionRulesEngine exclusionRulesEngine,
             Clock clock) {
         this.formatDetector = formatDetector;
         this.bankTransactionRepository = bankTransactionRepository;
         this.importAuditRepository = importAuditRepository;
+        this.exclusionRulesEngine = exclusionRulesEngine;
         this.clock = clock;
     }
 
@@ -94,19 +112,29 @@ public class BankStatementImportService {
             }
         }
 
-        // Create ImportAudit first to get the audit ID
+        // Create ImportAudit with full audit trail for HMRC compliance
+        // Retention period: 6 years from import date (TMA 1970 s.12B)
         String fileName = csvFile.getFileName().toString();
         String fileHash = computeFileHash(csvFile);
-        ImportAudit audit = importAuditRepository.save(ImportAudit.create(
+        LocalDate importDate = LocalDate.ofInstant(now, ZoneId.systemDefault());
+        LocalDate retentionUntil = importDate.plusYears(RETENTION_YEARS);
+        String originalFilePath = csvFile.toAbsolutePath().toString();
+
+        ImportAudit audit = importAuditRepository.save(ImportAudit.createWithAuditTrail(
             businessId, now, fileName, fileHash,
             ImportAuditType.BANK_CSV,
             allTransactions.size(),
             uniqueTransactions.size(),
             duplicateCount,
-            List.of()
+            List.of(),
+            originalFilePath,
+            false,  // File encryption deferred to future sprint
+            retentionUntil,
+            LOCAL_USER_IDENTITY
         ));
 
-        // Stage unique transactions as PENDING BankTransactions
+        // Stage unique transactions as PENDING BankTransactions,
+        // applying auto-exclusion rules for non-P&L patterns
         List<UUID> transactionIds = new ArrayList<>();
         for (ImportedTransaction tx : uniqueTransactions) {
             BankTransaction bankTx = BankTransaction.create(
@@ -121,6 +149,14 @@ public class BankStatementImportService {
                 tx.transactionHash(),
                 now
             );
+
+            // Apply auto-exclusion for non-P&L patterns (transfers, HMRC, loans, ATM)
+            ExclusionResult exclusionResult = exclusionRulesEngine.evaluate(bankTx);
+            if (exclusionResult.shouldExclude()) {
+                bankTx = bankTx.withExcluded(
+                    "Auto-excluded: " + exclusionResult.reason(), now);
+            }
+
             bankTransactionRepository.save(bankTx);
             transactionIds.add(bankTx.id());
         }

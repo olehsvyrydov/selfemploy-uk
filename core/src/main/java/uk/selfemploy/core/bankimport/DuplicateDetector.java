@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
+import uk.selfemploy.core.reconciliation.MatchingUtils;
 import uk.selfemploy.persistence.repository.ExpenseRepository;
 import uk.selfemploy.persistence.repository.IncomeRepository;
 
@@ -93,14 +94,10 @@ public class DuplicateDetector {
 
     /**
      * Creates a hash string for an existing income record.
+     * Delegates normalization to shared MatchingUtils.
      */
     private String createIncomeHash(Income income) {
-        String normalizedDescription = normalizeDescription(income.description());
-        return String.format("%s|%s|%s",
-            income.date().toString(),
-            income.amount().stripTrailingZeros().toPlainString(),
-            normalizedDescription
-        );
+        return MatchingUtils.createExactKey(income.date(), income.amount(), income.description());
     }
 
     /**
@@ -110,23 +107,8 @@ public class DuplicateDetector {
      * but imported expenses are negative. We convert to negative for comparison.</p>
      */
     private String createExpenseHash(Expense expense) {
-        String normalizedDescription = normalizeDescription(expense.description());
         // Expenses are stored as positive but imported as negative
         BigDecimal negativeAmount = expense.amount().negate();
-        return String.format("%s|%s|%s",
-            expense.date().toString(),
-            negativeAmount.stripTrailingZeros().toPlainString(),
-            normalizedDescription
-        );
-    }
-
-    /**
-     * Normalizes a description for hash comparison.
-     */
-    private String normalizeDescription(String desc) {
-        if (desc == null) {
-            return "";
-        }
-        return desc.toLowerCase().trim().replaceAll("\\s+", " ");
+        return MatchingUtils.createExactKey(expense.date(), negativeAmount, expense.description());
     }
 }

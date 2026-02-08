@@ -21,35 +21,29 @@ import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.enums.ExpenseCategory;
-import uk.selfemploy.common.enums.IncomeCategory;
-import uk.selfemploy.core.service.ExpenseService;
-import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.CsvTransactionParser;
+import uk.selfemploy.ui.service.ImportOrchestrationService;
 import uk.selfemploy.ui.viewmodel.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.UUID;
 import java.util.function.Consumer;
-
-import uk.selfemploy.ui.service.CsvTransactionParser;
 
 /**
  * Controller for the CSV Bank Import Wizard.
  * Handles the 4-step wizard flow for importing bank transactions from CSV files.
  *
- * SE-601: CSV Bank Import Wizard
+ * Delegates business logic (file loading, parsing, import execution) to
+ * {@link ImportOrchestrationService} and focuses on UI concerns: FXML bindings,
+ * drag-and-drop, step navigation, table rendering, and threading.
  */
 public class BankImportWizardController implements Initializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(BankImportWizardController.class);
-    private static final int MAX_IMPORT_DESCRIPTION_LENGTH = 100;
     private static final long MAX_CSV_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
     // === Wizard Progress ===
@@ -133,6 +127,7 @@ public class BankImportWizardController implements Initializable {
     private BankImportWizardViewModel viewModel;
     private Stage dialogStage;
     private Consumer<List<ImportedTransactionRow>> onImportCallback;
+    private String importResultMessage;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -165,6 +160,15 @@ public class BankImportWizardController implements Initializable {
      */
     public BankImportWizardViewModel getViewModel() {
         return viewModel;
+    }
+
+    /**
+     * Returns the import result message after a successful import, or null if no import occurred.
+     * This is available after the wizard dialog closes and can be used by the calling controller
+     * to display a success indicator on the navigation target.
+     */
+    public String getImportResultMessage() {
+        return importResultMessage;
     }
 
     // =====================================================
@@ -641,6 +645,11 @@ public class BankImportWizardController implements Initializable {
         return name.endsWith(".csv") || name.endsWith(".txt");
     }
 
+    /**
+     * Loads a CSV file using the orchestration service.
+     * File size validation stays here (UI concern: controls the error dialog).
+     * Header parsing and row counting delegated to ImportOrchestrationService.
+     */
     private void loadCsvFile(File file) {
         // Reject files larger than 50 MB to prevent memory issues
         if (file.length() > MAX_CSV_FILE_SIZE) {
@@ -650,27 +659,20 @@ public class BankImportWizardController implements Initializable {
             return;
         }
 
-        try (var reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
-            // Read first line as headers using proper CSV parsing (handles quoted headers)
-            String headerLine = reader.readLine();
-            if (headerLine != null) {
-                String[] parsed = CsvTransactionParser.parseCsvLine(headerLine);
-                List<String> headers = Arrays.stream(parsed).map(String::trim).toList();
-                viewModel.setCsvHeaders(headers);
+        try {
+            ImportOrchestrationService orchestrationService =
+                CoreServiceFactory.getImportOrchestrationService();
+            ImportOrchestrationService.FileLoadResult loadResult =
+                orchestrationService.loadFile(file.toPath());
 
-                // Count rows
-                int rowCount = 0;
-                while (reader.readLine() != null) {
-                    rowCount++;
-                }
-                viewModel.setRowCount(rowCount);
+            viewModel.setCsvHeaders(loadResult.headers());
+            viewModel.setRowCount(loadResult.rowCount());
 
-                // Update combos in step 2
-                updateColumnCombos(headers);
-            }
+            // Update combos in step 2
+            updateColumnCombos(loadResult.headers());
 
             viewModel.setSelectedFile(file);
-            LOG.info("Loaded CSV file: {} with {} rows", file.getName(), viewModel.getRowCount());
+            LOG.info("Loaded CSV file: {} with {} rows", file.getName(), loadResult.rowCount());
 
         } catch (IOException e) {
             LOG.error("Failed to read CSV file", e);
@@ -894,6 +896,11 @@ public class BankImportWizardController implements Initializable {
         performImport();
     }
 
+    /**
+     * Delegates the import execution to ImportOrchestrationService.
+     * The controller only handles threading (background thread) and UI updates
+     * (Platform.runLater for progress and result display).
+     */
     private void performImport() {
         List<ImportedTransactionRow> toImport = viewModel.getTransactionsToImport();
         if (toImport.isEmpty()) {
@@ -902,75 +909,31 @@ public class BankImportWizardController implements Initializable {
             return;
         }
 
-        UUID businessId = CoreServiceFactory.getDefaultBusinessId();
-        IncomeService incomeService = CoreServiceFactory.getIncomeService();
-        ExpenseService expenseService = CoreServiceFactory.getExpenseService();
+        ImportOrchestrationService orchestrationService =
+            CoreServiceFactory.getImportOrchestrationService();
 
         // Run import on a background thread to keep the UI responsive
         Thread importThread = new Thread(() -> {
             try {
-                int imported = 0;
-                int errors = 0;
-
-                for (int i = 0; i < toImport.size(); i++) {
-                    ImportedTransactionRow row = toImport.get(i);
-                    try {
-                        // Truncate description to service limit (100 chars) to avoid validation errors
-                        String description = row.description();
-                        if (description.length() > MAX_IMPORT_DESCRIPTION_LENGTH) {
-                            description = description.substring(0, MAX_IMPORT_DESCRIPTION_LENGTH);
-                        }
-
-                        if (row.type() == TransactionType.INCOME) {
-                            IncomeCategory incomeCategory = row.incomeCategory() != null
-                                ? row.incomeCategory()
-                                : IncomeCategory.SALES;
-                            incomeService.create(
-                                businessId,
-                                row.date(),
-                                row.amount(),
-                                description,
-                                incomeCategory,
-                                null
-                            );
-                        } else {
-                            ExpenseCategory category = row.category() != null
-                                ? row.category()
-                                : ExpenseCategory.OTHER_EXPENSES;
-                            expenseService.create(
-                                businessId,
-                                row.date(),
-                                row.amount(),
-                                description,
-                                category,
-                                null,
-                                null
-                            );
-                        }
-                        imported++;
-                    } catch (Exception e) {
-                        errors++;
-                        LOG.error("Failed to import transaction: {}", row.description(), e);
-                    }
-
-                    // Update progress on the FX thread
-                    final double progress = (i + 1.0) / toImport.size();
-                    javafx.application.Platform.runLater(() -> viewModel.setImportProgress(progress));
-                }
-
-                final int finalImported = imported;
-                final int finalErrors = errors;
+                ImportOrchestrationService.ImportResult result =
+                    orchestrationService.importTransactions(toImport, progress ->
+                        javafx.application.Platform.runLater(() ->
+                            viewModel.setImportProgress(progress)));
 
                 javafx.application.Platform.runLater(() -> {
                     viewModel.setImporting(false);
 
-                    if (finalErrors > 0) {
-                        showSuccessToast(String.format(
-                            "Imported %d transaction(s). %d failed.", finalImported, finalErrors));
+                    if (result.hasErrors()) {
+                        importResultMessage = String.format(
+                            "Imported %d transaction(s). %d failed.",
+                            result.importedCount(), result.errorCount());
                     } else {
-                        showSuccessToast(String.format(
-                            "Successfully imported %d transaction(s).", finalImported));
+                        importResultMessage = String.format(
+                            "Successfully imported %d transaction(s).",
+                            result.importedCount());
                     }
+
+                    showSuccessToast(importResultMessage);
 
                     if (onImportCallback != null) {
                         onImportCallback.accept(toImport);
@@ -995,6 +958,10 @@ public class BankImportWizardController implements Initializable {
         importThread.start();
     }
 
+    /**
+     * Delegates CSV parsing to ImportOrchestrationService.
+     * The controller only handles logging and UI updates (warning dialogs).
+     */
     private void parseTransactions() {
         File file = viewModel.getSelectedFile();
         if (file == null) {
@@ -1008,9 +975,10 @@ public class BankImportWizardController implements Initializable {
                 viewModel.getColumnMapping().getDescriptionColumn(),
                 viewModel.getColumnMapping().getAmountColumn());
 
-        CsvTransactionParser csvParser = new CsvTransactionParser();
-        CsvTransactionParser.ParseResult result = csvParser.parse(
-            file.toPath(), viewModel.getColumnMapping());
+        ImportOrchestrationService orchestrationService =
+            CoreServiceFactory.getImportOrchestrationService();
+        CsvTransactionParser.ParseResult result =
+            orchestrationService.parseTransactions(file.toPath(), viewModel.getColumnMapping());
 
         viewModel.setTransactions(result.transactions());
 
@@ -1040,13 +1008,13 @@ public class BankImportWizardController implements Initializable {
             confirmIncomeCount.setText(String.valueOf(viewModel.getConfirmIncomeCount()));
         }
         if (confirmIncomeTotal != null) {
-            confirmIncomeTotal.setText("£" + viewModel.getConfirmIncomeTotal().toPlainString());
+            confirmIncomeTotal.setText("\u00a3" + viewModel.getConfirmIncomeTotal().toPlainString());
         }
         if (confirmExpenseCount != null) {
             confirmExpenseCount.setText(String.valueOf(viewModel.getConfirmExpenseCount()));
         }
         if (confirmExpenseTotal != null) {
-            confirmExpenseTotal.setText("£" + viewModel.getConfirmExpenseTotal().toPlainString());
+            confirmExpenseTotal.setText("\u00a3" + viewModel.getConfirmExpenseTotal().toPlainString());
         }
         if (skippedLabel != null) {
             int skipped = viewModel.getSkippedCount();

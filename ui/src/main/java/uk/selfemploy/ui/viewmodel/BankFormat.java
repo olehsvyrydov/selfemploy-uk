@@ -96,4 +96,14 @@ public enum BankFormat {
         }
         return "Column mapping will be applied automatically";
     }
+
+    /**
+     * Returns the format ID in lowercase kebab-case for the SPI.
+     * For example, BARCLAYS returns "csv-barclays", METRO_BANK returns "csv-metro-bank".
+     *
+     * @return the SPI-compatible format ID string
+     */
+    public String toFormatId() {
+        return "csv-" + name().toLowerCase().replace('_', '-');
+    }
 }

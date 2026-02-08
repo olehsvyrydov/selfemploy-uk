@@ -7,6 +7,9 @@ import uk.selfemploy.common.enums.IncomeCategory;
 
 import uk.selfemploy.common.domain.BankTransaction;
 import uk.selfemploy.common.enums.ReviewStatus;
+import uk.selfemploy.core.reconciliation.MatchTier;
+import uk.selfemploy.core.reconciliation.ReconciliationMatch;
+import uk.selfemploy.core.reconciliation.ReconciliationStatus;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -279,6 +282,9 @@ public final class SqliteDataStore {
                     suggested_category TEXT,
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    deleted_at TEXT,
+                    deleted_by TEXT,
+                    deletion_reason TEXT,
                     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
                     CHECK (review_status IN ('PENDING', 'CATEGORIZED', 'EXCLUDED', 'SKIPPED'))
                 )
@@ -286,6 +292,52 @@ public final class SqliteDataStore {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_business_status ON bank_transactions(business_id, review_status)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_business_date ON bank_transactions(business_id, date)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_hash ON bank_transactions(transaction_hash)");
+
+            // Immutable audit trail for all bank transaction state changes.
+            // Required for MTD digital link compliance: every modification to
+            // a bank transaction must be traceable.
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS transaction_modification_log (
+                    id TEXT PRIMARY KEY,
+                    bank_transaction_id TEXT NOT NULL,
+                    modification_type TEXT NOT NULL,
+                    field_name TEXT,
+                    previous_value TEXT,
+                    new_value TEXT,
+                    modified_by TEXT NOT NULL,
+                    modified_at TEXT NOT NULL,
+                    FOREIGN KEY (bank_transaction_id) REFERENCES bank_transactions(id),
+                    CHECK (modification_type IN (
+                        'CATEGORIZED', 'EXCLUDED', 'RECATEGORIZED',
+                        'RESTORED', 'BUSINESS_PERSONAL_CHANGED', 'CATEGORY_CHANGED'
+                    ))
+                )
+            """);
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_mod_log_bank_tx ON transaction_modification_log(bank_transaction_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_mod_log_time ON transaction_modification_log(modified_at)");
+
+            // Reconciliation matches table for detecting duplicates between
+            // bank-imported and manually entered transactions.
+            // Records are statutory and must never be hard-deleted.
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS reconciliation_matches (
+                    id TEXT PRIMARY KEY,
+                    bank_transaction_id TEXT NOT NULL,
+                    manual_transaction_id TEXT NOT NULL,
+                    manual_transaction_type TEXT NOT NULL CHECK(manual_transaction_type IN ('INCOME', 'EXPENSE')),
+                    confidence REAL NOT NULL,
+                    match_tier TEXT NOT NULL CHECK(match_tier IN ('LINKED', 'EXACT', 'LIKELY', 'POSSIBLE')),
+                    status TEXT NOT NULL DEFAULT 'UNRESOLVED' CHECK(status IN ('UNRESOLVED', 'CONFIRMED', 'DISMISSED')),
+                    business_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    resolved_at TEXT,
+                    resolved_by TEXT,
+                    UNIQUE(bank_transaction_id, manual_transaction_id, manual_transaction_type)
+                )
+            """);
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_recon_business ON reconciliation_matches(business_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_recon_status ON reconciliation_matches(business_id, status)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_recon_bank_tx ON reconciliation_matches(bank_transaction_id)");
 
             LOG.info("Database tables initialized");
         }
@@ -1202,8 +1254,9 @@ public final class SqliteDataStore {
             (id, business_id, import_audit_id, source_format_id, date, amount,
              description, account_last_four, bank_transaction_id, transaction_hash,
              review_status, income_id, expense_id, exclusion_reason,
-             is_business, confidence_score, suggested_category, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             is_business, confidence_score, suggested_category, created_at, updated_at,
+             deleted_at, deleted_by, deletion_reason)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, tx.id().toString());
@@ -1229,6 +1282,9 @@ public final class SqliteDataStore {
             pstmt.setString(17, tx.suggestedCategory() != null ? tx.suggestedCategory().name() : null);
             pstmt.setString(18, tx.createdAt().toString());
             pstmt.setString(19, tx.updatedAt() != null ? tx.updatedAt().toString() : tx.createdAt().toString());
+            pstmt.setString(20, tx.deletedAt() != null ? tx.deletedAt().toString() : null);
+            pstmt.setString(21, tx.deletedBy());
+            pstmt.setString(22, tx.deletionReason());
             pstmt.executeUpdate();
             LOG.fine("Saved bank transaction: " + tx.id());
         } catch (SQLException e) {
@@ -1241,7 +1297,7 @@ public final class SqliteDataStore {
      */
     public synchronized List<BankTransaction> findBankTransactions(UUID businessId) {
         List<BankTransaction> transactions = new ArrayList<>();
-        String sql = "SELECT * FROM bank_transactions WHERE business_id = ? ORDER BY date DESC";
+        String sql = "SELECT * FROM bank_transactions WHERE business_id = ? AND deleted_at IS NULL ORDER BY date DESC";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             ResultSet rs = pstmt.executeQuery();
@@ -1275,7 +1331,7 @@ public final class SqliteDataStore {
      * Counts bank transactions by review status for a business.
      */
     public synchronized long countBankTransactionsByStatus(UUID businessId, String status) {
-        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND review_status = ?";
+        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND review_status = ? AND deleted_at IS NULL";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, status);
@@ -1293,7 +1349,7 @@ public final class SqliteDataStore {
      * Counts all bank transactions for a business.
      */
     public synchronized long countBankTransactions(UUID businessId) {
-        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ?";
+        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND deleted_at IS NULL";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             ResultSet rs = pstmt.executeQuery();
@@ -1325,18 +1381,90 @@ public final class SqliteDataStore {
     }
 
     /**
-     * Deletes a bank transaction by ID.
+     * Soft-deletes a bank transaction by ID.
+     * Sets the deleted_at timestamp instead of removing the row,
+     * preserving data for the 6-year HMRC retention period (TMA 1970 s.12B).
      */
     public synchronized boolean deleteBankTransaction(UUID id) {
-        String sql = "DELETE FROM bank_transactions WHERE id = ?";
+        String sql = "UPDATE bank_transactions SET deleted_at = ?, deleted_by = ?, deletion_reason = ? WHERE id = ? AND deleted_at IS NULL";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
+            pstmt.setString(1, Instant.now().toString());
+            pstmt.setString(2, "local-user");
+            pstmt.setString(3, "User-initiated deletion");
+            pstmt.setString(4, id.toString());
             int affected = pstmt.executeUpdate();
             return affected > 0;
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to delete bank transaction: " + id, e);
+            LOG.log(Level.SEVERE, "Failed to soft-delete bank transaction: " + id, e);
             return false;
         }
+    }
+
+    /**
+     * Records a modification to a bank transaction in the audit log.
+     * This creates an immutable record of every state change for MTD compliance.
+     *
+     * @param bankTransactionId the transaction being modified
+     * @param modificationType  one of: CATEGORIZED, EXCLUDED, RECATEGORIZED, RESTORED,
+     *                          BUSINESS_PERSONAL_CHANGED, CATEGORY_CHANGED
+     * @param fieldName         the field that was changed (e.g. "review_status", "is_business")
+     * @param previousValue     the value before the change (null if not applicable)
+     * @param newValue          the value after the change
+     * @param modifiedBy        who made the change (e.g. "local-user")
+     */
+    public synchronized void logTransactionModification(
+            UUID bankTransactionId, String modificationType,
+            String fieldName, String previousValue, String newValue,
+            String modifiedBy) {
+        String sql = """
+            INSERT INTO transaction_modification_log
+            (id, bank_transaction_id, modification_type, field_name,
+             previous_value, new_value, modified_by, modified_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, UUID.randomUUID().toString());
+            pstmt.setString(2, bankTransactionId.toString());
+            pstmt.setString(3, modificationType);
+            pstmt.setString(4, fieldName);
+            pstmt.setString(5, previousValue);
+            pstmt.setString(6, newValue);
+            pstmt.setString(7, modifiedBy);
+            pstmt.setString(8, Instant.now().toString());
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to log transaction modification for: " + bankTransactionId, e);
+        }
+    }
+
+    /**
+     * Finds all modification log entries for a bank transaction, ordered by time ascending.
+     *
+     * @param bankTransactionId the transaction ID to look up
+     * @return list of log entries as field-value maps
+     */
+    public synchronized List<Map<String, String>> findModificationLogs(UUID bankTransactionId) {
+        List<Map<String, String>> logs = new ArrayList<>();
+        String sql = "SELECT * FROM transaction_modification_log WHERE bank_transaction_id = ? ORDER BY modified_at ASC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, bankTransactionId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                Map<String, String> entry = new HashMap<>();
+                entry.put("id", rs.getString("id"));
+                entry.put("bank_transaction_id", rs.getString("bank_transaction_id"));
+                entry.put("modification_type", rs.getString("modification_type"));
+                entry.put("field_name", rs.getString("field_name"));
+                entry.put("previous_value", rs.getString("previous_value"));
+                entry.put("new_value", rs.getString("new_value"));
+                entry.put("modified_by", rs.getString("modified_by"));
+                entry.put("modified_at", rs.getString("modified_at"));
+                logs.add(entry);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to find modification logs for: " + bankTransactionId, e);
+        }
+        return logs;
     }
 
     private BankTransaction mapBankTransaction(ResultSet rs) throws SQLException {
@@ -1345,6 +1473,7 @@ public final class SqliteDataStore {
         String confidenceStr = rs.getString("confidence_score");
         String categoryStr = rs.getString("suggested_category");
         String updatedAtStr = rs.getString("updated_at");
+        String deletedAtStr = rs.getString("deleted_at");
 
         // Handle nullable is_business column
         int isBusinessInt = rs.getInt("is_business");
@@ -1370,9 +1499,9 @@ public final class SqliteDataStore {
             categoryStr != null ? ExpenseCategory.valueOf(categoryStr) : null,
             Instant.parse(rs.getString("created_at")),
             updatedAtStr != null ? Instant.parse(updatedAtStr) : null,
-            null, // deletedAt - not stored in SQLite
-            null, // deletedBy - not stored in SQLite
-            null  // deletionReason - not stored in SQLite
+            deletedAtStr != null ? Instant.parse(deletedAtStr) : null,
+            rs.getString("deleted_by"),
+            rs.getString("deletion_reason")
         );
     }
 
@@ -1533,6 +1662,206 @@ public final class SqliteDataStore {
             rs.getString("hmrc_reference"),
             rs.getString("error_message"),
             Instant.parse(rs.getString("submitted_at"))
+        );
+    }
+
+    // === Reconciliation Match Operations ===
+
+    /**
+     * Saves a reconciliation match to the database.
+     * Uses INSERT OR REPLACE to handle updates and unique constraint conflicts.
+     *
+     * @param match the reconciliation match to save
+     */
+    public synchronized void saveReconciliationMatch(ReconciliationMatch match) {
+        String sql = """
+            INSERT OR REPLACE INTO reconciliation_matches
+            (id, bank_transaction_id, manual_transaction_id, manual_transaction_type,
+             confidence, match_tier, status, business_id, created_at, resolved_at, resolved_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, match.id().toString());
+            pstmt.setString(2, match.bankTransactionId().toString());
+            pstmt.setString(3, match.manualTransactionId().toString());
+            pstmt.setString(4, match.manualTransactionType());
+            pstmt.setDouble(5, match.confidence());
+            pstmt.setString(6, match.matchTier().name());
+            pstmt.setString(7, match.status().name());
+            pstmt.setString(8, match.businessId().toString());
+            pstmt.setString(9, match.createdAt().toString());
+            pstmt.setString(10, match.resolvedAt() != null ? match.resolvedAt().toString() : null);
+            pstmt.setString(11, match.resolvedBy());
+            pstmt.executeUpdate();
+            LOG.fine("Saved reconciliation match: " + match.id());
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save reconciliation match: " + match.id(), e);
+        }
+    }
+
+    /**
+     * Saves multiple reconciliation matches in a single transaction.
+     *
+     * @param matches the list of reconciliation matches to save
+     */
+    public synchronized void saveReconciliationMatches(List<ReconciliationMatch> matches) {
+        if (matches == null || matches.isEmpty()) {
+            return;
+        }
+        executeInTransaction(() -> {
+            for (ReconciliationMatch match : matches) {
+                saveReconciliationMatch(match);
+            }
+        });
+    }
+
+    /**
+     * Finds a reconciliation match by ID.
+     *
+     * @param id the match ID
+     * @return the match if found
+     */
+    public synchronized Optional<ReconciliationMatch> findReconciliationMatchById(UUID id) {
+        String sql = "SELECT * FROM reconciliation_matches WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, id.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapReconciliationMatch(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to find reconciliation match: " + id, e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Finds all reconciliation matches for a bank transaction.
+     *
+     * @param bankTransactionId the bank transaction ID
+     * @return list of matches for that bank transaction
+     */
+    public synchronized List<ReconciliationMatch> findReconciliationMatchesByBankTransactionId(UUID bankTransactionId) {
+        List<ReconciliationMatch> matches = new ArrayList<>();
+        String sql = "SELECT * FROM reconciliation_matches WHERE bank_transaction_id = ? ORDER BY confidence DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, bankTransactionId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                matches.add(mapReconciliationMatch(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find reconciliation matches by bank tx: " + bankTransactionId, e);
+        }
+        return matches;
+    }
+
+    /**
+     * Finds all reconciliation matches for a business.
+     *
+     * @param businessId the business ID
+     * @return list of all matches for that business
+     */
+    public synchronized List<ReconciliationMatch> findReconciliationMatchesByBusinessId(UUID businessId) {
+        List<ReconciliationMatch> matches = new ArrayList<>();
+        String sql = "SELECT * FROM reconciliation_matches WHERE business_id = ? ORDER BY created_at DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                matches.add(mapReconciliationMatch(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find reconciliation matches by business: " + businessId, e);
+        }
+        return matches;
+    }
+
+    /**
+     * Finds all unresolved reconciliation matches for a business.
+     *
+     * @param businessId the business ID
+     * @return list of unresolved matches
+     */
+    public synchronized List<ReconciliationMatch> findUnresolvedReconciliationMatches(UUID businessId) {
+        List<ReconciliationMatch> matches = new ArrayList<>();
+        String sql = "SELECT * FROM reconciliation_matches WHERE business_id = ? AND status = 'UNRESOLVED' ORDER BY confidence DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                matches.add(mapReconciliationMatch(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find unresolved reconciliation matches", e);
+        }
+        return matches;
+    }
+
+    /**
+     * Counts unresolved reconciliation matches for a business.
+     *
+     * @param businessId the business ID
+     * @return count of unresolved matches
+     */
+    public synchronized long countUnresolvedReconciliationMatches(UUID businessId) {
+        String sql = "SELECT COUNT(*) FROM reconciliation_matches WHERE business_id = ? AND status = 'UNRESOLVED'";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to count unresolved reconciliation matches", e);
+        }
+        return 0;
+    }
+
+    /**
+     * Updates the status of a reconciliation match.
+     * This is the only modification allowed on reconciliation records
+     * (they must never be hard-deleted per statutory requirements).
+     *
+     * @param matchId    the match ID
+     * @param status     the new status
+     * @param resolvedAt when the status was changed
+     * @param resolvedBy who changed the status
+     * @return true if updated, false if not found
+     */
+    public synchronized boolean updateReconciliationMatchStatus(
+            UUID matchId, ReconciliationStatus status, Instant resolvedAt, String resolvedBy) {
+        String sql = "UPDATE reconciliation_matches SET status = ?, resolved_at = ?, resolved_by = ? WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, status.name());
+            pstmt.setString(2, resolvedAt != null ? resolvedAt.toString() : null);
+            pstmt.setString(3, resolvedBy);
+            pstmt.setString(4, matchId.toString());
+            int affected = pstmt.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to update reconciliation match status: " + matchId, e);
+            return false;
+        }
+    }
+
+    /**
+     * Maps a ResultSet row to a ReconciliationMatch.
+     */
+    private ReconciliationMatch mapReconciliationMatch(ResultSet rs) throws SQLException {
+        String resolvedAtStr = rs.getString("resolved_at");
+        return new ReconciliationMatch(
+            UUID.fromString(rs.getString("id")),
+            UUID.fromString(rs.getString("bank_transaction_id")),
+            UUID.fromString(rs.getString("manual_transaction_id")),
+            rs.getString("manual_transaction_type"),
+            rs.getDouble("confidence"),
+            MatchTier.valueOf(rs.getString("match_tier")),
+            ReconciliationStatus.valueOf(rs.getString("status")),
+            UUID.fromString(rs.getString("business_id")),
+            Instant.parse(rs.getString("created_at")),
+            resolvedAtStr != null ? Instant.parse(resolvedAtStr) : null,
+            rs.getString("resolved_by")
         );
     }
 }

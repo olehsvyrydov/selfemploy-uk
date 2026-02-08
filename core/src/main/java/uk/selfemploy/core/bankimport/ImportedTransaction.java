@@ -62,13 +62,26 @@ public record ImportedTransaction(
     }
 
     /**
-     * Generates a hash string for duplicate detection.
+     * Generates a deterministic key string for duplicate detection.
      *
-     * <p>The hash is based on date, amount, and normalized description.
-     * Balance and reference are not included as they may vary between imports
-     * of the same transaction.</p>
+     * <p>The key is a pipe-delimited composite of three normalized fields:
+     * {@code date|amount|normalizedDescription}. For example:
+     * {@code "2025-01-15|-42.50|tesco stores 1234"}</p>
      *
-     * @return a hash string for duplicate detection
+     * <p>Design rationale:
+     * <ul>
+     *   <li>Date is ISO-8601 format (yyyy-MM-dd)</li>
+     *   <li>Amount is stripped of trailing zeros (e.g. "42.5" not "42.50")</li>
+     *   <li>Description is lowercased, trimmed, and whitespace-collapsed</li>
+     *   <li>Balance and reference are excluded as they may vary between imports
+     *       of the same underlying bank transaction</li>
+     * </ul>
+     *
+     * <p>This is a deterministic string key, not a cryptographic hash.
+     * It is sufficient for duplicate detection within the same business context
+     * because the pipe delimiter prevents field value collisions.</p>
+     *
+     * @return a pipe-delimited key string for duplicate detection
      */
     public String transactionHash() {
         String normalizedDescription = normalizeDescription(description);

@@ -21,6 +21,9 @@ import uk.selfemploy.ui.service.SqliteBankTransactionService;
 import uk.selfemploy.ui.viewmodel.TransactionReviewTableRow;
 import uk.selfemploy.ui.viewmodel.TransactionReviewViewModel;
 
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
+
 import java.io.File;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -40,6 +43,10 @@ public class TransactionReviewController implements Initializable, MainControlle
 
     // Container
     @FXML private VBox reviewContainer;
+
+    // Import success banner
+    @FXML private HBox importSuccessBanner;
+    @FXML private Label importSuccessLabel;
 
     // Progress
     @FXML private ProgressBar reviewProgressBar;
@@ -677,6 +684,34 @@ public class TransactionReviewController implements Initializable, MainControlle
             viewModel.loadTransactions();
             updateTable();
         }
+    }
+
+    /**
+     * Shows a success banner at the top of the Transaction Review page.
+     * The banner auto-dismisses after 5 seconds.
+     * Used after completing a bank statement import to confirm the result.
+     *
+     * @param message the success message to display
+     */
+    public void showImportSuccessBanner(String message) {
+        if (importSuccessBanner == null || importSuccessLabel == null) {
+            LOG.info("Import success (banner unavailable): " + message);
+            return;
+        }
+
+        importSuccessLabel.setText(message);
+        importSuccessBanner.setVisible(true);
+        importSuccessBanner.setManaged(true);
+
+        // Auto-dismiss after 5 seconds
+        PauseTransition autoDismiss = new PauseTransition(Duration.seconds(5));
+        autoDismiss.setOnFinished(evt -> {
+            importSuccessBanner.setVisible(false);
+            importSuccessBanner.setManaged(false);
+        });
+        autoDismiss.play();
+
+        LOG.info("Showing import success banner: " + message);
     }
 
     /**

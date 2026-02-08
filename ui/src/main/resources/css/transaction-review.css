@@ -186,6 +186,27 @@
     -fx-background-color: #e5e7eb;
 }
 
+/* Import Success Banner */
+.import-success-banner {
+    -fx-background-color: #d1fae5;
+    -fx-border-color: #10b981;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-border-width: 1;
+}
+
+.import-success-icon {
+    -fx-text-fill: #065f46;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.import-success-text {
+    -fx-text-fill: #065f46;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
 /* Amount column coloring */
 .amount-income {
     -fx-text-fill: #059669;

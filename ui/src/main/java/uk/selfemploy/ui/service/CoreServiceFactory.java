@@ -34,6 +34,7 @@ public final class CoreServiceFactory {
     private static UiDuplicateDetectionService duplicateDetectionService;
     private static UiQuarterlySubmissionService quarterlySubmissionService;
     private static SqliteBankTransactionService bankTransactionService;
+    private static ImportOrchestrationService importOrchestrationService;
     private static UUID defaultBusinessId;
 
     private CoreServiceFactory() {
@@ -178,6 +179,25 @@ public final class CoreServiceFactory {
     }
 
     /**
+     * Gets or creates the singleton ImportOrchestrationService instance.
+     * Orchestrates CSV file loading, parsing, and transaction import.
+     *
+     * @return The ImportOrchestrationService instance
+     */
+    public static synchronized ImportOrchestrationService getImportOrchestrationService() {
+        if (importOrchestrationService == null) {
+            LOG.info("Creating ImportOrchestrationService");
+            importOrchestrationService = new ImportOrchestrationService(
+                new CsvTransactionParser(),
+                getIncomeService(),
+                getExpenseService(),
+                getDefaultBusinessId()
+            );
+        }
+        return importOrchestrationService;
+    }
+
+    /**
      * Gets or creates the singleton UiQuarterlySubmissionService instance.
      * Configured with NINO from SQLite settings and the default business ID.
      *
@@ -270,6 +290,7 @@ public final class CoreServiceFactory {
         duplicateDetectionService = null;
         quarterlySubmissionService = null;
         bankTransactionService = null;
+        importOrchestrationService = null;
         defaultBusinessId = null;
         LOG.info("CoreServiceFactory shutdown - data persisted");
     }
@@ -282,7 +303,7 @@ public final class CoreServiceFactory {
                 || termsAcceptanceService != null || privacyAcknowledgmentService != null
                 || dataExportService != null || dataImportService != null
                 || duplicateDetectionService != null || quarterlySubmissionService != null
-                || bankTransactionService != null;
+                || bankTransactionService != null || importOrchestrationService != null;
     }
 
     /**

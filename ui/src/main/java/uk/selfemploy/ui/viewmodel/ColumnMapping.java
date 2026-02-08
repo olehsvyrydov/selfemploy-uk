@@ -1,6 +1,10 @@
 package uk.selfemploy.ui.viewmodel;
 
 import javafx.beans.property.*;
+import uk.selfemploy.plugin.extension.StatementParseRequest;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Holds the column mapping configuration for CSV import.
@@ -278,6 +282,37 @@ public class ColumnMapping {
 
     public ObjectProperty<AmountInterpretation> amountInterpretationProperty() {
         return amountInterpretation;
+    }
+
+    /**
+     * Converts this UI column mapping to an SPI-compatible {@link StatementParseRequest}.
+     *
+     * <p>This bridges the JavaFX property-based ColumnMapping to the plain-data
+     * StatementParseRequest used by the parser SPI. Separate column configuration
+     * is passed via the options map.</p>
+     *
+     * @return a StatementParseRequest reflecting this mapping's current state
+     */
+    public StatementParseRequest toParseRequest() {
+        Map<String, Object> options = new LinkedHashMap<>();
+
+        if (separateAmountColumns.get()) {
+            options.put(StatementParseRequest.OPT_SEPARATE_COLUMNS, true);
+            if (incomeColumn.get() != null) {
+                options.put(StatementParseRequest.OPT_INCOME_COLUMN, incomeColumn.get());
+            }
+            if (expenseColumn.get() != null) {
+                options.put(StatementParseRequest.OPT_EXPENSE_COLUMN, expenseColumn.get());
+            }
+        }
+
+        return new StatementParseRequest(
+            dateFormat.get(),
+            dateColumn.get(),
+            descriptionColumn.get(),
+            separateAmountColumns.get() ? null : amountColumn.get(),
+            options
+        );
     }
 
     private boolean isBlank(String value) {

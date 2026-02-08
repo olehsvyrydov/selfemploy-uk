@@ -26,6 +26,14 @@
             </MenuButton>
         </HBox>
 
+        <!-- Import Success Banner (hidden by default, shown after bank import redirect) -->
+        <HBox fx:id="importSuccessBanner" styleClass="import-success-banner"
+              alignment="CENTER_LEFT" spacing="10" visible="false" managed="false">
+            <padding><Insets topRightBottomLeft="12"/></padding>
+            <Label text="&#x2713;" styleClass="import-success-icon"/>
+            <Label fx:id="importSuccessLabel" text="" styleClass="import-success-text" HBox.hgrow="ALWAYS"/>
+        </HBox>
+
         <!-- Progress Bar -->
         <VBox spacing="6">
             <ProgressBar fx:id="reviewProgressBar" progress="0" maxWidth="Infinity"

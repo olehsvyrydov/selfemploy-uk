@@ -175,9 +175,19 @@ public class MainController implements Initializable {
                     );
                 }
 
-                // SE-10E-003: Wire "Open Settings" callback for HMRC submission error dialogs
+                // Wire "Open Settings" callback for HMRC submission error dialogs
                 if (controller instanceof HmrcSubmissionController hmrcController) {
                     hmrcController.setNavigateToSettings(() -> loadView(View.SETTINGS));
+                }
+
+                // Wire post-import navigation callback for Income and Expense controllers
+                if (controller instanceof IncomeController incomeController) {
+                    incomeController.setNavigateToTransactionReview(
+                        message -> navigateToTransactionReviewWithMessage(message));
+                }
+                if (controller instanceof ExpenseController expenseController) {
+                    expenseController.setNavigateToTransactionReview(
+                        message -> navigateToTransactionReviewWithMessage(message));
                 }
 
                 viewCache.put(view, viewNode);
@@ -193,6 +203,27 @@ public class MainController implements Initializable {
         }
 
         contentPane.getChildren().setAll(viewNode);
+    }
+
+    /**
+     * Navigates to the Transaction Review view and shows an import success banner.
+     * Called after a successful bank statement import from the Income or Expense view.
+     * Clears the Transaction Review view cache to ensure fresh data is loaded.
+     *
+     * @param message the success message to display on the Transaction Review page
+     */
+    private void navigateToTransactionReviewWithMessage(String message) {
+        // Clear the cached Transaction Review view so it reloads with fresh data
+        viewCache.remove(View.TRANSACTION_REVIEW);
+        controllerCache.remove(View.TRANSACTION_REVIEW);
+
+        loadView(View.TRANSACTION_REVIEW);
+
+        // Show the success banner on the newly loaded Transaction Review controller
+        Object controller = controllerCache.get(View.TRANSACTION_REVIEW);
+        if (controller instanceof TransactionReviewController reviewController) {
+            reviewController.showImportSuccessBanner(message);
+        }
     }
 
     private void refreshCurrentView() {

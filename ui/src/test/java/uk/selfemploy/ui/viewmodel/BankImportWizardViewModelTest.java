@@ -18,11 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 /**
- * TDD tests for BankImportWizardViewModel.
- * Tests the wizard state management, column mapping validation,
- * transaction filtering, and bulk operations.
- *
- * SE-601: CSV Bank Import Wizard - Frontend Tests
+ * Tests for BankImportWizardViewModel.
+ * Covers wizard state management, column mapping validation,
+ * transaction filtering, bulk operations, and ImportedTransactionRow display formatting.
  */
 @DisplayName("BankImportWizardViewModel")
 class BankImportWizardViewModelTest {
@@ -249,6 +247,20 @@ class BankImportWizardViewModelTest {
             assertThat(mapping.hasSeparateAmountColumns()).isTrue();
             assertThat(mapping.getIncomeColumn()).isEqualTo("Money in");
             assertThat(mapping.getExpenseColumn()).isEqualTo("Money out");
+        }
+
+        @Test
+        @DisplayName("should display row count after parsing headers")
+        void shouldDisplayRowCount() {
+            // Given
+            viewModel.setSelectedFile(new File("test.csv"));
+            viewModel.setCsvHeaders(List.of("Date", "Description", "Amount"));
+
+            // When
+            viewModel.setRowCount(150);
+
+            // Then
+            assertThat(viewModel.getRowCount()).isEqualTo(150);
         }
 
         @Test
@@ -610,6 +622,15 @@ class BankImportWizardViewModelTest {
         }
 
         @Test
+        @DisplayName("should search case-insensitively")
+        void shouldSearchCaseInsensitively() {
+            viewModel.setSearchText("office");
+
+            List<ImportedTransactionRow> filtered = viewModel.getFilteredTransactions();
+            assertThat(filtered).hasSize(1);
+        }
+
+        @Test
         @DisplayName("should combine filter and search")
         void shouldCombineFilterAndSearch() {
             viewModel.setTransactionFilter(TransactionFilter.INCOME_ONLY);
@@ -617,6 +638,17 @@ class BankImportWizardViewModelTest {
 
             List<ImportedTransactionRow> filtered = viewModel.getFilteredTransactions();
             assertThat(filtered).hasSize(2); // Client payment and Existing payment
+        }
+
+        @Test
+        @DisplayName("should clear selection when filter changes")
+        void shouldClearSelectionWhenFilterChanges() {
+            viewModel.selectAll();
+            assertThat(viewModel.getSelectedCount()).isEqualTo(4);
+
+            viewModel.setTransactionFilter(TransactionFilter.INCOME_ONLY);
+
+            assertThat(viewModel.getSelectedCount()).isZero();
         }
 
         @Test
@@ -686,6 +718,30 @@ class BankImportWizardViewModelTest {
                     .findFirst()
                     .orElseThrow();
             assertThat(updated.category()).isEqualTo(ExpenseCategory.PROFESSIONAL_FEES);
+        }
+
+        @Test
+        @DisplayName("should clear selection after applying bulk category")
+        void shouldClearSelectionAfterApplyingBulkCategory() {
+            viewModel.selectAll();
+
+            viewModel.applyBulkCategory(ExpenseCategory.ADVERTISING);
+
+            assertThat(viewModel.getSelectedCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("should update uncategorized count after categorization")
+        void shouldUpdateUncategorizedCountAfterCategorization() {
+            assertThat(viewModel.getUncategorizedCount()).isEqualTo(1);
+
+            ImportedTransactionRow tx = viewModel.getTransactions().stream()
+                    .filter(t -> t.category() == null)
+                    .findFirst()
+                    .orElseThrow();
+            viewModel.updateTransactionCategory(tx.id(), ExpenseCategory.PREMISES);
+
+            assertThat(viewModel.getUncategorizedCount()).isZero();
         }
 
         @Test
@@ -835,6 +891,7 @@ class BankImportWizardViewModelTest {
             viewModel.addTransaction(createTransaction(
                     LocalDate.now(), "Test", BigDecimal.TEN,
                     TransactionType.INCOME, null, false, 0));
+            viewModel.goToNextStep();
 
             // When
             viewModel.reset();
@@ -845,6 +902,103 @@ class BankImportWizardViewModelTest {
             assertThat(viewModel.getCsvHeaders()).isEmpty();
             assertThat(viewModel.getTransactions()).isEmpty();
             assertThat(viewModel.getColumnMapping().isComplete()).isFalse();
+            assertThat(viewModel.getTransactionFilter()).isEqualTo(TransactionFilter.ALL);
+            assertThat(viewModel.isImporting()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("ImportedTransactionRow Display Formatting")
+    class ImportedTransactionRowDisplay {
+
+        @Test
+        @DisplayName("should display formatted date")
+        void shouldDisplayFormattedDate() {
+            ImportedTransactionRow tx = createTransaction(
+                    LocalDate.of(2026, 1, 5), "Test", BigDecimal.TEN,
+                    TransactionType.INCOME, null, false, 0);
+
+            assertThat(tx.getFormattedDate()).isEqualTo("5 Jan '26");
+        }
+
+        @Test
+        @DisplayName("should display formatted amount")
+        void shouldDisplayFormattedAmount() {
+            ImportedTransactionRow tx = createTransaction(
+                    LocalDate.of(2026, 1, 5), "Test", new BigDecimal("1500.50"),
+                    TransactionType.INCOME, null, false, 0);
+
+            assertThat(tx.getFormattedAmount()).matches("\\p{Sc}[\\d,]+\\.\\d{2}");
+        }
+
+        @Test
+        @DisplayName("should show positive sign for income")
+        void shouldShowPositiveSignForIncome() {
+            ImportedTransactionRow tx = createTransaction(
+                    LocalDate.of(2026, 1, 5), "Test", new BigDecimal("100.00"),
+                    TransactionType.INCOME, null, false, 0);
+
+            assertThat(tx.getFormattedAmountWithSign()).startsWith("+");
+        }
+
+        @Test
+        @DisplayName("should show negative sign for expense")
+        void shouldShowNegativeSignForExpense() {
+            ImportedTransactionRow tx = createTransaction(
+                    LocalDate.of(2026, 1, 5), "Test", new BigDecimal("100.00"),
+                    TransactionType.EXPENSE, null, false, 0);
+
+            assertThat(tx.getFormattedAmountWithSign()).startsWith("-");
+        }
+
+        @Test
+        @DisplayName("should display 'Uncategorized' for null category")
+        void shouldDisplayUncategorizedForNullCategory() {
+            ImportedTransactionRow tx = createTransaction(
+                    LocalDate.of(2026, 1, 5), "Test", BigDecimal.TEN,
+                    TransactionType.EXPENSE, null, false, 0);
+
+            assertThat(tx.getCategoryDisplay()).isEqualTo("Uncategorized");
+        }
+
+        @Test
+        @DisplayName("should display category name when categorized")
+        void shouldDisplayCategoryNameWhenCategorized() {
+            ImportedTransactionRow tx = createTransaction(
+                    LocalDate.of(2026, 1, 5), "Test", BigDecimal.TEN,
+                    TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 90);
+
+            assertThat(tx.getCategoryDisplay()).isEqualTo(ExpenseCategory.OFFICE_COSTS.getDisplayName());
+        }
+
+        @Test
+        @DisplayName("should display confidence as percentage")
+        void shouldDisplayConfidenceAsPercentage() {
+            ImportedTransactionRow tx = createTransaction(
+                    LocalDate.of(2026, 1, 5), "Test", BigDecimal.TEN,
+                    TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 85);
+
+            assertThat(tx.getConfidenceDisplay()).isEqualTo("85%");
+        }
+
+        @Test
+        @DisplayName("should assign correct CSS class based on confidence level")
+        void shouldAssignCorrectCssClassBasedOnConfidenceLevel() {
+            ImportedTransactionRow highConfidence = createTransaction(
+                    LocalDate.now(), "Test", BigDecimal.TEN,
+                    TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 90);
+
+            ImportedTransactionRow mediumConfidence = createTransaction(
+                    LocalDate.now(), "Test", BigDecimal.TEN,
+                    TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 60);
+
+            ImportedTransactionRow lowConfidence = createTransaction(
+                    LocalDate.now(), "Test", BigDecimal.TEN,
+                    TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 30);
+
+            assertThat(highConfidence.getConfidenceCssClass()).isEqualTo("confidence-high");
+            assertThat(mediumConfidence.getConfidenceCssClass()).isEqualTo("confidence-medium");
+            assertThat(lowConfidence.getConfidenceCssClass()).isEqualTo("confidence-low");
         }
     }
 

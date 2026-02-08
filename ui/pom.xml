@@ -28,6 +28,10 @@
             <groupId>uk.selfemploy</groupId>
             <artifactId>self-employment-hmrc-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-plugin-api</artifactId>
+        </dependency>
 
         <!-- Quarkus Arc (CDI) -->
         <dependency>

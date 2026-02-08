@@ -1,0 +1,11 @@
+Transaction ID,Date,Time,Type,Name,Emoji,Category,Amount,Currency,Notes
+tx_001,15/01/2025,10:30:00,Payment,Design Client Fee,,Income,1800.00,GBP,January invoice
+tx_002,17/01/2025,14:22:00,Payment,Costa Coffee,,Eating out,-4.50,GBP,
+tx_003,20/01/2025,09:15:00,Payment,Amazon Web Services,,Bills,-29.99,GBP,Monthly hosting
+tx_004,22/01/2025,11:45:00,Payment,Software Subscription,,Bills,-12.99,GBP,Annual plan
+tx_005,25/01/2025,16:00:00,Payment,Workshop Revenue,,Income,950.00,GBP,Training session
+tx_006,28/01/2025,08:30:00,Payment,Uber Ride to Client,,Transport,-18.75,GBP,
+tx_007,30/01/2025,13:00:00,Payment,WeWork Desk Rental,,Bills,-250.00,GBP,Monthly desk
+tx_008,02/02/2025,10:00:00,Payment,Photography Client,,Income,600.00,GBP,Portrait session
+tx_009,05/02/2025,,,Missing Name,,,GBP,Malformed row
+tx_010,not_a_date,12:00:00,Payment,Valid Name,,Bills,-10.00,GBP,Bad date row

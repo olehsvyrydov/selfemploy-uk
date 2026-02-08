@@ -82,7 +82,8 @@ class BankImportPipelineIntegrationTest {
         // Services with mocked repos
         BankFormatDetector formatDetector = new BankFormatDetector(List.of());
         importService = new BankStatementImportService(
-                formatDetector, bankTransactionRepository, importAuditRepository, FIXED_CLOCK);
+                formatDetector, bankTransactionRepository, importAuditRepository,
+                new ExclusionRulesEngine(), FIXED_CLOCK);
         businessPersonalService = new BusinessPersonalService(bankTransactionRepository, FIXED_CLOCK);
     }
 

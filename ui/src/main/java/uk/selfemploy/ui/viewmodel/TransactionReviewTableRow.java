@@ -29,8 +29,8 @@ public record TransactionReviewTableRow(
 ) {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM ''yy");
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
-    private static final BigDecimal HIGH_CONFIDENCE = new BigDecimal("0.8");
-    private static final BigDecimal MEDIUM_CONFIDENCE = new BigDecimal("0.5");
+    private static final BigDecimal HIGH_CONFIDENCE = new BigDecimal("0.9");
+    private static final BigDecimal MEDIUM_CONFIDENCE = new BigDecimal("0.6");
 
     /**
      * Creates a table row from a BankTransaction domain object.

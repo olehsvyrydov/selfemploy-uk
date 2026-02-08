@@ -1,9 +1,9 @@
 package uk.selfemploy.ui.service;
 
-import org.apache.commons.text.similarity.LevenshteinDistance;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.reconciliation.MatchingUtils;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
@@ -31,8 +31,7 @@ import java.util.logging.Logger;
 public class UiDuplicateDetectionService {
 
     private static final Logger LOG = Logger.getLogger(UiDuplicateDetectionService.class.getName());
-    private static final double FUZZY_MATCH_THRESHOLD = 0.80;
-    private static final LevenshteinDistance LEVENSHTEIN = new LevenshteinDistance();
+    private static final double FUZZY_MATCH_THRESHOLD = MatchingUtils.LIKELY_THRESHOLD;
 
     private final IncomeService incomeService;
     private final ExpenseService expenseService;
@@ -178,41 +177,19 @@ public class UiDuplicateDetectionService {
 
     private Optional<FuzzyMatch> findBestFuzzyMatch(LocalDate date, BigDecimal amount,
                                                      String description, List<ExistingRecord> records) {
-        String normalizedDesc = normalizeDescription(description);
+        String normalizedDesc = MatchingUtils.normalizeDescription(description);
 
         // Find the best match by similarity among records with same date and amount
         return records.stream()
             .filter(r -> r.date().equals(date))
             .filter(r -> r.amount().compareTo(amount) == 0)
-            .map(r -> new FuzzyMatch(r, calculateSimilarity(normalizedDesc, normalizeDescription(r.description()))))
+            .map(r -> new FuzzyMatch(r, MatchingUtils.calculateSimilarity(
+                normalizedDesc, MatchingUtils.normalizeDescription(r.description()))))
             .max(Comparator.comparingDouble(FuzzyMatch::similarity));
     }
 
-    private double calculateSimilarity(String s1, String s2) {
-        if (s1.equals(s2)) {
-            return 1.0;
-        }
-        int distance = LEVENSHTEIN.apply(s1, s2);
-        int maxLength = Math.max(s1.length(), s2.length());
-        if (maxLength == 0) {
-            return 1.0;
-        }
-        return 1.0 - ((double) distance / maxLength);
-    }
-
     private String createExactKey(LocalDate date, BigDecimal amount, String description) {
-        String normalizedDesc = normalizeDescription(description);
-        return String.format("%s|%s|%s",
-            date.toString(),
-            amount.stripTrailingZeros().toPlainString(),
-            normalizedDesc);
-    }
-
-    private String normalizeDescription(String description) {
-        if (description == null) {
-            return "";
-        }
-        return description.toLowerCase().trim().replaceAll("\\s+", " ");
+        return MatchingUtils.createExactKey(date, amount, description);
     }
 
     private Map<String, ExistingRecord> buildExactMatchMapForIncomes(List<Income> incomes) {

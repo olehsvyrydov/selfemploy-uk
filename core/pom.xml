@@ -28,6 +28,14 @@
             <groupId>uk.selfemploy</groupId>
             <artifactId>self-employment-hmrc-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-plugin-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>self-employment-plugin-runtime</artifactId>
+        </dependency>
 
         <!-- Quarkus Arc (CDI) -->
         <dependency>
@@ -46,6 +54,13 @@
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf</artifactId>
             <version>1.3.35</version>
+        </dependency>
+
+        <!-- Apache Commons Text for Levenshtein distance in reconciliation matching -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.12.0</version>
         </dependency>
 
         <!-- YAML parsing for tax rate configuration -->

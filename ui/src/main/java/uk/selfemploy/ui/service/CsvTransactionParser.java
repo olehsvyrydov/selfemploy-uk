@@ -2,6 +2,13 @@ package uk.selfemploy.ui.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.plugin.extension.BankStatementParser;
+import uk.selfemploy.plugin.extension.ImportContext;
+import uk.selfemploy.plugin.extension.ImportResult;
+import uk.selfemploy.plugin.extension.ParsedTransaction;
+import uk.selfemploy.plugin.extension.StatementParseRequest;
+import uk.selfemploy.plugin.extension.StatementParseResult;
+import uk.selfemploy.ui.viewmodel.BankFormat;
 import uk.selfemploy.ui.viewmodel.ColumnMapping;
 import uk.selfemploy.ui.viewmodel.ImportedTransactionRow;
 import uk.selfemploy.ui.viewmodel.TransactionType;
@@ -17,9 +24,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Parses CSV bank statements using a user-configured column mapping.
+ *
+ * <p>Implements {@link BankStatementParser} SPI to participate in the plugin
+ * architecture. The built-in CSV parser has priority 10 (core range) and
+ * requires column mapping since CSV formats vary by bank.</p>
  *
  * <p>Unlike the core bank-specific parsers (which auto-detect format),
  * this parser uses the column mapping configured in the wizard UI to
@@ -34,9 +46,15 @@ import java.util.*;
  *   <li>Handles quoted CSV fields with embedded commas and escaped quotes</li>
  * </ul>
  */
-public class CsvTransactionParser {
+public class CsvTransactionParser implements BankStatementParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(CsvTransactionParser.class);
+
+    /** Priority in the built-in range for the core CSV parser. */
+    private static final int CSV_PARSER_PRIORITY = 10;
+
+    /** The file path currently being parsed via SPI methods. Thread-local to support concurrent parsing. */
+    private final ThreadLocal<Path> currentFile = new ThreadLocal<>();
 
     /**
      * Result of a CSV parse operation containing parsed transactions and any warnings.
@@ -53,6 +71,126 @@ public class CsvTransactionParser {
             warnings = List.copyOf(warnings);
         }
     }
+
+    // ========================================================================
+    // BankStatementParser SPI implementation
+    // ========================================================================
+
+    @Override
+    public String getFormatId() {
+        return "csv";
+    }
+
+    @Override
+    public Set<String> getSupportedBankFormats() {
+        return Arrays.stream(BankFormat.values())
+            .filter(f -> f != BankFormat.UNKNOWN)
+            .map(BankFormat::toFormatId)
+            .collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
+    public StatementParseResult parseStatement(StatementParseRequest request) {
+        Path file = currentFile.get();
+        if (file == null) {
+            file = request.getOption(StatementParseRequest.OPT_FILE_PATH, null);
+        }
+        if (file == null) {
+            return StatementParseResult.failure("No file path provided for CSV parsing");
+        }
+
+        try {
+            ColumnMapping mapping = buildColumnMappingFromRequest(request);
+            ParseResult result = parse(file, mapping);
+
+            List<ParsedTransaction> parsedTransactions = result.transactions().stream()
+                .map(this::toParsedTransaction)
+                .collect(Collectors.toList());
+
+            return new StatementParseResult(parsedTransactions, result.warnings(), null, "csv");
+        } catch (Exception e) {
+            LOG.error("Failed to parse CSV via SPI: {}", e.getMessage(), e);
+            return StatementParseResult.failure("CSV parse error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Optional<String> detectFormat(Path file) {
+        if (file == null) {
+            return Optional.empty();
+        }
+        String fileName = file.getFileName().toString().toLowerCase();
+        if (fileName.endsWith(".csv")) {
+            return Optional.of("csv");
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public List<ParsedTransaction> parsePreview(Path file, int maxRows) {
+        try {
+            currentFile.set(file);
+            StatementParseResult result = parseStatement(StatementParseRequest.autoDetect());
+            List<ParsedTransaction> transactions = result.transactions();
+            if (transactions.size() > maxRows) {
+                return List.copyOf(transactions.subList(0, maxRows));
+            }
+            return transactions;
+        } finally {
+            currentFile.remove();
+        }
+    }
+
+    @Override
+    public boolean requiresColumnMapping() {
+        return true;
+    }
+
+    @Override
+    public int getPriority() {
+        return CSV_PARSER_PRIORITY;
+    }
+
+    @Override
+    public String getImporterId() {
+        return "csv-generic";
+    }
+
+    @Override
+    public String getImporterName() {
+        return "CSV Bank Statement";
+    }
+
+    @Override
+    public List<String> getSupportedFileTypes() {
+        return List.of(".csv");
+    }
+
+    @Override
+    public ImportResult importData(Path file, ImportContext context) {
+        try {
+            currentFile.set(file);
+            StatementParseResult result = parseStatement(StatementParseRequest.autoDetect());
+
+            if (result.hasErrors()) {
+                return ImportResult.failure(String.join("; ", result.errors()));
+            }
+
+            return new ImportResult(
+                result.transactions().size(),
+                0,
+                0,
+                result.errors(),
+                result.warnings()
+            );
+        } finally {
+            currentFile.remove();
+        }
+    }
+
+    // ========================================================================
+    // Original parse methods (unchanged API)
+    // ========================================================================
 
     /**
      * Parses a CSV file using the provided column mapping.
@@ -350,6 +488,65 @@ public class CsvTransactionParser {
 
         fields.add(current.toString());
         return fields.toArray(new String[0]);
+    }
+
+    // ========================================================================
+    // SPI bridge helpers
+    // ========================================================================
+
+    /**
+     * Converts an ImportedTransactionRow (UI view model) to a ParsedTransaction (SPI type).
+     * Amount follows the SPI convention: positive=income, negative=expense.
+     */
+    private ParsedTransaction toParsedTransaction(ImportedTransactionRow row) {
+        BigDecimal signedAmount = row.type() == TransactionType.EXPENSE
+            ? row.amount().negate()
+            : row.amount();
+
+        return new ParsedTransaction(
+            row.date(),
+            row.description(),
+            signedAmount,
+            null,  // reference - not available from CSV
+            null,  // category - not set at parse time
+            null   // accountInfo - not available from CSV
+        );
+    }
+
+    /**
+     * Builds a ColumnMapping from a StatementParseRequest.
+     * This bridges SPI requests to the existing parse() method.
+     */
+    private ColumnMapping buildColumnMappingFromRequest(StatementParseRequest request) {
+        ColumnMapping mapping = new ColumnMapping();
+
+        if (request.dateColumn() != null) {
+            mapping.setDateColumn(request.dateColumn());
+        }
+        if (request.descriptionColumn() != null) {
+            mapping.setDescriptionColumn(request.descriptionColumn());
+        }
+        if (request.dateFormat() != null) {
+            mapping.setDateFormat(request.dateFormat());
+        }
+
+        boolean separateColumns = request.getOption(
+            StatementParseRequest.OPT_SEPARATE_COLUMNS, false
+        );
+        mapping.setSeparateAmountColumns(separateColumns);
+
+        if (separateColumns) {
+            String incomeCol = request.getOption(StatementParseRequest.OPT_INCOME_COLUMN, null);
+            String expenseCol = request.getOption(StatementParseRequest.OPT_EXPENSE_COLUMN, null);
+            if (incomeCol != null) mapping.setIncomeColumn(incomeCol);
+            if (expenseCol != null) mapping.setExpenseColumn(expenseCol);
+        } else {
+            if (request.amountColumn() != null) {
+                mapping.setAmountColumn(request.amountColumn());
+            }
+        }
+
+        return mapping;
     }
 
     /**

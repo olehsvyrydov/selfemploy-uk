@@ -38,6 +38,7 @@ class BankStatementImportServiceTest {
     private BankFormatDetector formatDetector;
     private BankTransactionRepository bankTransactionRepository;
     private ImportAuditRepository importAuditRepository;
+    private ExclusionRulesEngine exclusionRulesEngine;
     private Clock clock;
     private BankStatementImportService service;
 
@@ -49,6 +50,7 @@ class BankStatementImportServiceTest {
         formatDetector = mock(BankFormatDetector.class);
         bankTransactionRepository = mock(BankTransactionRepository.class);
         importAuditRepository = mock(ImportAuditRepository.class);
+        exclusionRulesEngine = new ExclusionRulesEngine();
         clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
         // Default: save returns the same object
@@ -58,7 +60,8 @@ class BankStatementImportServiceTest {
             .thenAnswer(inv -> inv.getArgument(0));
 
         service = new BankStatementImportService(
-            formatDetector, bankTransactionRepository, importAuditRepository, clock
+            formatDetector, bankTransactionRepository, importAuditRepository,
+            exclusionRulesEngine, clock
         );
     }
 
@@ -272,6 +275,223 @@ class BankStatementImportServiceTest {
             assertThat(result.totalParsed()).isEqualTo(2);
             assertThat(result.importedCount()).isEqualTo(1);
             assertThat(result.duplicateCount()).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("Audit trail compliance")
+    class AuditTrailCompliance {
+
+        @Test
+        @DisplayName("creates ImportAudit with 6-year retention date from import date")
+        void setsRetentionDate() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("100.00"), "TX1", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<ImportAudit> auditCaptor = ArgumentCaptor.forClass(ImportAudit.class);
+            verify(importAuditRepository).save(auditCaptor.capture());
+
+            ImportAudit savedAudit = auditCaptor.getValue();
+            // Retention must be set: import date (2025-06-15) + 6 years = 2031-06-15
+            assertThat(savedAudit.retentionUntil()).isNotNull();
+            assertThat(savedAudit.retentionUntil()).isEqualTo(LocalDate.of(2031, 6, 15));
+            assertThat(savedAudit.hasRetentionPolicy()).isTrue();
+        }
+
+        @Test
+        @DisplayName("creates ImportAudit with importedBy identity")
+        void setsImportedByIdentity() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("100.00"), "TX1", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<ImportAudit> auditCaptor = ArgumentCaptor.forClass(ImportAudit.class);
+            verify(importAuditRepository).save(auditCaptor.capture());
+
+            ImportAudit savedAudit = auditCaptor.getValue();
+            assertThat(savedAudit.importedBy()).isNotNull();
+            assertThat(savedAudit.importedBy()).isEqualTo("local-user");
+        }
+
+        @Test
+        @DisplayName("creates ImportAudit with original file path")
+        void setsOriginalFilePath() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("100.00"), "TX1", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<ImportAudit> auditCaptor = ArgumentCaptor.forClass(ImportAudit.class);
+            verify(importAuditRepository).save(auditCaptor.capture());
+
+            ImportAudit savedAudit = auditCaptor.getValue();
+            // Original file path must be recorded (encryption deferred per C15-GAP)
+            assertThat(savedAudit.originalFilePath()).isNotNull();
+            assertThat(savedAudit.originalFilePath()).contains(csvFile.getFileName().toString());
+        }
+    }
+
+    @Nested
+    @DisplayName("Auto-exclusion of non-P&L transactions")
+    class AutoExclusion {
+
+        @Test
+        @DisplayName("auto-excludes transfer transactions during import")
+        void autoExcludesTransfers() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("-500.00"),
+                    "TFR TO SAVINGS ACCOUNT", null, null),
+                new ImportedTransaction(LocalDate.of(2025, 6, 16), new BigDecimal("100.00"),
+                    "CLIENT PAYMENT", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<BankTransaction> txCaptor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionRepository, times(2)).save(txCaptor.capture());
+
+            List<BankTransaction> savedTxs = txCaptor.getAllValues();
+            // Transfer should be auto-excluded
+            assertThat(savedTxs.get(0).reviewStatus()).isEqualTo(ReviewStatus.EXCLUDED);
+            assertThat(savedTxs.get(0).exclusionReason()).contains("TRANSFER");
+            // Normal payment should remain PENDING
+            assertThat(savedTxs.get(1).reviewStatus()).isEqualTo(ReviewStatus.PENDING);
+        }
+
+        @Test
+        @DisplayName("auto-excludes HMRC tax payment transactions")
+        void autoExcludesHmrcPayments() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("-5000.00"),
+                    "HMRC SELF ASSESSMENT", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<BankTransaction> txCaptor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionRepository).save(txCaptor.capture());
+
+            assertThat(txCaptor.getValue().reviewStatus()).isEqualTo(ReviewStatus.EXCLUDED);
+            assertThat(txCaptor.getValue().exclusionReason()).contains("TAX_PAYMENT");
+        }
+
+        @Test
+        @DisplayName("auto-excludes ATM withdrawals")
+        void autoExcludesAtmWithdrawals() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("-200.00"),
+                    "ATM WITHDRAWAL HIGH ST", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<BankTransaction> txCaptor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionRepository).save(txCaptor.capture());
+
+            assertThat(txCaptor.getValue().reviewStatus()).isEqualTo(ReviewStatus.EXCLUDED);
+            assertThat(txCaptor.getValue().exclusionReason()).contains("CASH_WITHDRAWAL");
+        }
+
+        @Test
+        @DisplayName("does not auto-exclude normal business expenses")
+        void doesNotExcludeNormalExpenses() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("-45.99"),
+                    "OFFICE DEPOT STATIONERY", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<BankTransaction> txCaptor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionRepository).save(txCaptor.capture());
+
+            assertThat(txCaptor.getValue().reviewStatus()).isEqualTo(ReviewStatus.PENDING);
+            assertThat(txCaptor.getValue().exclusionReason()).isNull();
+        }
+
+        @Test
+        @DisplayName("auto-excludes credit card payments")
+        void autoExcludesCcPayments() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("-1500.00"),
+                    "CC PAYMENT VISA", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<BankTransaction> txCaptor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionRepository).save(txCaptor.capture());
+
+            assertThat(txCaptor.getValue().reviewStatus()).isEqualTo(ReviewStatus.EXCLUDED);
+            assertThat(txCaptor.getValue().exclusionReason()).contains("CREDIT_CARD");
+        }
+
+        @Test
+        @DisplayName("auto-excludes loan transactions")
+        void autoExcludesLoanTransactions() throws IOException {
+            Path csvFile = createTempCsv("header\ndata");
+            List<ImportedTransaction> transactions = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 6, 15), new BigDecimal("-250.00"),
+                    "LOAN PAYMENT", null, null)
+            );
+
+            BankCsvParser parser = createMockParser("Barclays", transactions);
+            when(formatDetector.detectFormat(any(), any())).thenReturn(Optional.of(parser));
+            when(bankTransactionRepository.existsByHash(any(), anyString())).thenReturn(false);
+
+            service.importBankStatement(BUSINESS_ID, csvFile, StandardCharsets.UTF_8);
+
+            ArgumentCaptor<BankTransaction> txCaptor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionRepository).save(txCaptor.capture());
+
+            assertThat(txCaptor.getValue().reviewStatus()).isEqualTo(ReviewStatus.EXCLUDED);
+            assertThat(txCaptor.getValue().exclusionReason()).contains("LOAN");
         }
     }
 

@@ -94,22 +94,22 @@ class TransactionReviewTableRowTest {
     class ConfidenceLabels {
 
         @Test
-        void shouldReturnHigh_whenScoreAbove80Percent() {
-            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.85"));
+        void shouldReturnHigh_whenScoreAbove90Percent() {
+            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.95"));
             assertThat(row.getConfidenceLabel()).isEqualTo("HIGH");
             assertThat(row.getConfidenceStyleClass()).isEqualTo("confidence-high");
         }
 
         @Test
-        void shouldReturnMedium_whenScoreBetween50And80() {
-            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.65"));
+        void shouldReturnMedium_whenScoreBetween60And90() {
+            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.75"));
             assertThat(row.getConfidenceLabel()).isEqualTo("MEDIUM");
             assertThat(row.getConfidenceStyleClass()).isEqualTo("confidence-medium");
         }
 
         @Test
-        void shouldReturnLow_whenScoreBelow50() {
-            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.3"));
+        void shouldReturnLow_whenScoreBelow60() {
+            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.55"));
             assertThat(row.getConfidenceLabel()).isEqualTo("LOW");
             assertThat(row.getConfidenceStyleClass()).isEqualTo("confidence-low");
         }
@@ -122,15 +122,29 @@ class TransactionReviewTableRowTest {
         }
 
         @Test
-        void shouldReturnHigh_whenScoreExactly80() {
-            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.8"));
+        void shouldReturnHigh_whenScoreExactly90() {
+            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.9"));
             assertThat(row.getConfidenceLabel()).isEqualTo("HIGH");
         }
 
         @Test
-        void shouldReturnMedium_whenScoreExactly50() {
-            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.5"));
+        void shouldReturnMedium_whenScoreExactly60() {
+            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.6"));
             assertThat(row.getConfidenceLabel()).isEqualTo("MEDIUM");
+        }
+
+        @Test
+        void shouldReturnMedium_whenScoreIs85() {
+            // 85% is above 60% but below 90%, so MEDIUM
+            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.85"));
+            assertThat(row.getConfidenceLabel()).isEqualTo("MEDIUM");
+        }
+
+        @Test
+        void shouldReturnLow_whenScoreIs59() {
+            // 59% is below 60%, so LOW
+            TransactionReviewTableRow row = createRowWithConfidence(new BigDecimal("0.59"));
+            assertThat(row.getConfidenceLabel()).isEqualTo("LOW");
         }
     }
 

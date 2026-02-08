@@ -73,7 +73,9 @@ public class SqliteBankTransactionService {
     public void categorizeAsExpense(UUID txId, UUID expenseId, Instant now) {
         BankTransaction tx = findById(txId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + txId));
+        String previousStatus = tx.reviewStatus().name();
         save(tx.withCategorizedAsExpense(expenseId, now));
+        logModification(txId, "CATEGORIZED", "review_status", previousStatus, "CATEGORIZED");
         LOG.fine("Categorized transaction " + txId + " as expense " + expenseId);
     }
 
@@ -83,7 +85,9 @@ public class SqliteBankTransactionService {
     public void categorizeAsIncome(UUID txId, UUID incomeId, Instant now) {
         BankTransaction tx = findById(txId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + txId));
+        String previousStatus = tx.reviewStatus().name();
         save(tx.withCategorizedAsIncome(incomeId, now));
+        logModification(txId, "CATEGORIZED", "review_status", previousStatus, "CATEGORIZED");
         LOG.fine("Categorized transaction " + txId + " as income " + incomeId);
     }
 
@@ -93,7 +97,9 @@ public class SqliteBankTransactionService {
     public void exclude(UUID txId, String reason, Instant now) {
         BankTransaction tx = findById(txId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + txId));
+        String previousStatus = tx.reviewStatus().name();
         save(tx.withExcluded(reason, now));
+        logModification(txId, "EXCLUDED", "review_status", previousStatus, "EXCLUDED");
         LOG.fine("Excluded transaction " + txId + ": " + reason);
     }
 
@@ -103,7 +109,7 @@ public class SqliteBankTransactionService {
     public void skip(UUID txId, Instant now) {
         BankTransaction tx = findById(txId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + txId));
-        // Create a skipped version using the same pattern
+        String previousStatus = tx.reviewStatus().name();
         BankTransaction skipped = new BankTransaction(
             tx.id(), tx.businessId(), tx.importAuditId(), tx.sourceFormatId(),
             tx.date(), tx.amount(), tx.description(), tx.accountLastFour(),
@@ -113,6 +119,7 @@ public class SqliteBankTransactionService {
             tx.createdAt(), now, tx.deletedAt(), tx.deletedBy(), tx.deletionReason()
         );
         save(skipped);
+        logModification(txId, "EXCLUDED", "review_status", previousStatus, "SKIPPED");
         LOG.fine("Skipped transaction " + txId);
     }
 
@@ -122,7 +129,10 @@ public class SqliteBankTransactionService {
     public void setBusinessFlag(UUID txId, Boolean isBusiness, Instant now) {
         BankTransaction tx = findById(txId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + txId));
+        String previousValue = tx.isBusiness() != null ? tx.isBusiness().toString() : null;
         save(tx.withBusinessFlag(isBusiness, now));
+        logModification(txId, "BUSINESS_PERSONAL_CHANGED", "is_business",
+                previousValue, isBusiness != null ? isBusiness.toString() : null);
         LOG.fine("Set business flag on " + txId + " to " + isBusiness);
     }
 
@@ -155,13 +165,17 @@ public class SqliteBankTransactionService {
     }
 
     /**
-     * Deletes a bank transaction.
+     * Soft-deletes a bank transaction.
      */
     public boolean delete(UUID id) {
         if (id == null) {
             throw new IllegalArgumentException("Transaction ID cannot be null");
         }
-        return dataStore.deleteBankTransaction(id);
+        boolean deleted = dataStore.deleteBankTransaction(id);
+        if (deleted) {
+            logModification(id, "EXCLUDED", "deleted_at", null, "soft-deleted");
+        }
+        return deleted;
     }
 
     /**
@@ -169,5 +183,14 @@ public class SqliteBankTransactionService {
      */
     public UUID getBusinessId() {
         return businessId;
+    }
+
+    /**
+     * Records a modification to the transaction audit log.
+     */
+    private void logModification(UUID txId, String type, String field,
+            String previousValue, String newValue) {
+        dataStore.logTransactionModification(txId, type, field,
+                previousValue, newValue, "local-user");
     }
 }
