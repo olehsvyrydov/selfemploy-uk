@@ -264,3 +264,234 @@
 .text-expense, .text-warning {
     -fx-text-fill: #fd7e14;
 }
+
+/* ===== Transaction Review Dashboard ===== */
+
+/* Summary Cards */
+.summary-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+}
+
+.summary-card-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.summary-card-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #adb5bd;
+}
+
+.summary-cards-container {
+    -fx-spacing: 16;
+}
+
+.summary-card-pending {
+    -fx-border-color: #f59e0b;
+    -fx-border-width: 0 0 0 3;
+}
+
+.summary-card-categorized {
+    -fx-border-color: #10b981;
+    -fx-border-width: 0 0 0 3;
+}
+
+.summary-card-excluded {
+    -fx-border-color: #6b7280;
+    -fx-border-width: 0 0 0 3;
+}
+
+/* Progress Bar */
+.review-progress-bar {
+    -fx-pref-height: 8;
+    -fx-max-height: 8;
+}
+
+.review-progress-bar > .bar {
+    -fx-background-color: #10b981;
+    -fx-background-radius: 4;
+}
+
+.review-progress-bar > .track {
+    -fx-background-color: #e5e7eb;
+    -fx-background-radius: 4;
+}
+
+/* Batch Action Bar */
+.batch-action-bar {
+    -fx-background-color: #f9fafb;
+    -fx-padding: 10 16;
+    -fx-background-radius: 8;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 8;
+}
+
+/* Confidence Badges */
+.confidence-high {
+    -fx-background-color: #d1fae5;
+    -fx-text-fill: #065f46;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
+.confidence-medium {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #92400e;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
+.confidence-low {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #991b1b;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
+.confidence-none {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 11px;
+}
+
+/* Status Badges */
+.status-pending {
+    -fx-background-color: #e5e7eb;
+    -fx-text-fill: #4b5563;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
+.status-categorized {
+    -fx-background-color: #d1fae5;
+    -fx-text-fill: #065f46;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
+.status-excluded {
+    -fx-background-color: #fed7aa;
+    -fx-text-fill: #9a3412;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
+.status-skipped {
+    -fx-background-color: #e0e7ff;
+    -fx-text-fill: #3730a3;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
+/* Business/Personal Toggle Buttons */
+.toggle-business, .toggle-personal {
+    -fx-background-color: transparent;
+    -fx-border-color: #d1d5db;
+    -fx-border-radius: 4;
+    -fx-padding: 2 6;
+    -fx-font-size: 10px;
+}
+
+.toggle-business:selected {
+    -fx-background-color: #dbeafe;
+    -fx-border-color: #3b82f6;
+    -fx-text-fill: #1d4ed8;
+}
+
+.toggle-personal:selected {
+    -fx-background-color: #fce7f3;
+    -fx-border-color: #ec4899;
+    -fx-text-fill: #be185d;
+}
+
+/* Action Buttons in Table */
+.action-btn {
+    -fx-padding: 2 6;
+    -fx-font-size: 10px;
+    -fx-background-radius: 4;
+}
+
+.action-btn-categorize {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #1d4ed8;
+    -fx-border-color: #93c5fd;
+    -fx-border-radius: 4;
+}
+
+.action-btn-exclude {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #991b1b;
+    -fx-border-color: #fca5a5;
+    -fx-border-radius: 4;
+}
+
+.action-btn-skip {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #4b5563;
+    -fx-border-color: #d1d5db;
+    -fx-border-radius: 4;
+}
+
+/* Amount Column Coloring */
+.amount-income {
+    -fx-text-fill: #059669;
+}
+
+.amount-expense {
+    -fx-text-fill: #dc2626;
+}
+
+/* Pagination Bar */
+.pagination-bar {
+    -fx-padding: 10 0;
+}
+
+/* Empty State */
+.empty-state-container {
+    -fx-padding: 60;
+}
+
+.empty-state-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #6c757d;
+}
+
+.empty-state-message {
+    -fx-text-fill: #adb5bd;
+    -fx-font-size: 14px;
+}
+
+.empty-table-message {
+    -fx-text-fill: #adb5bd;
+    -fx-font-size: 14px;
+}
+
+/* Filters Bar */
+.filters-bar {
+    -fx-padding: 10 16;
+    -fx-background-color: #f9fafb;
+    -fx-background-radius: 8;
+}
+
+.search-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+}
+
+/* Review Progress Container */
+.review-progress-container {
+    -fx-spacing: 6;
+}

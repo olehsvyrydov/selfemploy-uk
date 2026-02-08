@@ -64,6 +64,7 @@
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
+        <surefire.excludedGroups>e2e</surefire.excludedGroups>
         <jpackage-maven-plugin.version>1.4.0</jpackage-maven-plugin.version>
     </properties>
 
@@ -214,8 +215,8 @@
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
-                        <!-- Exclude E2E tests that require JavaFX toolkit (run separately with -DincludeTags=e2e) -->
-                        <excludedGroups>e2e</excludedGroups>
+                        <!-- Exclude E2E tests by default. Override with -Dsurefire.excludedGroups= to include them -->
+                        <excludedGroups>${surefire.excludedGroups}</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>
