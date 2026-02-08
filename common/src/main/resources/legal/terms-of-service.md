@@ -1,7 +1,7 @@
 # Terms of Service
 ## UK Self-Employment Manager
-**Version:** 1.0
-**Effective Date:** 1 January 2026
+**Version:** 2.0
+**Effective Date:** 8 February 2026
 
 ---
 
@@ -85,7 +85,7 @@ By installing, copying, or otherwise using UK Self-Employment Manager ("the Soft
 4.2. **HMRC Compliance**: You are solely responsible for:
    - Meeting all HMRC filing deadlines
    - The accuracy of data submitted to HMRC
-   - Maintaining supporting documentation for 5+ years
+   - Maintaining supporting documentation for 6+ years (s.12B Taxes Management Act 1970)
    - Responding to any HMRC enquiries
    - Paying any tax due on time
 
@@ -99,6 +99,40 @@ By installing, copying, or otherwise using UK Self-Employment Manager ("the Soft
    - Keeping the Software updated to the latest version
    - Checking for updates before each tax submission
    - Reading any notices about changes to tax calculations
+
+---
+
+## 4A. BANK STATEMENT IMPORT
+
+**4A.1. Feature Description**: The Software includes a Bank Statement Import feature that enables you to import CSV bank statement files from supported UK banks for the purpose of recording business income and expenses.
+
+**4A.2. Your Responsibilities When Importing Bank Statements**: You are solely responsible for:
+   - Ensuring you have lawful authority to access and import the bank statement data
+   - Importing only your own bank statements or bank statements for which you have proper authorisation
+   - Verifying that imported data is complete and accurately reflects your bank transactions
+   - Reviewing and correcting all transaction categorisations before using them for tax purposes
+   - Maintaining your original bank statements as independent records
+
+4A.3. **Categorisation Suggestions Are Not Tax Advice**: The Software may automatically suggest expense categories (such as SA103F form categories) and business/personal classifications for imported transactions. **THESE SUGGESTIONS ARE FOR CONVENIENCE ONLY AND DO NOT CONSTITUTE TAX, ACCOUNTING, OR FINANCIAL ADVICE.** You must:
+   - Review every categorisation suggestion before accepting it
+   - Apply your own knowledge of whether a transaction is a business expense, personal expense, or should be excluded
+   - Consult a qualified accountant if you are unsure how to categorise a transaction
+   - Understand that incorrect categorisation on your Self Assessment return may result in HMRC penalties of up to 100% of the tax lost (s.95 Taxes Management Act 1970)
+
+4A.4. **Data Minimisation**: When you import a bank statement, the Software extracts only the minimum data necessary for tax preparation: transaction date, amount, description, and account last four digits. All other data in your bank statement file (including full account numbers, sort codes, account holder names, and running balances) is discarded and not stored.
+
+4A.5. **Duplicate Detection**: The Software uses SHA-256 hashing to detect and prevent duplicate transaction imports. This is a technical safeguard only. You remain responsible for ensuring that no transactions are counted more than once in your tax calculations.
+
+4A.6. **Data Retention for Imported Transactions**: Imported bank transaction data is subject to the same retention requirements as all other financial records in the Software. HMRC requires you to retain records for a minimum of **6 years from the 31 January following the tax year** to which they relate (s.12B Taxes Management Act 1970). You should not delete imported transaction data within this period unless you have alternative records that satisfy HMRC's requirements.
+
+4A.7. **Exclusion of Liability for Categorisation**: Without prejudice to Section 7, we accept no liability for:
+   - Incorrect automatic categorisation suggestions
+   - Errors in business/personal classification
+   - Transactions that should have been excluded from tax calculations but were not
+   - Transactions that were excluded from tax calculations but should have been included
+   - Any HMRC penalties, interest, or surcharges arising from incorrect categorisation
+
+4A.8. **Supported Banks**: The Software supports CSV file formats from specific UK banks. We do not guarantee compatibility with all bank statement formats, and we are not affiliated with, endorsed by, or connected to any bank whose format we support. Bank statement format changes by any bank may cause import errors, for which we accept no responsibility.
 
 ---
 
@@ -292,4 +326,6 @@ For questions about these Terms:
 ---
 
 *These Terms of Service comply with the Unfair Contract Terms Act 1977 and Consumer Rights Act 2015.*
-*Version 1.0 - 1 January 2026*
+*Version 2.0 - 8 February 2026*
+
+**Version 2.0 Changes (February 2026):** Added Section 4A covering Bank Statement Import feature terms including categorisation disclaimer, data minimisation, duplicate detection, retention obligations, and liability exclusions. Updated record retention period from 5 years to 6 years throughout to align with s.29/s.36 Taxes Management Act 1970 discovery assessment windows.

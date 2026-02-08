@@ -36,9 +36,9 @@
             <Label text="🛡" styleClass="privacy-icon"/>
             <Label text="Your Privacy Matters" styleClass="privacy-title"/>
             <HBox alignment="CENTER" spacing="8">
-                <Label fx:id="versionLabel" text="Version 1.0" styleClass="privacy-version"/>
+                <Label fx:id="versionLabel" text="Version 2.0" styleClass="privacy-version"/>
                 <Label text="|" styleClass="privacy-separator"/>
-                <Label fx:id="effectiveDateLabel" text="Effective: 1 January 2026"
+                <Label fx:id="effectiveDateLabel" text="Effective: 8 February 2026"
                        styleClass="privacy-effective-date"/>
             </HBox>
         </VBox>
@@ -81,10 +81,29 @@
                     <Label styleClass="privacy-section-text privacy-storage" wrapText="true"
                            text="Where stored: Encrypted database on your local device only"/>
                     <Label styleClass="privacy-section-text privacy-retention" wrapText="true"
-                           text="Retention: You control retention; HMRC requires 5 years"/>
+                           text="Retention: You control retention; HMRC requires 6 years minimum"/>
 
-                    <!-- 2.2 HMRC Connection Data -->
-                    <Label text="2.2 HMRC Connection Data (When You Connect)" styleClass="privacy-subsection-title"/>
+                    <!-- 2.2 Bank Statement Data -->
+                    <Label text="2.2 Bank Statement Data (When You Import)" styleClass="privacy-subsection-title"/>
+                    <Label styleClass="privacy-section-text" wrapText="true"
+                           text="When you use the Bank Statement Import feature, the following data is extracted from your CSV files and stored locally:"/>
+                    <VBox styleClass="privacy-list" spacing="4">
+                        <Label text="- Transaction date (required for tax year allocation)"
+                               styleClass="privacy-list-item" wrapText="true"/>
+                        <Label text="- Transaction amount (required for income/expense calculation)"
+                               styleClass="privacy-list-item" wrapText="true"/>
+                        <Label text="- Transaction description (required for categorisation)"
+                               styleClass="privacy-list-item" wrapText="true"/>
+                        <Label text="- Account last 4 digits (minimal identifier for audit trail)"
+                               styleClass="privacy-list-item" wrapText="true"/>
+                    </VBox>
+                    <Label styleClass="privacy-section-text privacy-important" wrapText="true"
+                           text="Data minimisation: We do NOT store full account numbers, sort codes, account holder names, running balances, or bank branch details. Only the minimum data required for tax preparation is retained."/>
+                    <Label styleClass="privacy-section-text" wrapText="true"
+                           text="Original CSV files are not retained by the Software after import. Categorisation suggestions are algorithmic and are not tax advice."/>
+
+                    <!-- 2.3 HMRC Connection Data -->
+                    <Label text="2.3 HMRC Connection Data (When You Connect)" styleClass="privacy-subsection-title"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
                            text="When you connect to HMRC for Making Tax Digital submissions, the following data is collected and transmitted:"/>
                     <VBox styleClass="privacy-list" spacing="4">
@@ -106,6 +125,8 @@
                     <Label text="3. How We Use Your Data" styleClass="privacy-section-title"/>
                     <VBox styleClass="privacy-list" spacing="4">
                         <Label text="- Calculate your tax liability (Legal basis: Contract performance)"
+                               styleClass="privacy-list-item" wrapText="true"/>
+                        <Label text="- Import and categorise bank transactions (Legal basis: Contract performance)"
                                styleClass="privacy-list-item" wrapText="true"/>
                         <Label text="- Submit returns to HMRC (Legal basis: Contract performance)"
                                styleClass="privacy-list-item" wrapText="true"/>
@@ -141,7 +162,7 @@
                 <VBox styleClass="privacy-section" spacing="8">
                     <Label text="5. Data Retention" styleClass="privacy-section-title"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Financial records: You decide (HMRC requires 5 years minimum)"
+                        <Label text="- Financial records and imported bank transactions: You decide (HMRC requires 6 years minimum)"
                                styleClass="privacy-list-item" wrapText="true"/>
                         <Label text="- HMRC tokens: Until you disconnect"
                                styleClass="privacy-list-item" wrapText="true"/>
@@ -149,7 +170,7 @@
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-important" wrapText="true"
-                           text="Your responsibility: HMRC requires you to keep records for at least 5 years from the 31 January following the tax year. This application helps you meet this requirement, but the legal responsibility remains yours."/>
+                           text="Your responsibility: HMRC requires you to keep records for at least 6 years from the 31 January following the tax year (s.12B Taxes Management Act 1970). Penalties for inadequate records can be up to £3,000 per tax year. This application helps you meet this requirement, but the legal responsibility remains yours."/>
                 </VBox>
 
                 <!-- Section 6: Your Rights -->
@@ -204,9 +225,11 @@
                     <VBox styleClass="privacy-list" spacing="4">
                         <Label text="- Core functionality: Contract performance (Article 6(1)(b))"
                                styleClass="privacy-list-item" wrapText="true"/>
+                        <Label text="- Bank statement import: Contract performance (Article 6(1)(b))"
+                               styleClass="privacy-list-item" wrapText="true"/>
                         <Label text="- HMRC fraud prevention: Legal obligation (Article 6(1)(c))"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Token storage: Legitimate interests (Article 6(1)(f))"
+                        <Label text="- Token storage and audit trail: Legitimate interests (Article 6(1)(f))"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-compliance" wrapText="true"

@@ -37,9 +37,9 @@
             <Label text="[DOC]" styleClass="tos-icon"/>
             <Label text="Terms of Service" styleClass="tos-title"/>
             <HBox alignment="CENTER" spacing="8">
-                <Label fx:id="versionLabel" text="Version 1.0" styleClass="tos-version"/>
+                <Label fx:id="versionLabel" text="Version 2.0" styleClass="tos-version"/>
                 <Label text="|" styleClass="tos-separator"/>
-                <Label fx:id="lastUpdatedLabel" text="Last Updated: 1 January 2026"
+                <Label fx:id="lastUpdatedLabel" text="Last Updated: 8 February 2026"
                        styleClass="tos-updated-date"/>
             </HBox>
         </VBox>
@@ -60,6 +60,8 @@
                                onAction="#scrollToSection" userData="section3"/>
                     <Hyperlink text="4. Your Responsibilities" styleClass="toc-link"
                                onAction="#scrollToSection" userData="section4"/>
+                    <Hyperlink text="4A. Bank Statement Import" styleClass="toc-link"
+                               onAction="#scrollToSection" userData="section4a"/>
                     <Hyperlink text="5. HMRC Integration" styleClass="toc-link"
                                onAction="#scrollToSection" userData="section5"/>
                     <Hyperlink text="6. Open Source Licence" styleClass="toc-link"
@@ -143,11 +145,34 @@
                         <Label styleClass="tos-section-text tos-bold" wrapText="true"
                                text="4.1. Data Accuracy: You are solely responsible for: The accuracy and completeness of all data you enter; Verifying that imported bank data is correctly categorised; Ensuring income and expense classifications are correct; Reviewing all calculations before submission."/>
                         <Label styleClass="tos-section-text tos-bold" wrapText="true"
-                               text="4.2. HMRC Compliance: You are solely responsible for: Meeting all HMRC filing deadlines; The accuracy of data submitted to HMRC; Maintaining supporting documentation for 5+ years; Responding to any HMRC enquiries; Paying any tax due on time."/>
+                               text="4.2. HMRC Compliance: You are solely responsible for: Meeting all HMRC filing deadlines; The accuracy of data submitted to HMRC; Maintaining supporting documentation for 6+ years; Responding to any HMRC enquiries; Paying any tax due on time."/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="4.3. Legal Compliance: You acknowledge that: Submitting incorrect information to HMRC may constitute a criminal offence; HMRC may impose penalties for inaccurate or late returns; You bear full responsibility for any penalties, fines, or interest; We cannot verify the accuracy of data you enter."/>
                         <Label styleClass="tos-section-text" wrapText="true"
                                text="4.4. Software Updates: You are responsible for: Keeping the Software updated to the latest version; Checking for updates before each tax submission; Reading any notices about changes to tax calculations."/>
+                    </VBox>
+
+                    <!-- Section 4A: Bank Statement Import -->
+                    <VBox fx:id="section4a" styleClass="tos-section" spacing="8">
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label text="4A. BANK STATEMENT IMPORT" styleClass="tos-section-title"/>
+                        </HBox>
+                        <Label styleClass="tos-section-text" wrapText="true"
+                               text="4A.1. Feature Description: The Software includes a Bank Statement Import feature that enables you to import CSV bank statement files from supported UK banks for the purpose of recording business income and expenses."/>
+                        <Label styleClass="tos-section-text tos-bold" wrapText="true"
+                               text="4A.2. Your Responsibilities: You are solely responsible for: Ensuring you have lawful authority to import the bank statement data; Importing only your own bank statements or those for which you have proper authorisation; Verifying that imported data accurately reflects your bank transactions; Reviewing and correcting all categorisations before using them for tax purposes."/>
+                        <VBox styleClass="tos-highlight-box" spacing="8">
+                            <Label styleClass="tos-highlight-text" wrapText="true"
+                                   text="4A.3. CATEGORISATION SUGGESTIONS ARE NOT TAX ADVICE. The Software may suggest expense categories and business/personal classifications. These suggestions are for convenience only. You must review every categorisation, apply your own knowledge, and consult a qualified accountant if uncertain. Incorrect categorisation may result in HMRC penalties of up to 100% of the tax lost."/>
+                        </VBox>
+                        <Label styleClass="tos-section-text" wrapText="true"
+                               text="4A.4. Data Minimisation: Only the minimum data required for tax preparation is extracted: transaction date, amount, description, and account last four digits. All other data is discarded and not stored."/>
+                        <Label styleClass="tos-section-text" wrapText="true"
+                               text="4A.5. Duplicate Detection: SHA-256 hashing is used to prevent duplicate imports. This is a technical safeguard only; you remain responsible for ensuring no transactions are counted twice."/>
+                        <Label styleClass="tos-section-text tos-important" wrapText="true"
+                               text="4A.6. Data Retention: Imported bank transaction data is subject to the same 6-year HMRC retention requirement as all other financial records. Do not delete imported data within this period unless you have alternative records."/>
+                        <Label styleClass="tos-section-text" wrapText="true"
+                               text="4A.7. We accept no liability for incorrect categorisation suggestions, errors in business/personal classification, or any HMRC penalties arising from incorrect categorisation. See Section 7 for full limitation of liability."/>
                     </VBox>
 
                     <!-- Section 5: HMRC Integration -->
@@ -300,7 +325,7 @@
                         <Label styleClass="tos-compliance-text" wrapText="true"
                                text="These Terms of Service comply with the Unfair Contract Terms Act 1977 and Consumer Rights Act 2015."/>
                         <Label styleClass="tos-compliance-text" wrapText="true"
-                               text="Version 1.0"/>
+                               text="Version 2.0"/>
                     </VBox>
 
                     <!-- End Marker (for scroll detection) -->

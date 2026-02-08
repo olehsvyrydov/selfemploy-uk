@@ -100,7 +100,52 @@ public final class Disclaimers {
         "The calculations shown are estimates based on the data you have provided. " +
         "Always consult a qualified professional for advice specific to your circumstances.";
 
-    // === Consumer Rights Act 2015 Disclaimers (SE-513) ===
+    // === Bank Import Disclaimers ===
+
+    /**
+     * Version identifier for the bank import disclaimer.
+     */
+    public static final String BANK_IMPORT_ID = "BANK_IMPORT_V1";
+
+    /**
+     * Bank Import Disclaimer - displayed before the user's first bank statement import.
+     *
+     * <p>This disclaimer addresses:
+     * <ul>
+     *   <li>Categorisation suggestions are not tax advice</li>
+     *   <li>User responsibility for verifying all categorisations</li>
+     *   <li>Data minimisation and local-only storage</li>
+     *   <li>Record retention obligations</li>
+     * </ul>
+     */
+    public static final String BANK_IMPORT_DISCLAIMER =
+        "The automatic categorisation suggestions provided by this software are " +
+        "for convenience only and do not constitute tax, accounting, or financial advice. " +
+        "You are solely responsible for verifying the accuracy of all categorisations " +
+        "before submitting to HMRC. Incorrect categorisation may result in HMRC penalties. " +
+        "We recommend consulting a qualified accountant for complex tax matters.";
+
+    /**
+     * Bank Import Data Notice - explains what data is extracted and stored.
+     *
+     * <p>Displayed during the import wizard to inform users about data minimisation.
+     */
+    public static final String BANK_IMPORT_DATA_NOTICE =
+        "When you import a bank statement, only the minimum data required for tax preparation " +
+        "is extracted and stored locally: transaction date, amount, description, and account " +
+        "last four digits. All other data (including full account numbers, sort codes, and " +
+        "account holder names) is discarded and not stored. Your data never leaves your device.";
+
+    /**
+     * Bank Import Retention Notice - warns about HMRC record-keeping obligations.
+     */
+    public static final String BANK_IMPORT_RETENTION_NOTICE =
+        "HMRC requires you to retain financial records for at least 6 years from the " +
+        "31 January following the tax year. Deleting imported bank transaction data within " +
+        "this period may leave you without adequate records in the event of an HMRC enquiry. " +
+        "Penalties for inadequate records can be up to £3,000 per tax year.";
+
+    // === Consumer Rights Act 2015 Disclaimers ===
 
     /**
      * Consumer Rights Disclaimer Title.
