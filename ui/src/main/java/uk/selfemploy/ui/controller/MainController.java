@@ -37,6 +37,7 @@ public class MainController implements Initializable {
     @FXML private ToggleButton navDashboard;
     @FXML private ToggleButton navIncome;
     @FXML private ToggleButton navExpenses;
+    @FXML private ToggleButton navTransactionReview;
     @FXML private ToggleButton navTax;
     @FXML private ToggleButton navHmrc;
     @FXML private ComboBox<TaxYear> taxYearSelector;
@@ -122,6 +123,7 @@ public class MainController implements Initializable {
             case DASHBOARD -> navDashboard.setSelected(true);
             case INCOME -> navIncome.setSelected(true);
             case EXPENSES -> navExpenses.setSelected(true);
+            case TRANSACTION_REVIEW -> navTransactionReview.setSelected(true);
             case TAX_SUMMARY -> navTax.setSelected(true);
             case HMRC_SUBMISSION -> navHmrc.setSelected(true);
             default -> {} // Help and Settings don't have nav buttons
@@ -223,6 +225,11 @@ public class MainController implements Initializable {
     @FXML
     void navigateToExpenses(ActionEvent event) {
         loadView(View.EXPENSES);
+    }
+
+    @FXML
+    void navigateToTransactionReview(ActionEvent event) {
+        loadView(View.TRANSACTION_REVIEW);
     }
 
     @FXML

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="uk.selfemploy.ui.controller.TransactionReviewController"
+            styleClass="page-scroll"
+            fitToWidth="true" hbarPolicy="NEVER">
+
+    <VBox fx:id="reviewContainer" styleClass="page-container" spacing="24">
+        <padding><Insets top="30" right="30" bottom="30" left="30"/></padding>
+
+        <!-- Page Header -->
+        <HBox alignment="CENTER_LEFT" spacing="15">
+            <Label text="Transaction Review" styleClass="page-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="undoBtn" text="Undo" styleClass="button-secondary"
+                    onAction="#handleUndo" disable="true"/>
+            <MenuButton fx:id="exportBtn" text="Export" styleClass="button-secondary">
+                <items>
+                    <MenuItem text="Export as CSV" onAction="#handleExportCsv"/>
+                    <MenuItem text="Export as JSON" onAction="#handleExportJson"/>
+                </items>
+            </MenuButton>
+        </HBox>
+
+        <!-- Progress Bar -->
+        <VBox spacing="6">
+            <ProgressBar fx:id="reviewProgressBar" progress="0" maxWidth="Infinity"
+                         styleClass="review-progress-bar"/>
+            <Label fx:id="progressLabel" text="0 of 0 reviewed" styleClass="label-secondary"/>
+        </VBox>
+
+        <!-- Summary Cards -->
+        <HBox styleClass="summary-cards-container" spacing="16">
+            <VBox styleClass="summary-card" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
+                <Label text="TOTAL" styleClass="metric-label"/>
+                <Label fx:id="totalValue" text="0" styleClass="summary-card-value"/>
+                <Label text="transactions" styleClass="label-secondary"/>
+            </VBox>
+
+            <VBox styleClass="summary-card, summary-card-pending" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
+                <Label text="PENDING" styleClass="metric-label"/>
+                <Label fx:id="pendingValue" text="0" styleClass="summary-card-value"/>
+                <Label text="need review" styleClass="label-secondary"/>
+            </VBox>
+
+            <VBox styleClass="summary-card, summary-card-categorized" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
+                <Label text="CATEGORIZED" styleClass="metric-label"/>
+                <Label fx:id="categorizedValue" text="0" styleClass="summary-card-value"/>
+                <Label text="linked" styleClass="label-secondary"/>
+            </VBox>
+
+            <VBox styleClass="summary-card, summary-card-excluded" HBox.hgrow="ALWAYS" spacing="8"
+                  focusTraversable="true">
+                <Label text="EXCLUDED" styleClass="metric-label"/>
+                <Label fx:id="excludedValue" text="0" styleClass="summary-card-value"/>
+                <Label text="excluded" styleClass="label-secondary"/>
+            </VBox>
+        </HBox>
+
+        <!-- Filters Bar -->
+        <HBox styleClass="filters-bar" alignment="CENTER_LEFT" spacing="12">
+            <ComboBox fx:id="statusFilterCombo" promptText="All Status" prefWidth="140"/>
+            <DatePicker fx:id="dateFromPicker" promptText="From" prefWidth="130"/>
+            <DatePicker fx:id="dateToPicker" promptText="To" prefWidth="130"/>
+            <TextField fx:id="amountMinField" promptText="Min £" prefWidth="80"/>
+            <TextField fx:id="amountMaxField" promptText="Max £" prefWidth="80"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <TextField fx:id="searchField" promptText="Search description..."
+                       prefWidth="250" styleClass="search-field"/>
+        </HBox>
+
+        <!-- Batch Action Bar -->
+        <HBox fx:id="batchBar" styleClass="batch-action-bar" alignment="CENTER_LEFT" spacing="12">
+            <Button text="Select All" styleClass="button-secondary" onAction="#handleSelectAll"/>
+            <Button text="Select Pending" styleClass="button-secondary" onAction="#handleSelectPending"/>
+            <Separator orientation="VERTICAL"/>
+            <Button fx:id="batchBusinessBtn" text="Business" styleClass="button-secondary"
+                    onAction="#handleBatchBusiness" disable="true"/>
+            <Button fx:id="batchPersonalBtn" text="Personal" styleClass="button-secondary"
+                    onAction="#handleBatchPersonal" disable="true"/>
+            <Button fx:id="batchExcludeBtn" text="Exclude" styleClass="button-secondary"
+                    onAction="#handleBatchExclude" disable="true"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="selectedCountLabel" text="0 selected" styleClass="label-secondary"/>
+        </HBox>
+
+        <!-- Transaction Table -->
+        <TableView fx:id="transactionTable" styleClass="data-table" VBox.vgrow="ALWAYS" minHeight="350">
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            </columnResizePolicy>
+            <columns>
+                <TableColumn fx:id="selectCol" text="" prefWidth="40" minWidth="40" maxWidth="40" sortable="false"/>
+                <TableColumn fx:id="dateCol" text="DATE" prefWidth="100" minWidth="90"/>
+                <TableColumn fx:id="descCol" text="DESCRIPTION" prefWidth="220"/>
+                <TableColumn fx:id="amountCol" text="AMOUNT" prefWidth="110" minWidth="90"/>
+                <TableColumn fx:id="categoryCol" text="CATEGORY" prefWidth="130" minWidth="100"/>
+                <TableColumn fx:id="confidenceCol" text="CONFIDENCE" prefWidth="100" minWidth="80"/>
+                <TableColumn fx:id="businessCol" text="BUS/PERS" prefWidth="100" minWidth="80" sortable="false"/>
+                <TableColumn fx:id="statusCol" text="STATUS" prefWidth="100" minWidth="80"/>
+                <TableColumn fx:id="actionCol" text="ACTIONS" prefWidth="150" minWidth="140" sortable="false"/>
+            </columns>
+            <placeholder>
+                <Label text="No transactions to review" styleClass="empty-table-message"/>
+            </placeholder>
+        </TableView>
+
+        <!-- Pagination -->
+        <HBox fx:id="paginationBar" styleClass="pagination-bar" alignment="CENTER" spacing="20">
+            <Label fx:id="resultCount" text="Showing 0 entries" styleClass="label-secondary"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="prevBtn" text="&lt; Previous" styleClass="button-secondary"
+                    onAction="#handlePrevPage" disable="true"/>
+            <Button fx:id="nextBtn" text="Next &gt;" styleClass="button-secondary"
+                    onAction="#handleNextPage" disable="true"/>
+        </HBox>
+
+        <!-- Empty State -->
+        <VBox fx:id="emptyState" styleClass="empty-state-container"
+              alignment="CENTER" spacing="16" managed="false" visible="false">
+            <padding><Insets topRightBottomLeft="60"/></padding>
+            <Label text="No Imported Transactions" styleClass="empty-state-title"/>
+            <Label text="Import a bank statement CSV from the Income page to start reviewing transactions."
+                   styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
+        </VBox>
+
+    </VBox>
+</ScrollPane>

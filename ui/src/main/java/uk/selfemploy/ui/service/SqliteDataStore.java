@@ -5,6 +5,9 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
 
+import uk.selfemploy.common.domain.BankTransaction;
+import uk.selfemploy.common.enums.ReviewStatus;
+
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +17,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -251,6 +256,36 @@ public final class SqliteDataStore {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_tax_year ON submissions(tax_year_start)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status)");
+
+            // Bank transactions table for imported statement review
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS bank_transactions (
+                    id TEXT PRIMARY KEY,
+                    business_id TEXT NOT NULL,
+                    import_audit_id TEXT NOT NULL,
+                    source_format_id TEXT,
+                    date TEXT NOT NULL,
+                    amount TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    account_last_four TEXT,
+                    bank_transaction_id TEXT,
+                    transaction_hash TEXT NOT NULL,
+                    review_status TEXT NOT NULL DEFAULT 'PENDING',
+                    income_id TEXT,
+                    expense_id TEXT,
+                    exclusion_reason TEXT,
+                    is_business INTEGER,
+                    confidence_score TEXT,
+                    suggested_category TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
+                    CHECK (review_status IN ('PENDING', 'CATEGORIZED', 'EXCLUDED', 'SKIPPED'))
+                )
+            """);
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_business_status ON bank_transactions(business_id, review_status)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_business_date ON bank_transactions(business_id, date)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_hash ON bank_transactions(transaction_hash)");
 
             LOG.info("Database tables initialized");
         }
@@ -1153,6 +1188,192 @@ public final class SqliteDataStore {
             LOG.log(Level.WARNING, "Failed to get Privacy acknowledgment timestamp", e);
         }
         return Optional.empty();
+    }
+
+    // === Bank Transaction Operations ===
+
+    /**
+     * Saves a bank transaction to the database.
+     * Uses INSERT OR REPLACE to handle updates.
+     */
+    public synchronized void saveBankTransaction(BankTransaction tx) {
+        String sql = """
+            INSERT OR REPLACE INTO bank_transactions
+            (id, business_id, import_audit_id, source_format_id, date, amount,
+             description, account_last_four, bank_transaction_id, transaction_hash,
+             review_status, income_id, expense_id, exclusion_reason,
+             is_business, confidence_score, suggested_category, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, tx.id().toString());
+            pstmt.setString(2, tx.businessId().toString());
+            pstmt.setString(3, tx.importAuditId().toString());
+            pstmt.setString(4, tx.sourceFormatId());
+            pstmt.setString(5, tx.date().toString());
+            pstmt.setString(6, tx.amount().toPlainString());
+            pstmt.setString(7, tx.description());
+            pstmt.setString(8, tx.accountLastFour());
+            pstmt.setString(9, tx.bankTransactionId());
+            pstmt.setString(10, tx.transactionHash());
+            pstmt.setString(11, tx.reviewStatus().name());
+            pstmt.setString(12, tx.incomeId() != null ? tx.incomeId().toString() : null);
+            pstmt.setString(13, tx.expenseId() != null ? tx.expenseId().toString() : null);
+            pstmt.setString(14, tx.exclusionReason());
+            if (tx.isBusiness() != null) {
+                pstmt.setInt(15, tx.isBusiness() ? 1 : 0);
+            } else {
+                pstmt.setNull(15, Types.INTEGER);
+            }
+            pstmt.setString(16, tx.confidenceScore() != null ? tx.confidenceScore().toPlainString() : null);
+            pstmt.setString(17, tx.suggestedCategory() != null ? tx.suggestedCategory().name() : null);
+            pstmt.setString(18, tx.createdAt().toString());
+            pstmt.setString(19, tx.updatedAt() != null ? tx.updatedAt().toString() : tx.createdAt().toString());
+            pstmt.executeUpdate();
+            LOG.fine("Saved bank transaction: " + tx.id());
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save bank transaction: " + tx.id(), e);
+        }
+    }
+
+    /**
+     * Finds all bank transactions for a business, ordered by date descending.
+     */
+    public synchronized List<BankTransaction> findBankTransactions(UUID businessId) {
+        List<BankTransaction> transactions = new ArrayList<>();
+        String sql = "SELECT * FROM bank_transactions WHERE business_id = ? ORDER BY date DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                transactions.add(mapBankTransaction(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find bank transactions", e);
+        }
+        return transactions;
+    }
+
+    /**
+     * Finds a bank transaction by ID.
+     */
+    public synchronized Optional<BankTransaction> findBankTransactionById(UUID id) {
+        String sql = "SELECT * FROM bank_transactions WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, id.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapBankTransaction(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to find bank transaction: " + id, e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Counts bank transactions by review status for a business.
+     */
+    public synchronized long countBankTransactionsByStatus(UUID businessId, String status) {
+        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND review_status = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setString(2, status);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to count bank transactions by status", e);
+        }
+        return 0;
+    }
+
+    /**
+     * Counts all bank transactions for a business.
+     */
+    public synchronized long countBankTransactions(UUID businessId) {
+        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to count bank transactions", e);
+        }
+        return 0;
+    }
+
+    /**
+     * Checks if a bank transaction with the given hash exists for a business.
+     */
+    public synchronized boolean existsByTransactionHash(UUID businessId, String hash) {
+        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND transaction_hash = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setString(2, hash);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1) > 0;
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to check transaction hash", e);
+        }
+        return false;
+    }
+
+    /**
+     * Deletes a bank transaction by ID.
+     */
+    public synchronized boolean deleteBankTransaction(UUID id) {
+        String sql = "DELETE FROM bank_transactions WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, id.toString());
+            int affected = pstmt.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to delete bank transaction: " + id, e);
+            return false;
+        }
+    }
+
+    private BankTransaction mapBankTransaction(ResultSet rs) throws SQLException {
+        String incomeIdStr = rs.getString("income_id");
+        String expenseIdStr = rs.getString("expense_id");
+        String confidenceStr = rs.getString("confidence_score");
+        String categoryStr = rs.getString("suggested_category");
+        String updatedAtStr = rs.getString("updated_at");
+
+        // Handle nullable is_business column
+        int isBusinessInt = rs.getInt("is_business");
+        Boolean isBusiness = rs.wasNull() ? null : (isBusinessInt == 1);
+
+        return new BankTransaction(
+            UUID.fromString(rs.getString("id")),
+            UUID.fromString(rs.getString("business_id")),
+            UUID.fromString(rs.getString("import_audit_id")),
+            rs.getString("source_format_id"),
+            LocalDate.parse(rs.getString("date")),
+            new BigDecimal(rs.getString("amount")),
+            rs.getString("description"),
+            rs.getString("account_last_four"),
+            rs.getString("bank_transaction_id"),
+            rs.getString("transaction_hash"),
+            ReviewStatus.valueOf(rs.getString("review_status")),
+            incomeIdStr != null ? UUID.fromString(incomeIdStr) : null,
+            expenseIdStr != null ? UUID.fromString(expenseIdStr) : null,
+            rs.getString("exclusion_reason"),
+            isBusiness,
+            confidenceStr != null ? new BigDecimal(confidenceStr) : null,
+            categoryStr != null ? ExpenseCategory.valueOf(categoryStr) : null,
+            Instant.parse(rs.getString("created_at")),
+            updatedAtStr != null ? Instant.parse(updatedAtStr) : null,
+            null, // deletedAt - not stored in SQLite
+            null, // deletedBy - not stored in SQLite
+            null  // deletionReason - not stored in SQLite
+        );
     }
 
     // === Submission Operations (BUG-10H-001) ===

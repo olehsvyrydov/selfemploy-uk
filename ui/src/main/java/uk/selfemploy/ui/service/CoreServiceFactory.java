@@ -33,6 +33,7 @@ public final class CoreServiceFactory {
     private static DataImportService dataImportService;
     private static UiDuplicateDetectionService duplicateDetectionService;
     private static UiQuarterlySubmissionService quarterlySubmissionService;
+    private static SqliteBankTransactionService bankTransactionService;
     private static UUID defaultBusinessId;
 
     private CoreServiceFactory() {
@@ -162,6 +163,21 @@ public final class CoreServiceFactory {
     }
 
     /**
+     * Gets or creates the singleton SqliteBankTransactionService instance.
+     * Used for the Transaction Review Dashboard.
+     *
+     * @return The SqliteBankTransactionService instance
+     */
+    public static synchronized SqliteBankTransactionService getBankTransactionService() {
+        if (bankTransactionService == null) {
+            UUID businessId = getDefaultBusinessId();
+            LOG.info("Creating SQLite BankTransactionService for business: " + businessId);
+            bankTransactionService = new SqliteBankTransactionService(businessId);
+        }
+        return bankTransactionService;
+    }
+
+    /**
      * Gets or creates the singleton UiQuarterlySubmissionService instance.
      * Configured with NINO from SQLite settings and the default business ID.
      *
@@ -253,6 +269,7 @@ public final class CoreServiceFactory {
         dataImportService = null;
         duplicateDetectionService = null;
         quarterlySubmissionService = null;
+        bankTransactionService = null;
         defaultBusinessId = null;
         LOG.info("CoreServiceFactory shutdown - data persisted");
     }
@@ -264,7 +281,8 @@ public final class CoreServiceFactory {
         return expenseService != null || incomeService != null || receiptStorageService != null
                 || termsAcceptanceService != null || privacyAcknowledgmentService != null
                 || dataExportService != null || dataImportService != null
-                || duplicateDetectionService != null || quarterlySubmissionService != null;
+                || duplicateDetectionService != null || quarterlySubmissionService != null
+                || bankTransactionService != null;
     }
 
     /**

@@ -166,6 +166,7 @@ class NavigationViewModelTest {
                 View.DASHBOARD,
                 View.INCOME,
                 View.EXPENSES,
+                View.TRANSACTION_REVIEW,
                 View.TAX_SUMMARY,
                 View.HMRC_SUBMISSION,
                 View.SETTINGS,

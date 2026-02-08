@@ -103,6 +103,7 @@ public final class SqliteTestSupport {
 
             if (connection != null) {
                 try (Statement stmt = connection.createStatement()) {
+                    stmt.execute("DELETE FROM bank_transactions");
                     stmt.execute("DELETE FROM expenses");
                     stmt.execute("DELETE FROM income");
                     stmt.execute("DELETE FROM settings");

@@ -87,6 +87,11 @@
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
+            <ToggleButton fx:id="navTransactionReview" text="Bank Review" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToTransactionReview">
+                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
+            </ToggleButton>
+
             <ToggleButton fx:id="navTax" text="Tax Summary" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToTax">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
