@@ -19,7 +19,7 @@
 - [Testing](Contributing#testing)
 
 ### Resources
-- [ROADMAP](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/ROADMAP.md)
+- [ROADMAP](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/docs/ROADMAP.md)
 - [Issues](https://github.com/olehsvyrydov/selfemploy-uk/issues)
 - [Discussions](https://github.com/olehsvyrydov/selfemploy-uk/discussions)
 

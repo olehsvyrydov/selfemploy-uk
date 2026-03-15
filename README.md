@@ -25,41 +25,63 @@ A free, open-source desktop application for UK self-employed individuals to mana
 
 ### Prerequisites
 
-- Java 21 or later
+- Java 21 or later (JDK)
 - Maven 3.9+
 
-### Build & Run
+### Install & Run
 
 ```bash
 # Clone the repository
 git clone https://github.com/olehsvyrydov/selfemploy-uk.git
 cd selfemploy-uk
 
-# Build the project
-mvn clean install
+# Linux / macOS
+./install.sh
 
-# Run the application
+# Windows (PowerShell)
+.\install.ps1
+```
+
+The install script will check prerequisites, build, and run the application.
+
+#### Script Options
+
+| Linux / macOS | Windows | Description |
+|---------------|---------|-------------|
+| `./install.sh` | `.\install.ps1` | Build and run |
+| `./install.sh --build` | `.\install.ps1 -Build` | Build only |
+| `./install.sh --package` | `.\install.ps1 -Package` | Build + native installer |
+| `./install.sh --check` | `.\install.ps1 -Check` | Check prerequisites |
+| `./install.sh --help` | `.\install.ps1 -Help` | Show help |
+
+### Manual Build & Run
+
+```bash
+mvn clean install
 mvn -pl app javafx:run
 ```
 
 ### Create Native Installer
 
 ```bash
-# Build native installer for your platform
 mvn -pl app -Ppackage jpackage:jpackage
 ```
 
 ## Project Structure
 
 ```
-self-employment/
+selfemploy-uk/
 ├── common/          # Shared domain entities, DTOs, enums
 ├── persistence/     # Database entities, repositories, Flyway migrations
 ├── hmrc-api/        # HMRC MTD API clients, OAuth2, fraud prevention
 ├── core/            # Business logic, tax calculator, services
 ├── ui/              # JavaFX controllers, FXML layouts, CSS styling
 ├── app/             # Application launcher and native packaging
-└── docs/            # Documentation, sprints, architecture
+├── plugin-api/      # Plugin extension points and interfaces
+├── plugin-runtime/  # Plugin lifecycle and classloader management
+├── docs/            # Contributing, security, privacy, roadmap
+├── install.sh       # Installation script (Linux / macOS)
+└── install.ps1      # Installation script (Windows)
 ```
 
 ## Technology Stack
@@ -128,7 +150,7 @@ See the comprehensive [Plugin Developer Documentation](docs/plugin-development/R
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 ## License
 
