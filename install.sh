@@ -18,7 +18,7 @@ set -euo pipefail
 
 REQUIRED_JAVA_VERSION=21
 REQUIRED_MAVEN_MAJOR=3
-REQUIRED_MAVEN_MINOR=9
+REQUIRED_MAVEN_MINOR=6
 APP_NAME="UK Self-Employment Manager"
 
 # --- Colors -------------------------------------------------------------------
@@ -49,7 +49,7 @@ Usage:
 
 Prerequisites:
   - Java 21 or later (JDK, not JRE)
-  - Maven 3.9 or later
+  - Maven 3.6 or later
 
 The script will check for prerequisites and guide you through
 installation if anything is missing.

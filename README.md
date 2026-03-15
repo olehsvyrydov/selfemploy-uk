@@ -26,7 +26,7 @@ A free, open-source desktop application for UK self-employed individuals to mana
 ### Prerequisites
 
 - Java 21 or later (JDK)
-- Maven 3.9+
+- Maven 3.6+
 
 ### Install & Run
 

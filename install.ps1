@@ -25,7 +25,7 @@ param(
 
 $RequiredJavaVersion = 21
 $RequiredMavenMajor = 3
-$RequiredMavenMinor = 9
+$RequiredMavenMinor = 6
 $AppName = "UK Self-Employment Manager"
 
 # --- Helper Functions ---------------------------------------------------------
@@ -48,7 +48,7 @@ Usage:
 
 Prerequisites:
   - Java $RequiredJavaVersion or later (JDK, not JRE)
-  - Maven $RequiredMavenMajor.$RequiredMavenMinor or later
+  - Maven 3.6 or later
 
 Note: If you get a script execution error, run:
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
