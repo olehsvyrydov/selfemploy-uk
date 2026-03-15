@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>Installation Guide - UK Self-Employment Manager</title>
+    <meta name="description" content="Step-by-step installation guide for UK Self-Employment Manager on Windows, macOS, and Linux.">
+    <meta name="robots" content="index, follow">
+
+    <link rel="canonical" href="https://selfemploy.uk/install-guide.html">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <meta name="theme-color" content="#0066CC">
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation Header -->
+    <nav class="nav-header" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="/" class="nav-logo" aria-label="UK Self-Employment Manager - Home">
+                <span class="logo-icon" aria-hidden="true">SE</span>
+                <span class="logo-text">UK Self-Employment Manager</span>
+            </a>
+
+            <div class="nav-links" id="nav-links">
+                <a href="/#features">Features</a>
+                <a href="/#download">Download</a>
+                <a href="/install-guide.html" class="nav-link-active">Install Guide</a>
+                <a href="/#faq">FAQ</a>
+                <a href="https://github.com/olehsvyrydov/selfemploy-uk"
+                   class="nav-github"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    <svg class="github-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a>
+            </div>
+
+            <button class="nav-mobile-toggle"
+                    id="mobile-menu-toggle"
+                    aria-label="Toggle navigation menu"
+                    aria-expanded="false"
+                    aria-controls="nav-links">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+        </div>
+    </nav>
+
+    <main id="main">
+        <section class="install-guide" aria-labelledby="install-guide-heading">
+            <div class="container">
+                <h1 id="install-guide-heading">Installation Guide</h1>
+                <p class="section-subtitle">Get up and running in minutes. No Java or developer tools required.</p>
+
+                <!-- OS Tabs -->
+                <div class="install-tabs" role="tablist" aria-label="Operating system installation instructions">
+                    <button class="install-tab active" role="tab" aria-selected="true" aria-controls="install-windows" id="os-tab-windows" tabindex="0" data-os="windows">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                            <path fill="currentColor" d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+                        </svg>
+                        Windows
+                    </button>
+                    <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-macos" id="os-tab-macos" tabindex="-1" data-os="macos">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                            <path fill="currentColor" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                        </svg>
+                        macOS
+                    </button>
+                    <button class="install-tab" role="tab" aria-selected="false" aria-controls="install-linux" id="os-tab-linux" tabindex="-1" data-os="linux">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                            <path fill="currentColor" d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489.117.779.567 1.563 1.182 2.114.267.24.598.398.938.503.34.111.708.185 1.078.239.842.127 1.79.148 2.657.148 1.152 0 2.324-.073 3.32-.231 1.032-.161 2.007-.453 2.662-.934.655-.48 1.07-1.148 1.07-2.063 0-.474-.116-.904-.3-1.29-.185-.387-.42-.722-.665-1.025-.49-.606-1.02-1.073-1.382-1.606-.18-.266-.31-.555-.376-.867-.067-.312-.065-.638.006-.96.073-.32.198-.635.364-.94.165-.305.37-.596.594-.871.448-.55.958-1.023 1.37-1.518.205-.248.378-.503.485-.765.107-.262.151-.521.094-.763-.057-.241-.188-.453-.361-.617-.173-.164-.38-.28-.598-.357-.434-.153-.93-.174-1.396-.158-.467.015-.914.069-1.27.14-.355.072-.638.162-.756.217-.117.056-.208.095-.32.095-.111 0-.221-.049-.32-.14-.199-.182-.341-.453-.458-.748-.117-.295-.205-.622-.284-.956-.079-.334-.142-.684-.175-1.012-.033-.328-.036-.616-.015-.864.02-.248.064-.449.136-.597.072-.148.165-.22.295-.22.13 0 .295.08.505.234.21.154.46.38.737.645.556.53 1.23 1.165 1.855 1.557.312.195.612.337.873.397.261.06.47.04.594-.047.124-.088.164-.24.174-.42.011-.18 0-.402-.023-.657-.046-.51-.131-1.144-.206-1.737-.075-.593-.142-1.147-.155-1.573-.013-.425.022-.692.122-.784.1-.092.25-.068.417.015.168.083.356.227.56.42.406.385.867.943 1.328 1.503.461.559.916 1.11 1.315 1.462.2.177.387.31.57.396.181.085.371.114.534.087.164-.027.295-.121.381-.268.086-.148.128-.344.128-.565 0-.44-.082-.94-.201-1.376-.118-.435-.272-.816-.385-1.034-.114-.218-.189-.296-.189-.407 0-.11.076-.205.218-.285.141-.08.348-.149.595-.218.493-.137 1.137-.269 1.688-.493.55-.224 1.003-.551 1.083-1.057.079-.507-.165-1.194-.672-1.858-.507-.664-1.274-1.312-2.2-1.736-.926-.425-2.018-.629-3.217-.621z"/>
+                        </svg>
+                        Linux
+                    </button>
+                </div>
+
+                <!-- Windows Panel -->
+                <div class="install-panel active" role="tabpanel" id="install-windows" aria-labelledby="os-tab-windows">
+                    <div class="install-content">
+                        <h2>Installing on Windows</h2>
+
+                        <h3>System Requirements</h3>
+                        <ul>
+                            <li>Windows 10 or later (64-bit)</li>
+                            <li>200 MB free disk space</li>
+                            <li>No Java installation required (bundled with the installer)</li>
+                        </ul>
+
+                        <h3>Download & Install</h3>
+                        <ol>
+                            <li>Download <strong>SelfEmploy-x.x.x.msi</strong> from the <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases/latest">latest release</a></li>
+                            <li>Double-click the downloaded <code>.msi</code> file</li>
+                            <li>If Windows SmartScreen shows a warning, click <strong>"More info"</strong> then <strong>"Run anyway"</strong>
+                                <br><small>(The installer is not yet code-signed. This is safe for open-source software you downloaded from GitHub.)</small></li>
+                            <li>Follow the installation wizard</li>
+                            <li>Launch <strong>SelfEmploy</strong> from the Start Menu or desktop shortcut</li>
+                        </ol>
+
+                        <h3>One-Line Install (PowerShell)</h3>
+                        <pre><code>.\install.ps1 -Install</code></pre>
+                        <p>This downloads and installs the latest release automatically.</p>
+
+                        <h3>Uninstall</h3>
+                        <p>Open <strong>Settings &gt; Apps &gt; Installed apps</strong>, find "SelfEmploy", and click <strong>Uninstall</strong>.</p>
+
+                        <h3>Troubleshooting</h3>
+                        <details>
+                            <summary>SmartScreen blocks the installer</summary>
+                            <p>Click "More info" in the SmartScreen dialog, then click "Run anyway". This happens because the installer isn't code-signed yet. The software is open source and can be audited on GitHub.</p>
+                        </details>
+                        <details>
+                            <summary>Application won't start</summary>
+                            <p>Try running SelfEmploy from the Start Menu. If it doesn't appear, check that the installation completed successfully in Settings &gt; Apps. You can also try reinstalling.</p>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- macOS Panel -->
+                <div class="install-panel" role="tabpanel" id="install-macos" aria-labelledby="os-tab-macos">
+                    <div class="install-content">
+                        <h2>Installing on macOS</h2>
+
+                        <h3>System Requirements</h3>
+                        <ul>
+                            <li>macOS 12 (Monterey) or later</li>
+                            <li>Apple Silicon (M1/M2/M3) or Intel Mac</li>
+                            <li>200 MB free disk space</li>
+                            <li>No Java installation required (bundled with the installer)</li>
+                        </ul>
+
+                        <h3>Download & Install</h3>
+                        <ol>
+                            <li>Download <strong>SelfEmploy-x.x.x.dmg</strong> from the <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases/latest">latest release</a></li>
+                            <li>Double-click the downloaded <code>.dmg</code> file</li>
+                            <li>Drag <strong>SelfEmploy</strong> to the <strong>Applications</strong> folder</li>
+                            <li>Open <strong>SelfEmploy</strong> from Applications</li>
+                            <li>If macOS Gatekeeper shows a warning:
+                                <br>Right-click (or Control-click) the app, select <strong>"Open"</strong>, then click <strong>"Open"</strong> in the dialog
+                                <br><small>(You only need to do this the first time. The app is not yet notarized by Apple.)</small></li>
+                        </ol>
+
+                        <h3>One-Line Install (Terminal)</h3>
+                        <pre><code>./install.sh --install</code></pre>
+                        <p>This downloads and installs the latest release automatically.</p>
+
+                        <h3>Uninstall</h3>
+                        <p>Drag <strong>SelfEmploy</strong> from the Applications folder to the Trash.</p>
+
+                        <h3>Troubleshooting</h3>
+                        <details>
+                            <summary>Gatekeeper blocks the app</summary>
+                            <p>Right-click the app and select "Open" instead of double-clicking. In the dialog that appears, click "Open". You only need to do this once. This happens because the app is not yet notarized with Apple.</p>
+                        </details>
+                        <details>
+                            <summary>"SelfEmploy is damaged" error</summary>
+                            <p>This can occur if the download was incomplete. Delete the DMG, re-download it, and try again. If the issue persists, try: <code>xattr -cr /Applications/SelfEmploy.app</code></p>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- Linux Panel -->
+                <div class="install-panel" role="tabpanel" id="install-linux" aria-labelledby="os-tab-linux">
+                    <div class="install-content">
+                        <h2>Installing on Linux</h2>
+
+                        <h3>System Requirements</h3>
+                        <ul>
+                            <li>Ubuntu 22.04+ / Debian 12+ / Fedora 38+ / RHEL 9+</li>
+                            <li>x86_64 architecture</li>
+                            <li>200 MB free disk space</li>
+                            <li>No Java installation required (bundled with the installer)</li>
+                        </ul>
+
+                        <h3>Download & Install (Debian/Ubuntu)</h3>
+                        <ol>
+                            <li>Download <strong>SelfEmploy-x.x.x.deb</strong> from the <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases/latest">latest release</a></li>
+                            <li>Install with:
+                                <pre><code>sudo dpkg -i SelfEmploy-*.deb</code></pre>
+                            </li>
+                            <li>Launch from the application menu or run <code>SelfEmploy</code> from the terminal</li>
+                        </ol>
+
+                        <h3>Download & Install (Fedora/RHEL)</h3>
+                        <ol>
+                            <li>Download <strong>SelfEmploy-x.x.x.rpm</strong> from the <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases/latest">latest release</a></li>
+                            <li>Install with:
+                                <pre><code>sudo rpm -i SelfEmploy-*.rpm</code></pre>
+                            </li>
+                            <li>Launch from the application menu or run <code>SelfEmploy</code> from the terminal</li>
+                        </ol>
+
+                        <h3>One-Line Install (Terminal)</h3>
+                        <pre><code>./install.sh --install</code></pre>
+                        <p>This detects your package manager and downloads the appropriate installer automatically.</p>
+
+                        <h3>Uninstall</h3>
+                        <pre><code># Debian/Ubuntu
+sudo dpkg -r selfemploy
+
+# Fedora/RHEL
+sudo rpm -e selfemploy</code></pre>
+
+                        <h3>Troubleshooting</h3>
+                        <details>
+                            <summary>Missing dependencies</summary>
+                            <p>If <code>dpkg</code> reports missing dependencies, run: <code>sudo apt-get install -f</code></p>
+                        </details>
+                        <details>
+                            <summary>Application doesn't appear in menu</summary>
+                            <p>Log out and log back in, or run <code>SelfEmploy</code> directly from the terminal.</p>
+                        </details>
+                    </div>
+                </div>
+
+                <div class="install-cta">
+                    <a href="/#download" class="btn-primary">
+                        <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                            <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                        Download Now
+                    </a>
+                    <a href="https://github.com/olehsvyrydov/selfemploy-uk/issues"
+                       class="btn-secondary"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        Need Help? Open an Issue
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>
+                    Made with care in the UK
+                    <span class="separator">|</span>
+                    <a href="https://github.com/olehsvyrydov/selfemploy-uk/blob/main/LICENSE">Apache 2.0 License</a>
+                    <span class="separator">|</span>
+                    &copy; 2026 UK Self-Employment Manager Contributors
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js" defer></script>
+</body>
+</html>

@@ -23,7 +23,7 @@ const VIEWPORTS = {
   wideDesktop: { width: 1920, height: 1080 },
 };
 
-const GITHUB_REPO_URL = 'https://github.com/selfemploy-uk/self-employment';
+const GITHUB_REPO_URL = 'https://github.com/olehsvyrydov/selfemploy-uk';
 
 // ============================================================================
 // 1. PAGE STRUCTURE TESTS (AC-1) - TC-001 to TC-005
@@ -52,7 +52,7 @@ test.describe('1. Page Structure and Loading (AC-1)', () => {
     await expect(page.locator('.hero')).toBeVisible();
     await expect(page.locator('#features')).toBeVisible();
     await expect(page.locator('.how-it-works')).toBeVisible();
-    await expect(page.locator('.demo')).toBeVisible();
+    await expect(page.locator('#demo')).toBeVisible();
     await expect(page.locator('#download')).toBeVisible();
     await expect(page.locator('#faq')).toBeVisible();
     await expect(page.locator('.cta')).toBeVisible();
@@ -151,10 +151,10 @@ test.describe('2. Hero Section (AC-2)', () => {
 
     const heroCTA = page.locator('.hero-cta');
 
-    // Verify Download button
+    // Verify Download button (text may be "Download for Free" or "Download for [OS]" via JS)
     const downloadBtn = heroCTA.locator('.btn-primary');
     await expect(downloadBtn).toBeVisible();
-    await expect(downloadBtn).toContainText('Download for Free');
+    await expect(downloadBtn).toContainText('Download for');
 
     // Verify GitHub button
     const githubBtn = heroCTA.locator('.btn-secondary');
@@ -380,36 +380,98 @@ test.describe('4. Download Section (AC-4)', () => {
 // 5. DEMO SECTION TESTS (AC-5) - TC-030 to TC-031
 // ============================================================================
 
-test.describe('5. Demo Section (AC-5)', () => {
+test.describe('5. Demo / App Tour Section (AC-5)', () => {
 
-  test('TC-030: Demo section present [P0]', async ({ page }) => {
+  test('TC-030: Demo section present with app tour [P0]', async ({ page }) => {
     await page.goto('/');
 
     // Verify demo section exists
     const demoSection = page.locator('.demo');
     await expect(demoSection).toBeVisible();
 
-    // Verify hidden heading for accessibility
-    const hiddenHeading = page.locator('#demo-heading');
-    await expect(hiddenHeading).toBeAttached();
+    // Verify heading is visible (no longer visually-hidden)
+    const heading = page.locator('#demo-heading');
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveText('See It in Action');
+
+    // Verify app tour container exists
+    const appTour = page.locator('.demo-app-tour');
+    await expect(appTour).toBeVisible();
   });
 
-  test('TC-031: Demo screenshot image [P0]', async ({ page }) => {
+  test('TC-031: App tour has 5 tabs [P0]', async ({ page }) => {
     await page.goto('/');
 
-    // Verify screenshot image
-    const screenshot = page.locator('.demo-screenshot');
-    await expect(screenshot).toBeVisible();
+    // Verify 5 tab buttons
+    const tabs = page.locator('.demo-app-tab');
+    await expect(tabs).toHaveCount(5);
 
-    // Verify image src
-    await expect(screenshot).toHaveAttribute('src', 'images/app-dashboard.png');
+    // Verify tab labels
+    await expect(tabs.nth(0)).toContainText('Dashboard');
+    await expect(tabs.nth(1)).toContainText('Transactions');
+    await expect(tabs.nth(2)).toContainText('Import');
+    await expect(tabs.nth(3)).toContainText('Tax');
+    await expect(tabs.nth(4)).toContainText('Submit');
 
-    // Verify alt text describes dashboard
-    const altText = await screenshot.getAttribute('alt');
-    expect(altText).toContain('dashboard');
+    // Verify first tab is active
+    await expect(tabs.nth(0)).toHaveClass(/active/);
+    await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'true');
+  });
 
-    // Verify lazy loading
-    await expect(screenshot).toHaveAttribute('loading', 'lazy');
+  test('TC-031a: App tour tab switching [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    const tabs = page.locator('.demo-app-tab');
+    const panels = page.locator('.demo-app-panel');
+
+    // First panel should be visible
+    await expect(panels.nth(0)).toHaveClass(/active/);
+
+    // Click second tab
+    await tabs.nth(1).click();
+
+    // Second tab should be active, first should not
+    await expect(tabs.nth(1)).toHaveClass(/active/);
+    await expect(tabs.nth(0)).not.toHaveClass(/active/);
+    await expect(panels.nth(1)).toHaveClass(/active/);
+    await expect(panels.nth(0)).not.toHaveClass(/active/);
+  });
+
+  test('TC-031b: App tour keyboard navigation [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    // Focus on first tab
+    const firstTab = page.locator('#tab-dashboard');
+    await firstTab.focus();
+
+    // Press ArrowRight to move to next tab
+    await page.keyboard.press('ArrowRight');
+
+    // Second tab should be focused and active
+    const secondTab = page.locator('#tab-transactions');
+    await expect(secondTab).toBeFocused();
+    await expect(secondTab).toHaveClass(/active/);
+  });
+
+  test('TC-031c: App tour ARIA attributes [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    // Verify tablist role
+    const tabList = page.locator('.demo-app-tabs');
+    await expect(tabList).toHaveAttribute('role', 'tablist');
+
+    // Verify tab roles and aria attributes
+    const tabs = page.locator('.demo-app-tab');
+    for (let i = 0; i < 5; i++) {
+      await expect(tabs.nth(i)).toHaveAttribute('role', 'tab');
+      await expect(tabs.nth(i)).toHaveAttribute('aria-controls', /tour-/);
+    }
+
+    // Verify panel roles
+    const panels = page.locator('.demo-app-panel');
+    for (let i = 0; i < 5; i++) {
+      await expect(panels.nth(i)).toHaveAttribute('role', 'tabpanel');
+    }
   });
 });
 
@@ -709,6 +771,10 @@ test.describe('9. Navigation and Links', () => {
     const faqLink = page.locator('.nav-links a[href="#faq"]');
     await faqLink.click();
     await expect(page).toHaveURL(/#faq/);
+
+    // Verify Install Guide link exists
+    const installGuideLink = page.locator('.nav-links a[href="install-guide.html"]');
+    await expect(installGuideLink).toBeAttached();
   });
 
   test('TC-074: Legal page links in footer [P0]', async ({ page }) => {
@@ -835,7 +901,7 @@ test.describe('11. Accessibility', () => {
     // Verify H2 elements exist for each section
     const h2Elements = page.locator('main h2');
     const h2Count = await h2Elements.count();
-    expect(h2Count).toBeGreaterThanOrEqual(6); // At least 6 major sections
+    expect(h2Count).toBeGreaterThanOrEqual(6); // At least 6 major sections (features, how-it-works, demo, download, faq, cta)
 
     // Verify H3 elements exist (feature cards, FAQ, etc.)
     const h3Elements = page.locator('main h3');
@@ -883,6 +949,162 @@ test.describe('11. Accessibility', () => {
       if (alt && alt.length > 0) {
         expect(alt).not.toMatch(/\.(png|jpg|jpeg|svg|gif)$/i);
       }
+    }
+  });
+});
+
+// ============================================================================
+// 12. HOW IT WORKS SECTION TESTS - TC-090 to TC-092
+// ============================================================================
+
+test.describe('12. How It Works Section', () => {
+
+  test('TC-090: Four visual steps present [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    const heading = page.locator('#how-it-works-heading');
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveText('How It Works');
+
+    // Verify subtitle changed to "Four simple steps"
+    const subtitle = page.locator('.how-it-works .section-subtitle');
+    await expect(subtitle).toContainText('Four simple steps');
+
+    // Verify 4 step rows
+    const stepRows = page.locator('.step-visual-row');
+    await expect(stepRows).toHaveCount(4);
+  });
+
+  test('TC-091: Step mockup cards visible [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    // Each step should have a mockup card
+    const mockupCards = page.locator('.step-mockup-card');
+    await expect(mockupCards).toHaveCount(4);
+  });
+
+  test('TC-092: Alternating layout [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    // Steps 2 and 4 should have reversed layout
+    const reversedRows = page.locator('.step-visual-row-reverse');
+    await expect(reversedRows).toHaveCount(2);
+  });
+});
+
+// ============================================================================
+// 13. OS DETECTION & DOWNLOAD HIGHLIGHTING TESTS - TC-100 to TC-102
+// ============================================================================
+
+test.describe('13. OS Detection and Download Highlighting', () => {
+
+  test('TC-100: Download cards have data-os attributes [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    const windowsCard = page.locator('.download-card[data-os="windows"]');
+    await expect(windowsCard).toBeAttached();
+
+    const macCard = page.locator('.download-card[data-os="macos"]');
+    await expect(macCard).toBeAttached();
+
+    const linuxCard = page.locator('.download-card[data-os="linux"]');
+    await expect(linuxCard).toBeAttached();
+  });
+
+  test('TC-101: Recommended badge markup present [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    // All download cards should have a recommended badge element (hidden by default)
+    const badges = page.locator('.download-card .recommended-badge');
+    await expect(badges).toHaveCount(3);
+  });
+
+  test('TC-102: Hero download button has ID for JS targeting [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    const heroBtn = page.locator('#hero-download-btn');
+    await expect(heroBtn).toBeVisible();
+    await expect(heroBtn).toContainText('Download for');
+  });
+});
+
+// ============================================================================
+// 14. INSTALL GUIDE PAGE TESTS - TC-110 to TC-113
+// ============================================================================
+
+test.describe('14. Install Guide Page', () => {
+
+  test('TC-110: Install guide page loads [P0]', async ({ page }) => {
+    const response = await page.goto('/install-guide.html');
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveTitle('Installation Guide - UK Self-Employment Manager');
+  });
+
+  test('TC-111: Install guide has per-OS sections [P0]', async ({ page }) => {
+    await page.goto('/install-guide.html');
+
+    // Verify 3 OS tabs
+    const tabs = page.locator('.install-tab');
+    await expect(tabs).toHaveCount(3);
+
+    // Verify 3 panels
+    const panels = page.locator('.install-panel');
+    await expect(panels).toHaveCount(3);
+
+    // Verify one panel is active
+    const activePanels = page.locator('.install-panel.active');
+    await expect(activePanels).toHaveCount(1);
+  });
+
+  test('TC-112: Install guide tab switching [P0]', async ({ page }) => {
+    await page.goto('/install-guide.html');
+
+    const tabs = page.locator('.install-tab');
+
+    // Click macOS tab
+    await tabs.nth(1).click();
+
+    // macOS panel should be visible
+    const macPanel = page.locator('#install-macos');
+    await expect(macPanel).toHaveClass(/active/);
+
+    // macOS tab should be active
+    await expect(tabs.nth(1)).toHaveClass(/active/);
+  });
+
+  test('TC-113: Install guide nav link present on main page [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    const installLink = page.locator('.nav-links a[href="install-guide.html"]');
+    await expect(installLink).toBeAttached();
+  });
+});
+
+// ============================================================================
+// 15. DYNAMIC DOWNLOADS TESTS - TC-120 to TC-121
+// ============================================================================
+
+test.describe('15. Dynamic Downloads', () => {
+
+  test('TC-120: Version tag and date elements have IDs [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    const versionTag = page.locator('#download-version');
+    await expect(versionTag).toBeAttached();
+
+    const dateEl = page.locator('#download-date');
+    await expect(dateEl).toBeAttached();
+  });
+
+  test('TC-121: Download links point to correct repo [P0]', async ({ page }) => {
+    await page.goto('/');
+
+    const downloadCards = page.locator('.download-card[data-os]');
+    const count = await downloadCards.count();
+
+    for (let i = 0; i < count; i++) {
+      const href = await downloadCards.nth(i).getAttribute('href');
+      expect(href).toContain('olehsvyrydov/selfemploy-uk');
     }
   });
 });

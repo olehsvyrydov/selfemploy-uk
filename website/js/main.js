@@ -232,6 +232,274 @@
         });
     }
 
+    // ===== App Tour Tab Navigation =====
+    function initAppTour() {
+        var tabList = document.querySelector('.demo-app-tabs');
+        if (!tabList) return;
+
+        var tabs = tabList.querySelectorAll('.demo-app-tab');
+        var panels = document.querySelectorAll('.demo-app-panel');
+        var autoAdvanceTimer = null;
+        var AUTO_ADVANCE_DELAY = 5000;
+
+        // Check reduced motion preference
+        var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function switchTab(newTab) {
+            // Deactivate all tabs and panels
+            tabs.forEach(function(t) {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+                t.setAttribute('tabindex', '-1');
+            });
+            panels.forEach(function(p) {
+                p.classList.remove('active');
+            });
+
+            // Activate new tab
+            newTab.classList.add('active');
+            newTab.setAttribute('aria-selected', 'true');
+            newTab.setAttribute('tabindex', '0');
+
+            // Show corresponding panel
+            var panelId = newTab.getAttribute('aria-controls');
+            var panel = document.getElementById(panelId);
+            if (panel) panel.classList.add('active');
+        }
+
+        // Click handler
+        tabs.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                switchTab(tab);
+                stopAutoAdvance();
+            });
+        });
+
+        // Keyboard navigation (Arrow keys, Home, End)
+        tabList.addEventListener('keydown', function(e) {
+            var currentIndex = Array.from(tabs).indexOf(document.activeElement);
+            var newIndex;
+
+            if (e.key === 'ArrowRight') {
+                newIndex = (currentIndex + 1) % tabs.length;
+            } else if (e.key === 'ArrowLeft') {
+                newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+            } else if (e.key === 'Home') {
+                newIndex = 0;
+            } else if (e.key === 'End') {
+                newIndex = tabs.length - 1;
+            } else {
+                return;
+            }
+
+            e.preventDefault();
+            switchTab(tabs[newIndex]);
+            tabs[newIndex].focus();
+            stopAutoAdvance();
+        });
+
+        // Auto-advance (respects reduced motion)
+        function startAutoAdvance() {
+            if (prefersReducedMotion) return;
+            autoAdvanceTimer = setInterval(function() {
+                var currentIndex = Array.from(tabs).findIndex(function(t) {
+                    return t.classList.contains('active');
+                });
+                var nextIndex = (currentIndex + 1) % tabs.length;
+                switchTab(tabs[nextIndex]);
+            }, AUTO_ADVANCE_DELAY);
+        }
+
+        function stopAutoAdvance() {
+            if (autoAdvanceTimer) {
+                clearInterval(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+        }
+
+        startAutoAdvance();
+    }
+
+    // ===== OS Detection & Smart Download Highlighting (SE-1604) =====
+    function detectOS() {
+        // Try modern API first (Chromium browsers)
+        if (navigator.userAgentData && navigator.userAgentData.platform) {
+            var platform = navigator.userAgentData.platform.toLowerCase();
+            if (platform.includes('windows')) return 'windows';
+            if (platform.includes('macos') || platform.includes('mac')) return 'macos';
+            if (platform.includes('linux')) return 'linux';
+        }
+
+        // Fallback to navigator.platform + userAgent
+        var platform = (navigator.platform || '').toLowerCase();
+        var ua = (navigator.userAgent || '').toLowerCase();
+
+        if (platform.includes('win') || ua.includes('windows')) return 'windows';
+        if (platform.includes('mac') || ua.includes('macintosh') || ua.includes('mac os')) return 'macos';
+        if (platform.includes('linux') || ua.includes('linux')) return 'linux';
+
+        return 'unknown';
+    }
+
+    function initSmartDownload() {
+        var os = detectOS();
+        if (os === 'unknown') return;
+
+        var downloadCards = document.querySelectorAll('.download-card[data-os]');
+        downloadCards.forEach(function(card) {
+            if (card.getAttribute('data-os') === os) {
+                card.classList.add('recommended');
+            }
+        });
+
+        // Update hero CTA button text
+        var heroBtn = document.getElementById('hero-download-btn');
+        if (heroBtn) {
+            var osNames = { windows: 'Windows', macos: 'macOS', linux: 'Linux' };
+            var osName = osNames[os];
+            if (osName) {
+                heroBtn.childNodes.forEach(function(node) {
+                    if (node.nodeType === 3 && node.textContent.trim()) {
+                        node.textContent = '\n                            Download for ' + osName + '\n                        ';
+                    }
+                });
+            }
+        }
+
+        // Update install guide tabs if on install page
+        var installTabs = document.querySelectorAll('.install-tab[data-os]');
+        installTabs.forEach(function(tab) {
+            if (tab.getAttribute('data-os') === os) {
+                // Activate this tab
+                document.querySelectorAll('.install-tab').forEach(function(t) {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                    t.setAttribute('tabindex', '-1');
+                });
+                document.querySelectorAll('.install-panel').forEach(function(p) {
+                    p.classList.remove('active');
+                });
+
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+                tab.setAttribute('tabindex', '0');
+
+                var panelId = tab.getAttribute('aria-controls');
+                var panel = document.getElementById(panelId);
+                if (panel) panel.classList.add('active');
+            }
+        });
+    }
+
+    // ===== Dynamic Download Links from GitHub Releases API (SE-1605) =====
+    function initDynamicDownloads() {
+        var GITHUB_API = 'https://api.github.com/repos/olehsvyrydov/selfemploy-uk/releases/latest';
+
+        fetch(GITHUB_API)
+            .then(function(response) {
+                if (!response.ok) throw new Error('API request failed');
+                return response.json();
+            })
+            .then(function(release) {
+                var version = release.tag_name;
+                var assets = release.assets || [];
+
+                // Update download card links
+                var assetMap = {};
+                assets.forEach(function(asset) {
+                    var name = asset.name.toLowerCase();
+                    if (name.endsWith('.msi')) assetMap.windows = asset.browser_download_url;
+                    if (name.endsWith('.dmg')) assetMap.macos = asset.browser_download_url;
+                    if (name.endsWith('.deb')) assetMap.linux = asset.browser_download_url;
+                });
+
+                var downloadCards = document.querySelectorAll('.download-card[data-os]');
+                downloadCards.forEach(function(card) {
+                    var os = card.getAttribute('data-os');
+                    if (assetMap[os]) {
+                        card.setAttribute('href', assetMap[os]);
+                    }
+                });
+
+                // Update version tag
+                var versionTag = document.getElementById('download-version');
+                if (versionTag && version) {
+                    versionTag.textContent = version;
+                }
+
+                // Update release date
+                var dateEl = document.getElementById('download-date');
+                if (dateEl && release.published_at) {
+                    var date = new Date(release.published_at);
+                    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                                  'July', 'August', 'September', 'October', 'November', 'December'];
+                    dateEl.textContent = 'Released ' + months[date.getMonth()] + ' ' + date.getFullYear();
+                }
+
+                // Update JSON-LD structured data
+                var ldScript = document.querySelector('script[type="application/ld+json"]');
+                if (ldScript) {
+                    try {
+                        var ld = JSON.parse(ldScript.textContent);
+                        if (version) ld.softwareVersion = version.replace(/^v/, '');
+                        if (release.html_url) ld.downloadUrl = release.html_url;
+                        ldScript.textContent = JSON.stringify(ld, null, 8);
+                    } catch (e) {
+                        // Ignore JSON parse errors
+                    }
+                }
+            })
+            .catch(function() {
+                // On failure (rate limit, no releases, network error), keep static fallback links
+            });
+    }
+
+    // ===== Install Guide Tab Navigation =====
+    function initInstallTabs() {
+        var tabList = document.querySelector('.install-tabs');
+        if (!tabList) return;
+
+        var tabs = tabList.querySelectorAll('.install-tab');
+        var panels = document.querySelectorAll('.install-panel');
+
+        tabs.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                tabs.forEach(function(t) {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                    t.setAttribute('tabindex', '-1');
+                });
+                panels.forEach(function(p) { p.classList.remove('active'); });
+
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+                tab.setAttribute('tabindex', '0');
+
+                var panelId = tab.getAttribute('aria-controls');
+                var panel = document.getElementById(panelId);
+                if (panel) panel.classList.add('active');
+            });
+        });
+
+        // Keyboard navigation
+        tabList.addEventListener('keydown', function(e) {
+            var currentIndex = Array.from(tabs).indexOf(document.activeElement);
+            var newIndex;
+
+            if (e.key === 'ArrowRight') {
+                newIndex = (currentIndex + 1) % tabs.length;
+            } else if (e.key === 'ArrowLeft') {
+                newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+            } else {
+                return;
+            }
+
+            e.preventDefault();
+            tabs[newIndex].click();
+            tabs[newIndex].focus();
+        });
+    }
+
     // ===== Initialize All Features =====
     function init() {
         initMobileNav();
@@ -241,6 +509,10 @@
         initDownloadTracking();
         initExternalLinks();
         initScrollAnimations();
+        initAppTour();
+        initSmartDownload();
+        initDynamicDownloads();
+        initInstallTabs();
 
         // Log initialization in development
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {

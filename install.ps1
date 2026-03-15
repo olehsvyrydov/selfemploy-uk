@@ -6,6 +6,7 @@
 #   .\install.ps1              Build and run the application
 #   .\install.ps1 -Build       Build only (no run)
 #   .\install.ps1 -Package     Build and create native installer (.msi/.exe)
+#   .\install.ps1 -Install     Download and install latest release (no Java/Maven needed)
 #   .\install.ps1 -Check       Check prerequisites only
 #   .\install.ps1 -Help        Show help message
 #
@@ -17,6 +18,7 @@
 param(
     [switch]$Build,
     [switch]$Package,
+    [switch]$Install,
     [switch]$Check,
     [switch]$Help
 )
@@ -27,6 +29,8 @@ $RequiredJavaVersion = 21
 $RequiredMavenMajor = 3
 $RequiredMavenMinor = 6
 $AppName = "UK Self-Employment Manager"
+$GitHubRepo = "olehsvyrydov/selfemploy-uk"
+$GitHubApi = "https://api.github.com/repos/$GitHubRepo/releases/latest"
 
 # --- Helper Functions ---------------------------------------------------------
 
@@ -43,12 +47,16 @@ Usage:
   .\install.ps1              Build and run the application
   .\install.ps1 -Build       Build only (no run)
   .\install.ps1 -Package     Build and create native installer (.msi/.exe)
+  .\install.ps1 -Install     Download and install latest release (no Java/Maven needed)
   .\install.ps1 -Check       Check prerequisites only
   .\install.ps1 -Help        Show this help message
 
-Prerequisites:
-  - Java $RequiredJavaVersion or later (JDK, not JRE)
-  - Maven 3.6 or later
+Developer mode (default):
+  Requires Java $RequiredJavaVersion+ and Maven $RequiredMavenMajor.$RequiredMavenMinor+. Builds from source.
+
+Install mode (-Install):
+  Downloads the pre-built .msi installer from GitHub Releases.
+  No Java or Maven required.
 
 Note: If you get a script execution error, run:
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -252,6 +260,83 @@ function Initialize-Env {
     }
 }
 
+# --- Install from Release -----------------------------------------------------
+
+function Install-Release {
+    Write-Info "Downloading latest release from GitHub..."
+
+    try {
+        $release = Invoke-RestMethod -Uri $GitHubApi -ErrorAction Stop
+    }
+    catch {
+        Write-Err "Could not fetch latest release. Check your internet connection."
+        Write-Err "URL: $GitHubApi"
+        exit 1
+    }
+
+    $version = $release.tag_name -replace '^v', ''
+    if (-not $version) {
+        Write-Err "Could not determine latest version."
+        exit 1
+    }
+
+    Write-Info "Latest version: $version"
+
+    # Find the .msi asset
+    $msiAsset = $release.assets | Where-Object { $_.name -like '*.msi' } | Select-Object -First 1
+
+    if (-not $msiAsset) {
+        Write-Err "No .msi installer found in the latest release."
+        Write-Err "Please download manually from: https://github.com/$GitHubRepo/releases/latest"
+        exit 1
+    }
+
+    $downloadUrl = $msiAsset.browser_download_url
+    $fileName = "SelfEmploy-$version.msi"
+    $tempDir = Join-Path $env:TEMP "selfemploy-install"
+    $filePath = Join-Path $tempDir $fileName
+
+    # Create temp directory
+    if (-not (Test-Path $tempDir)) {
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    }
+
+    Write-Info "Downloading $fileName..."
+
+    try {
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $filePath -UseBasicParsing
+    }
+    catch {
+        Write-Err "Download failed: $_"
+        exit 1
+    }
+
+    if (-not (Test-Path $filePath)) {
+        Write-Err "Download failed - file not found."
+        exit 1
+    }
+
+    Write-Success "Downloaded: $fileName"
+
+    Write-Info "Installing..."
+
+    try {
+        Start-Process msiexec.exe -ArgumentList "/i", "`"$filePath`"", "/passive", "/norestart" -Wait
+    }
+    catch {
+        Write-Err "Installation failed: $_"
+        Write-Err "Try running the .msi manually: $filePath"
+        exit 1
+    }
+
+    # Cleanup
+    Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+
+    Write-Host ""
+    Write-Success "$AppName $version installed successfully!"
+    Write-Info "Launch SelfEmploy from the Start Menu or desktop shortcut."
+}
+
 # --- Main ---------------------------------------------------------------------
 
 if ($Help) {
@@ -262,6 +347,11 @@ if ($Help) {
 if ($Check) {
     $result = Test-Prerequisites
     if ($result) { exit 0 } else { exit 1 }
+}
+
+if ($Install) {
+    Install-Release
+    exit 0
 }
 
 # Check prerequisites first

@@ -2,52 +2,47 @@
 
 This guide will help you install and run the UK Self-Employment Manager.
 
-## Prerequisites
-
-- **Java 21** or later (OpenJDK recommended)
-- **Maven 3.9+** (for building from source)
-- **Git** (for cloning the repository)
-
-### Check Your Java Version
-
-```bash
-java -version
-```
-
-Expected output:
-```
-openjdk version "21.0.1" 2023-10-17
-```
-
-If you don't have Java 21, download it from:
-- [Adoptium](https://adoptium.net/) (recommended)
-- [Oracle JDK](https://www.oracle.com/java/technologies/downloads/)
-
----
-
 ## Installation Options
 
-### Option 1: Download Release (Recommended)
+### Option 1: Download Installer (Recommended)
 
-Download the latest installer for your platform from [GitHub Releases](https://github.com/olehsvyrydov/selfemploy-uk/releases):
+Download the latest installer for your platform from [GitHub Releases](https://github.com/olehsvyrydov/selfemploy-uk/releases/latest). **No Java installation required** — the JVM is bundled with the installer.
 
-| Platform | File |
-|----------|------|
-| Windows | `selfemploy-uk-x.x.x.msi` |
-| macOS | `selfemploy-uk-x.x.x.dmg` |
-| Linux | `selfemploy-uk-x.x.x.deb` or `.rpm` |
+| Platform | File | Install |
+|----------|------|---------|
+| Windows | `SelfEmploy-x.x.x.msi` | Double-click to install |
+| macOS | `SelfEmploy-x.x.x.dmg` | Drag to Applications |
+| Linux (Debian/Ubuntu) | `SelfEmploy-x.x.x.deb` | `sudo dpkg -i SelfEmploy-*.deb` |
+| Linux (Fedora/RHEL) | `SelfEmploy-x.x.x.rpm` | `sudo rpm -i SelfEmploy-*.rpm` |
 
-### Option 2: Build from Source
+#### One-Line Install
+
+```bash
+# Linux / macOS
+./install.sh --install
+
+# Windows (PowerShell)
+.\install.ps1 -Install
+```
+
+### Option 2: Build from Source (Developers)
+
+**Prerequisites:**
+- **Java 21** or later (JDK, not JRE) — [Adoptium](https://adoptium.net/) recommended
+- **Maven 3.6+** (for building from source)
+- **Git** (for cloning the repository)
 
 ```bash
 # Clone the repository
 git clone https://github.com/olehsvyrydov/selfemploy-uk.git
 cd selfemploy-uk
 
-# Build the project
-mvn clean install
+# Build and run
+./install.sh              # Linux/macOS
+.\install.ps1             # Windows
 
-# Run the application
+# Or manually:
+mvn clean install
 mvn -pl app javafx:run
 ```
 

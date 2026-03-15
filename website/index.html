@@ -65,8 +65,8 @@
             "name": "UK Self-Employment Manager Contributors"
         },
         "license": "https://opensource.org/licenses/Apache-2.0",
-        "softwareVersion": "1.0.0",
-        "downloadUrl": "https://github.com/selfemploy-uk/self-employment/releases",
+        "softwareVersion": "0.1.0",
+        "downloadUrl": "https://github.com/olehsvyrydov/selfemploy-uk/releases/latest",
         "featureList": [
             "Track income and expenses",
             "Automatic tax calculations",
@@ -92,8 +92,9 @@
             <div class="nav-links" id="nav-links">
                 <a href="#features">Features</a>
                 <a href="#download">Download</a>
+                <a href="install-guide.html">Install Guide</a>
                 <a href="#faq">FAQ</a>
-                <a href="https://github.com/selfemploy-uk/self-employment"
+                <a href="https://github.com/olehsvyrydov/selfemploy-uk"
                    class="nav-github"
                    target="_blank"
                    rel="noopener noreferrer">
@@ -127,13 +128,13 @@
                         Track income, calculate tax, and submit to HMRC - all from your desktop.
                     </p>
                     <div class="hero-cta">
-                        <a href="#download" class="btn-primary">
+                        <a href="#download" class="btn-primary" id="hero-download-btn">
                             <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                                 <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
                             </svg>
                             Download for Free
                         </a>
-                        <a href="https://github.com/selfemploy-uk/self-employment"
+                        <a href="https://github.com/olehsvyrydov/selfemploy-uk"
                            class="btn-secondary"
                            target="_blank"
                            rel="noopener noreferrer">
@@ -216,48 +217,448 @@
         <section class="how-it-works" aria-labelledby="how-it-works-heading">
             <div class="container">
                 <h2 id="how-it-works-heading">How It Works</h2>
-                <p class="section-subtitle">Three simple steps to manage your self-employment taxes.</p>
+                <p class="section-subtitle">Four simple steps to manage your self-employment taxes.</p>
 
-                <div class="steps">
-                    <article class="step">
-                        <div class="step-number" aria-hidden="true">1</div>
-                        <h3>Track Income & Expenses</h3>
-                        <p>Log your business income and expenses throughout the year. Import from bank statements or enter manually.</p>
-                    </article>
+                <div class="steps-visual">
+                    <!-- Step 1: Text left, Visual right -->
+                    <div class="step-visual-row">
+                        <div class="step-visual-text">
+                            <div class="step-number" aria-hidden="true">1</div>
+                            <h3>Track Income & Expenses</h3>
+                            <p>Log your business income and expenses throughout the year. Categorise transactions with HMRC-aligned categories for accurate Self Assessment filing.</p>
+                        </div>
+                        <div class="step-visual-mockup">
+                            <!-- Mini transaction list mockup -->
+                            <div class="step-mockup-card">
+                                <div class="step-mockup-header">Transactions</div>
+                                <div class="step-mockup-row">
+                                    <span class="step-mockup-desc">Invoice #1247 - Web Design</span>
+                                    <span class="step-mockup-amount step-mockup-income">+£2,400</span>
+                                </div>
+                                <div class="step-mockup-row">
+                                    <span class="step-mockup-desc">Adobe Creative Cloud</span>
+                                    <span class="step-mockup-amount step-mockup-expense">-£54.99</span>
+                                </div>
+                                <div class="step-mockup-row">
+                                    <span class="step-mockup-desc">Train to Client Meeting</span>
+                                    <span class="step-mockup-amount step-mockup-expense">-£87.50</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="step-connector" aria-hidden="true"></div>
+                    <!-- Step 2: Visual left, Text right (alternating) -->
+                    <div class="step-visual-row step-visual-row-reverse">
+                        <div class="step-visual-text">
+                            <div class="step-number" aria-hidden="true">2</div>
+                            <h3>Import Bank Statements</h3>
+                            <p>Save time by importing bank statements in CSV, OFX, or QIF format. Transactions are automatically matched and categorised.</p>
+                        </div>
+                        <div class="step-visual-mockup">
+                            <!-- Mini import mockup -->
+                            <div class="step-mockup-card">
+                                <div class="step-mockup-header">Import</div>
+                                <div class="step-mockup-upload">
+                                    <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+                                        <path fill="#0066CC" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                                    </svg>
+                                    <span>Drop CSV file here</span>
+                                </div>
+                                <div class="step-mockup-formats">CSV, OFX, QIF supported</div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <article class="step">
-                        <div class="step-number" aria-hidden="true">2</div>
-                        <h3>Calculate Tax Automatically</h3>
-                        <p>Real-time tax calculations including Income Tax, National Insurance Class 2 and Class 4 contributions.</p>
-                    </article>
+                    <!-- Step 3: Text left, Visual right -->
+                    <div class="step-visual-row">
+                        <div class="step-visual-text">
+                            <div class="step-number" aria-hidden="true">3</div>
+                            <h3>See Your Tax Calculated</h3>
+                            <p>Real-time tax calculations including Income Tax, National Insurance Class 2 and Class 4 contributions. Always know what you owe.</p>
+                        </div>
+                        <div class="step-visual-mockup">
+                            <!-- Mini tax summary mockup -->
+                            <div class="step-mockup-card">
+                                <div class="step-mockup-header">Tax Summary</div>
+                                <div class="step-mockup-tax-row">
+                                    <span>Income Tax</span>
+                                    <span>£4,768.00</span>
+                                </div>
+                                <div class="step-mockup-tax-row">
+                                    <span>NI Class 2</span>
+                                    <span>£179.40</span>
+                                </div>
+                                <div class="step-mockup-tax-row">
+                                    <span>NI Class 4</span>
+                                    <span>£1,430.40</span>
+                                </div>
+                                <div class="step-mockup-tax-total">
+                                    <span>Total Due</span>
+                                    <span>£6,377.80</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="step-connector" aria-hidden="true"></div>
-
-                    <article class="step">
-                        <div class="step-number" aria-hidden="true">3</div>
-                        <h3>Submit to HMRC</h3>
-                        <p>When you're ready, submit your Self Assessment return directly to HMRC with a single click.</p>
-                    </article>
+                    <!-- Step 4: Visual left, Text right (alternating) -->
+                    <div class="step-visual-row step-visual-row-reverse">
+                        <div class="step-visual-text">
+                            <div class="step-number" aria-hidden="true">4</div>
+                            <h3>Submit to HMRC</h3>
+                            <p>When you're ready, submit your Self Assessment return directly to HMRC through the official Making Tax Digital API with a single click.</p>
+                        </div>
+                        <div class="step-visual-mockup">
+                            <!-- Mini submission mockup -->
+                            <div class="step-mockup-card">
+                                <div class="step-mockup-header">Submit</div>
+                                <div class="step-mockup-checklist">
+                                    <div class="step-mockup-check"><span class="step-mockup-check-icon">&#10003;</span> Income verified</div>
+                                    <div class="step-mockup-check"><span class="step-mockup-check-icon">&#10003;</span> Expenses categorised</div>
+                                    <div class="step-mockup-check"><span class="step-mockup-check-icon">&#10003;</span> Tax calculated</div>
+                                </div>
+                                <div class="step-mockup-submit-btn">Submit to HMRC</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Screenshot/Demo Section -->
-        <section class="demo" aria-labelledby="demo-heading">
+        <!-- App Tour / Demo Section -->
+        <section class="demo" id="demo" aria-labelledby="demo-heading">
             <div class="container">
-                <h2 id="demo-heading" class="visually-hidden">Application Preview</h2>
-                <div class="demo-container">
-                    <div class="demo-screenshot-wrapper">
-                        <img src="images/app-dashboard.png"
-                             alt="UK Self-Employment Manager showing the main dashboard with income summary, expense breakdown, and tax calculations"
-                             class="demo-screenshot"
-                             width="1000"
-                             height="600"
-                             loading="lazy">
+                <h2 id="demo-heading">See It in Action</h2>
+                <p class="section-subtitle">Explore the app's key features with our interactive walkthrough.</p>
+
+                <div class="demo-app-tour">
+                    <!-- Tab Navigation -->
+                    <div class="demo-app-tabs" role="tablist" aria-label="App feature tour">
+                        <button class="demo-app-tab active" role="tab" aria-selected="true" aria-controls="tour-dashboard" id="tab-dashboard" tabindex="0">
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                            Dashboard
+                        </button>
+                        <button class="demo-app-tab" role="tab" aria-selected="false" aria-controls="tour-transactions" id="tab-transactions" tabindex="-1">
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zm0-10v2h14V7H7z"/></svg>
+                            Transactions
+                        </button>
+                        <button class="demo-app-tab" role="tab" aria-selected="false" aria-controls="tour-import" id="tab-import" tabindex="-1">
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                            Import
+                        </button>
+                        <button class="demo-app-tab" role="tab" aria-selected="false" aria-controls="tour-tax" id="tab-tax" tabindex="-1">
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 14h-2v-4H9V9h2V5h2v4h2v4h-2v4z"/></svg>
+                            Tax
+                        </button>
+                        <button class="demo-app-tab" role="tab" aria-selected="false" aria-controls="tour-submit" id="tab-submit" tabindex="-1">
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                            Submit
+                        </button>
+                    </div>
+
+                    <!-- Tab Panels -->
+                    <div class="demo-app-panels">
+                        <!-- Panel 1: Dashboard -->
+                        <div class="demo-app-panel active" role="tabpanel" id="tour-dashboard" aria-labelledby="tab-dashboard">
+                            <div class="demo-app-header">
+                                <span class="demo-app-header-title">UK Self-Employment Manager</span>
+                                <span class="demo-app-header-badge">Tax Year 2024/25</span>
+                            </div>
+                            <div class="demo-app-content">
+                                <div class="demo-app-card-row">
+                                    <div class="demo-app-card demo-app-card--green">
+                                        <span class="demo-app-card-label">Total Income</span>
+                                        <span class="demo-app-card-value">&pound;48,750.00</span>
+                                    </div>
+                                    <div class="demo-app-card demo-app-card--red">
+                                        <span class="demo-app-card-label">Total Expenses</span>
+                                        <span class="demo-app-card-value">&pound;12,340.00</span>
+                                    </div>
+                                    <div class="demo-app-card demo-app-card--blue">
+                                        <span class="demo-app-card-label">Net Profit</span>
+                                        <span class="demo-app-card-value">&pound;36,410.00</span>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Tax Breakdown</h4>
+                                    <div class="demo-app-breakdown">
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Income Tax</span>
+                                            <span>&pound;4,768.00</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>NI Class 2</span>
+                                            <span>&pound;179.40</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>NI Class 4</span>
+                                            <span>&pound;1,430.40</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row demo-app-breakdown-total">
+                                            <span>Total Tax Due</span>
+                                            <span>&pound;6,377.80</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="demo-app-status-bar">
+                                    <span class="demo-app-status-text demo-app-status--ready">Ready to Submit to HMRC</span>
+                                    <button class="demo-app-btn demo-app-btn--primary" tabindex="-1" aria-hidden="true">Submit</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel 2: Transactions -->
+                        <div class="demo-app-panel" role="tabpanel" id="tour-transactions" aria-labelledby="tab-transactions">
+                            <div class="demo-app-header">
+                                <span class="demo-app-header-title">Transactions</span>
+                                <div class="demo-app-header-actions">
+                                    <button class="demo-app-btn demo-app-btn--outline" tabindex="-1" aria-hidden="true">Filter</button>
+                                    <button class="demo-app-btn demo-app-btn--primary" tabindex="-1" aria-hidden="true">+ Add Transaction</button>
+                                </div>
+                            </div>
+                            <div class="demo-app-content">
+                                <table class="demo-app-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th>Category</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>15 Mar 2025</td>
+                                            <td>Web Development - ClientCo</td>
+                                            <td><span class="demo-app-badge demo-app-badge--green">Income</span></td>
+                                            <td class="demo-app-amount demo-app-amount--positive">+&pound;3,200.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>12 Mar 2025</td>
+                                            <td>Adobe Creative Cloud</td>
+                                            <td><span class="demo-app-badge demo-app-badge--blue">Software</span></td>
+                                            <td class="demo-app-amount demo-app-amount--negative">-&pound;54.99</td>
+                                        </tr>
+                                        <tr>
+                                            <td>10 Mar 2025</td>
+                                            <td>Consulting - StartupXYZ</td>
+                                            <td><span class="demo-app-badge demo-app-badge--green">Income</span></td>
+                                            <td class="demo-app-amount demo-app-amount--positive">+&pound;1,050.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>08 Mar 2025</td>
+                                            <td>Train to London (client meeting)</td>
+                                            <td><span class="demo-app-badge demo-app-badge--orange">Travel</span></td>
+                                            <td class="demo-app-amount demo-app-amount--negative">-&pound;87.50</td>
+                                        </tr>
+                                        <tr>
+                                            <td>05 Mar 2025</td>
+                                            <td>Office supplies - Staples</td>
+                                            <td><span class="demo-app-badge demo-app-badge--purple">Office</span></td>
+                                            <td class="demo-app-amount demo-app-amount--negative">-&pound;175.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="demo-app-table-footer">
+                                    <span class="demo-app-amount--positive">This Month Income: +&pound;4,250.00</span>
+                                    <span class="demo-app-amount--negative">This Month Expenses: -&pound;317.49</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel 3: Import -->
+                        <div class="demo-app-panel" role="tabpanel" id="tour-import" aria-labelledby="tab-import">
+                            <div class="demo-app-header">
+                                <span class="demo-app-header-title">Import Bank Statement</span>
+                            </div>
+                            <div class="demo-app-content">
+                                <div class="demo-app-upload-zone">
+                                    <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><path fill="#6c757d" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                                    <p class="demo-app-upload-title">Drag &amp; drop your bank statement here</p>
+                                    <p class="demo-app-upload-subtitle">or click to browse files</p>
+                                    <div class="demo-app-upload-formats">
+                                        <span class="demo-app-badge demo-app-badge--light">CSV</span>
+                                        <span class="demo-app-badge demo-app-badge--light">OFX</span>
+                                        <span class="demo-app-badge demo-app-badge--light">QIF</span>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Recent Imports</h4>
+                                    <div class="demo-app-import-list">
+                                        <div class="demo-app-import-item">
+                                            <div>
+                                                <strong>Barclays Current Account</strong>
+                                                <span class="demo-app-text-muted">12 Mar 2025 &middot; 47 transactions</span>
+                                            </div>
+                                            <span class="demo-app-badge demo-app-badge--green">Imported</span>
+                                        </div>
+                                        <div class="demo-app-import-item">
+                                            <div>
+                                                <strong>Starling Business</strong>
+                                                <span class="demo-app-text-muted">28 Feb 2025 &middot; 31 transactions</span>
+                                            </div>
+                                            <span class="demo-app-badge demo-app-badge--green">Imported</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Column Mapping Preview</h4>
+                                    <div class="demo-app-mapping">
+                                        <div class="demo-app-mapping-row">
+                                            <span class="demo-app-mapping-from">Column A: "Date"</span>
+                                            <span class="demo-app-mapping-arrow" aria-hidden="true">&rarr;</span>
+                                            <span class="demo-app-mapping-to">Transaction Date</span>
+                                        </div>
+                                        <div class="demo-app-mapping-row">
+                                            <span class="demo-app-mapping-from">Column B: "Description"</span>
+                                            <span class="demo-app-mapping-arrow" aria-hidden="true">&rarr;</span>
+                                            <span class="demo-app-mapping-to">Description</span>
+                                        </div>
+                                        <div class="demo-app-mapping-row">
+                                            <span class="demo-app-mapping-from">Column D: "Amount"</span>
+                                            <span class="demo-app-mapping-arrow" aria-hidden="true">&rarr;</span>
+                                            <span class="demo-app-mapping-to">Amount</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel 4: Tax Calculation -->
+                        <div class="demo-app-panel" role="tabpanel" id="tour-tax" aria-labelledby="tab-tax">
+                            <div class="demo-app-header">
+                                <span class="demo-app-header-title">Tax Calculation 2024/25</span>
+                            </div>
+                            <div class="demo-app-content">
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Income Summary</h4>
+                                    <div class="demo-app-breakdown">
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Gross Income</span>
+                                            <span>&pound;48,750.00</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Allowable Expenses</span>
+                                            <span>-&pound;12,340.00</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row demo-app-breakdown-total">
+                                            <span>Taxable Profit</span>
+                                            <span>&pound;36,410.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Income Tax</h4>
+                                    <div class="demo-app-breakdown">
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Personal Allowance</span>
+                                            <span>&pound;12,570.00</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Basic Rate (20%)</span>
+                                            <span>&pound;4,768.00</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Higher Rate (40%)</span>
+                                            <span>&pound;0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">National Insurance</h4>
+                                    <div class="demo-app-breakdown">
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Class 2 NI</span>
+                                            <span>&pound;179.40</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Class 4 NI</span>
+                                            <span>&pound;1,430.40</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card demo-app-card--highlight">
+                                    <div class="demo-app-breakdown">
+                                        <div class="demo-app-breakdown-row demo-app-breakdown-total">
+                                            <span>Total Tax Due</span>
+                                            <span>&pound;6,377.80</span>
+                                        </div>
+                                    </div>
+                                    <div class="demo-app-payment-dates">
+                                        <p>Payment on Account 1 (31 Jan 2026): <strong>&pound;3,188.90</strong></p>
+                                        <p>Payment on Account 2 (31 Jul 2026): <strong>&pound;3,188.90</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel 5: Submit -->
+                        <div class="demo-app-panel" role="tabpanel" id="tour-submit" aria-labelledby="tab-submit">
+                            <div class="demo-app-header">
+                                <span class="demo-app-header-title">Submit to HMRC</span>
+                            </div>
+                            <div class="demo-app-content">
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Pre-Submission Checklist</h4>
+                                    <div class="demo-app-checklist">
+                                        <div class="demo-app-checklist-item demo-app-checklist--done">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#28a745" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                            Income verified
+                                        </div>
+                                        <div class="demo-app-checklist-item demo-app-checklist--done">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#28a745" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                            Expenses categorised
+                                        </div>
+                                        <div class="demo-app-checklist-item demo-app-checklist--done">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#28a745" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                            Tax calculated
+                                        </div>
+                                        <div class="demo-app-checklist-item demo-app-checklist--done">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#28a745" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                            UTR confirmed
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Submission Summary</h4>
+                                    <div class="demo-app-breakdown">
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Tax Year</span>
+                                            <span>2024/25</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Total Income</span>
+                                            <span>&pound;48,750.00</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row">
+                                            <span>Total Expenses</span>
+                                            <span>&pound;12,340.00</span>
+                                        </div>
+                                        <div class="demo-app-breakdown-row demo-app-breakdown-total">
+                                            <span>Tax Due</span>
+                                            <span>&pound;6,377.80</span>
+                                        </div>
+                                    </div>
+                                    <div class="demo-app-submit-action">
+                                        <button class="demo-app-btn demo-app-btn--success demo-app-btn--large" tabindex="-1" aria-hidden="true">Submit Self Assessment</button>
+                                    </div>
+                                </div>
+                                <div class="demo-app-card">
+                                    <h4 class="demo-app-card-heading">Previous Submissions</h4>
+                                    <div class="demo-app-import-list">
+                                        <div class="demo-app-import-item">
+                                            <div>
+                                                <strong>2023/24 Self Assessment</strong>
+                                                <span class="demo-app-text-muted">Submitted 15 Jan 2025 &middot; Ref: 1234567890</span>
+                                            </div>
+                                            <span class="demo-app-badge demo-app-badge--green">Accepted</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <p class="demo-caption">
                     Simple, clean interface designed for self-employed UK taxpayers.
                     <br>No accounting degree required.
@@ -272,9 +673,11 @@
                 <p class="section-subtitle">Available for Windows, macOS, and Linux. Always free.</p>
 
                 <div class="download-grid">
-                    <a href="https://github.com/selfemploy-uk/self-employment/releases/latest/download/SelfEmploy-Setup.msi"
+                    <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases/latest/download/SelfEmploy-Setup.msi"
                        class="download-card"
+                       data-os="windows"
                        aria-label="Download for Windows">
+                        <span class="recommended-badge">Recommended for your system</span>
                         <div class="download-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="48" height="48">
                                 <path fill="#0078D6" d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
@@ -286,9 +689,11 @@
                         <span class="download-size">~85 MB</span>
                     </a>
 
-                    <a href="https://github.com/selfemploy-uk/self-employment/releases/latest/download/SelfEmploy.dmg"
+                    <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases/latest/download/SelfEmploy.dmg"
                        class="download-card"
+                       data-os="macos"
                        aria-label="Download for macOS">
+                        <span class="recommended-badge">Recommended for your system</span>
                         <div class="download-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="48" height="48">
                                 <path fill="#555555" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
@@ -300,9 +705,11 @@
                         <span class="download-size">~90 MB</span>
                     </a>
 
-                    <a href="https://github.com/selfemploy-uk/self-employment/releases/latest/download/selfemploy_amd64.deb"
+                    <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases/latest/download/selfemploy_amd64.deb"
                        class="download-card"
+                       data-os="linux"
                        aria-label="Download for Linux">
+                        <span class="recommended-badge">Recommended for your system</span>
                         <div class="download-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="48" height="48">
                                 <path fill="#FCC624" d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489.117.779.567 1.563 1.182 2.114.267.24.598.398.938.503.34.111.708.185 1.078.239.842.127 1.79.148 2.657.148 1.152 0 2.324-.073 3.32-.231 1.032-.161 2.007-.453 2.662-.934.655-.48 1.07-1.148 1.07-2.063 0-.474-.116-.904-.3-1.29-.185-.387-.42-.722-.665-1.025-.49-.606-1.02-1.073-1.382-1.606-.18-.266-.31-.555-.376-.867-.067-.312-.065-.638.006-.96.073-.32.198-.635.364-.94.165-.305.37-.596.594-.871.448-.55.958-1.023 1.37-1.518.205-.248.378-.503.485-.765.107-.262.151-.521.094-.763-.057-.241-.188-.453-.361-.617-.173-.164-.38-.28-.598-.357-.434-.153-.93-.174-1.396-.158-.467.015-.914.069-1.27.14-.355.072-.638.162-.756.217-.117.056-.208.095-.32.095-.111 0-.221-.049-.32-.14-.199-.182-.341-.453-.458-.748-.117-.295-.205-.622-.284-.956-.079-.334-.142-.684-.175-1.012-.033-.328-.036-.616-.015-.864.02-.248.064-.449.136-.597.072-.148.165-.22.295-.22.13 0 .295.08.505.234.21.154.46.38.737.645.556.53 1.23 1.165 1.855 1.557.312.195.612.337.873.397.261.06.47.04.594-.047.124-.088.164-.24.174-.42.011-.18 0-.402-.023-.657-.046-.51-.131-1.144-.206-1.737-.075-.593-.142-1.147-.155-1.573-.013-.425.022-.692.122-.784.1-.092.25-.068.417.015.168.083.356.227.56.42.406.385.867.943 1.328 1.503.461.559.916 1.11 1.315 1.462.2.177.387.31.57.396.181.085.371.114.534.087.164-.027.295-.121.381-.268.086-.148.128-.344.128-.565 0-.44-.082-.94-.201-1.376-.118-.435-.272-.816-.385-1.034-.114-.218-.189-.296-.189-.407 0-.11.076-.205.218-.285.141-.08.348-.149.595-.218.493-.137 1.137-.269 1.688-.493.55-.224 1.003-.551 1.083-1.057.079-.507-.165-1.194-.672-1.858-.507-.664-1.274-1.312-2.2-1.736-.926-.425-2.018-.629-3.217-.621z"/>
@@ -320,15 +727,15 @@
                         <strong>Requires:</strong> Java 21 or later (bundled with installer)
                     </p>
                     <p class="download-version">
-                        <span class="version-tag">v1.0.0</span>
-                        <span class="version-date">Released January 2026</span>
+                        <span class="version-tag" id="download-version">v0.1.0</span>
+                        <span class="version-date" id="download-date">Latest release</span>
                     </p>
                     <p class="download-links">
-                        <a href="https://github.com/selfemploy-uk/self-employment/releases">All releases</a>
+                        <a href="https://github.com/olehsvyrydov/selfemploy-uk/releases">All releases</a>
                         <span class="separator">|</span>
-                        <a href="https://github.com/selfemploy-uk/self-employment/blob/main/docs/INSTALLATION.md">Installation guide</a>
+                        <a href="https://github.com/olehsvyrydov/selfemploy-uk/blob/main/docs/INSTALLATION.md">Installation guide</a>
                         <span class="separator">|</span>
-                        <a href="https://github.com/selfemploy-uk/self-employment/blob/main/CHANGELOG.md">Changelog</a>
+                        <a href="https://github.com/olehsvyrydov/selfemploy-uk/blob/main/CHANGELOG.md">Changelog</a>
                     </p>
                 </div>
             </div>
@@ -413,11 +820,11 @@
                         <summary>How do I report bugs or request features?</summary>
                         <div class="faq-answer">
                             <p>We welcome community feedback! Please open an issue on our
-                            <a href="https://github.com/selfemploy-uk/self-employment/issues">GitHub repository</a>.
+                            <a href="https://github.com/olehsvyrydov/selfemploy-uk/issues">GitHub repository</a>.
                             For bug reports, please include steps to reproduce the issue and any error messages.
                             For feature requests, describe the use case and how it would help you. We also accept
                             code contributions - see our
-                            <a href="https://github.com/selfemploy-uk/self-employment/blob/main/CONTRIBUTING.md">contribution guidelines</a>.</p>
+                            <a href="https://github.com/olehsvyrydov/selfemploy-uk/blob/main/CONTRIBUTING.md">contribution guidelines</a>.</p>
                         </div>
                     </details>
 
@@ -446,7 +853,7 @@
                         </svg>
                         Download Free
                     </a>
-                    <a href="https://github.com/selfemploy-uk/self-employment"
+                    <a href="https://github.com/olehsvyrydov/selfemploy-uk"
                        class="btn-secondary"
                        target="_blank"
                        rel="noopener noreferrer">
@@ -471,11 +878,11 @@
                         Your data stays on your device.
                     </p>
                     <div class="footer-badges">
-                        <a href="https://github.com/selfemploy-uk/self-employment"
+                        <a href="https://github.com/olehsvyrydov/selfemploy-uk"
                            class="github-badge"
                            target="_blank"
                            rel="noopener noreferrer">
-                            <img src="https://img.shields.io/github/stars/selfemploy-uk/self-employment?style=social"
+                            <img src="https://img.shields.io/github/stars/olehsvyrydov/selfemploy-uk?style=social"
                                  alt="GitHub stars"
                                  loading="lazy">
                         </a>
@@ -488,7 +895,7 @@
                         <li><a href="#features">Features</a></li>
                         <li><a href="#download">Download</a></li>
                         <li><a href="#faq">FAQ</a></li>
-                        <li><a href="https://github.com/selfemploy-uk/self-employment/releases">Releases</a></li>
+                        <li><a href="https://github.com/olehsvyrydov/selfemploy-uk/releases">Releases</a></li>
                     </ul>
                 </nav>
 
@@ -498,17 +905,17 @@
                         <li><a href="/privacy">Privacy Policy</a></li>
                         <li><a href="/terms">Terms of Service</a></li>
                         <li><a href="/disclaimer">Disclaimer</a></li>
-                        <li><a href="https://github.com/selfemploy-uk/self-employment/blob/main/LICENSE">License (Apache 2.0)</a></li>
+                        <li><a href="https://github.com/olehsvyrydov/selfemploy-uk/blob/main/LICENSE">License (Apache 2.0)</a></li>
                     </ul>
                 </nav>
 
                 <nav class="footer-links" aria-label="Community links">
                     <h4>Community</h4>
                     <ul>
-                        <li><a href="https://github.com/selfemploy-uk/self-employment" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-                        <li><a href="https://github.com/selfemploy-uk/self-employment/issues" target="_blank" rel="noopener noreferrer">Report Issue</a></li>
-                        <li><a href="https://github.com/selfemploy-uk/self-employment/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contribute</a></li>
-                        <li><a href="https://github.com/selfemploy-uk/self-employment/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+                        <li><a href="https://github.com/olehsvyrydov/selfemploy-uk" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                        <li><a href="https://github.com/olehsvyrydov/selfemploy-uk/issues" target="_blank" rel="noopener noreferrer">Report Issue</a></li>
+                        <li><a href="https://github.com/olehsvyrydov/selfemploy-uk/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contribute</a></li>
+                        <li><a href="https://github.com/olehsvyrydov/selfemploy-uk/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
                     </ul>
                 </nav>
             </div>
@@ -517,7 +924,7 @@
                 <p>
                     Made with care in the UK
                     <span class="separator">|</span>
-                    <a href="https://github.com/selfemploy-uk/self-employment/blob/main/LICENSE">Apache 2.0 License</a>
+                    <a href="https://github.com/olehsvyrydov/selfemploy-uk/blob/main/LICENSE">Apache 2.0 License</a>
                     <span class="separator">|</span>
                     &copy; 2026 UK Self-Employment Manager Contributors
                 </p>

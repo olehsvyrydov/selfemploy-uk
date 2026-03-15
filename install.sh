@@ -7,6 +7,7 @@
 #   ./install.sh              Build and run the application
 #   ./install.sh --build      Build only (no run)
 #   ./install.sh --package    Build and create native installer
+#   ./install.sh --install    Download and install latest release (no Java/Maven needed)
 #   ./install.sh --check      Check prerequisites only
 #   ./install.sh --help       Show this help message
 #
@@ -20,6 +21,8 @@ REQUIRED_JAVA_VERSION=21
 REQUIRED_MAVEN_MAJOR=3
 REQUIRED_MAVEN_MINOR=6
 APP_NAME="UK Self-Employment Manager"
+GITHUB_REPO="olehsvyrydov/selfemploy-uk"
+GITHUB_API="https://api.github.com/repos/${GITHUB_REPO}/releases/latest"
 
 # --- Colors -------------------------------------------------------------------
 
@@ -44,15 +47,16 @@ Usage:
   ./install.sh              Build and run the application
   ./install.sh --build      Build only (no run)
   ./install.sh --package    Build and create native installer
+  ./install.sh --install    Download and install latest release (no Java/Maven needed)
   ./install.sh --check      Check prerequisites only
   ./install.sh --help       Show this help message
 
-Prerequisites:
-  - Java 21 or later (JDK, not JRE)
-  - Maven 3.6 or later
+Developer mode (default):
+  Requires Java 21+ and Maven 3.6+. Builds from source.
 
-The script will check for prerequisites and guide you through
-installation if anything is missing.
+Install mode (--install):
+  Downloads the pre-built installer from GitHub Releases.
+  Only requires curl. No Java or Maven needed.
 EOF
 }
 
@@ -261,6 +265,128 @@ setup_env() {
     fi
 }
 
+# --- Install from Release -----------------------------------------------------
+
+install_release() {
+    local os
+    os=$(detect_os)
+
+    info "Downloading latest release from GitHub..."
+
+    if ! command -v curl &> /dev/null; then
+        error "curl is required for --install mode but was not found."
+        exit 1
+    fi
+
+    # Fetch latest release metadata
+    local release_json
+    release_json=$(curl -sL "$GITHUB_API")
+
+    if [[ -z "$release_json" ]] || echo "$release_json" | grep -q '"message".*"Not Found"'; then
+        error "Could not fetch latest release. Check your internet connection."
+        error "URL: $GITHUB_API"
+        exit 1
+    fi
+
+    local version
+    version=$(echo "$release_json" | grep '"tag_name"' | head -1 | sed -E 's/.*"v([^"]+)".*/\1/')
+
+    if [[ -z "$version" ]]; then
+        error "Could not determine latest version."
+        exit 1
+    fi
+
+    info "Latest version: $version"
+
+    # Determine which installer to download
+    local asset_pattern download_url filename
+    case "$os" in
+        linux)
+            # Detect package manager
+            if command -v dpkg &> /dev/null; then
+                asset_pattern="\.deb"
+                filename="SelfEmploy-${version}.deb"
+            elif command -v rpm &> /dev/null; then
+                asset_pattern="\.rpm"
+                filename="SelfEmploy-${version}.rpm"
+            else
+                error "No supported package manager found (dpkg or rpm required)."
+                exit 1
+            fi
+            ;;
+        macos)
+            asset_pattern="\.dmg"
+            filename="SelfEmploy-${version}.dmg"
+            ;;
+        *)
+            error "--install mode is not supported on this OS ($os)."
+            error "Please download manually from: https://github.com/${GITHUB_REPO}/releases/latest"
+            exit 1
+            ;;
+    esac
+
+    # Find the download URL from release assets
+    download_url=$(echo "$release_json" | grep '"browser_download_url"' | grep "$asset_pattern" | head -1 | sed -E 's/.*"(https[^"]+)".*/\1/')
+
+    if [[ -z "$download_url" ]]; then
+        error "Could not find installer matching pattern '$asset_pattern' in the latest release."
+        error "Please download manually from: https://github.com/${GITHUB_REPO}/releases/latest"
+        exit 1
+    fi
+
+    info "Downloading $filename..."
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    local filepath="${tmpdir}/${filename}"
+
+    curl -L --progress-bar -o "$filepath" "$download_url"
+
+    if [[ ! -f "$filepath" ]]; then
+        error "Download failed."
+        rm -rf "$tmpdir"
+        exit 1
+    fi
+
+    success "Downloaded: $filename"
+
+    # Install
+    info "Installing..."
+    case "$os" in
+        linux)
+            if echo "$filename" | grep -q '\.deb$'; then
+                sudo dpkg -i "$filepath"
+                if [[ $? -ne 0 ]]; then
+                    warn "Fixing dependencies..."
+                    sudo apt-get install -f -y
+                fi
+            else
+                sudo rpm -i "$filepath"
+            fi
+            ;;
+        macos)
+            local mount_point
+            mount_point=$(hdiutil attach "$filepath" -nobrowse 2>/dev/null | grep '/Volumes/' | awk '{print $NF}')
+            if [[ -n "$mount_point" ]]; then
+                local app_name
+                app_name=$(find "$mount_point" -maxdepth 1 -name '*.app' | head -1)
+                if [[ -n "$app_name" ]]; then
+                    cp -R "$app_name" /Applications/
+                    success "Installed to /Applications/"
+                fi
+                hdiutil detach "$mount_point" -quiet
+            else
+                error "Could not mount DMG. Please install manually by double-clicking $filepath"
+            fi
+            ;;
+    esac
+
+    rm -rf "$tmpdir"
+
+    echo ""
+    success "$APP_NAME $version installed successfully!"
+    info "Launch from your application menu or run 'SelfEmploy' from the terminal."
+}
+
 # --- Main ---------------------------------------------------------------------
 
 main() {
@@ -270,6 +396,10 @@ main() {
         --help|-h)
             show_help
             exit 0
+            ;;
+        --install)
+            install_release
+            exit $?
             ;;
         --check)
             check_prerequisites

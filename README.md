@@ -23,15 +23,27 @@ A free, open-source desktop application for UK self-employed individuals to mana
 
 ## Quick Start
 
-### Prerequisites
+### Download Installer (Recommended)
 
-- Java 21 or later (JDK)
-- Maven 3.6+
+Download the latest installer for your platform from [GitHub Releases](https://github.com/olehsvyrydov/selfemploy-uk/releases/latest). No Java installation required.
 
-### Install & Run
+Or use the one-line installer:
 
 ```bash
-# Clone the repository
+# Linux / macOS
+./install.sh --install
+
+# Windows (PowerShell)
+.\install.ps1 -Install
+```
+
+See the full [Installation Guide](docs/INSTALLATION.md) for detailed per-platform instructions.
+
+### Build from Source (Developers)
+
+Requires Java 21+ (JDK) and Maven 3.6+.
+
+```bash
 git clone https://github.com/olehsvyrydov/selfemploy-uk.git
 cd selfemploy-uk
 
@@ -42,8 +54,6 @@ cd selfemploy-uk
 .\install.ps1
 ```
 
-The install script will check prerequisites, build, and run the application.
-
 #### Script Options
 
 | Linux / macOS | Windows | Description |
@@ -51,6 +61,7 @@ The install script will check prerequisites, build, and run the application.
 | `./install.sh` | `.\install.ps1` | Build and run |
 | `./install.sh --build` | `.\install.ps1 -Build` | Build only |
 | `./install.sh --package` | `.\install.ps1 -Package` | Build + native installer |
+| `./install.sh --install` | `.\install.ps1 -Install` | Download pre-built installer |
 | `./install.sh --check` | `.\install.ps1 -Check` | Check prerequisites |
 | `./install.sh --help` | `.\install.ps1 -Help` | Show help |
 
@@ -64,7 +75,7 @@ mvn -pl app javafx:run
 ### Create Native Installer
 
 ```bash
-mvn -pl app -Ppackage jpackage:jpackage
+mvn -pl app -Ppackage package jpackage:jpackage
 ```
 
 ## Project Structure
