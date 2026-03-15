@@ -6,7 +6,7 @@ This guide will help you install and run the UK Self-Employment Manager.
 
 ### Option 1: Download Installer (Recommended)
 
-Download the latest installer for your platform from [GitHub Releases](https://github.com/olehsvyrydov/selfemploy-uk/releases/latest). **No Java installation required** — the JVM is bundled with the installer.
+Visit [selfemploy.uk](https://selfemploy.uk) or download the latest installer from [GitHub Releases](https://github.com/olehsvyrydov/selfemploy-uk/releases/latest). **No Java installation required** — the JVM is bundled with the installer.
 
 | Platform | File | Install |
 |----------|------|---------|
