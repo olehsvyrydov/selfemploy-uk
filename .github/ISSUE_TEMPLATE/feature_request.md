@@ -44,7 +44,7 @@ Add any other context, mockups, or screenshots about the feature request.
 
 ## Roadmap Alignment
 
-Does this align with an existing roadmap item? See [ROADMAP.md](../../docs/ROADMAP.md)
+Does this align with an existing roadmap item? See [Roadmap on Confluence](https://olehsvyrydov.atlassian.net/wiki/spaces/SE)
 
 - [ ] Yes - Phase: ___
 - [ ] No - This is a new idea

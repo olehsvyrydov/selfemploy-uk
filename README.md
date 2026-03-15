@@ -40,7 +40,7 @@ Or use the one-line installer:
 .\install.ps1 -Install
 ```
 
-See the full [Installation Guide](docs/INSTALLATION.md) for detailed per-platform instructions.
+See the full [Installation Guide](https://selfemploy.uk/install-guide.html) for detailed per-platform instructions.
 
 ### Build from Source (Developers)
 
@@ -93,7 +93,6 @@ selfemploy-uk/
 ├── app/             # Application launcher and native packaging
 ├── plugin-api/      # Plugin extension points and interfaces
 ├── plugin-runtime/  # Plugin lifecycle and classloader management
-├── docs/            # Contributing, security, privacy, roadmap
 ├── install.sh       # Installation script (Linux / macOS)
 └── install.ps1      # Installation script (Windows)
 ```
@@ -128,7 +127,7 @@ The application features an extensible plugin architecture that allows third-par
 
 ### For Plugin Developers
 
-See the comprehensive [Plugin Developer Documentation](docs/plugin-development/README.md) to get started creating plugins.
+See the [Plugin Developer Documentation](https://github.com/olehsvyrydov/selfemploy-uk/wiki/Contributing#contributing-plugins) to get started creating plugins.
 
 ```xml
 <!-- Add to your pom.xml -->
@@ -164,7 +163,7 @@ See the comprehensive [Plugin Developer Documentation](docs/plugin-development/R
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see our [Contributing Guide](https://github.com/olehsvyrydov/selfemploy-uk/wiki/Contributing) for guidelines.
 
 ## License
 

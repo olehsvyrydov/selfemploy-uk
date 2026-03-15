@@ -310,8 +310,9 @@ install_release() {
                 asset_pattern="\.rpm"
                 filename="SelfEmploy-${version}.rpm"
             else
-                error "No supported package manager found (dpkg or rpm required)."
-                exit 1
+                info "No dpkg or rpm found — falling back to AppImage."
+                asset_pattern="\.AppImage"
+                filename="SelfEmploy-${version}-x86_64.AppImage"
             fi
             ;;
         macos)
@@ -359,8 +360,15 @@ install_release() {
                     warn "Fixing dependencies..."
                     sudo apt-get install -f -y
                 fi
-            else
+            elif echo "$filename" | grep -q '\.rpm$'; then
                 sudo rpm -i "$filepath"
+            elif echo "$filename" | grep -q '\.AppImage$'; then
+                chmod +x "$filepath"
+                mkdir -p "$HOME/.local/bin"
+                cp "$filepath" "$HOME/.local/bin/SelfEmploy.AppImage"
+                success "AppImage installed to ~/.local/bin/SelfEmploy.AppImage"
+                info "Run with: ~/.local/bin/SelfEmploy.AppImage"
+                info "Make sure ~/.local/bin is in your PATH."
             fi
             ;;
         macos)

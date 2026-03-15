@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SelfEmploy
+Comment=Manage accounting and submit HMRC reports
+Exec=SelfEmploy
+Icon=selfemploy
+Categories=Office;Finance;
+Terminal=false
+StartupWMClass=SelfEmploy

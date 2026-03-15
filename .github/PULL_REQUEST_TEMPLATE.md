@@ -29,7 +29,7 @@ Fixes #(issue number)
 
 ### Documentation
 - [ ] I have updated documentation if needed
-- [ ] I have updated docs/ROADMAP.md if this completes a roadmap item
+- [ ] I have updated the Confluence Roadmap if this completes a roadmap item
 
 ### Tax Calculations (if applicable)
 - [ ] Calculations reference HMRC documentation

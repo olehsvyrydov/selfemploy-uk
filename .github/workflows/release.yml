@@ -35,6 +35,10 @@ jobs:
             type: rpm
             artifact: linux-rpm
             extension: rpm
+          - os: ubuntu-latest
+            type: app-image
+            artifact: linux-appimage
+            extension: AppImage
           - os: windows-latest
             type: msi
             artifact: windows-msi
@@ -112,6 +116,45 @@ jobs:
             --win-menu `
             --win-shortcut
 
+      - name: Build AppImage from app-image
+        if: matrix.type == 'app-image'
+        shell: bash
+        run: |
+          # Download appimagetool
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+
+          # Construct AppDir from jpackage output
+          APP_DIR=SelfEmploy.AppDir
+          mkdir -p "$APP_DIR/usr"
+          cp -r app/target/installer/SelfEmploy/* "$APP_DIR/usr/"
+
+          # Create AppRun entry point
+          cat > "$APP_DIR/AppRun" << 'APPRUN'
+          #!/bin/bash
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          exec "${HERE}/usr/bin/SelfEmploy" "$@"
+          APPRUN
+          chmod +x "$APP_DIR/AppRun"
+
+          # Copy desktop file and icon
+          cp packaging/SelfEmploy.desktop "$APP_DIR/selfemploy.desktop"
+
+          # Generate PNG icon from SVG
+          sudo apt-get install -y -q librsvg2-bin
+          rsvg-convert -w 256 -h 256 packaging/icon.svg -o "$APP_DIR/selfemploy.png"
+
+          # Also place icon in hicolor path
+          mkdir -p "$APP_DIR/usr/share/icons/hicolor/256x256/apps"
+          cp "$APP_DIR/selfemploy.png" "$APP_DIR/usr/share/icons/hicolor/256x256/apps/selfemploy.png"
+
+          # Build AppImage (extract appimagetool to avoid FUSE requirement on CI)
+          VERSION="${{ steps.version.outputs.version }}"
+          ./appimagetool --appimage-extract
+          ARCH=x86_64 ./squashfs-root/AppRun --no-appstream "$APP_DIR" \
+            "app/target/installer/SelfEmploy-${VERSION}-x86_64.AppImage"
+
       - name: List installer output
         shell: bash
         run: ls -la app/target/installer/
@@ -162,6 +205,7 @@ jobs:
                   rpm) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}.rpm" ;;
                   msi) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}.msi" ;;
                   dmg) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}.dmg" ;;
+                  AppImage) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}-x86_64.AppImage" ;;
                 esac
               fi
             done
@@ -190,6 +234,7 @@ jobs:
             | macOS (Apple Silicon) | `SelfEmploy-${{ steps.version.outputs.version }}.dmg` |
             | Linux (Debian/Ubuntu) | `SelfEmploy-${{ steps.version.outputs.version }}.deb` |
             | Linux (Fedora/RHEL) | `SelfEmploy-${{ steps.version.outputs.version }}.rpm` |
+            | Linux (AppImage - any distro) | `SelfEmploy-${{ steps.version.outputs.version }}-x86_64.AppImage` |
 
             ### Installation
 
@@ -200,6 +245,7 @@ jobs:
             - **macOS:** If Gatekeeper blocks the app, right-click the app and select "Open"
             - **Linux (deb):** `sudo dpkg -i SelfEmploy-${{ steps.version.outputs.version }}.deb`
             - **Linux (rpm):** `sudo rpm -i SelfEmploy-${{ steps.version.outputs.version }}.rpm`
+            - **Linux (AppImage):** `chmod +x SelfEmploy-*-x86_64.AppImage && ./SelfEmploy-*-x86_64.AppImage`
 
             ### Checksums
 
