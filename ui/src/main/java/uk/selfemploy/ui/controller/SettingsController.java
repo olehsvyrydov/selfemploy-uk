@@ -130,6 +130,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private Button importButton;
     @FXML private Button termsButton;
     @FXML private Button privacyButton;
+    @FXML private Button disclaimerButton;
 
     // HMRC API Credentials FXML fields
     @FXML private Label hmrcCredentialsStatusLabel;
@@ -1291,6 +1292,25 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML
     void handleShowPrivacy(ActionEvent event) {
         showLegalDocument("/fxml/privacy-notice.fxml", "Privacy Notice", true);
+    }
+
+    @FXML
+    void handleShowDisclaimer(ActionEvent event) {
+        Alert dialog = new Alert(Alert.AlertType.INFORMATION);
+        dialog.setTitle("Disclaimer - UK Self-Employment Manager");
+        dialog.setHeaderText(uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_TITLE);
+        dialog.setContentText(
+                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_1 + "\n\n" +
+                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_2 + "\n\n" +
+                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATIONS_HEADER + "\n" +
+                "  - " + uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_1 + "\n" +
+                "  - " + uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_2 + "\n" +
+                "  - " + uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_3 + "\n\n" +
+                uk.selfemploy.common.legal.Disclaimers.PDF_CONFIRMATION_DISCLAIMER + "\n\n" +
+                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_ACKNOWLEDGMENT);
+        dialog.getDialogPane().setMinWidth(500);
+        dialog.getDialogPane().setMinHeight(400);
+        dialog.showAndWait();
     }
 
     @FXML

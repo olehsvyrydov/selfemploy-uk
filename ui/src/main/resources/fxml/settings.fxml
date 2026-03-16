@@ -225,6 +225,16 @@
                 </VBox>
                 <Button fx:id="privacyButton" text="View" styleClass="button-secondary" onAction="#handleShowPrivacy"/>
             </HBox>
+
+            <!-- Disclaimer -->
+            <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
+                <FontIcon iconLiteral="fas-exclamation-circle" iconSize="20" styleClass="settings-icon"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Disclaimer" styleClass="settings-label"/>
+                    <Label text="Important information about software accuracy and your responsibilities" styleClass="settings-description"/>
+                </VBox>
+                <Button fx:id="disclaimerButton" text="View" styleClass="button-secondary" onAction="#handleShowDisclaimer"/>
+            </HBox>
         </VBox>
 
         <!-- Data Management Section -->
