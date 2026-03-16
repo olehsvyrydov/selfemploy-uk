@@ -262,6 +262,25 @@
             </HBox>
         </VBox>
 
+        <!-- About Section -->
+        <VBox styleClass="settings-section" spacing="16">
+            <Label text="About" styleClass="section-title"/>
+
+            <VBox styleClass="settings-card" spacing="8">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <FontIcon iconLiteral="fas-info-circle" iconSize="20" styleClass="settings-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="UK Self-Employment Manager" styleClass="settings-label"/>
+                        <Label fx:id="versionLabel" text="Version loading..." styleClass="settings-value"/>
+                    </VBox>
+                </HBox>
+                <Label fx:id="buildDateLabel" text="" styleClass="settings-hint"/>
+                <Label fx:id="licenseLabel" text="" styleClass="settings-hint"/>
+                <Label fx:id="githubLabel" text="" styleClass="settings-hint" style="-fx-text-fill: #3b82f6; -fx-cursor: hand;"
+                       accessibleText="Open project GitHub page"/>
+            </VBox>
+        </VBox>
+
         <!-- Footer Disclaimer -->
         <VBox styleClass="settings-disclaimer" spacing="8">
             <HBox alignment="CENTER_LEFT" spacing="8">

@@ -132,6 +132,12 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private Button privacyButton;
     @FXML private Button disclaimerButton;
 
+    // About section FXML fields
+    @FXML private Label versionLabel;
+    @FXML private Label buildDateLabel;
+    @FXML private Label licenseLabel;
+    @FXML private Label githubLabel;
+
     // HMRC API Credentials FXML fields
     @FXML private Label hmrcCredentialsStatusLabel;
     @FXML private TextField hmrcClientIdField;
@@ -173,6 +179,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         loadHmrcCredentialsStatus();
         initHmrcEnvironmentCombo();
         updateHmrcConnectionStatus();
+        initAboutSection();
     }
 
     @Override
@@ -1311,6 +1318,31 @@ public class SettingsController implements Initializable, MainController.TaxYear
         dialog.getDialogPane().setMinWidth(500);
         dialog.getDialogPane().setMinHeight(400);
         dialog.showAndWait();
+    }
+
+    // === About Section ===
+
+    private void initAboutSection() {
+        if (versionLabel != null) {
+            versionLabel.setText("Version " + uk.selfemploy.common.util.VersionInfo.getVersion());
+        }
+        if (buildDateLabel != null) {
+            buildDateLabel.setText("Built: " + uk.selfemploy.common.util.VersionInfo.getBuildTimestamp());
+        }
+        if (licenseLabel != null) {
+            licenseLabel.setText("License: " + uk.selfemploy.common.util.VersionInfo.getLicense());
+        }
+        if (githubLabel != null) {
+            String url = uk.selfemploy.common.util.VersionInfo.getGitHubUrl();
+            githubLabel.setText(url);
+            githubLabel.setOnMouseClicked(e -> {
+                try {
+                    java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                } catch (Exception ex) {
+                    LOG.log(Level.WARNING, "Failed to open GitHub URL", ex);
+                }
+            });
+        }
     }
 
     @FXML
