@@ -2,6 +2,8 @@
 
 Welcome to the **UK Self-Employment Manager** wiki - the comprehensive documentation for our free, open-source desktop application helping UK self-employed individuals manage their accounting and submit annual reports to HMRC.
 
+**Website:** [https://selfemploy.uk](https://selfemploy.uk)
+
 ## Quick Links
 
 | Section | Description |
@@ -93,9 +95,10 @@ This application will be MTD-compliant, helping you meet these requirements for 
 
 ## Support
 
+- **Website**: [selfemploy.uk](https://selfemploy.uk)
 - **Issues**: [GitHub Issues](https://github.com/olehsvyrydov/selfemploy-uk/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/olehsvyrydov/selfemploy-uk/discussions)
-- **Contributing**: See [CONTRIBUTING.md](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/CONTRIBUTING.md)
+- **Contributing**: See [CONTRIBUTING.md](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/docs/CONTRIBUTING.md)
 
 ---
 

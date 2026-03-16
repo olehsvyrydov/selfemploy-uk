@@ -1,0 +1,263 @@
+# Release Workflow
+# Builds native installers for all platforms and creates a GitHub Release
+#
+# Trigger: Push a tag matching v* (e.g., v0.1.0)
+#
+# Structure:
+#   1. build-installers (matrix: linux-deb, linux-rpm, windows-msi, macos-dmg)
+#   2. create-release (downloads all artifacts, creates GitHub Release)
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-installers:
+    name: Build ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            type: deb
+            artifact: linux-deb
+            extension: deb
+          - os: ubuntu-latest
+            type: rpm
+            artifact: linux-rpm
+            extension: rpm
+          - os: ubuntu-latest
+            type: app-image
+            artifact: linux-appimage
+            extension: AppImage
+          - os: windows-latest
+            type: msi
+            artifact: windows-msi
+            extension: msi
+          - os: macos-latest
+            type: dmg
+            artifact: macos-dmg
+            extension: dmg
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Building version: $TAG"
+
+      - name: Install RPM tools (Linux RPM only)
+        if: matrix.type == 'rpm'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Build application
+        shell: bash
+        run: mvn -B package -DskipTests --no-transfer-progress
+
+      - name: Prepare jpackage input
+        shell: bash
+        run: |
+          mkdir -p app/target/jpackage-input
+          cp -r app/target/quarkus-app/* app/target/jpackage-input/
+
+      - name: Run jpackage (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          jpackage \
+            --name SelfEmploy \
+            --app-version "${{ steps.version.outputs.version }}" \
+            --vendor "Self-Employment UK" \
+            --description "Manage accounting and submit HMRC reports" \
+            --input app/target/jpackage-input \
+            --main-jar quarkus-run.jar \
+            --main-class io.quarkus.bootstrap.runner.QuarkusEntryPoint \
+            --java-options "-Dfile.encoding=UTF-8" \
+            --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" \
+            --type ${{ matrix.type }} \
+            --dest app/target/installer
+
+      - name: Run jpackage (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          jpackage `
+            --name SelfEmploy `
+            --app-version "${{ steps.version.outputs.version }}" `
+            --vendor "Self-Employment UK" `
+            --description "Manage accounting and submit HMRC reports" `
+            --input app/target/jpackage-input `
+            --main-jar quarkus-run.jar `
+            --main-class io.quarkus.bootstrap.runner.QuarkusEntryPoint `
+            --java-options "-Dfile.encoding=UTF-8" `
+            --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" `
+            --type ${{ matrix.type }} `
+            --dest app/target/installer `
+            --win-menu `
+            --win-shortcut
+
+      - name: Build AppImage from app-image
+        if: matrix.type == 'app-image'
+        shell: bash
+        run: |
+          # Download appimagetool (pinned to stable release for reproducibility)
+          APPIMAGETOOL_VERSION="1.9.1"
+          APPIMAGETOOL_SHA256="ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0"
+          wget -q "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGETOOL_VERSION}/appimagetool-x86_64.AppImage" -O appimagetool
+          echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum -c -
+          chmod +x appimagetool
+
+          # Construct AppDir from jpackage output
+          APP_DIR=SelfEmploy.AppDir
+          mkdir -p "$APP_DIR/usr"
+          cp -r app/target/installer/SelfEmploy/* "$APP_DIR/usr/"
+
+          # Create AppRun entry point
+          cat > "$APP_DIR/AppRun" << 'APPRUN'
+          #!/bin/bash
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          exec "${HERE}/usr/bin/SelfEmploy" "$@"
+          APPRUN
+          chmod +x "$APP_DIR/AppRun"
+
+          # Copy desktop file and icon
+          cp packaging/SelfEmploy.desktop "$APP_DIR/selfemploy.desktop"
+
+          # Generate PNG icon from SVG
+          sudo apt-get update -qq
+          sudo apt-get install -y -q librsvg2-bin
+          rsvg-convert -w 256 -h 256 packaging/icon.svg -o "$APP_DIR/selfemploy.png"
+
+          # Also place icon in hicolor path
+          mkdir -p "$APP_DIR/usr/share/icons/hicolor/256x256/apps"
+          cp "$APP_DIR/selfemploy.png" "$APP_DIR/usr/share/icons/hicolor/256x256/apps/selfemploy.png"
+
+          # Build AppImage (extract appimagetool to avoid FUSE requirement on CI)
+          VERSION="${{ steps.version.outputs.version }}"
+          ./appimagetool --appimage-extract
+          ARCH=x86_64 ./squashfs-root/AppRun --no-appstream "$APP_DIR" \
+            "app/target/installer/SelfEmploy-${VERSION}-x86_64.AppImage"
+
+      - name: List installer output
+        shell: bash
+        run: ls -la app/target/installer/
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: app/target/installer/*.${{ matrix.extension }}
+          if-no-files-found: error
+          retention-days: 5
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-installers
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: List downloaded assets
+        run: find release-assets -type f | sort
+
+      - name: Collect and rename installers
+        run: |
+          mkdir -p final-assets
+
+          # Copy each installer with a consistent naming scheme
+          for dir in release-assets/*/; do
+            for file in "$dir"*; do
+              if [ -f "$file" ]; then
+                ext="${file##*.}"
+                case "$ext" in
+                  deb) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}.deb" ;;
+                  rpm) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}.rpm" ;;
+                  msi) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}.msi" ;;
+                  dmg) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}.dmg" ;;
+                  AppImage) cp "$file" "final-assets/SelfEmploy-${{ steps.version.outputs.version }}-x86_64.AppImage" ;;
+                esac
+              fi
+            done
+          done
+
+          ls -la final-assets/
+
+      - name: Generate SHA-256 checksums
+        run: |
+          cd final-assets
+          sha256sum * > CHECKSUMS-SHA256.txt
+          cat CHECKSUMS-SHA256.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "SelfEmploy v${{ steps.version.outputs.version }}"
+          body: |
+            ## SelfEmploy v${{ steps.version.outputs.version }}
+
+            ### Downloads
+
+            | Platform | File |
+            |----------|------|
+            | Windows | `SelfEmploy-${{ steps.version.outputs.version }}.msi` |
+            | macOS (Apple Silicon) | `SelfEmploy-${{ steps.version.outputs.version }}.dmg` |
+            | Linux (Debian/Ubuntu) | `SelfEmploy-${{ steps.version.outputs.version }}.deb` |
+            | Linux (Fedora/RHEL) | `SelfEmploy-${{ steps.version.outputs.version }}.rpm` |
+            | Linux (AppImage - any distro) | `SelfEmploy-${{ steps.version.outputs.version }}-x86_64.AppImage` |
+
+            ### Installation
+
+            Download the installer for your platform and run it. No Java installation required — the JVM is bundled.
+
+            **Platform notes:**
+            - **Windows:** If SmartScreen warns about an unrecognised app, click "More info" then "Run anyway"
+            - **macOS:** If Gatekeeper blocks the app, right-click the app and select "Open"
+            - **Linux (deb):** `sudo dpkg -i SelfEmploy-${{ steps.version.outputs.version }}.deb`
+            - **Linux (rpm):** `sudo rpm -i SelfEmploy-${{ steps.version.outputs.version }}.rpm`
+            - **Linux (AppImage):** `chmod +x SelfEmploy-*-x86_64.AppImage && ./SelfEmploy-*-x86_64.AppImage`
+
+            ### Checksums
+
+            Verify your download with the `CHECKSUMS-SHA256.txt` file:
+            ```bash
+            sha256sum -c CHECKSUMS-SHA256.txt
+            ```
+          files: |
+            final-assets/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true

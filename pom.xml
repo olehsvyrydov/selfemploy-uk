@@ -11,7 +11,7 @@
 
     <name>UK Self-Employment Manager</name>
     <description>Desktop application for UK self-employers to manage accounting and submit HMRC reports via Making Tax Digital APIs</description>
-    <url>https://github.com/olehsvyrydov/selfemploy-uk</url>
+    <url>https://selfemploy.uk</url>
 
     <licenses>
         <license>

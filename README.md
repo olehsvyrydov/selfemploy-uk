@@ -2,8 +2,11 @@
 
 [![CI Build](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/ci.yml/badge.svg)](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/codeql.yml/badge.svg)](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/codeql.yml)
+[![Website](https://img.shields.io/badge/website-selfemploy.uk-blue)](https://selfemploy.uk)
 
 A free, open-source desktop application for UK self-employed individuals to manage their accounting and submit annual reports to HMRC via Making Tax Digital (MTD) APIs.
+
+**Website:** [https://selfemploy.uk](https://selfemploy.uk)
 
 ## Features
 
@@ -23,43 +26,75 @@ A free, open-source desktop application for UK self-employed individuals to mana
 
 ## Quick Start
 
-### Prerequisites
+### Download Installer (Recommended)
 
-- Java 21 or later
-- Maven 3.9+
+Download the latest installer for your platform from [GitHub Releases](https://github.com/olehsvyrydov/selfemploy-uk/releases/latest). No Java installation required.
 
-### Build & Run
+Or use the one-line installer:
 
 ```bash
-# Clone the repository
+# Linux / macOS
+./install.sh --install
+
+# Windows (PowerShell)
+.\install.ps1 -Install
+```
+
+See the full [Installation Guide](https://selfemploy.uk/install-guide.html) for detailed per-platform instructions.
+
+### Build from Source (Developers)
+
+Requires Java 21+ (JDK) and Maven 3.6+.
+
+```bash
 git clone https://github.com/olehsvyrydov/selfemploy-uk.git
 cd selfemploy-uk
 
-# Build the project
-mvn clean install
+# Linux / macOS
+./install.sh
 
-# Run the application
+# Windows (PowerShell)
+.\install.ps1
+```
+
+#### Script Options
+
+| Linux / macOS | Windows | Description |
+|---------------|---------|-------------|
+| `./install.sh` | `.\install.ps1` | Build and run |
+| `./install.sh --build` | `.\install.ps1 -Build` | Build only |
+| `./install.sh --package` | `.\install.ps1 -Package` | Build + native installer |
+| `./install.sh --install` | `.\install.ps1 -Install` | Download pre-built installer |
+| `./install.sh --check` | `.\install.ps1 -Check` | Check prerequisites |
+| `./install.sh --help` | `.\install.ps1 -Help` | Show help |
+
+### Manual Build & Run
+
+```bash
+mvn clean install
 mvn -pl app javafx:run
 ```
 
 ### Create Native Installer
 
 ```bash
-# Build native installer for your platform
-mvn -pl app -Ppackage jpackage:jpackage
+mvn -pl app -Ppackage package jpackage:jpackage
 ```
 
 ## Project Structure
 
 ```
-self-employment/
+selfemploy-uk/
 ├── common/          # Shared domain entities, DTOs, enums
 ├── persistence/     # Database entities, repositories, Flyway migrations
 ├── hmrc-api/        # HMRC MTD API clients, OAuth2, fraud prevention
 ├── core/            # Business logic, tax calculator, services
 ├── ui/              # JavaFX controllers, FXML layouts, CSS styling
 ├── app/             # Application launcher and native packaging
-└── docs/            # Documentation, sprints, architecture
+├── plugin-api/      # Plugin extension points and interfaces
+├── plugin-runtime/  # Plugin lifecycle and classloader management
+├── install.sh       # Installation script (Linux / macOS)
+└── install.ps1      # Installation script (Windows)
 ```
 
 ## Technology Stack
@@ -92,7 +127,7 @@ The application features an extensible plugin architecture that allows third-par
 
 ### For Plugin Developers
 
-See the comprehensive [Plugin Developer Documentation](docs/plugin-development/README.md) to get started creating plugins.
+See the [Plugin Developer Documentation](https://github.com/olehsvyrydov/selfemploy-uk/wiki/Contributing#contributing-plugins) to get started creating plugins.
 
 ```xml
 <!-- Add to your pom.xml -->
@@ -128,7 +163,7 @@ See the comprehensive [Plugin Developer Documentation](docs/plugin-development/R
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see our [Contributing Guide](https://github.com/olehsvyrydov/selfemploy-uk/wiki/Contributing) for guidelines.
 
 ## License
 

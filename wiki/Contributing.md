@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the UK Self-Employment Manager!
 
 ## Code of Conduct
 
-By participating in this project, you agree to abide by our [Code of Conduct](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/CODE_OF_CONDUCT.md).
+By participating in this project, you agree to abide by our [Code of Conduct](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/docs/CODE_OF_CONDUCT.md).
 
 ---
 
@@ -24,7 +24,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](ht
 
 ### Suggesting Features
 
-1. Check the [ROADMAP](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/ROADMAP.md)
+1. Check the [ROADMAP](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/docs/ROADMAP.md)
 2. Search existing issues and discussions
 3. Use the [feature request template](https://github.com/olehsvyrydov/selfemploy-uk/issues/new?template=feature_request.md)
 
