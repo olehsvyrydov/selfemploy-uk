@@ -304,7 +304,7 @@ function Install-Release {
     Write-Info "Downloading $fileName..."
 
     try {
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $filePath -UseBasicParsing
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $filePath
     }
     catch {
         Write-Err "Download failed: $_"
@@ -321,7 +321,12 @@ function Install-Release {
     Write-Info "Installing..."
 
     try {
-        Start-Process msiexec.exe -ArgumentList "/i", "`"$filePath`"", "/passive", "/norestart" -Wait
+        $process = Start-Process msiexec.exe -ArgumentList "/i", "`"$filePath`"", "/passive", "/norestart" -Wait -PassThru
+        if ($process.ExitCode -ne 0) {
+            Write-Err "Installer exited with code $($process.ExitCode)"
+            Write-Err "Try running the .msi manually: $filePath"
+            exit 1
+        }
     }
     catch {
         Write-Err "Installation failed: $_"

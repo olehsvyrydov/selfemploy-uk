@@ -8,21 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Native installers for Windows (.msi), macOS (.dmg), and Linux (.deb/.rpm) — no Java required
+- Native installers for Windows (.msi), macOS (.dmg), and Linux (.deb/.rpm/.AppImage) — no Java required
 - GitHub Actions release workflow for automated installer builds
-- Interactive app walkthrough on the website with 5-tab demo tour
-- Smart OS detection on website highlighting the recommended download
-- Dynamic download links fetched from GitHub Releases API
-- Installation guide page with per-OS instructions
 - `--install` mode for install.sh and `-Install` for install.ps1 (downloads pre-built installer)
-- Visual "How It Works" section with mini-mockup screenshots
+- Linux AppImage support in release workflow and install script
+- `packaging/SelfEmploy.desktop` for AppImage metadata
 
 ### Changed
-- Redesigned website download section with OS auto-detection
-- Updated "How It Works" from 3 text-only steps to 4 visual step cards
 - Fixed jpackage configuration (correct Quarkus main JAR and classloader entry point)
-- Fixed GitHub repository URLs across the website (selfemploy-uk/self-employment -> olehsvyrydov/selfemploy-uk)
 - Renamed native package from "UK Self-Employment Manager" to "SelfEmploy" for cross-platform compatibility
+- Separated website into dedicated repo ([selfemploy-website](https://github.com/olehsvyrydov/selfemploy-website))
+- Migrated docs to Confluence (internal) and GitHub Wiki (client-facing); removed `docs/` directory
+- Updated README links to point to GitHub Wiki
+- Updated issue/PR templates to reference public roadmap
 
 ### Fixed
 - jpackage `mainJar` now correctly references `quarkus-run.jar` instead of non-existent artifact JAR
@@ -42,9 +40,6 @@ Initial release.
 - JavaFX desktop UI with responsive layouts
 - Plugin system with 9 extension points
 - Cross-platform install scripts (bash + PowerShell)
-- Landing page website with download cards
-- Comprehensive Playwright E2E test suite
-- Privacy policy, terms of service, and legal disclaimers
 
 [Unreleased]: https://github.com/olehsvyrydov/selfemploy-uk/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/olehsvyrydov/selfemploy-uk/releases/tag/v0.1.0

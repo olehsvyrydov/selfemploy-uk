@@ -355,8 +355,7 @@ install_release() {
     case "$os" in
         linux)
             if echo "$filename" | grep -q '\.deb$'; then
-                sudo dpkg -i "$filepath"
-                if [[ $? -ne 0 ]]; then
+                if ! sudo dpkg -i "$filepath"; then
                     warn "Fixing dependencies..."
                     sudo apt-get install -f -y
                 fi
