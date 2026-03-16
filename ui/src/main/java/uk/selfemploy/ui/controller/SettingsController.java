@@ -131,6 +131,15 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private Button termsButton;
     @FXML private Button privacyButton;
 
+    // HMRC API Credentials FXML fields
+    @FXML private Label hmrcCredentialsStatusLabel;
+    @FXML private TextField hmrcClientIdField;
+    @FXML private javafx.scene.control.PasswordField hmrcClientSecretField;
+    @FXML private TextField hmrcRedirectUriField;
+    @FXML private Button saveCredentialsButton;
+    @FXML private Button clearCredentialsButton;
+    @FXML private Button copyRedirectUriButton;
+
     // HMRC Connection Setup FXML fields
     @FXML private FontIcon hmrcStatusIcon;
     @FXML private Label hmrcConnectionStatusLabel;
@@ -158,6 +167,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         updateUtrDisplay();
         loadNinoFromStore();
         updateNinoDisplay();
+        loadHmrcCredentialsStatus();
         updateHmrcConnectionStatus();
     }
 
@@ -567,6 +577,126 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 showError("Invalid NINO",
                         "Please enter a valid National Insurance Number (e.g. QQ 12 34 56 A).");
             }
+        }
+    }
+
+    // === HMRC API Credentials ===
+
+    private void loadHmrcCredentialsStatus() {
+        try {
+            boolean hasCredentials = SqliteDataStore.getInstance().hasHmrcCredentials();
+            if (hmrcCredentialsStatusLabel != null) {
+                if (hasCredentials) {
+                    hmrcCredentialsStatusLabel.setText("Configured");
+                    hmrcCredentialsStatusLabel.setStyle("-fx-text-fill: #27ae60;");
+                } else {
+                    hmrcCredentialsStatusLabel.setText("Not configured");
+                    hmrcCredentialsStatusLabel.setStyle("");
+                }
+            }
+            if (clearCredentialsButton != null) {
+                clearCredentialsButton.setVisible(hasCredentials);
+                clearCredentialsButton.setManaged(hasCredentials);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to load HMRC credentials status", e);
+        }
+    }
+
+    @FXML
+    void handleSaveHmrcCredentials(ActionEvent event) {
+        String clientId = hmrcClientIdField != null ? hmrcClientIdField.getText() : null;
+        String clientSecret = hmrcClientSecretField != null ? hmrcClientSecretField.getText() : null;
+
+        if (clientId == null || clientId.isBlank()) {
+            showError("Client ID Required", "Please enter your HMRC Developer Hub Client ID.");
+            return;
+        }
+        if (clientSecret == null || clientSecret.isBlank()) {
+            showError("Client Secret Required", "Please enter your HMRC Developer Hub Client Secret.");
+            return;
+        }
+
+        SqliteDataStore store = SqliteDataStore.getInstance();
+        store.saveHmrcClientId(clientId.trim());
+        store.saveHmrcClientSecret(clientSecret.trim());
+
+        // Apply credentials as system properties for HmrcConfig
+        applyHmrcCredentialsToSystemProperties(clientId.trim(), clientSecret.trim());
+
+        if (hmrcClientIdField != null) {
+            hmrcClientIdField.clear();
+        }
+        if (hmrcClientSecretField != null) {
+            hmrcClientSecretField.clear();
+        }
+
+        loadHmrcCredentialsStatus();
+        updateHmrcConnectionStatus();
+        showInfo("Credentials Saved",
+                "Your HMRC API credentials have been saved and encrypted.\n\n" +
+                "You can now connect to HMRC using the 'Connect & Verify' button below.");
+    }
+
+    @FXML
+    void handleCopyRedirectUri(ActionEvent event) {
+        String uri = hmrcRedirectUriField != null ? hmrcRedirectUriField.getText() : "http://localhost:8088/oauth/callback";
+        javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+        javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+        content.putString(uri);
+        clipboard.setContent(content);
+        if (copyRedirectUriButton != null) {
+            String originalText = copyRedirectUriButton.getText();
+            copyRedirectUriButton.setText("Copied!");
+            copyRedirectUriButton.setDisable(true);
+            new java.util.Timer().schedule(new java.util.TimerTask() {
+                @Override
+                public void run() {
+                    Platform.runLater(() -> {
+                        copyRedirectUriButton.setText(originalText);
+                        copyRedirectUriButton.setDisable(false);
+                    });
+                }
+            }, 1500);
+        }
+    }
+
+    @FXML
+    void handleClearHmrcCredentials(ActionEvent event) {
+        SqliteDataStore.getInstance().clearHmrcCredentials();
+        System.clearProperty("hmrc.client-id");
+        System.clearProperty("hmrc.client-secret");
+        loadHmrcCredentialsStatus();
+        updateHmrcConnectionStatus();
+        showInfo("Credentials Cleared", "Your HMRC API credentials have been removed.");
+    }
+
+    /**
+     * Applies stored HMRC credentials as system properties so that
+     * HmrcConfig and the OAuth flow can read them.
+     */
+    static void applyHmrcCredentialsToSystemProperties(String clientId, String clientSecret) {
+        if (clientId != null && !clientId.isBlank()) {
+            System.setProperty("hmrc.client-id", clientId);
+        }
+        if (clientSecret != null && !clientSecret.isBlank()) {
+            System.setProperty("hmrc.client-secret", clientSecret);
+        }
+    }
+
+    /**
+     * Loads stored HMRC credentials from SQLite and applies them as system properties.
+     * Called during app startup to make credentials available to HmrcConfig.
+     */
+    public static void loadAndApplyStoredCredentials() {
+        try {
+            SqliteDataStore store = SqliteDataStore.getInstance();
+            String clientId = store.loadHmrcClientId();
+            String clientSecret = store.loadHmrcClientSecret();
+            applyHmrcCredentialsToSystemProperties(clientId, clientSecret);
+        } catch (Exception e) {
+            Logger.getLogger(SettingsController.class.getName())
+                    .log(Level.WARNING, "Failed to load stored HMRC credentials", e);
         }
     }
 

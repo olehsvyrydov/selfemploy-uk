@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.control.PasswordField?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
@@ -86,6 +87,63 @@
                 </HBox>
                 <Label text="Required. Your NINO is essential for all MTD submissions to HMRC. Find it on payslips, P60, tax letters, or the HMRC app."
                        styleClass="settings-hint" wrapText="true"/>
+            </VBox>
+        </VBox>
+
+        <!-- HMRC API Credentials Section (BYO Model) -->
+        <VBox styleClass="settings-section, settings-section-hmrc" spacing="16">
+            <Label text="HMRC API Credentials" styleClass="section-title"/>
+
+            <VBox styleClass="settings-card, settings-card-hmrc" spacing="12">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <FontIcon iconLiteral="fas-key" iconSize="20" styleClass="settings-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="API Credentials" styleClass="settings-label"/>
+                        <Label fx:id="hmrcCredentialsStatusLabel" text="Not configured" styleClass="settings-value"/>
+                    </VBox>
+                </HBox>
+
+                <Label text="Register your application on the HMRC Developer Hub to obtain credentials. Each user must register their own app. Credentials are encrypted and stored locally."
+                       styleClass="settings-hint" wrapText="true"/>
+
+                <!-- Redirect URI (read-only, shown first as users need it during registration) -->
+                <VBox spacing="4">
+                    <Label text="Redirect URI (use this when registering your app)" styleClass="settings-label"
+                           labelFor="$hmrcRedirectUriField"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <TextField fx:id="hmrcRedirectUriField"
+                                   text="http://localhost:8088/oauth/callback"
+                                   styleClass="utr-field" editable="false" HBox.hgrow="ALWAYS"
+                                   accessibleText="OAuth redirect URI to configure on HMRC Developer Hub"/>
+                        <Button fx:id="copyRedirectUriButton" text="Copy" styleClass="button-secondary" onAction="#handleCopyRedirectUri"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Client ID -->
+                <VBox spacing="4">
+                    <Label text="Client ID" styleClass="settings-label"
+                           labelFor="$hmrcClientIdField"/>
+                    <TextField fx:id="hmrcClientIdField"
+                               promptText="Enter your HMRC Developer Hub Client ID"
+                               styleClass="utr-field"
+                               accessibleText="Enter your HMRC API Client ID"/>
+                </VBox>
+
+                <!-- Client Secret -->
+                <VBox spacing="4">
+                    <Label text="Client Secret" styleClass="settings-label"
+                           labelFor="$hmrcClientSecretField"/>
+                    <PasswordField fx:id="hmrcClientSecretField"
+                                   promptText="Enter your HMRC Developer Hub Client Secret"
+                                   styleClass="utr-field"
+                                   accessibleText="Enter your HMRC API Client Secret"/>
+                </VBox>
+
+                <!-- Action Buttons -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Button fx:id="saveCredentialsButton" text="Save Credentials" styleClass="button-primary" onAction="#handleSaveHmrcCredentials"/>
+                    <Button fx:id="clearCredentialsButton" text="Clear" styleClass="button-secondary" onAction="#handleClearHmrcCredentials"/>
+                </HBox>
             </VBox>
         </VBox>
 

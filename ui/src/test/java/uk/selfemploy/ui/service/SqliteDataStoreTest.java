@@ -687,6 +687,88 @@ class SqliteDataStoreTest {
     }
 
     @Nested
+    @DisplayName("HMRC API Credential Persistence")
+    class HmrcCredentialPersistence {
+
+        @Test
+        @DisplayName("should save and load encrypted client ID")
+        void shouldSaveAndLoadEncryptedClientId() {
+            dataStore.saveHmrcClientId("test-client-id-123");
+            String loaded = dataStore.loadHmrcClientId();
+
+            assertThat(loaded).isEqualTo("test-client-id-123");
+        }
+
+        @Test
+        @DisplayName("should save and load encrypted client secret")
+        void shouldSaveAndLoadEncryptedClientSecret() {
+            dataStore.saveHmrcClientSecret("secret-abc-xyz-789");
+            String loaded = dataStore.loadHmrcClientSecret();
+
+            assertThat(loaded).isEqualTo("secret-abc-xyz-789");
+        }
+
+        @Test
+        @DisplayName("should return null when no credentials saved")
+        void shouldReturnNullWhenNoCredentialsSaved() {
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+            assertThat(dataStore.loadHmrcClientSecret()).isNull();
+        }
+
+        @Test
+        @DisplayName("should report hasHmrcCredentials correctly")
+        void shouldReportHasHmrcCredentials() {
+            assertThat(dataStore.hasHmrcCredentials()).isFalse();
+
+            dataStore.saveHmrcClientId("id");
+            assertThat(dataStore.hasHmrcCredentials()).isFalse();
+
+            dataStore.saveHmrcClientSecret("secret");
+            assertThat(dataStore.hasHmrcCredentials()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should clear credentials")
+        void shouldClearCredentials() {
+            dataStore.saveHmrcClientId("id");
+            dataStore.saveHmrcClientSecret("secret");
+            assertThat(dataStore.hasHmrcCredentials()).isTrue();
+
+            dataStore.clearHmrcCredentials();
+            assertThat(dataStore.hasHmrcCredentials()).isFalse();
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+            assertThat(dataStore.loadHmrcClientSecret()).isNull();
+        }
+
+        @Test
+        @DisplayName("should overwrite existing credentials")
+        void shouldOverwriteExistingCredentials() {
+            dataStore.saveHmrcClientId("old-id");
+            dataStore.saveHmrcClientId("new-id");
+
+            assertThat(dataStore.loadHmrcClientId()).isEqualTo("new-id");
+        }
+
+        @Test
+        @DisplayName("should clear client ID when saving null")
+        void shouldClearClientIdOnNull() {
+            dataStore.saveHmrcClientId("some-id");
+            dataStore.saveHmrcClientId(null);
+
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+        }
+
+        @Test
+        @DisplayName("should clear client ID when saving blank")
+        void shouldClearClientIdOnBlank() {
+            dataStore.saveHmrcClientId("some-id");
+            dataStore.saveHmrcClientId("  ");
+
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("NINO Verification Status Persistence")
     class NinoVerificationStatusPersistence {
 

@@ -613,6 +613,91 @@ public final class SqliteDataStore {
         return loadSetting("connected_nino");
     }
 
+    // === HMRC API Credential Operations ===
+
+    private static final CredentialEncryption credentialEncryption = new CredentialEncryption();
+
+    /**
+     * Saves the HMRC API client ID, encrypted at rest.
+     *
+     * @param clientId the HMRC Developer Hub client ID, or null to clear
+     */
+    public synchronized void saveHmrcClientId(String clientId) {
+        if (clientId == null || clientId.isBlank()) {
+            saveSetting("hmrc_client_id_enc", null);
+        } else {
+            saveSetting("hmrc_client_id_enc", credentialEncryption.encrypt(clientId));
+        }
+    }
+
+    /**
+     * Loads the stored HMRC API client ID.
+     *
+     * @return the decrypted client ID, or null if not set
+     */
+    public synchronized String loadHmrcClientId() {
+        String encrypted = loadSetting("hmrc_client_id_enc");
+        if (encrypted == null) {
+            return null;
+        }
+        try {
+            return credentialEncryption.decrypt(encrypted);
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Failed to decrypt HMRC client ID - clearing corrupted value", e);
+            saveSetting("hmrc_client_id_enc", null);
+            return null;
+        }
+    }
+
+    /**
+     * Saves the HMRC API client secret, encrypted at rest.
+     *
+     * @param clientSecret the HMRC Developer Hub client secret, or null to clear
+     */
+    public synchronized void saveHmrcClientSecret(String clientSecret) {
+        if (clientSecret == null || clientSecret.isBlank()) {
+            saveSetting("hmrc_client_secret_enc", null);
+        } else {
+            saveSetting("hmrc_client_secret_enc", credentialEncryption.encrypt(clientSecret));
+        }
+    }
+
+    /**
+     * Loads the stored HMRC API client secret.
+     *
+     * @return the decrypted client secret, or null if not set
+     */
+    public synchronized String loadHmrcClientSecret() {
+        String encrypted = loadSetting("hmrc_client_secret_enc");
+        if (encrypted == null) {
+            return null;
+        }
+        try {
+            return credentialEncryption.decrypt(encrypted);
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Failed to decrypt HMRC client secret - clearing corrupted value", e);
+            saveSetting("hmrc_client_secret_enc", null);
+            return null;
+        }
+    }
+
+    /**
+     * Checks if HMRC API credentials are stored.
+     *
+     * @return true if both client ID and client secret are stored
+     */
+    public synchronized boolean hasHmrcCredentials() {
+        return loadHmrcClientId() != null && loadHmrcClientSecret() != null;
+    }
+
+    /**
+     * Clears all stored HMRC API credentials.
+     */
+    public synchronized void clearHmrcCredentials() {
+        saveSetting("hmrc_client_id_enc", null);
+        saveSetting("hmrc_client_secret_enc", null);
+    }
+
     // === Expense Operations ===
 
     /**
