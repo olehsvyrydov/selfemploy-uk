@@ -1314,7 +1314,7 @@ public final class SqliteDataStore {
      * Finds a bank transaction by ID.
      */
     public synchronized Optional<BankTransaction> findBankTransactionById(UUID id) {
-        String sql = "SELECT * FROM bank_transactions WHERE id = ?";
+        String sql = "SELECT * FROM bank_transactions WHERE id = ? AND deleted_at IS NULL";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             ResultSet rs = pstmt.executeQuery();
@@ -1366,7 +1366,7 @@ public final class SqliteDataStore {
      * Checks if a bank transaction with the given hash exists for a business.
      */
     public synchronized boolean existsByTransactionHash(UUID businessId, String hash) {
-        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND transaction_hash = ?";
+        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND transaction_hash = ? AND deleted_at IS NULL";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, hash);

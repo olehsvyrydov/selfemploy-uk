@@ -528,5 +528,35 @@ class BankStatementImportServiceTest {
             );
             assertThat(result).isNotNull();
         }
+
+        @Test
+        @DisplayName("throws exception when file is deleted before import")
+        void throwsWhenFileDeletedBeforeImport() throws IOException {
+            Path csvFile = createTempCsv("Date,Description,Amount\n2024-01-15,Test,100.00");
+
+            // Delete the file so it's unreadable at any stage
+            Files.delete(csvFile);
+
+            assertThatThrownBy(() -> service.importBankStatement(
+                BUSINESS_ID, csvFile, StandardCharsets.UTF_8
+            )).isInstanceOf(CsvParseException.class)
+              .hasMessageContaining("Unable to read file")
+              .hasCauseInstanceOf(IOException.class);
+        }
+
+        @Test
+        @DisplayName("computeFileHash throws CsvParseException on IOException, never returns null")
+        void computeFileHashThrowsOnIoError() {
+            // Verify the production fix: computeFileHash must throw, not return null
+            Path nonExistentFile = Path.of("/tmp/non-existent-file-" + UUID.randomUUID() + ".csv");
+
+            assertThatThrownBy(() -> {
+                // Use reflection to test the private method directly
+                var method = BankStatementImportService.class.getDeclaredMethod(
+                    "computeFileHash", Path.class);
+                method.setAccessible(true);
+                method.invoke(service, nonExistentFile);
+            }).hasCauseInstanceOf(CsvParseException.class);
+        }
     }
 }
