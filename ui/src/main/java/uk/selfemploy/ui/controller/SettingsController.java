@@ -29,6 +29,12 @@ import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
+import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.common.util.VersionInfo;
+import uk.selfemploy.ui.component.HelpDialog;
+import uk.selfemploy.ui.help.HelpContent;
+import uk.selfemploy.ui.help.HelpService;
+import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
@@ -37,10 +43,18 @@ import uk.selfemploy.ui.service.UiDuplicateDetectionService;
 import uk.selfemploy.ui.viewmodel.ImportAction;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import javafx.application.Platform;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.PasswordField;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.awt.Desktop;
+import java.net.URI;
 
 import java.io.File;
 import java.io.IOException;
@@ -141,17 +155,18 @@ public class SettingsController implements Initializable, MainController.TaxYear
     // HMRC API Credentials FXML fields
     @FXML private Label hmrcCredentialsStatusLabel;
     @FXML private TextField hmrcClientIdField;
-    @FXML private javafx.scene.control.PasswordField hmrcClientSecretField;
+    @FXML private PasswordField hmrcClientSecretField;
     @FXML private TextField hmrcRedirectUriField;
     @FXML private Button saveCredentialsButton;
     @FXML private Button clearCredentialsButton;
     @FXML private Button copyRedirectUriButton;
+    @FXML private Button hmrcRegistrationHelpButton;
 
     // HMRC Connection Setup FXML fields
     @FXML private FontIcon hmrcStatusIcon;
     @FXML private Label hmrcConnectionStatusLabel;
     @FXML private Label hmrcSetupInstructions;
-    @FXML private javafx.scene.control.ComboBox<String> hmrcEnvironmentCombo;
+    @FXML private ComboBox<String> hmrcEnvironmentCombo;
     @FXML private Label hmrcEnvironmentHint;
     @FXML private Button hmrcSetupButton;
     @FXML private Button hmrcDisconnectButton;
@@ -650,10 +665,19 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     @FXML
+    void handleShowRegistrationHelp(ActionEvent event) {
+        HelpService helpService = new HelpService();
+        helpService.getHelp(HelpTopic.HMRC_REGISTRATION).ifPresent(content ->
+            new HelpDialog(content, FontAwesomeSolid.KEY, "#2563eb", helpService,
+                    HelpDialog.DialogSize.MEDIUM).showAndWait()
+        );
+    }
+
+    @FXML
     void handleCopyRedirectUri(ActionEvent event) {
         String uri = hmrcRedirectUriField != null ? hmrcRedirectUriField.getText() : "http://localhost:8088/oauth/callback";
-        javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
-        javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        ClipboardContent content = new ClipboardContent();
         content.putString(uri);
         clipboard.setContent(content);
         if (copyRedirectUriButton != null) {
@@ -747,11 +771,11 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     "Your existing connection will be reset and you'll need to reconnect.\n\n" +
                     "Only switch to Production after your HMRC Developer Hub application has been approved for production use.");
             confirm.getButtonTypes().setAll(
-                    javafx.scene.control.ButtonType.OK,
-                    javafx.scene.control.ButtonType.CANCEL);
+                    ButtonType.OK,
+                    ButtonType.CANCEL);
 
             var result = confirm.showAndWait();
-            if (result.isEmpty() || result.get() == javafx.scene.control.ButtonType.CANCEL) {
+            if (result.isEmpty() || result.get() == ButtonType.CANCEL) {
                 hmrcEnvironmentCombo.setValue("Sandbox (Testing)");
                 return;
             }
@@ -874,7 +898,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                         .build();
 
                 java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                        .uri(java.net.URI.create(url))
+                        .uri(URI.create(url))
                         .timeout(java.time.Duration.ofSeconds(30))
                         .header("Authorization", "Bearer " + accessToken)
                         .header("Accept", "application/vnd.hmrc.2.0+json")
@@ -1305,16 +1329,16 @@ public class SettingsController implements Initializable, MainController.TaxYear
     void handleShowDisclaimer(ActionEvent event) {
         Alert dialog = new Alert(Alert.AlertType.INFORMATION);
         dialog.setTitle("Disclaimer - UK Self-Employment Manager");
-        dialog.setHeaderText(uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_TITLE);
+        dialog.setHeaderText(Disclaimers.CONSUMER_RIGHTS_TITLE);
         dialog.setContentText(
-                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_1 + "\n\n" +
-                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_2 + "\n\n" +
-                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATIONS_HEADER + "\n" +
-                "  - " + uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_1 + "\n" +
-                "  - " + uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_2 + "\n" +
-                "  - " + uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_3 + "\n\n" +
-                uk.selfemploy.common.legal.Disclaimers.PDF_CONFIRMATION_DISCLAIMER + "\n\n" +
-                uk.selfemploy.common.legal.Disclaimers.CONSUMER_RIGHTS_ACKNOWLEDGMENT);
+                Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_1 + "\n\n" +
+                Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_2 + "\n\n" +
+                Disclaimers.CONSUMER_RIGHTS_RECOMMENDATIONS_HEADER + "\n" +
+                "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_1 + "\n" +
+                "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_2 + "\n" +
+                "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_3 + "\n\n" +
+                Disclaimers.PDF_CONFIRMATION_DISCLAIMER + "\n\n" +
+                Disclaimers.CONSUMER_RIGHTS_ACKNOWLEDGMENT);
         dialog.getDialogPane().setMinWidth(500);
         dialog.getDialogPane().setMinHeight(400);
         dialog.showAndWait();
@@ -1324,20 +1348,20 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void initAboutSection() {
         if (versionLabel != null) {
-            versionLabel.setText("Version " + uk.selfemploy.common.util.VersionInfo.getVersion());
+            versionLabel.setText("Version " + VersionInfo.getVersion());
         }
         if (buildDateLabel != null) {
-            buildDateLabel.setText("Built: " + uk.selfemploy.common.util.VersionInfo.getBuildTimestamp());
+            buildDateLabel.setText("Built: " + VersionInfo.getBuildTimestamp());
         }
         if (licenseLabel != null) {
-            licenseLabel.setText("License: " + uk.selfemploy.common.util.VersionInfo.getLicense());
+            licenseLabel.setText("License: " + VersionInfo.getLicense());
         }
         if (githubLabel != null) {
-            String url = uk.selfemploy.common.util.VersionInfo.getGitHubUrl();
+            String url = VersionInfo.getGitHubUrl();
             githubLabel.setText(url);
             githubLabel.setOnMouseClicked(e -> {
                 try {
-                    java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                    Desktop.getDesktop().browse(new URI(url));
                 } catch (Exception ex) {
                     LOG.log(Level.WARNING, "Failed to open GitHub URL", ex);
                 }

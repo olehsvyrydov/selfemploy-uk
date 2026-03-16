@@ -103,8 +103,11 @@
                     </VBox>
                 </HBox>
 
-                <Label text="Register your application on the HMRC Developer Hub to obtain credentials. Each user must register their own app. Credentials are encrypted and stored locally."
-                       styleClass="settings-hint" wrapText="true"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Register your application on the HMRC Developer Hub to obtain credentials. Each user must register their own app. Credentials are encrypted and stored locally."
+                           styleClass="settings-hint" wrapText="true" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="hmrcRegistrationHelpButton" text="How to set up" styleClass="button-secondary" onAction="#handleShowRegistrationHelp"/>
+                </HBox>
 
                 <!-- Redirect URI (read-only, shown first as users need it during registration) -->
                 <VBox spacing="4">
