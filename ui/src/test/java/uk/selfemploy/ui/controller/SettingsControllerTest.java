@@ -1470,4 +1470,55 @@ class SettingsControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("HMRC Environment Configuration")
+    class HmrcEnvironmentConfiguration {
+
+        @Test
+        @DisplayName("should set sandbox system properties for sandbox environment")
+        void shouldSetSandboxProperties() {
+            SettingsController.applyHmrcEnvironmentToSystemProperties("sandbox");
+
+            assertThat(System.getProperty("HMRC_API_BASE_URL"))
+                    .isEqualTo("https://test-api.service.hmrc.gov.uk");
+            assertThat(System.getProperty("HMRC_AUTHORIZE_URL"))
+                    .isEqualTo("https://test-www.tax.service.gov.uk/oauth/authorize");
+            assertThat(System.getProperty("HMRC_TOKEN_URL"))
+                    .isEqualTo("https://test-api.service.hmrc.gov.uk/oauth/token");
+        }
+
+        @Test
+        @DisplayName("should set production system properties for production environment")
+        void shouldSetProductionProperties() {
+            SettingsController.applyHmrcEnvironmentToSystemProperties("production");
+
+            assertThat(System.getProperty("HMRC_API_BASE_URL"))
+                    .isEqualTo("https://api.service.hmrc.gov.uk");
+            assertThat(System.getProperty("HMRC_AUTHORIZE_URL"))
+                    .isEqualTo("https://www.tax.service.gov.uk/oauth/authorize");
+            assertThat(System.getProperty("HMRC_TOKEN_URL"))
+                    .isEqualTo("https://api.service.hmrc.gov.uk/oauth/token");
+        }
+
+        @Test
+        @DisplayName("should default to sandbox for null environment")
+        void shouldDefaultToSandboxForNull() {
+            SettingsController.applyHmrcEnvironmentToSystemProperties(null);
+
+            assertThat(System.getProperty("HMRC_API_BASE_URL"))
+                    .isEqualTo("https://test-api.service.hmrc.gov.uk");
+        }
+
+        @Test
+        @DisplayName("loadAndApplyStoredEnvironment should apply stored environment")
+        void shouldApplyStoredEnvironment() {
+            SqliteDataStore.getInstance().saveHmrcEnvironment("production");
+
+            SettingsController.loadAndApplyStoredEnvironment();
+
+            assertThat(System.getProperty("HMRC_API_BASE_URL"))
+                    .isEqualTo("https://api.service.hmrc.gov.uk");
+        }
+    }
+
 }

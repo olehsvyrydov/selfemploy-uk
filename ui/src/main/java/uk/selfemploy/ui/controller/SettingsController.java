@@ -144,6 +144,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private FontIcon hmrcStatusIcon;
     @FXML private Label hmrcConnectionStatusLabel;
     @FXML private Label hmrcSetupInstructions;
+    @FXML private javafx.scene.control.ComboBox<String> hmrcEnvironmentCombo;
+    @FXML private Label hmrcEnvironmentHint;
     @FXML private Button hmrcSetupButton;
     @FXML private Button hmrcDisconnectButton;
     @FXML private VBox hmrcSetupChecklist;
@@ -168,6 +170,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         loadNinoFromStore();
         updateNinoDisplay();
         loadHmrcCredentialsStatus();
+        initHmrcEnvironmentCombo();
         updateHmrcConnectionStatus();
     }
 
@@ -700,6 +703,95 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
     }
 
+    // === HMRC Environment ===
+
+    private static final String SANDBOX_API_BASE = "https://test-api.service.hmrc.gov.uk";
+    private static final String SANDBOX_AUTHORIZE = "https://test-www.tax.service.gov.uk/oauth/authorize";
+    private static final String SANDBOX_TOKEN = "https://test-api.service.hmrc.gov.uk/oauth/token";
+    private static final String PRODUCTION_API_BASE = "https://api.service.hmrc.gov.uk";
+    private static final String PRODUCTION_AUTHORIZE = "https://www.tax.service.gov.uk/oauth/authorize";
+    private static final String PRODUCTION_TOKEN = "https://api.service.hmrc.gov.uk/oauth/token";
+
+    private void initHmrcEnvironmentCombo() {
+        if (hmrcEnvironmentCombo == null) return;
+
+        hmrcEnvironmentCombo.getItems().addAll("Sandbox (Testing)", "Production (Live)");
+
+        String stored = SqliteDataStore.getInstance().loadHmrcEnvironment();
+        hmrcEnvironmentCombo.setValue("production".equals(stored)
+                ? "Production (Live)" : "Sandbox (Testing)");
+
+        hmrcEnvironmentCombo.setOnAction(e -> handleEnvironmentChange());
+    }
+
+    private void handleEnvironmentChange() {
+        if (hmrcEnvironmentCombo == null) return;
+
+        String selected = hmrcEnvironmentCombo.getValue();
+        boolean isProduction = "Production (Live)".equals(selected);
+
+        if (isProduction) {
+            Alert confirm = new Alert(Alert.AlertType.WARNING);
+            confirm.setTitle("Switch to Production");
+            confirm.setHeaderText("Are you sure you want to switch to Production?");
+            confirm.setContentText(
+                    "Production mode submits real data to HMRC.\n\n" +
+                    "Your existing connection will be reset and you'll need to reconnect.\n\n" +
+                    "Only switch to Production after your HMRC Developer Hub application has been approved for production use.");
+            confirm.getButtonTypes().setAll(
+                    javafx.scene.control.ButtonType.OK,
+                    javafx.scene.control.ButtonType.CANCEL);
+
+            var result = confirm.showAndWait();
+            if (result.isEmpty() || result.get() == javafx.scene.control.ButtonType.CANCEL) {
+                hmrcEnvironmentCombo.setValue("Sandbox (Testing)");
+                return;
+            }
+        }
+
+        String envValue = isProduction ? "production" : "sandbox";
+        SqliteDataStore.getInstance().saveHmrcEnvironment(envValue);
+        applyHmrcEnvironmentToSystemProperties(envValue);
+
+        // Reset OAuth connection since tokens are environment-specific
+        SqliteDataStore.getInstance().clearOAuthTokens();
+        SqliteDataStore.getInstance().saveHmrcBusinessId(null);
+        SqliteDataStore.getInstance().saveHmrcTradingName(null);
+        SqliteDataStore.getInstance().saveNinoVerified(false);
+        OAuthServiceFactory.shutdown();
+
+        updateHmrcConnectionStatus();
+
+        String envLabel = isProduction ? "Production" : "Sandbox";
+        showInfo("Environment Changed",
+                "Switched to " + envLabel + " environment.\n\n" +
+                "Please reconnect to HMRC using the 'Connect & Verify' button.");
+    }
+
+    /**
+     * Applies HMRC environment URLs as system properties based on the stored environment setting.
+     */
+    static void applyHmrcEnvironmentToSystemProperties(String environment) {
+        boolean isProduction = "production".equals(environment);
+        System.setProperty("HMRC_API_BASE_URL", isProduction ? PRODUCTION_API_BASE : SANDBOX_API_BASE);
+        System.setProperty("HMRC_AUTHORIZE_URL", isProduction ? PRODUCTION_AUTHORIZE : SANDBOX_AUTHORIZE);
+        System.setProperty("HMRC_TOKEN_URL", isProduction ? PRODUCTION_TOKEN : SANDBOX_TOKEN);
+    }
+
+    /**
+     * Loads stored HMRC environment from SQLite and applies URLs as system properties.
+     * Called during app startup.
+     */
+    public static void loadAndApplyStoredEnvironment() {
+        try {
+            String env = SqliteDataStore.getInstance().loadHmrcEnvironment();
+            applyHmrcEnvironmentToSystemProperties(env);
+        } catch (Exception e) {
+            Logger.getLogger(SettingsController.class.getName())
+                    .log(Level.WARNING, "Failed to load stored HMRC environment", e);
+        }
+    }
+
     // === HMRC Connection Setup ===
 
     @FXML
@@ -1046,10 +1138,13 @@ public class SettingsController implements Initializable, MainController.TaxYear
             this.ninoVerificationStatus = NinoVerificationStatus.SANDBOX_FALLBACK;
         }
 
+        // Determine environment label for status display
+        String envLabel = SqliteDataStore.getInstance().isSandboxEnvironment() ? "Sandbox" : "Production";
+
         // Update status text and icon - differentiate between verified, unverified, and changed
         if (hasNino && hasOAuth && hasProfile && ninoChanged) {
             // NINO changed since connection - AMBER WARNING
-            hmrcConnectionStatusLabel.setText("Connected (Sandbox) - NINO changed");
+            hmrcConnectionStatusLabel.setText("Connected (" + envLabel + ") - NINO changed");
             if (hmrcStatusIcon != null) {
                 hmrcStatusIcon.setIconLiteral("fas-exclamation-triangle");
                 hmrcStatusIcon.setIconColor(Color.web("#f59e0b")); // Amber
@@ -1069,7 +1164,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
             }
         } else if (hasNino && hasOAuth && hasProfile && !ninoVerified) {
             // Connected but NINO NOT verified (sandbox fallback) - AMBER
-            hmrcConnectionStatusLabel.setText("Connected (Sandbox) - NINO not verified");
+            hmrcConnectionStatusLabel.setText("Connected (" + envLabel + ") - NINO not verified");
             if (hmrcStatusIcon != null) {
                 hmrcStatusIcon.setIconLiteral("fas-exclamation-triangle");
                 hmrcStatusIcon.setIconColor(Color.web("#f59e0b")); // Amber

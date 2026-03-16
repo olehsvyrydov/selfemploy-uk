@@ -161,6 +161,18 @@
                     </VBox>
                 </HBox>
 
+                <!-- Environment Toggle -->
+                <VBox spacing="4">
+                    <Label text="Environment" styleClass="settings-label"
+                           labelFor="$hmrcEnvironmentCombo"/>
+                    <ComboBox fx:id="hmrcEnvironmentCombo"
+                              styleClass="utr-field" maxWidth="250"
+                              accessibleText="Select HMRC environment: Sandbox for testing or Production for live submissions"/>
+                    <Label fx:id="hmrcEnvironmentHint"
+                           text="Sandbox is for testing. Switch to Production only after HMRC approves your application."
+                           styleClass="settings-hint" wrapText="true"/>
+                </VBox>
+
                 <!-- Setup Instructions -->
                 <Label fx:id="hmrcSetupInstructions"
                        text="Set up your HMRC connection to enable MTD submissions. This is a one-time setup that verifies your NINO and connects to your HMRC account."

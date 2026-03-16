@@ -698,6 +698,35 @@ public final class SqliteDataStore {
         saveSetting("hmrc_client_secret_enc", null);
     }
 
+    // === HMRC Environment ===
+
+    /**
+     * Saves the HMRC environment setting ("sandbox" or "production").
+     * Null or blank values default to "sandbox".
+     */
+    public synchronized void saveHmrcEnvironment(String environment) {
+        if (environment == null || environment.isBlank()) {
+            saveSetting("hmrc_environment", "sandbox");
+        } else {
+            saveSetting("hmrc_environment", environment.trim().toLowerCase());
+        }
+    }
+
+    /**
+     * Loads the HMRC environment setting. Defaults to "sandbox" if not set.
+     */
+    public synchronized String loadHmrcEnvironment() {
+        String env = loadSetting("hmrc_environment");
+        return env == null ? "sandbox" : env;
+    }
+
+    /**
+     * Returns true if the current environment is sandbox (the default).
+     */
+    public synchronized boolean isSandboxEnvironment() {
+        return "sandbox".equals(loadHmrcEnvironment());
+    }
+
     // === Expense Operations ===
 
     /**

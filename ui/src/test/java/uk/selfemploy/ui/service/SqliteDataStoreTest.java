@@ -1032,4 +1032,61 @@ class SqliteDataStoreTest {
                 null
         );
     }
+
+    @Nested
+    @DisplayName("HMRC Environment Persistence")
+    class HmrcEnvironmentPersistence {
+
+        @Test
+        @DisplayName("should default to sandbox when no environment saved")
+        void shouldDefaultToSandbox() {
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should save and load production environment")
+        void shouldSaveAndLoadProduction() {
+            dataStore.saveHmrcEnvironment("production");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("production");
+        }
+
+        @Test
+        @DisplayName("should save and load sandbox environment")
+        void shouldSaveAndLoadSandbox() {
+            dataStore.saveHmrcEnvironment("sandbox");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should overwrite environment")
+        void shouldOverwriteEnvironment() {
+            dataStore.saveHmrcEnvironment("production");
+            dataStore.saveHmrcEnvironment("sandbox");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should default to sandbox on null or blank")
+        void shouldDefaultOnNullOrBlank() {
+            dataStore.saveHmrcEnvironment("production");
+            dataStore.saveHmrcEnvironment(null);
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+
+            dataStore.saveHmrcEnvironment("production");
+            dataStore.saveHmrcEnvironment("  ");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should report isSandboxEnvironment correctly")
+        void shouldReportIsSandbox() {
+            assertThat(dataStore.isSandboxEnvironment()).isTrue();
+
+            dataStore.saveHmrcEnvironment("production");
+            assertThat(dataStore.isSandboxEnvironment()).isFalse();
+
+            dataStore.saveHmrcEnvironment("sandbox");
+            assertThat(dataStore.isSandboxEnvironment()).isTrue();
+        }
+    }
 }
