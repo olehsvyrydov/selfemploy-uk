@@ -22,7 +22,6 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Optional;
 
 /**
@@ -244,25 +243,13 @@ public class EncryptedFileTokenStorage implements TokenStorage {
     /**
      * Internal data class for JSON serialization.
      */
-    private static class TokenData {
-        public String accessToken;
-        public String refreshToken;
-        public long expiresIn;
-        public String tokenType;
-        public String scope;
-        public Instant issuedAt;
-
-        // For Jackson
-        public TokenData() {}
-
-        public TokenData(String accessToken, String refreshToken, long expiresIn,
-                        String tokenType, String scope, Instant issuedAt) {
-            this.accessToken = accessToken;
-            this.refreshToken = refreshToken;
-            this.expiresIn = expiresIn;
-            this.tokenType = tokenType;
-            this.scope = scope;
-            this.issuedAt = issuedAt;
-        }
+    private record TokenData (
+        String accessToken,
+        String refreshToken,
+        long expiresIn,
+        String tokenType,
+        String scope,
+        Instant issuedAt
+    ) {
     }
 }
