@@ -225,6 +225,87 @@ class ExclusionRulesEngineTest {
 
             assertThat(result.shouldExclude()).isFalse();
         }
+
+        @Test
+        @DisplayName("ATMOSPHERE should not match ATM keyword")
+        void atmosphereNotExcluded() {
+            BankTransaction tx = createTransaction("THE ATMOSPHERE CAFE", new BigDecimal("-12.50"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
+
+        @Test
+        @DisplayName("BATMORE should not match ATM keyword")
+        void batmoreNotExcluded() {
+            BankTransaction tx = createTransaction("BATMORE FARM SHOP", new BigDecimal("-30.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
+
+        @Test
+        @DisplayName("TRANSFERRED should not match TRANSFER as substring in compound word")
+        void transferredNotExcluded() {
+            BankTransaction tx = createTransaction("AMT TRANSFERRED TO YOU", new BigDecimal("100.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
+
+        @Test
+        @DisplayName("LOANABLE should not match LOAN keyword")
+        void loanableNotExcluded() {
+            BankTransaction tx = createTransaction("LOANABLE TOOLS LTD", new BigDecimal("-75.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
+
+        @Test
+        @DisplayName("ATM at end of description should still be excluded")
+        void atmAtEndOfDescription() {
+            BankTransaction tx = createTransaction("WITHDRAWAL ATM", new BigDecimal("-100.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isTrue();
+            assertThat(result.reason()).contains("CASH_WITHDRAWAL");
+        }
+
+        @Test
+        @DisplayName("ATM at start of description should still be excluded")
+        void atmAtStartOfDescription() {
+            BankTransaction tx = createTransaction("ATM 54321", new BigDecimal("-50.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isTrue();
+        }
+
+        @Test
+        @DisplayName("HMRC embedded in another word should not match")
+        void hmrcEmbeddedNotExcluded() {
+            BankTransaction tx = createTransaction("AHMRCO CONSULTING", new BigDecimal("-200.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
+
+        @Test
+        @DisplayName("CASH SALE should not be excluded")
+        void cashSaleNotExcluded() {
+            BankTransaction tx = createTransaction("CASH SALE REF123", new BigDecimal("50.00"));
+
+            ExclusionResult result = engine.evaluate(tx);
+
+            assertThat(result.shouldExclude()).isFalse();
+        }
     }
 
     @Nested

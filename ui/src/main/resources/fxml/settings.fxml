@@ -2,6 +2,7 @@
 
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.control.PasswordField?>
 <?import javafx.geometry.Insets?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
@@ -89,6 +90,66 @@
             </VBox>
         </VBox>
 
+        <!-- HMRC API Credentials Section (BYO Model) -->
+        <VBox styleClass="settings-section, settings-section-hmrc" spacing="16">
+            <Label text="HMRC API Credentials" styleClass="section-title"/>
+
+            <VBox styleClass="settings-card, settings-card-hmrc" spacing="12">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <FontIcon iconLiteral="fas-key" iconSize="20" styleClass="settings-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="API Credentials" styleClass="settings-label"/>
+                        <Label fx:id="hmrcCredentialsStatusLabel" text="Not configured" styleClass="settings-value"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="Register your application on the HMRC Developer Hub to obtain credentials. Each user must register their own app. Credentials are encrypted and stored locally."
+                           styleClass="settings-hint" wrapText="true" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="hmrcRegistrationHelpButton" text="How to set up" styleClass="button-secondary" onAction="#handleShowRegistrationHelp"/>
+                </HBox>
+
+                <!-- Redirect URI (read-only, shown first as users need it during registration) -->
+                <VBox spacing="4">
+                    <Label text="Redirect URI (use this when registering your app)" styleClass="settings-label"
+                           labelFor="$hmrcRedirectUriField"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <TextField fx:id="hmrcRedirectUriField"
+                                   text="http://localhost:8088/oauth/callback"
+                                   styleClass="utr-field" editable="false" HBox.hgrow="ALWAYS"
+                                   accessibleText="OAuth redirect URI to configure on HMRC Developer Hub"/>
+                        <Button fx:id="copyRedirectUriButton" text="Copy" styleClass="button-secondary" onAction="#handleCopyRedirectUri"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Client ID -->
+                <VBox spacing="4">
+                    <Label text="Client ID" styleClass="settings-label"
+                           labelFor="$hmrcClientIdField"/>
+                    <TextField fx:id="hmrcClientIdField"
+                               promptText="Enter your HMRC Developer Hub Client ID"
+                               styleClass="utr-field"
+                               accessibleText="Enter your HMRC API Client ID"/>
+                </VBox>
+
+                <!-- Client Secret -->
+                <VBox spacing="4">
+                    <Label text="Client Secret" styleClass="settings-label"
+                           labelFor="$hmrcClientSecretField"/>
+                    <PasswordField fx:id="hmrcClientSecretField"
+                                   promptText="Enter your HMRC Developer Hub Client Secret"
+                                   styleClass="utr-field"
+                                   accessibleText="Enter your HMRC API Client Secret"/>
+                </VBox>
+
+                <!-- Action Buttons -->
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Button fx:id="saveCredentialsButton" text="Save Credentials" styleClass="button-primary" onAction="#handleSaveHmrcCredentials"/>
+                    <Button fx:id="clearCredentialsButton" text="Clear" styleClass="button-secondary" onAction="#handleClearHmrcCredentials"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
         <!-- HMRC Connection Setup Section -->
         <VBox styleClass="settings-section, settings-section-hmrc" spacing="16">
             <Label text="HMRC Connection Setup" styleClass="section-title"/>
@@ -102,6 +163,18 @@
                         <Label fx:id="hmrcConnectionStatusLabel" text="Not set up" styleClass="settings-value"/>
                     </VBox>
                 </HBox>
+
+                <!-- Environment Toggle -->
+                <VBox spacing="4">
+                    <Label text="Environment" styleClass="settings-label"
+                           labelFor="$hmrcEnvironmentCombo"/>
+                    <ComboBox fx:id="hmrcEnvironmentCombo"
+                              styleClass="utr-field" maxWidth="250"
+                              accessibleText="Select HMRC environment: Sandbox for testing or Production for live submissions"/>
+                    <Label fx:id="hmrcEnvironmentHint"
+                           text="Sandbox is for testing. Switch to Production only after HMRC approves your application."
+                           styleClass="settings-hint" wrapText="true"/>
+                </VBox>
 
                 <!-- Setup Instructions -->
                 <Label fx:id="hmrcSetupInstructions"
@@ -155,6 +228,8 @@
                 </VBox>
                 <Button fx:id="privacyButton" text="View" styleClass="button-secondary" onAction="#handleShowPrivacy"/>
             </HBox>
+
+            <!-- Disclaimer removed per SLFEMPUK-22: ToS covers liability -->
         </VBox>
 
         <!-- Data Management Section -->
@@ -182,15 +257,26 @@
             </HBox>
         </VBox>
 
-        <!-- Footer Disclaimer -->
-        <VBox styleClass="settings-disclaimer" spacing="8">
-            <HBox alignment="CENTER_LEFT" spacing="8">
-                <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="16" styleClass="disclaimer-icon"/>
-                <Label text="Important" styleClass="disclaimer-title"/>
-            </HBox>
-            <Label text="This application provides tax estimates only. Always verify calculations with a qualified accountant before submitting to HMRC. You are responsible for the accuracy of your tax returns."
-                   styleClass="disclaimer-text" wrapText="true"/>
+        <!-- About Section -->
+        <VBox styleClass="settings-section" spacing="16">
+            <Label text="About" styleClass="section-title"/>
+
+            <VBox styleClass="settings-card" spacing="8">
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <FontIcon iconLiteral="fas-info-circle" iconSize="20" styleClass="settings-icon"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="UK Self-Employment Manager" styleClass="settings-label"/>
+                        <Label fx:id="versionLabel" text="Version loading..." styleClass="settings-value"/>
+                    </VBox>
+                </HBox>
+                <Label fx:id="buildDateLabel" text="" styleClass="settings-hint"/>
+                <Label fx:id="licenseLabel" text="" styleClass="settings-hint"/>
+                <Label fx:id="githubLabel" text="" styleClass="settings-hint" style="-fx-text-fill: #3b82f6; -fx-cursor: hand;"
+                       accessibleText="Open project GitHub page"/>
+            </VBox>
         </VBox>
+
+        <!-- Footer disclaimer removed per SLFEMPUK-19: Legal section covers this -->
 
     </VBox>
 </ScrollPane>

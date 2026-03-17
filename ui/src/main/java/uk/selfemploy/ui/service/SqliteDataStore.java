@@ -127,8 +127,34 @@ public final class SqliteDataStore {
 
             configureSqlite();
             createTables();
+            migrateSchema();
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to initialize SQLite database", e);
+        }
+    }
+
+    /**
+     * Applies schema migrations for existing databases that were created
+     * before new columns were added. ALTER TABLE ADD COLUMN is safe to
+     * call even if the column already exists (caught and ignored).
+     */
+    private void migrateSchema() {
+        addColumnIfMissing("bank_transactions", "deleted_at", "TEXT");
+        addColumnIfMissing("bank_transactions", "deleted_by", "TEXT");
+        addColumnIfMissing("bank_transactions", "deletion_reason", "TEXT");
+    }
+
+    private void addColumnIfMissing(String table, String column, String type) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+            LOG.info("Added missing column " + table + "." + column);
+        } catch (SQLException e) {
+            if (e.getMessage() != null && e.getMessage().contains("duplicate column")) {
+                LOG.fine("Column " + table + "." + column + " already exists");
+            } else {
+                LOG.log(Level.SEVERE, "Failed to add column " + table + "." + column, e);
+                throw new RuntimeException("Schema migration failed: " + table + "." + column, e);
+            }
         }
     }
 
@@ -611,6 +637,120 @@ public final class SqliteDataStore {
      */
     public synchronized String loadConnectedNino() {
         return loadSetting("connected_nino");
+    }
+
+    // === HMRC API Credential Operations ===
+
+    private static final CredentialEncryption credentialEncryption = new CredentialEncryption();
+
+    /**
+     * Saves the HMRC API client ID, encrypted at rest.
+     *
+     * @param clientId the HMRC Developer Hub client ID, or null to clear
+     */
+    public synchronized void saveHmrcClientId(String clientId) {
+        if (clientId == null || clientId.isBlank()) {
+            saveSetting("hmrc_client_id_enc", null);
+        } else {
+            saveSetting("hmrc_client_id_enc", credentialEncryption.encrypt(clientId));
+        }
+    }
+
+    /**
+     * Loads the stored HMRC API client ID.
+     *
+     * @return the decrypted client ID, or null if not set
+     */
+    public synchronized String loadHmrcClientId() {
+        String encrypted = loadSetting("hmrc_client_id_enc");
+        if (encrypted == null) {
+            return null;
+        }
+        try {
+            return credentialEncryption.decrypt(encrypted);
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Failed to decrypt HMRC client ID - clearing corrupted value", e);
+            saveSetting("hmrc_client_id_enc", null);
+            return null;
+        }
+    }
+
+    /**
+     * Saves the HMRC API client secret, encrypted at rest.
+     *
+     * @param clientSecret the HMRC Developer Hub client secret, or null to clear
+     */
+    public synchronized void saveHmrcClientSecret(String clientSecret) {
+        if (clientSecret == null || clientSecret.isBlank()) {
+            saveSetting("hmrc_client_secret_enc", null);
+        } else {
+            saveSetting("hmrc_client_secret_enc", credentialEncryption.encrypt(clientSecret));
+        }
+    }
+
+    /**
+     * Loads the stored HMRC API client secret.
+     *
+     * @return the decrypted client secret, or null if not set
+     */
+    public synchronized String loadHmrcClientSecret() {
+        String encrypted = loadSetting("hmrc_client_secret_enc");
+        if (encrypted == null) {
+            return null;
+        }
+        try {
+            return credentialEncryption.decrypt(encrypted);
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Failed to decrypt HMRC client secret - clearing corrupted value", e);
+            saveSetting("hmrc_client_secret_enc", null);
+            return null;
+        }
+    }
+
+    /**
+     * Checks if HMRC API credentials are stored.
+     *
+     * @return true if both client ID and client secret are stored
+     */
+    public synchronized boolean hasHmrcCredentials() {
+        return loadHmrcClientId() != null && loadHmrcClientSecret() != null;
+    }
+
+    /**
+     * Clears all stored HMRC API credentials.
+     */
+    public synchronized void clearHmrcCredentials() {
+        saveSetting("hmrc_client_id_enc", null);
+        saveSetting("hmrc_client_secret_enc", null);
+    }
+
+    // === HMRC Environment ===
+
+    /**
+     * Saves the HMRC environment setting ("sandbox" or "production").
+     * Null or blank values default to "sandbox".
+     */
+    public synchronized void saveHmrcEnvironment(String environment) {
+        if (environment == null || environment.isBlank()) {
+            saveSetting("hmrc_environment", "sandbox");
+        } else {
+            saveSetting("hmrc_environment", environment.trim().toLowerCase());
+        }
+    }
+
+    /**
+     * Loads the HMRC environment setting. Defaults to "sandbox" if not set.
+     */
+    public synchronized String loadHmrcEnvironment() {
+        String env = loadSetting("hmrc_environment");
+        return env == null ? "sandbox" : env;
+    }
+
+    /**
+     * Returns true if the current environment is sandbox (the default).
+     */
+    public synchronized boolean isSandboxEnvironment() {
+        return "sandbox".equals(loadHmrcEnvironment());
     }
 
     // === Expense Operations ===
@@ -1314,7 +1454,7 @@ public final class SqliteDataStore {
      * Finds a bank transaction by ID.
      */
     public synchronized Optional<BankTransaction> findBankTransactionById(UUID id) {
-        String sql = "SELECT * FROM bank_transactions WHERE id = ?";
+        String sql = "SELECT * FROM bank_transactions WHERE id = ? AND deleted_at IS NULL";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             ResultSet rs = pstmt.executeQuery();
@@ -1366,7 +1506,7 @@ public final class SqliteDataStore {
      * Checks if a bank transaction with the given hash exists for a business.
      */
     public synchronized boolean existsByTransactionHash(UUID businessId, String hash) {
-        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND transaction_hash = ?";
+        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND transaction_hash = ? AND deleted_at IS NULL";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, hash);

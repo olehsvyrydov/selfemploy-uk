@@ -201,7 +201,8 @@ public class BankStatementImportService {
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 algorithm not available", e);
         } catch (IOException e) {
-            return null;
+            throw new CsvParseException(
+                    "Failed to compute file hash for audit trail: " + csvFile.getFileName(), e);
         }
     }
 

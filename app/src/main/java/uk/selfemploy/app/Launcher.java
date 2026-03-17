@@ -6,6 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import uk.selfemploy.common.util.EnvLoader;
+import uk.selfemploy.ui.controller.SettingsController;
 
 /**
  * Main application launcher for UK Self-Employment Manager.
@@ -21,6 +22,10 @@ public class Launcher extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        // Apply stored HMRC settings (environment URLs and credentials) before UI loads
+        SettingsController.loadAndApplyStoredEnvironment();
+        SettingsController.loadAndApplyStoredCredentials();
+
         // Load the main FXML layout
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
         Parent root = loader.load();

@@ -8,12 +8,14 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Window;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
@@ -29,6 +31,12 @@ import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
+import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.common.util.VersionInfo;
+import uk.selfemploy.ui.component.HelpDialog;
+import uk.selfemploy.ui.help.HelpContent;
+import uk.selfemploy.ui.help.HelpService;
+import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
@@ -37,10 +45,18 @@ import uk.selfemploy.ui.service.UiDuplicateDetectionService;
 import uk.selfemploy.ui.viewmodel.ImportAction;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import javafx.application.Platform;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.PasswordField;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+
+import java.awt.Desktop;
+import java.net.URI;
 
 import java.io.File;
 import java.io.IOException;
@@ -130,11 +146,30 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private Button importButton;
     @FXML private Button termsButton;
     @FXML private Button privacyButton;
+    @FXML private Button disclaimerButton;
+
+    // About section FXML fields
+    @FXML private Label versionLabel;
+    @FXML private Label buildDateLabel;
+    @FXML private Label licenseLabel;
+    @FXML private Label githubLabel;
+
+    // HMRC API Credentials FXML fields
+    @FXML private Label hmrcCredentialsStatusLabel;
+    @FXML private TextField hmrcClientIdField;
+    @FXML private PasswordField hmrcClientSecretField;
+    @FXML private TextField hmrcRedirectUriField;
+    @FXML private Button saveCredentialsButton;
+    @FXML private Button clearCredentialsButton;
+    @FXML private Button copyRedirectUriButton;
+    @FXML private Button hmrcRegistrationHelpButton;
 
     // HMRC Connection Setup FXML fields
     @FXML private FontIcon hmrcStatusIcon;
     @FXML private Label hmrcConnectionStatusLabel;
     @FXML private Label hmrcSetupInstructions;
+    @FXML private ComboBox<String> hmrcEnvironmentCombo;
+    @FXML private Label hmrcEnvironmentHint;
     @FXML private Button hmrcSetupButton;
     @FXML private Button hmrcDisconnectButton;
     @FXML private VBox hmrcSetupChecklist;
@@ -158,7 +193,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
         updateUtrDisplay();
         loadNinoFromStore();
         updateNinoDisplay();
+        loadHmrcCredentialsStatus();
+        initHmrcEnvironmentCombo();
         updateHmrcConnectionStatus();
+        initAboutSection();
     }
 
     @Override
@@ -570,6 +608,227 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
     }
 
+    // === HMRC API Credentials ===
+
+    private void loadHmrcCredentialsStatus() {
+        try {
+            boolean hasCredentials = SqliteDataStore.getInstance().hasHmrcCredentials();
+            if (hmrcCredentialsStatusLabel != null) {
+                if (hasCredentials) {
+                    hmrcCredentialsStatusLabel.setText("Configured");
+                    hmrcCredentialsStatusLabel.setStyle("-fx-text-fill: #27ae60;");
+                } else {
+                    hmrcCredentialsStatusLabel.setText("Not configured");
+                    hmrcCredentialsStatusLabel.setStyle("");
+                }
+            }
+            if (clearCredentialsButton != null) {
+                clearCredentialsButton.setVisible(hasCredentials);
+                clearCredentialsButton.setManaged(hasCredentials);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to load HMRC credentials status", e);
+        }
+    }
+
+    @FXML
+    void handleSaveHmrcCredentials(ActionEvent event) {
+        String clientId = hmrcClientIdField != null ? hmrcClientIdField.getText() : null;
+        String clientSecret = hmrcClientSecretField != null ? hmrcClientSecretField.getText() : null;
+
+        if (clientId == null || clientId.isBlank()) {
+            showError("Client ID Required", "Please enter your HMRC Developer Hub Client ID.");
+            return;
+        }
+        if (clientSecret == null || clientSecret.isBlank()) {
+            showError("Client Secret Required", "Please enter your HMRC Developer Hub Client Secret.");
+            return;
+        }
+
+        SqliteDataStore store = SqliteDataStore.getInstance();
+        store.saveHmrcClientId(clientId.trim());
+        store.saveHmrcClientSecret(clientSecret.trim());
+
+        // Apply credentials as system properties for HmrcConfig
+        applyHmrcCredentialsToSystemProperties(clientId.trim(), clientSecret.trim());
+
+        if (hmrcClientIdField != null) {
+            hmrcClientIdField.clear();
+        }
+        if (hmrcClientSecretField != null) {
+            hmrcClientSecretField.clear();
+        }
+
+        loadHmrcCredentialsStatus();
+        updateHmrcConnectionStatus();
+        showInfo("Credentials Saved",
+                "Your HMRC API credentials have been saved and encrypted.\n\n" +
+                "You can now connect to HMRC using the 'Connect & Verify' button below.");
+    }
+
+    @FXML
+    void handleShowRegistrationHelp(ActionEvent event) {
+        HelpService helpService = new HelpService();
+        helpService.getHelp(HelpTopic.HMRC_REGISTRATION).ifPresent(content ->
+            new HelpDialog(content, FontAwesomeSolid.KEY, "#2563eb", helpService,
+                    HelpDialog.DialogSize.MEDIUM).showAndWait()
+        );
+    }
+
+    @FXML
+    void handleCopyRedirectUri(ActionEvent event) {
+        String uri = hmrcRedirectUriField != null ? hmrcRedirectUriField.getText() : "http://localhost:8088/oauth/callback";
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        ClipboardContent content = new ClipboardContent();
+        content.putString(uri);
+        clipboard.setContent(content);
+        if (copyRedirectUriButton != null) {
+            String originalText = copyRedirectUriButton.getText();
+            copyRedirectUriButton.setText("Copied!");
+            copyRedirectUriButton.setDisable(true);
+            javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(1500));
+            pause.setOnFinished(ev -> {
+                copyRedirectUriButton.setText(originalText);
+                copyRedirectUriButton.setDisable(false);
+            });
+            pause.play();
+        }
+    }
+
+    @FXML
+    void handleClearHmrcCredentials(ActionEvent event) {
+        SqliteDataStore.getInstance().clearHmrcCredentials();
+        System.clearProperty("HMRC_CLIENT_ID");
+        System.clearProperty("HMRC_CLIENT_SECRET");
+        loadHmrcCredentialsStatus();
+        updateHmrcConnectionStatus();
+        showInfo("Credentials Cleared", "Your HMRC API credentials have been removed.");
+    }
+
+    /**
+     * Applies stored HMRC credentials as system properties so that
+     * HmrcConfig and the OAuth flow can read them.
+     */
+    static void applyHmrcCredentialsToSystemProperties(String clientId, String clientSecret) {
+        if (clientId != null && !clientId.isBlank()) {
+            System.setProperty("HMRC_CLIENT_ID", clientId);
+        }
+        if (clientSecret != null && !clientSecret.isBlank()) {
+            System.setProperty("HMRC_CLIENT_SECRET", clientSecret);
+        }
+    }
+
+    /**
+     * Loads stored HMRC credentials from SQLite and applies them as system properties.
+     * Called during app startup to make credentials available to HmrcConfig.
+     */
+    public static void loadAndApplyStoredCredentials() {
+        try {
+            SqliteDataStore store = SqliteDataStore.getInstance();
+            String clientId = store.loadHmrcClientId();
+            String clientSecret = store.loadHmrcClientSecret();
+            applyHmrcCredentialsToSystemProperties(clientId, clientSecret);
+        } catch (Exception e) {
+            Logger.getLogger(SettingsController.class.getName())
+                    .log(Level.WARNING, "Failed to load stored HMRC credentials", e);
+        }
+    }
+
+    // === HMRC Environment ===
+
+    private static final String SANDBOX_API_BASE = "https://test-api.service.hmrc.gov.uk";
+    private static final String SANDBOX_AUTHORIZE = "https://test-www.tax.service.gov.uk/oauth/authorize";
+    private static final String SANDBOX_TOKEN = "https://test-api.service.hmrc.gov.uk/oauth/token";
+    private static final String PRODUCTION_API_BASE = "https://api.service.hmrc.gov.uk";
+    private static final String PRODUCTION_AUTHORIZE = "https://www.tax.service.gov.uk/oauth/authorize";
+    private static final String PRODUCTION_TOKEN = "https://api.service.hmrc.gov.uk/oauth/token";
+
+    private void initHmrcEnvironmentCombo() {
+        if (hmrcEnvironmentCombo == null) return;
+
+        hmrcEnvironmentCombo.getItems().addAll("Sandbox (Testing)", "Production (Live)");
+
+        String stored = SqliteDataStore.getInstance().loadHmrcEnvironment();
+        hmrcEnvironmentCombo.setValue("production".equals(stored)
+                ? "Production (Live)" : "Sandbox (Testing)");
+
+        hmrcEnvironmentCombo.setOnAction(e -> handleEnvironmentChange());
+    }
+
+    private boolean environmentChangeInProgress;
+
+    private void handleEnvironmentChange() {
+        if (hmrcEnvironmentCombo == null || environmentChangeInProgress) return;
+
+        String selected = hmrcEnvironmentCombo.getValue();
+        boolean isProduction = "Production (Live)".equals(selected);
+
+        if (isProduction) {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            Window owner = getOwnerWindow();
+            if (owner != null) confirm.initOwner(owner);
+            confirm.setTitle("Switch to Live Mode?");
+            confirm.setHeaderText("Switch to Live Mode?");
+            confirm.setContentText(
+                    "The app will connect to HMRC's live service. Your saved data stays the same.");
+            ButtonType stayButton = new ButtonType("Stay in Sandbox", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType switchButton = new ButtonType("Switch to Live", ButtonBar.ButtonData.OK_DONE);
+            confirm.getButtonTypes().setAll(stayButton, switchButton);
+
+            var result = confirm.showAndWait();
+            if (result.isEmpty() || result.get() != switchButton) {
+                // Revert silently without triggering the handler again
+                environmentChangeInProgress = true;
+                hmrcEnvironmentCombo.setValue("Sandbox (Testing)");
+                environmentChangeInProgress = false;
+                return;
+            }
+        }
+
+        String envValue = isProduction ? "production" : "sandbox";
+        SqliteDataStore.getInstance().saveHmrcEnvironment(envValue);
+        applyHmrcEnvironmentToSystemProperties(envValue);
+
+        // Reset OAuth connection since tokens are environment-specific
+        SqliteDataStore.getInstance().clearOAuthTokens();
+        SqliteDataStore.getInstance().saveHmrcBusinessId(null);
+        SqliteDataStore.getInstance().saveHmrcTradingName(null);
+        SqliteDataStore.getInstance().saveNinoVerified(false);
+        OAuthServiceFactory.shutdown();
+
+        updateHmrcConnectionStatus();
+
+        String envLabel = isProduction ? "Production" : "Sandbox";
+        showInfo("Environment Changed",
+                "Switched to " + envLabel + " environment.\n\n" +
+                "Please reconnect to HMRC using the 'Connect & Verify' button.");
+    }
+
+    /**
+     * Applies HMRC environment URLs as system properties based on the stored environment setting.
+     */
+    static void applyHmrcEnvironmentToSystemProperties(String environment) {
+        // null/blank defaults to sandbox (safe default)
+        boolean isProduction = "production".equals(environment != null ? environment.strip() : "");
+        System.setProperty("HMRC_API_BASE_URL", isProduction ? PRODUCTION_API_BASE : SANDBOX_API_BASE);
+        System.setProperty("HMRC_AUTHORIZE_URL", isProduction ? PRODUCTION_AUTHORIZE : SANDBOX_AUTHORIZE);
+        System.setProperty("HMRC_TOKEN_URL", isProduction ? PRODUCTION_TOKEN : SANDBOX_TOKEN);
+    }
+
+    /**
+     * Loads stored HMRC environment from SQLite and applies URLs as system properties.
+     * Called during app startup.
+     */
+    public static void loadAndApplyStoredEnvironment() {
+        try {
+            String env = SqliteDataStore.getInstance().loadHmrcEnvironment();
+            applyHmrcEnvironmentToSystemProperties(env);
+        } catch (Exception e) {
+            Logger.getLogger(SettingsController.class.getName())
+                    .log(Level.WARNING, "Failed to load stored HMRC environment", e);
+        }
+    }
+
     // === HMRC Connection Setup ===
 
     @FXML
@@ -644,7 +903,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                         .build();
 
                 java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                        .uri(java.net.URI.create(url))
+                        .uri(URI.create(url))
                         .timeout(java.time.Duration.ofSeconds(30))
                         .header("Authorization", "Bearer " + accessToken)
                         .header("Accept", "application/vnd.hmrc.2.0+json")
@@ -916,10 +1175,13 @@ public class SettingsController implements Initializable, MainController.TaxYear
             this.ninoVerificationStatus = NinoVerificationStatus.SANDBOX_FALLBACK;
         }
 
+        // Determine environment label for status display
+        String envLabel = SqliteDataStore.getInstance().isSandboxEnvironment() ? "Sandbox" : "Production";
+
         // Update status text and icon - differentiate between verified, unverified, and changed
         if (hasNino && hasOAuth && hasProfile && ninoChanged) {
             // NINO changed since connection - AMBER WARNING
-            hmrcConnectionStatusLabel.setText("Connected (Sandbox) - NINO changed");
+            hmrcConnectionStatusLabel.setText("Connected (" + envLabel + ") - NINO changed");
             if (hmrcStatusIcon != null) {
                 hmrcStatusIcon.setIconLiteral("fas-exclamation-triangle");
                 hmrcStatusIcon.setIconColor(Color.web("#f59e0b")); // Amber
@@ -939,7 +1201,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
             }
         } else if (hasNino && hasOAuth && hasProfile && !ninoVerified) {
             // Connected but NINO NOT verified (sandbox fallback) - AMBER
-            hmrcConnectionStatusLabel.setText("Connected (Sandbox) - NINO not verified");
+            hmrcConnectionStatusLabel.setText("Connected (" + envLabel + ") - NINO not verified");
             if (hmrcStatusIcon != null) {
                 hmrcStatusIcon.setIconLiteral("fas-exclamation-triangle");
                 hmrcStatusIcon.setIconColor(Color.web("#f59e0b")); // Amber
@@ -1066,6 +1328,52 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML
     void handleShowPrivacy(ActionEvent event) {
         showLegalDocument("/fxml/privacy-notice.fxml", "Privacy Notice", true);
+    }
+
+    @FXML
+    void handleShowDisclaimer(ActionEvent event) {
+        Alert dialog = new Alert(Alert.AlertType.INFORMATION);
+        Window owner = getOwnerWindow();
+        if (owner != null) dialog.initOwner(owner);
+        dialog.setTitle("Disclaimer - UK Self-Employment Manager");
+        dialog.setHeaderText(Disclaimers.CONSUMER_RIGHTS_TITLE);
+        dialog.setContentText(
+                Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_1 + "\n\n" +
+                Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_2 + "\n\n" +
+                Disclaimers.CONSUMER_RIGHTS_RECOMMENDATIONS_HEADER + "\n" +
+                "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_1 + "\n" +
+                "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_2 + "\n" +
+                "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_3 + "\n\n" +
+                Disclaimers.PDF_CONFIRMATION_DISCLAIMER + "\n\n" +
+                Disclaimers.CONSUMER_RIGHTS_ACKNOWLEDGMENT);
+        dialog.getDialogPane().setMinWidth(500);
+        dialog.getDialogPane().setMinHeight(400);
+        dialog.showAndWait();
+    }
+
+    // === About Section ===
+
+    private void initAboutSection() {
+        if (versionLabel != null) {
+            versionLabel.setText("Version " + VersionInfo.getVersion());
+        }
+        if (buildDateLabel != null) {
+            buildDateLabel.setText("Built: " + VersionInfo.getBuildTimestamp());
+        }
+        if (licenseLabel != null) {
+            licenseLabel.setText("License: " + VersionInfo.getLicense());
+        }
+        if (githubLabel != null) {
+            String url = VersionInfo.getGitHubUrl();
+            githubLabel.setText(url);
+            githubLabel.setOnMouseClicked(e -> {
+                try {
+                    Desktop.getDesktop().browse(new URI(url));
+                } catch (Exception ex) {
+                    LOG.log(Level.WARNING, "Failed to open GitHub URL", ex);
+                }
+            });
+        }
     }
 
     @FXML
@@ -1347,7 +1655,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
             Stage stage = new Stage();
             stage.setTitle(title + " - UK Self-Employment Manager");
             stage.initModality(Modality.APPLICATION_MODAL);
-            // stage.initStyle(StageStyle.UNDECORATED); // No system title bar - dialog has its own header with close button
+            Window owner = getOwnerWindow();
+            if (owner != null) stage.initOwner(owner);
 
             // Initialize the controller with required dependencies and set settings mode
             Object controller = loader.getController();
@@ -1408,8 +1717,20 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
     }
 
+    private Window getOwnerWindow() {
+        if (displayNameLabel != null && displayNameLabel.getScene() != null) {
+            return displayNameLabel.getScene().getWindow();
+        }
+        return Window.getWindows().stream()
+                .filter(Window::isShowing)
+                .findFirst()
+                .orElse(null);
+    }
+
     private void showInfo(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        Window owner = getOwnerWindow();
+        if (owner != null) alert.initOwner(owner);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
@@ -1418,6 +1739,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showWarning(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
+        Window owner = getOwnerWindow();
+        if (owner != null) alert.initOwner(owner);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
@@ -1426,6 +1749,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showError(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        Window owner = getOwnerWindow();
+        if (owner != null) alert.initOwner(owner);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);

@@ -93,6 +93,21 @@ class SqliteBankTransactionServiceTest {
     }
 
     @Test
+    void findById_shouldExcludeSoftDeletedTransactions() {
+        BankTransaction tx = createTestTransaction("Soft deleted", new BigDecimal("75.00"));
+        service.save(tx);
+
+        // Verify it exists before deletion
+        assertThat(service.findById(tx.id())).isPresent();
+
+        // Soft-delete the transaction
+        service.delete(tx.id());
+
+        // Should no longer be found
+        assertThat(service.findById(tx.id())).isEmpty();
+    }
+
+    @Test
     void findById_shouldRejectNull() {
         assertThatThrownBy(() -> service.findById(null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -218,6 +233,22 @@ class SqliteBankTransactionServiceTest {
         service.save(createTestTransactionWithHash("Tx", new BigDecimal("10"), hash));
 
         assertThat(service.existsByHash(hash)).isTrue();
+    }
+
+    @Test
+    void existsByHash_shouldExcludeSoftDeletedTransactions() {
+        String hash = "softdel-hash-456";
+        service.save(createTestTransactionWithHash("To be deleted", new BigDecimal("25.00"), hash));
+        assertThat(service.existsByHash(hash)).isTrue();
+
+        // Soft-delete the transaction
+        BankTransaction saved = service.findAll().stream()
+                .filter(tx -> hash.equals(tx.transactionHash()))
+                .findFirst().orElseThrow();
+        service.delete(saved.id());
+
+        // Hash should no longer be considered as existing
+        assertThat(service.existsByHash(hash)).isFalse();
     }
 
     @Test

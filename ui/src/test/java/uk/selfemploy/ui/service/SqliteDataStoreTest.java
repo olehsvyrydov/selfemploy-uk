@@ -687,6 +687,88 @@ class SqliteDataStoreTest {
     }
 
     @Nested
+    @DisplayName("HMRC API Credential Persistence")
+    class HmrcCredentialPersistence {
+
+        @Test
+        @DisplayName("should save and load encrypted client ID")
+        void shouldSaveAndLoadEncryptedClientId() {
+            dataStore.saveHmrcClientId("test-client-id-123");
+            String loaded = dataStore.loadHmrcClientId();
+
+            assertThat(loaded).isEqualTo("test-client-id-123");
+        }
+
+        @Test
+        @DisplayName("should save and load encrypted client secret")
+        void shouldSaveAndLoadEncryptedClientSecret() {
+            dataStore.saveHmrcClientSecret("secret-abc-xyz-789");
+            String loaded = dataStore.loadHmrcClientSecret();
+
+            assertThat(loaded).isEqualTo("secret-abc-xyz-789");
+        }
+
+        @Test
+        @DisplayName("should return null when no credentials saved")
+        void shouldReturnNullWhenNoCredentialsSaved() {
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+            assertThat(dataStore.loadHmrcClientSecret()).isNull();
+        }
+
+        @Test
+        @DisplayName("should report hasHmrcCredentials correctly")
+        void shouldReportHasHmrcCredentials() {
+            assertThat(dataStore.hasHmrcCredentials()).isFalse();
+
+            dataStore.saveHmrcClientId("id");
+            assertThat(dataStore.hasHmrcCredentials()).isFalse();
+
+            dataStore.saveHmrcClientSecret("secret");
+            assertThat(dataStore.hasHmrcCredentials()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should clear credentials")
+        void shouldClearCredentials() {
+            dataStore.saveHmrcClientId("id");
+            dataStore.saveHmrcClientSecret("secret");
+            assertThat(dataStore.hasHmrcCredentials()).isTrue();
+
+            dataStore.clearHmrcCredentials();
+            assertThat(dataStore.hasHmrcCredentials()).isFalse();
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+            assertThat(dataStore.loadHmrcClientSecret()).isNull();
+        }
+
+        @Test
+        @DisplayName("should overwrite existing credentials")
+        void shouldOverwriteExistingCredentials() {
+            dataStore.saveHmrcClientId("old-id");
+            dataStore.saveHmrcClientId("new-id");
+
+            assertThat(dataStore.loadHmrcClientId()).isEqualTo("new-id");
+        }
+
+        @Test
+        @DisplayName("should clear client ID when saving null")
+        void shouldClearClientIdOnNull() {
+            dataStore.saveHmrcClientId("some-id");
+            dataStore.saveHmrcClientId(null);
+
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+        }
+
+        @Test
+        @DisplayName("should clear client ID when saving blank")
+        void shouldClearClientIdOnBlank() {
+            dataStore.saveHmrcClientId("some-id");
+            dataStore.saveHmrcClientId("  ");
+
+            assertThat(dataStore.loadHmrcClientId()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("NINO Verification Status Persistence")
     class NinoVerificationStatusPersistence {
 
@@ -949,5 +1031,62 @@ class SqliteDataStoreTest {
                 null,
                 null
         );
+    }
+
+    @Nested
+    @DisplayName("HMRC Environment Persistence")
+    class HmrcEnvironmentPersistence {
+
+        @Test
+        @DisplayName("should default to sandbox when no environment saved")
+        void shouldDefaultToSandbox() {
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should save and load production environment")
+        void shouldSaveAndLoadProduction() {
+            dataStore.saveHmrcEnvironment("production");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("production");
+        }
+
+        @Test
+        @DisplayName("should save and load sandbox environment")
+        void shouldSaveAndLoadSandbox() {
+            dataStore.saveHmrcEnvironment("sandbox");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should overwrite environment")
+        void shouldOverwriteEnvironment() {
+            dataStore.saveHmrcEnvironment("production");
+            dataStore.saveHmrcEnvironment("sandbox");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should default to sandbox on null or blank")
+        void shouldDefaultOnNullOrBlank() {
+            dataStore.saveHmrcEnvironment("production");
+            dataStore.saveHmrcEnvironment(null);
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+
+            dataStore.saveHmrcEnvironment("production");
+            dataStore.saveHmrcEnvironment("  ");
+            assertThat(dataStore.loadHmrcEnvironment()).isEqualTo("sandbox");
+        }
+
+        @Test
+        @DisplayName("should report isSandboxEnvironment correctly")
+        void shouldReportIsSandbox() {
+            assertThat(dataStore.isSandboxEnvironment()).isTrue();
+
+            dataStore.saveHmrcEnvironment("production");
+            assertThat(dataStore.isSandboxEnvironment()).isFalse();
+
+            dataStore.saveHmrcEnvironment("sandbox");
+            assertThat(dataStore.isSandboxEnvironment()).isTrue();
+        }
     }
 }

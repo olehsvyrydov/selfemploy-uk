@@ -108,6 +108,11 @@ public enum HelpTopic {
     HMRC_CONNECTION,
 
     /**
+     * Step-by-step guide for registering on HMRC Developer Hub to obtain API credentials.
+     */
+    HMRC_REGISTRATION,
+
+    /**
      * Security and privacy information - local storage, encryption, data sent to HMRC.
      */
     SECURITY_PRIVACY,

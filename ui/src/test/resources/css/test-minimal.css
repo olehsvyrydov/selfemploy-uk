@@ -495,3 +495,79 @@
 .review-progress-container {
     -fx-spacing: 6;
 }
+
+/* Settings Page */
+.settings-scroll {
+    -fx-background-color: #f8f9fa;
+}
+
+.settings-container {
+    -fx-background-color: #f8f9fa;
+}
+
+.settings-section {
+    -fx-spacing: 16;
+}
+
+.settings-card, .settings-card-row {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 8;
+}
+
+.settings-icon {
+    -fx-icon-color: #6b7280;
+}
+
+.settings-label {
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-text-fill: #111827;
+}
+
+.settings-value {
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 13px;
+}
+
+.settings-description {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 12px;
+}
+
+.settings-hint {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 12px;
+}
+
+.settings-disclaimer {
+    -fx-background-color: #fffbeb;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-border-color: #fbbf24;
+    -fx-border-radius: 8;
+}
+
+.disclaimer-icon {
+    -fx-icon-color: #f59e0b;
+}
+
+.disclaimer-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #92400e;
+}
+
+.disclaimer-text {
+    -fx-text-fill: #78350f;
+    -fx-font-size: 12px;
+}
+
+.utr-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d1d5db;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+}
