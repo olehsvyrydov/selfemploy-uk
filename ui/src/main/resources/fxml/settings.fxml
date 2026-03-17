@@ -229,15 +229,7 @@
                 <Button fx:id="privacyButton" text="View" styleClass="button-secondary" onAction="#handleShowPrivacy"/>
             </HBox>
 
-            <!-- Disclaimer -->
-            <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
-                <FontIcon iconLiteral="fas-exclamation-circle" iconSize="20" styleClass="settings-icon"/>
-                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Disclaimer" styleClass="settings-label"/>
-                    <Label text="Important information about software accuracy and your responsibilities" styleClass="settings-description"/>
-                </VBox>
-                <Button fx:id="disclaimerButton" text="View" styleClass="button-secondary" onAction="#handleShowDisclaimer"/>
-            </HBox>
+            <!-- Disclaimer removed per SLFEMPUK-22: ToS covers liability -->
         </VBox>
 
         <!-- Data Management Section -->
@@ -284,15 +276,7 @@
             </VBox>
         </VBox>
 
-        <!-- Footer Disclaimer -->
-        <VBox styleClass="settings-disclaimer" spacing="8">
-            <HBox alignment="CENTER_LEFT" spacing="8">
-                <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="16" styleClass="disclaimer-icon"/>
-                <Label text="Important" styleClass="disclaimer-title"/>
-            </HBox>
-            <Label text="This application provides tax estimates only. Always verify calculations with a qualified accountant before submitting to HMRC. You are responsible for the accuracy of your tax returns."
-                   styleClass="disclaimer-text" wrapText="true"/>
-        </VBox>
+        <!-- Footer disclaimer removed per SLFEMPUK-19: Legal section covers this -->
 
     </VBox>
 </ScrollPane>

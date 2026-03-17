@@ -274,15 +274,7 @@
             </VBox>
         </VBox>
 
-        <!-- Disclaimer -->
-        <VBox styleClass="help-disclaimer" spacing="8">
-            <HBox alignment="CENTER_LEFT" spacing="8">
-                <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="16" styleClass="disclaimer-icon"/>
-                <Label text="Important Disclaimer" styleClass="disclaimer-title"/>
-            </HBox>
-            <Label text="This application provides tax estimates only. The information provided in the help system is for guidance purposes and may not reflect the latest HMRC rules. Always verify calculations with a qualified accountant and refer to official HMRC guidance before submitting your tax return."
-                   styleClass="disclaimer-text" wrapText="true"/>
-        </VBox>
+        <!-- Footer disclaimer removed per SLFEMPUK-19: Legal section covers this -->
 
     </VBox>
 </ScrollPane>

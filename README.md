@@ -68,7 +68,7 @@ self-employment/
 |-----------|------------|
 | Backend | Quarkus 3.x |
 | UI | JavaFX 21+ |
-| Database | H2 (encrypted) |
+| Database | SQLite (local) + H2 (persistence) |
 | Migrations | Flyway |
 | Build | Maven + jpackage |
 | Native | GraalVM Native Image |

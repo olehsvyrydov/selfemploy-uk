@@ -173,7 +173,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
 
     // === Constants ===
 
-    private static final String APPLICATION_VERSION = "0.1.0-SNAPSHOT";
+    private static final String APPLICATION_VERSION = uk.selfemploy.common.util.VersionInfo.getVersion();
 
     // === FXML Injected Fields ===
 

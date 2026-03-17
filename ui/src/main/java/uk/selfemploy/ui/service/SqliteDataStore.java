@@ -127,8 +127,32 @@ public final class SqliteDataStore {
 
             configureSqlite();
             createTables();
+            migrateSchema();
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to initialize SQLite database", e);
+        }
+    }
+
+    /**
+     * Applies schema migrations for existing databases that were created
+     * before new columns were added. ALTER TABLE ADD COLUMN is safe to
+     * call even if the column already exists (caught and ignored).
+     */
+    private void migrateSchema() {
+        addColumnIfMissing("bank_transactions", "deleted_at", "TEXT");
+        addColumnIfMissing("bank_transactions", "deleted_by", "TEXT");
+        addColumnIfMissing("bank_transactions", "deletion_reason", "TEXT");
+    }
+
+    private void addColumnIfMissing(String table, String column, String type) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+            LOG.info("Added missing column " + table + "." + column);
+        } catch (SQLException e) {
+            // Column already exists - this is expected for new databases
+            if (!e.getMessage().contains("duplicate column")) {
+                LOG.fine("Column " + table + "." + column + " already exists");
+            }
         }
     }
 

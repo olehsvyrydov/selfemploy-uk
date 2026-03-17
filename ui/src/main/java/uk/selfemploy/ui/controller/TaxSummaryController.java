@@ -172,12 +172,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
      */
     private void initializeDisclaimers() {
         if (taxDisclaimerText != null) {
-            taxDisclaimerText.setText(Disclaimers.TAX_SUMMARY_DISCLAIMER);
-        }
-        // AC-4: Disclaimer banner is always visible - no dismiss functionality
-        if (taxDisclaimerBanner != null) {
-            taxDisclaimerBanner.setVisible(true);
-            taxDisclaimerBanner.setManaged(true);
+            taxDisclaimerText.setText("Based on the information you've entered. Review before submitting to HMRC.");
         }
     }
 
@@ -685,10 +680,10 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             return;
         }
 
-        // Bind draft banner visibility
+        // Show submission status banner only when submitted to HMRC
         if (draftBanner != null) {
-            draftBanner.visibleProperty().bind(viewModel.submittedProperty().not());
-            draftBanner.managedProperty().bind(viewModel.submittedProperty().not());
+            draftBanner.visibleProperty().bind(viewModel.submittedProperty());
+            draftBanner.managedProperty().bind(viewModel.submittedProperty());
         }
 
         // Bind POA section visibility
