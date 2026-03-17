@@ -8,12 +8,14 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Window;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
@@ -756,27 +758,31 @@ public class SettingsController implements Initializable, MainController.TaxYear
         hmrcEnvironmentCombo.setOnAction(e -> handleEnvironmentChange());
     }
 
+    private boolean environmentChangeInProgress;
+
     private void handleEnvironmentChange() {
-        if (hmrcEnvironmentCombo == null) return;
+        if (hmrcEnvironmentCombo == null || environmentChangeInProgress) return;
 
         String selected = hmrcEnvironmentCombo.getValue();
         boolean isProduction = "Production (Live)".equals(selected);
 
         if (isProduction) {
-            Alert confirm = new Alert(Alert.AlertType.WARNING);
-            confirm.setTitle("Switch to Production");
-            confirm.setHeaderText("Are you sure you want to switch to Production?");
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.initOwner(getOwnerWindow());
+            confirm.setTitle("Switch to Live Mode?");
+            confirm.setHeaderText("Switch to Live Mode?");
             confirm.setContentText(
-                    "Production mode submits real data to HMRC.\n\n" +
-                    "Your existing connection will be reset and you'll need to reconnect.\n\n" +
-                    "Only switch to Production after your HMRC Developer Hub application has been approved for production use.");
-            confirm.getButtonTypes().setAll(
-                    ButtonType.OK,
-                    ButtonType.CANCEL);
+                    "The app will connect to HMRC's live service. Your saved data stays the same.");
+            ButtonType stayButton = new ButtonType("Stay in Sandbox", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType switchButton = new ButtonType("Switch to Live", ButtonBar.ButtonData.OK_DONE);
+            confirm.getButtonTypes().setAll(stayButton, switchButton);
 
             var result = confirm.showAndWait();
-            if (result.isEmpty() || result.get() == ButtonType.CANCEL) {
+            if (result.isEmpty() || result.get() != switchButton) {
+                // Revert silently without triggering the handler again
+                environmentChangeInProgress = true;
                 hmrcEnvironmentCombo.setValue("Sandbox (Testing)");
+                environmentChangeInProgress = false;
                 return;
             }
         }
@@ -1328,6 +1334,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML
     void handleShowDisclaimer(ActionEvent event) {
         Alert dialog = new Alert(Alert.AlertType.INFORMATION);
+        dialog.initOwner(getOwnerWindow());
         dialog.setTitle("Disclaimer - UK Self-Employment Manager");
         dialog.setHeaderText(Disclaimers.CONSUMER_RIGHTS_TITLE);
         dialog.setContentText(
@@ -1648,7 +1655,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
             Stage stage = new Stage();
             stage.setTitle(title + " - UK Self-Employment Manager");
             stage.initModality(Modality.APPLICATION_MODAL);
-            // stage.initStyle(StageStyle.UNDECORATED); // No system title bar - dialog has its own header with close button
+            stage.initOwner(getOwnerWindow());
 
             // Initialize the controller with required dependencies and set settings mode
             Object controller = loader.getController();
@@ -1709,8 +1716,19 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
     }
 
+    private Window getOwnerWindow() {
+        if (displayNameLabel != null && displayNameLabel.getScene() != null) {
+            return displayNameLabel.getScene().getWindow();
+        }
+        return Window.getWindows().stream()
+                .filter(Window::isShowing)
+                .findFirst()
+                .orElse(null);
+    }
+
     private void showInfo(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.initOwner(getOwnerWindow());
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
@@ -1719,6 +1737,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showWarning(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.initOwner(getOwnerWindow());
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
@@ -1727,6 +1746,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showError(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.initOwner(getOwnerWindow());
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);

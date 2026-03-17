@@ -7,7 +7,7 @@
     <parent>
         <groupId>uk.selfemploy</groupId>
         <artifactId>self-employment-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>1.0.0-beta.1</version>
     </parent>
 
     <artifactId>self-employment-common</artifactId>
