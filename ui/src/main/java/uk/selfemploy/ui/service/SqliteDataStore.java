@@ -149,9 +149,11 @@ public final class SqliteDataStore {
             stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
             LOG.info("Added missing column " + table + "." + column);
         } catch (SQLException e) {
-            // Column already exists - this is expected for new databases
-            if (!e.getMessage().contains("duplicate column")) {
+            if (e.getMessage() != null && e.getMessage().contains("duplicate column")) {
                 LOG.fine("Column " + table + "." + column + " already exists");
+            } else {
+                LOG.log(Level.SEVERE, "Failed to add column " + table + "." + column, e);
+                throw new RuntimeException("Schema migration failed: " + table + "." + column, e);
             }
         }
     }

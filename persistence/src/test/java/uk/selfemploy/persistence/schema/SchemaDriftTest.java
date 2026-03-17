@@ -378,7 +378,7 @@ class SchemaDriftTest {
     /**
      * Finds all classes annotated with {@code @Entity} in the entity package.
      */
-    private static List<Class<?>> findEntityClasses() throws IOException, ClassNotFoundException {
+    private static List<Class<?>> findEntityClasses() throws Exception {
         List<Class<?>> entityClasses = new ArrayList<>();
         String path = ENTITY_PACKAGE.replace('.', '/');
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -386,9 +386,14 @@ class SchemaDriftTest {
 
         while (resources.hasMoreElements()) {
             URL resource = resources.nextElement();
-            File directory = new File(resource.getFile());
+            if (!"file".equals(resource.getProtocol())) {
+                continue;
+            }
+            File directory = java.nio.file.Paths.get(resource.toURI()).toFile();
             if (directory.exists()) {
-                for (File file : directory.listFiles()) {
+                File[] files = directory.listFiles();
+                if (files == null) continue;
+                for (File file : files) {
                     if (file.getName().endsWith(".class")) {
                         String className = ENTITY_PACKAGE + "." +
                                 file.getName().substring(0, file.getName().length() - 6);

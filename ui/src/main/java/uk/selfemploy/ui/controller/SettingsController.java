@@ -686,23 +686,20 @@ public class SettingsController implements Initializable, MainController.TaxYear
             String originalText = copyRedirectUriButton.getText();
             copyRedirectUriButton.setText("Copied!");
             copyRedirectUriButton.setDisable(true);
-            new java.util.Timer().schedule(new java.util.TimerTask() {
-                @Override
-                public void run() {
-                    Platform.runLater(() -> {
-                        copyRedirectUriButton.setText(originalText);
-                        copyRedirectUriButton.setDisable(false);
-                    });
-                }
-            }, 1500);
+            javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(1500));
+            pause.setOnFinished(ev -> {
+                copyRedirectUriButton.setText(originalText);
+                copyRedirectUriButton.setDisable(false);
+            });
+            pause.play();
         }
     }
 
     @FXML
     void handleClearHmrcCredentials(ActionEvent event) {
         SqliteDataStore.getInstance().clearHmrcCredentials();
-        System.clearProperty("hmrc.client-id");
-        System.clearProperty("hmrc.client-secret");
+        System.clearProperty("HMRC_CLIENT_ID");
+        System.clearProperty("HMRC_CLIENT_SECRET");
         loadHmrcCredentialsStatus();
         updateHmrcConnectionStatus();
         showInfo("Credentials Cleared", "Your HMRC API credentials have been removed.");
@@ -714,10 +711,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
      */
     static void applyHmrcCredentialsToSystemProperties(String clientId, String clientSecret) {
         if (clientId != null && !clientId.isBlank()) {
-            System.setProperty("hmrc.client-id", clientId);
+            System.setProperty("HMRC_CLIENT_ID", clientId);
         }
         if (clientSecret != null && !clientSecret.isBlank()) {
-            System.setProperty("hmrc.client-secret", clientSecret);
+            System.setProperty("HMRC_CLIENT_SECRET", clientSecret);
         }
     }
 
@@ -768,7 +765,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
         if (isProduction) {
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-            confirm.initOwner(getOwnerWindow());
+            Window owner = getOwnerWindow();
+            if (owner != null) confirm.initOwner(owner);
             confirm.setTitle("Switch to Live Mode?");
             confirm.setHeaderText("Switch to Live Mode?");
             confirm.setContentText(
@@ -810,7 +808,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
      * Applies HMRC environment URLs as system properties based on the stored environment setting.
      */
     static void applyHmrcEnvironmentToSystemProperties(String environment) {
-        boolean isProduction = "production".equals(environment);
+        // null/blank defaults to sandbox (safe default)
+        boolean isProduction = "production".equals(environment != null ? environment.strip() : "");
         System.setProperty("HMRC_API_BASE_URL", isProduction ? PRODUCTION_API_BASE : SANDBOX_API_BASE);
         System.setProperty("HMRC_AUTHORIZE_URL", isProduction ? PRODUCTION_AUTHORIZE : SANDBOX_AUTHORIZE);
         System.setProperty("HMRC_TOKEN_URL", isProduction ? PRODUCTION_TOKEN : SANDBOX_TOKEN);
@@ -1334,7 +1333,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML
     void handleShowDisclaimer(ActionEvent event) {
         Alert dialog = new Alert(Alert.AlertType.INFORMATION);
-        dialog.initOwner(getOwnerWindow());
+        Window owner = getOwnerWindow();
+        if (owner != null) dialog.initOwner(owner);
         dialog.setTitle("Disclaimer - UK Self-Employment Manager");
         dialog.setHeaderText(Disclaimers.CONSUMER_RIGHTS_TITLE);
         dialog.setContentText(
@@ -1655,7 +1655,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
             Stage stage = new Stage();
             stage.setTitle(title + " - UK Self-Employment Manager");
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.initOwner(getOwnerWindow());
+            Window owner = getOwnerWindow();
+            if (owner != null) stage.initOwner(owner);
 
             // Initialize the controller with required dependencies and set settings mode
             Object controller = loader.getController();
@@ -1728,7 +1729,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showInfo(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.initOwner(getOwnerWindow());
+        Window owner = getOwnerWindow();
+        if (owner != null) alert.initOwner(owner);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
@@ -1737,7 +1739,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showWarning(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.initOwner(getOwnerWindow());
+        Window owner = getOwnerWindow();
+        if (owner != null) alert.initOwner(owner);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
@@ -1746,7 +1749,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showError(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.initOwner(getOwnerWindow());
+        Window owner = getOwnerWindow();
+        if (owner != null) alert.initOwner(owner);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
