@@ -13,9 +13,16 @@ import java.util.List;
 public class NotificationPreferences {
 
     /**
-     * Default trigger days before deadline: 30, 7, and 1 day.
+     * Default trigger days before deadline: 14, 3, and 0 days (T-14, T-3, on the day).
+     *
+     * <p>Tightened from the previous {@code (30, 7, 1)} default in SLFEMPUK-29 (S17-05).
+     * The MTD ITSA quarterly cadence (deadlines on the 7th of Aug/Nov/Feb/May) makes
+     * a 30-day reminder land mid-quarter, which is too early to be actionable, and
+     * a 1-day reminder leaves no working day to fix problems. T-14/T-3/T-0 matches
+     * HMRC's recommended cadence for late-submission penalty avoidance under
+     * FA 2021 Sch 24 (4 points = £200).
      */
-    public static final List<Integer> DEFAULT_TRIGGER_DAYS = List.of(30, 7, 1);
+    public static final List<Integer> DEFAULT_TRIGGER_DAYS = List.of(14, 3, 0);
 
     // Master enable/disable
     private final BooleanProperty enabled = new SimpleBooleanProperty(true);
