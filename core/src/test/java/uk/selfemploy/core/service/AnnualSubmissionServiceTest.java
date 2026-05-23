@@ -640,7 +640,13 @@ class AnnualSubmissionServiceTest {
                     new BigDecimal("40000.00"),
                     new BigDecimal("2000.00")
                 )
-            )
+            ),
+            // v8 additions (SLFEMPUK-28 / S17-04) — null in this baseline test fixture;
+            // CalculationResponseV8Test covers populated cases.
+            null,  // transitionProfit
+            null,  // transitionProfitAcceleratedAmount
+            null,  // studentLoansAndPostgraduateLoan
+            null   // capitalGainsTax
         );
     }
 }

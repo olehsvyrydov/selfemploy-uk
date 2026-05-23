@@ -613,7 +613,9 @@ class AnnualSubmissionIntegrationTest {
                     new CalculationResponse.NationalInsuranceBreakdown(
                             new CalculationResponse.NationalInsuranceBreakdown.Class2Nics(BigDecimal.ZERO),
                             new CalculationResponse.NationalInsuranceBreakdown.Class4Nics(BigDecimal.ZERO, BigDecimal.ZERO)
-                    )
+                    ),
+                    // v8 additions (SLFEMPUK-28 / S17-04) — not exercised by this scenario.
+                    null, null, null, null
             );
 
             when(calculationClient.getCalculation(any(), any(), any(), any()))
@@ -658,7 +660,9 @@ class AnnualSubmissionIntegrationTest {
                                     new BigDecimal("987429.99"),
                                     BigDecimal.ZERO
                             )
-                    )
+                    ),
+                    // v8 additions (SLFEMPUK-28 / S17-04) — not exercised by this scenario.
+                    null, null, null, null
             );
 
             when(calculationClient.getCalculation(any(), any(), any(), any()))
@@ -711,7 +715,9 @@ class AnnualSubmissionIntegrationTest {
                                 new BigDecimal("40000.00"),
                                 new BigDecimal("2000.00")
                         )
-                )
+                ),
+                // v8 additions (SLFEMPUK-28 / S17-04) — null in this baseline helper.
+                null, null, null, null
         );
     }
 }

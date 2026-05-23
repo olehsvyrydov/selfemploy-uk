@@ -1,0 +1,63 @@
+{
+  "id": "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1e",
+  "calculationTimestamp": "2026-05-12T14:30:00",
+  "calculationReason": "customerRequest",
+  "totalIncomeTaxAndNicsDue": 18500.00,
+  "totalIncomeReceived": 75000.00,
+  "totalAllowancesAndDeductions": 12570.00,
+  "totalTaxableIncome": 62430.00,
+  "incomeTax": {
+    "totalIncomeTax": 14486.00,
+    "incomeTaxCharged": 14486.00
+  },
+  "nics": {
+    "class2Nics": { "amount": 179.40 },
+    "class4Nics": {
+      "totalClass4ChargeableProfits": 50000.00,
+      "totalClass4Nics": 3834.60
+    }
+  },
+  "transitionProfit": 8000.00,
+  "transitionProfitAcceleratedAmount": 0.00,
+  "studentLoansAndPostgraduateLoan": {
+    "planType": "05",
+    "studentLoanRepaymentAmount": 1240.00,
+    "postgraduateLoanRepaymentAmount": 0.00
+  },
+  "capitalGainsTax": {
+    "totalTaxableGains": 12500.00,
+    "totalCapitalGainsTax": 2500.00,
+    "realTimeTransactionTaxPaid": 450.00,
+    "claimOrElectionCodes": ["BADR", "PRR"],
+    "cryptoassetsDisposals": {
+      "totalProceeds": 18000.00,
+      "totalAllowableCosts": 12000.00,
+      "totalGains": 6500.00,
+      "totalLosses": 500.00
+    },
+    "unlistedSharesAndSecurities": {
+      "totalProceeds": 25000.00,
+      "totalAllowableCosts": 22000.00,
+      "totalGains": 3000.00
+    },
+    "businessAssetDisposalRelief": {
+      "totalGainsQualifyingForBadr": 15000.00,
+      "badrRate": 10.00,
+      "badrTaxDue": 1500.00,
+      "disposals": [
+        {
+          "assetDescription": "Trading goodwill of cessation business",
+          "disposalProceeds": 50000.00,
+          "gainQualifyingForBadr": 10000.00
+        },
+        {
+          "assetDescription": "Office equipment used in cessation business",
+          "disposalProceeds": 12000.00,
+          "gainQualifyingForBadr": 5000.00
+        }
+      ]
+    },
+    "futureFieldFromHmrc": "tolerated by @JsonIgnoreProperties"
+  },
+  "topLevelUnknownField": "also tolerated"
+}
