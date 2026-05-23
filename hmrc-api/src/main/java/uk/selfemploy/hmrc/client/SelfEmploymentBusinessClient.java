@@ -17,16 +17,19 @@ import java.util.concurrent.CompletionStage;
 /**
  * REST client for HMRC Self-Employment Business API v5.
  *
- * <p><strong>Note (SLFEMPUK-26 / S17-02):</strong> this client is misnamed — its path
- * is {@code /individuals/business/self-employment}, which is the Self-Employment Business
- * API (v5), not the Business Details API (which lives at {@code /individuals/business/details}).
- * Rename pending in S17-02; a real Business Details v2 client follows in S17-03.
+ * <p>Path: {@code /individuals/business/self-employment/{nino}}. Lists self-employment
+ * businesses and fetches per-business detail. A separate {@code BusinessDetailsClient}
+ * (S17-03) handles the distinct Business Details API at
+ * {@code /individuals/business/details/{nino}} (v2).
+ *
+ * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api">
+ *     HMRC Self-Employment Business API</a>
  */
 @Path("/individuals/business/self-employment")
 @RegisterRestClient(configKey = "hmrc-api")
 @RegisterClientHeaders(HmrcHeaderFactory.class)
 @ClientHeaderParam(name = "Accept", value = "application/vnd.hmrc.5.0+json")
-public interface BusinessDetailsClient {
+public interface SelfEmploymentBusinessClient {
 
     /**
      * Retrieves all self-employment businesses for a National Insurance Number.
