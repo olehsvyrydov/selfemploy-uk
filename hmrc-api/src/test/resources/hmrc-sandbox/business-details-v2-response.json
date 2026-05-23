@@ -1,0 +1,40 @@
+{
+  "nino": "AA000001A",
+  "mtdbsa": "XQIT00000000001",
+  "businessData": [
+    {
+      "incomeSourceId": "XAIS12345678901",
+      "incomeSourceType": "self-employment",
+      "tradingName": "Test Business Ltd",
+      "tradingStartDate": "2020-01-01",
+      "cessationDate": null,
+      "accountingPeriodStartDate": "2025-04-06",
+      "accountingPeriodEndDate": "2026-04-05",
+      "firstAccountingPeriodStartDate": "2020-01-01",
+      "firstAccountingPeriodEndDate": "2020-04-05",
+      "businessAddressLineOne": "123 Test Street",
+      "businessAddressLineTwo": "Test District",
+      "businessAddressLineThree": "Test City",
+      "businessAddressPostcode": "AB12 3CD",
+      "businessAddressCountryCode": "GB"
+    }
+  ],
+  "propertyData": [
+    {
+      "incomeSourceId": "XPIS98765432101",
+      "incomeSourceType": "uk-property",
+      "tradingName": null,
+      "tradingStartDate": "2022-04-06",
+      "cessationDate": null,
+      "accountingPeriodStartDate": "2025-04-06",
+      "accountingPeriodEndDate": "2026-04-05",
+      "firstAccountingPeriodStartDate": "2022-04-06",
+      "firstAccountingPeriodEndDate": "2023-04-05",
+      "businessAddressLineOne": "45 Rental Road",
+      "businessAddressLineTwo": null,
+      "businessAddressLineThree": "London",
+      "businessAddressPostcode": "EC1A 1AA",
+      "businessAddressCountryCode": "GB"
+    }
+  ]
+}
