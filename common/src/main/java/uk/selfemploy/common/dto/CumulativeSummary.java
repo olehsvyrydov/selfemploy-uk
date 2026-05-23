@@ -20,6 +20,16 @@ import java.math.BigDecimal;
  *
  * <p>Both endpoints use the same Accept header: application/vnd.hmrc.5.0+json</p>
  *
+ * <p><strong>Deprecated HMRC fields intentionally absent</strong> (changelog
+ * 2026-04-24, 2026-05-12, SLFEMPUK-34):
+ * neither {@code averagingAdjustment} nor {@code adjustments.overlapReliefUsed}
+ * is modelled here — both were deprecated for the v5 cumulative endpoint and
+ * {@code overlapReliefUsed} additionally triggers
+ * {@code RULE_OVERLAP_RELIEF_USED_NOT_ALLOWED} for tax years 2024-25+. Historical
+ * JSON containing these fields is tolerated by the {@code @JsonIgnoreProperties}
+ * declaration; a reflection contract test in {@code MtdPeriodicUpdateClientTest}
+ * fails if either component is re-introduced.
+ *
  * @see PeriodicUpdate for the periodDates-based DTO used with older tax years
  * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api/5.0">
  *     HMRC Self-Employment Business API v5.0</a>

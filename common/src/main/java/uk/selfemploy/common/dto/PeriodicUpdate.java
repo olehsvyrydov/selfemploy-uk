@@ -15,6 +15,17 @@ import java.time.LocalDate;
  * for quarterly periodic updates. For API v5.0, dates must be wrapped in a
  * periodDates object.</p>
  *
+ * <p><strong>Deprecated HMRC fields intentionally absent</strong> (changelog
+ * 2026-04-24, 2026-05-12, SLFEMPUK-34):
+ * neither {@code averagingAdjustment} nor {@code adjustments.overlapReliefUsed}
+ * is modelled here. Submitting {@code overlapReliefUsed} for tax year 2024-25 or
+ * later triggers {@code RULE_OVERLAP_RELIEF_USED_NOT_ALLOWED}. The
+ * {@code @JsonIgnoreProperties(ignoreUnknown = true)} declaration below ensures
+ * historical persisted JSON containing these fields still deserialises without
+ * loss; the contract is enforced by reflection tests in
+ * {@code MtdPeriodicUpdateClientTest} that fail if either component is
+ * re-introduced.
+ *
  * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api/5.0">HMRC MTD API</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
