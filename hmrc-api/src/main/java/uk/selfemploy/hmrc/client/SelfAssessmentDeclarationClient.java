@@ -2,19 +2,24 @@ package uk.selfemploy.hmrc.client;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import uk.selfemploy.hmrc.client.dto.FinalDeclarationRequest;
 import uk.selfemploy.hmrc.client.dto.FinalDeclarationResponse;
 
 /**
- * REST client for HMRC Self Assessment Declaration API.
+ * REST client for HMRC Individual Calculations API v8 — final-declaration submission.
  *
- * <p>Handles submission of final annual declarations.
+ * <p>Handles submission of final annual declarations against a calculation produced by
+ * {@link SelfAssessmentCalculationClient}.
  *
  * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individual-calculations-api">
  *     HMRC Individual Calculations API</a>
  */
 @RegisterRestClient(configKey = "hmrc-declaration-api")
+@RegisterClientHeaders(HmrcHeaderFactory.class)
+@ClientHeaderParam(name = "Accept", value = "application/vnd.hmrc.8.0+json")
 @Path("/individuals/declarations/self-assessment")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

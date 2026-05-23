@@ -2,20 +2,25 @@ package uk.selfemploy.hmrc.client;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import uk.selfemploy.hmrc.client.dto.CalculationResponse;
 import uk.selfemploy.hmrc.client.dto.TriggerCalculationRequest;
 import uk.selfemploy.hmrc.client.dto.TriggerCalculationResponse;
 
 /**
- * REST client for HMRC Self Assessment Calculation API.
+ * REST client for HMRC Individual Calculations API v8.
  *
  * <p>Handles triggering tax calculations and retrieving calculation results.
+ * Versions v5/v6/v7 retired in production on 2026-03-24.
  *
  * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individual-calculations-api">
  *     HMRC Individual Calculations API</a>
  */
 @RegisterRestClient(configKey = "hmrc-calculation-api")
+@RegisterClientHeaders(HmrcHeaderFactory.class)
+@ClientHeaderParam(name = "Accept", value = "application/vnd.hmrc.8.0+json")
 @Path("/individuals/calculations/self-assessment")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

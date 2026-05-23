@@ -16,10 +16,15 @@ import java.util.Optional;
 
 /**
  * Client headers factory for HMRC REST API calls.
- * Automatically adds:
- * - Authorization header with Bearer token
- * - Fraud prevention headers (required by HMRC)
- * - Accept header for HMRC API versioning
+ *
+ * <p>Adds: Authorization (Bearer token) and HMRC fraud-prevention headers.
+ *
+ * <p><strong>Does NOT add an Accept header.</strong> Each MTD ITSA API has its own
+ * required version (Calculations v8, Self-Employment Business v5, Obligations v3,
+ * BSAS v7, etc.); each REST client interface declares its own Accept header via
+ * {@code @ClientHeaderParam(name="Accept", value="application/vnd.hmrc.{N}.0+json")}.
+ *
+ * <p>See SLFEMPUK-25 (S17-01) and ADR-017.
  */
 @ApplicationScoped
 public class HmrcHeaderFactory implements ClientHeadersFactory {
@@ -27,8 +32,6 @@ public class HmrcHeaderFactory implements ClientHeadersFactory {
     private static final Logger log = LoggerFactory.getLogger(HmrcHeaderFactory.class);
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String ACCEPT_HEADER = "Accept";
-    private static final String HMRC_ACCEPT_TYPE = "application/vnd.hmrc.1.0+json";
 
     private final TokenStorageService tokenStorageService;
     private final FraudPreventionService fraudPreventionService;
@@ -47,20 +50,15 @@ public class HmrcHeaderFactory implements ClientHeadersFactory {
 
         MultivaluedMap<String, String> result = new MultivaluedHashMap<>();
 
-        // Copy incoming headers first
         result.putAll(incomingHeaders);
+        // Merge client-declared headers (e.g. @ClientHeaderParam Accept) so the
+        // per-endpoint MTD API version survives factory processing.
+        result.putAll(clientOutgoingHeaders);
 
-        // Add Accept header for HMRC API versioning
-        if (!result.containsKey(ACCEPT_HEADER)) {
-            result.add(ACCEPT_HEADER, HMRC_ACCEPT_TYPE);
-        }
-
-        // Add Authorization header if tokens available and not already set
         if (!result.containsKey(AUTHORIZATION_HEADER)) {
             addAuthorizationHeader(result);
         }
 
-        // Add fraud prevention headers (required by HMRC)
         addFraudPreventionHeaders(result);
 
         log.debug("Headers updated: {} headers total", result.size());

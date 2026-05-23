@@ -2,13 +2,15 @@ package uk.selfemploy.hmrc.client;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import uk.selfemploy.common.dto.CumulativeSummary;
 import uk.selfemploy.common.dto.PeriodicUpdate;
 import uk.selfemploy.hmrc.client.dto.HmrcSubmissionResponse;
 
 /**
- * REST client for HMRC MTD Self-Employment Periodic Updates API.
+ * REST client for HMRC MTD Self-Employment Business API v5 (periodic + cumulative updates).
  *
  * <p>Submits quarterly periodic updates as required by Making Tax Digital.</p>
  *
@@ -16,6 +18,8 @@ import uk.selfemploy.hmrc.client.dto.HmrcSubmissionResponse;
  *     HMRC Self-Employment Business API</a>
  */
 @RegisterRestClient(configKey = "hmrc-mtd-api")
+@RegisterClientHeaders(HmrcHeaderFactory.class)
+@ClientHeaderParam(name = "Accept", value = "application/vnd.hmrc.5.0+json")
 @Path("/individuals/business/self-employment")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
