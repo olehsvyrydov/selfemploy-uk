@@ -23,9 +23,9 @@ import java.util.concurrent.CompletionStage;
  * <p>Returns the customer's MTD-quarterly obligations and their due dates. Under
  * the v3 cadence (deployed in production 2026-03-24), due dates fall on the
  * <strong>7th of the month following quarter end</strong>, aligned with VAT MTD.
- * Earlier hardcoded 5th-of-month deadlines in the app were corrected in
- * {@link uk.selfemploy.common.domain.Quarter} is now the
- * single source of truth.
+ * Earlier hardcoded 5th-of-month deadlines in the app have been corrected;
+ * {@link uk.selfemploy.common.domain.Quarter} is now the single source of truth
+ * for the cadence.
  *
  * <p>Late submission incurs penalty points under FA 2021 Sch 24 (4 points = £200).
  *

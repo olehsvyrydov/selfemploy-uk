@@ -15,8 +15,7 @@ import java.lang.reflect.RecordComponent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Contract + DTO tests for ReliefsClient (HMRC Individuals Reliefs API v3 —
- * ).
+ * Contract + DTO tests for ReliefsClient (HMRC Individuals Reliefs API v3).
  *
  * <p>Locks the v3 Accept header and the "no non-UK charitable giving fields"
  * removal: the {@link Reliefs} record has no component for any of the removed

@@ -24,8 +24,6 @@ import java.util.Optional;
  * required version (Calculations v8, Self-Employment Business v5, Obligations v3,
  * BSAS v7, etc.); each REST client interface declares its own Accept header via
  * {@code @ClientHeaderParam(name="Accept", value="application/vnd.hmrc.{N}.0+json")}.
- *
- * <p>and ADR-017.
  */
 @ApplicationScoped
 public class HmrcHeaderFactory implements ClientHeadersFactory {
@@ -92,7 +90,7 @@ public class HmrcHeaderFactory implements ClientHeadersFactory {
             log.debug("Added {} fraud prevention headers", fraudHeaders.size());
         } catch (Exception e) {
             log.error("Failed to generate fraud prevention headers: {}",
-                HmrcPiiRedactor.redact(String.valueOf(e.getMessage())));
+                HmrcPiiRedactor.redact(String.valueOf(e.getMessage())), e);
             // Continue without fraud headers - API will likely reject the request
             // but let HMRC return the specific error
         }

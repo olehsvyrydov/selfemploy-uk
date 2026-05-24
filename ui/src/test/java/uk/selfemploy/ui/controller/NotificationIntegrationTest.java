@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for SE-309: Deadline Notifications.
  * Tests notification service integration with UI components.
  *
- * Based on QA's QA test case specification (26 test cases).
+ * Based on the QA test case specification (26 test cases).
  *
  * <p>Test Categories:</p>
  * <ul>
@@ -300,7 +300,7 @@ class NotificationIntegrationTest {
             List<Deadline> deadlines = notificationService.getDeadlinesForTaxYear(taxYear);
 
             // Then: Q1 (7 Aug), Q2 (7 Nov), Q3 (7 Feb), Q4 (7 May) — Obligations API v3 cadence
-            // Updated in  to match HMRC's 7th-of-month rule (was 5th, which
+            // matching HMRC's 7th-of-month rule. Was previously the 5th, which
             // would have caused users to miss the real deadline and trigger penalty points
             // under FA 2021 Sch 24).
             List<Deadline> mtdDeadlines = deadlines.stream()

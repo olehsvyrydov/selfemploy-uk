@@ -57,7 +57,7 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
         return sendTokenRequest(body)
             .exceptionally(ex -> {
                 log.error("Token exchange failed: {}",
-                    HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())));
+                    HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
                 if (ex.getCause() instanceof HmrcOAuthException) {
                     throw (HmrcOAuthException) ex.getCause();
                 }
@@ -74,7 +74,7 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
         return sendTokenRequest(body)
             .exceptionally(ex -> {
                 log.error("Token refresh failed: {}",
-                    HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())));
+                    HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
                 if (ex.getCause() instanceof HmrcOAuthException) {
                     throw (HmrcOAuthException) ex.getCause();
                 }
@@ -116,7 +116,7 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
                 return parseTokenResponse(responseBody);
             } catch (Exception e) {
                 log.error("Failed to parse token response: {}",
-                    HmrcPiiRedactor.redact(String.valueOf(e.getMessage())));
+                    HmrcPiiRedactor.redact(String.valueOf(e.getMessage())), e);
                 throw new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, "Invalid response format");
             }
         } else if (statusCode == 400) {

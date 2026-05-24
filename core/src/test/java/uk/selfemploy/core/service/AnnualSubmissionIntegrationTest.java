@@ -41,7 +41,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Integration tests for SE-403 Annual Self Assessment.
- * Tests based on QA's QA test specification.
+ * Tests verify the Saga pattern: state transitions, resume capability, input validation, terminal-state edge cases.
  *
  * <p>Test IDs: IT-403-011 to IT-403-028 (Integration Tests)
  *
@@ -51,7 +51,6 @@ import static org.mockito.Mockito.*;
  * - Input validation
  * - Edge cases for terminal states
  *
- * @see docs/sprints/sprint-4/testingQA-qa-SE-403.md
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

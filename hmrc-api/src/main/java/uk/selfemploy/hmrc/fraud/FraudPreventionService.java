@@ -84,8 +84,9 @@ public class FraudPreventionService {
         // Timezone
         addHeader(headers, timezoneCollector);
 
-        // Local IPs + companion timestamp must be sampled atomically; the
-        // timestamp records when the IP enumeration ran.
+        // Local IPs first, then a companion ISO-8601 timestamp recorded immediately
+        // after enumeration. The pair is sampled sequentially, not atomically — skew
+        // is sub-millisecond on commodity hardware and within HMRC's tolerance.
         addHeader(headers, localIpsCollector);
         addHeader(headers, localIpsTimestampCollector);
 
@@ -157,7 +158,7 @@ public class FraudPreventionService {
         } catch (Exception e) {
             log.error("Failed to collect header {}: {}",
                 collector.getHeaderName(),
-                HmrcPiiRedactor.redact(String.valueOf(e.getMessage())));
+                HmrcPiiRedactor.redact(String.valueOf(e.getMessage())), e);
             if (collector.isMandatory()) {
                 throw new RuntimeException("Failed to collect mandatory header: "
                     + collector.getHeaderName(), e);
