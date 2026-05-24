@@ -1,0 +1,56 @@
+# UK Tax Rates for Tax Year 2026/27 (6 April 2026 - 5 April 2027)
+#
+# HMRC Official Sources (verified 2026-05-24):
+#   - Income Tax rates: https://www.gov.uk/income-tax-rates
+#   - NI Class 4 rates: https://www.gov.uk/self-employed-national-insurance-rates
+#   - NI Class 2 rates: https://www.gov.uk/self-employed-national-insurance-rates
+#   - Tax bands: https://www.gov.uk/government/publications/rates-and-allowances-income-tax
+#
+# Notes on 2026/27 changes vs 2025/26:
+#   - Income Tax thresholds and rates: UNCHANGED (frozen through 2027/28 per
+#     Autumn Statement 2022, confirmed by Autumn Statement 2023).
+#   - NI Class 4 thresholds and rates: UNCHANGED (LPL/UPL frozen with income tax
+#     thresholds; main rate held at 6% since cut from 9% in April 2024;
+#     additional rate held at 2%).
+#   - NI Class 2 weekly rate increased from £3.50 to £3.65.
+#   - NI Class 2 Small Profits Threshold raised from £6,845 to £7,105.
+
+taxYear: 2026
+
+incomeTax:
+  # Personal Allowance - tax-free income threshold (frozen)
+  # HMRC ref: https://www.gov.uk/income-tax-rates
+  personalAllowance: 12570
+
+  # Tax band upper limits (frozen)
+  basicRateUpperLimit: 50270     # Basic rate applies from £12,571 to £50,270
+  higherRateUpperLimit: 125140   # Higher rate applies from £50,271 to £125,140
+  # Additional rate applies to income above £125,140
+
+  # Personal Allowance taper starts at £100,000
+  taperThreshold: 100000
+
+  # Tax rates (as decimals) - unchanged
+  basicRate: 0.20      # 20%
+  higherRate: 0.40     # 40%
+  additionalRate: 0.45 # 45%
+
+niClass4:
+  # National Insurance Class 4 - self-employed profits-based contributions
+  # Thresholds and rates frozen for 2026/27.
+  # HMRC ref: https://www.gov.uk/self-employed-national-insurance-rates
+
+  lowerProfitsLimit: 12570   # No NI on profits below this
+  upperProfitsLimit: 50270   # Main rate applies up to this, additional rate above
+
+  # NI Class 4 rates (as decimals)
+  mainRate: 0.06       # 6% on profits between £12,570 and £50,270
+  additionalRate: 0.02 # 2% on profits above £50,270
+
+niClass2:
+  # National Insurance Class 2 - flat-rate self-employed contributions
+  # Updated rates for 2026/27 (uprated from 2025/26).
+  # HMRC ref: https://www.gov.uk/self-employed-national-insurance-rates
+
+  weeklyRate: 3.65             # £3.65 per week = £189.80/year (52 weeks)
+  smallProfitsThreshold: 7105  # Class 2 NI is treated as paid above this threshold
