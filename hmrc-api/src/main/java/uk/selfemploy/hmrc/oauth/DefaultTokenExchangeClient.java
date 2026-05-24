@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import uk.selfemploy.hmrc.config.HmrcConfig;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException.OAuthError;
+import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 
 import java.net.URI;
@@ -55,7 +56,8 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
 
         return sendTokenRequest(body)
             .exceptionally(ex -> {
-                log.error("Token exchange failed", ex);
+                log.error("Token exchange failed: {}",
+                    HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())));
                 if (ex.getCause() instanceof HmrcOAuthException) {
                     throw (HmrcOAuthException) ex.getCause();
                 }
@@ -71,7 +73,8 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
 
         return sendTokenRequest(body)
             .exceptionally(ex -> {
-                log.error("Token refresh failed", ex);
+                log.error("Token refresh failed: {}",
+                    HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())));
                 if (ex.getCause() instanceof HmrcOAuthException) {
                     throw (HmrcOAuthException) ex.getCause();
                 }
@@ -112,7 +115,8 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
             try {
                 return parseTokenResponse(responseBody);
             } catch (Exception e) {
-                log.error("Failed to parse token response", e);
+                log.error("Failed to parse token response: {}",
+                    HmrcPiiRedactor.redact(String.valueOf(e.getMessage())));
                 throw new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, "Invalid response format");
             }
         } else if (statusCode == 400) {

@@ -8,6 +8,7 @@ import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.hmrc.fraud.FraudPreventionService;
+import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 import uk.selfemploy.hmrc.oauth.storage.TokenStorageService;
 
@@ -90,7 +91,8 @@ public class HmrcHeaderFactory implements ClientHeadersFactory {
 
             log.debug("Added {} fraud prevention headers", fraudHeaders.size());
         } catch (Exception e) {
-            log.error("Failed to generate fraud prevention headers", e);
+            log.error("Failed to generate fraud prevention headers: {}",
+                HmrcPiiRedactor.redact(String.valueOf(e.getMessage())));
             // Continue without fraud headers - API will likely reject the request
             // but let HMRC return the specific error
         }

@@ -7,8 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.hmrc.fraud.collectors.DeviceIdCollector;
 import uk.selfemploy.hmrc.fraud.collectors.LocalIpsCollector;
+import uk.selfemploy.hmrc.fraud.collectors.LocalIpsTimestampCollector;
+import uk.selfemploy.hmrc.fraud.collectors.MacAddressesCollector;
 import uk.selfemploy.hmrc.fraud.collectors.TimezoneCollector;
+import uk.selfemploy.hmrc.fraud.collectors.UserAgentCollector;
 import uk.selfemploy.hmrc.fraud.collectors.UserIdsCollector;
+import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +23,7 @@ import java.util.Map;
  * Service for generating HMRC fraud prevention headers.
  * Collects device and environment information required by HMRC for all API calls.
  *
- * @see <a href="https://developer.service.hmrc.gov.uk/guides/fraud-prevention/">HMRC Fraud Prevention</a>
+ * @see <a href="https://developer.service.hmrc.gov.uk/guides/fraud-prevention/connection-method/desktop-app-direct/">HMRC Fraud Prevention — DESKTOP_APP_DIRECT</a>
  */
 @ApplicationScoped
 public class FraudPreventionService {
@@ -31,7 +35,10 @@ public class FraudPreventionService {
     private final DeviceIdCollector deviceIdCollector;
     private final TimezoneCollector timezoneCollector;
     private final LocalIpsCollector localIpsCollector;
+    private final LocalIpsTimestampCollector localIpsTimestampCollector;
+    private final MacAddressesCollector macAddressesCollector;
     private final UserIdsCollector userIdsCollector;
+    private final UserAgentCollector userAgentCollector;
     private final String appVersion;
 
     @Inject
@@ -39,12 +46,18 @@ public class FraudPreventionService {
             DeviceIdCollector deviceIdCollector,
             TimezoneCollector timezoneCollector,
             LocalIpsCollector localIpsCollector,
+            LocalIpsTimestampCollector localIpsTimestampCollector,
+            MacAddressesCollector macAddressesCollector,
             UserIdsCollector userIdsCollector,
+            UserAgentCollector userAgentCollector,
             @ConfigProperty(name = "quarkus.application.version", defaultValue = "0.1.0") String appVersion) {
         this.deviceIdCollector = deviceIdCollector;
         this.timezoneCollector = timezoneCollector;
         this.localIpsCollector = localIpsCollector;
+        this.localIpsTimestampCollector = localIpsTimestampCollector;
+        this.macAddressesCollector = macAddressesCollector;
         this.userIdsCollector = userIdsCollector;
+        this.userAgentCollector = userAgentCollector;
         this.appVersion = appVersion;
     }
 
@@ -71,8 +84,16 @@ public class FraudPreventionService {
         // Timezone
         addHeader(headers, timezoneCollector);
 
-        // Local IPs
+        // Local IPs + companion timestamp must be sampled atomically; the
+        // timestamp records when the IP enumeration ran.
         addHeader(headers, localIpsCollector);
+        addHeader(headers, localIpsTimestampCollector);
+
+        // MAC addresses (mandatory per HMRC; suppressed when JVM cannot read NIC hardware)
+        addHeader(headers, macAddressesCollector);
+
+        // OS / device descriptor — distinct from any browser User-Agent
+        addHeader(headers, userAgentCollector);
 
         // Vendor version
         headers.put(FraudPreventionHeaders.Headers.VENDOR_VERSION,
@@ -104,7 +125,14 @@ public class FraudPreventionService {
             FraudPreventionHeaders.Headers.CONNECTION_METHOD,
             FraudPreventionHeaders.Headers.DEVICE_ID,
             FraudPreventionHeaders.Headers.USER_IDS,
-            FraudPreventionHeaders.Headers.TIMEZONE
+            FraudPreventionHeaders.Headers.TIMEZONE,
+            FraudPreventionHeaders.Headers.LOCAL_IPS,
+            FraudPreventionHeaders.Headers.LOCAL_IPS_TIMESTAMP,
+            FraudPreventionHeaders.Headers.USER_AGENT,
+            FraudPreventionHeaders.Headers.SCREENS,
+            FraudPreventionHeaders.Headers.WINDOW_SIZE,
+            FraudPreventionHeaders.Headers.VENDOR_VERSION,
+            FraudPreventionHeaders.Headers.VENDOR_PRODUCT_NAME
         };
 
         for (String header : mandatoryHeaders) {
@@ -127,7 +155,9 @@ public class FraudPreventionService {
                 log.warn("Mandatory header {} returned empty value", collector.getHeaderName());
             }
         } catch (Exception e) {
-            log.error("Failed to collect header {}", collector.getHeaderName(), e);
+            log.error("Failed to collect header {}: {}",
+                collector.getHeaderName(),
+                HmrcPiiRedactor.redact(String.valueOf(e.getMessage())));
             if (collector.isMandatory()) {
                 throw new RuntimeException("Failed to collect mandatory header: "
                     + collector.getHeaderName(), e);

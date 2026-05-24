@@ -67,7 +67,14 @@
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
-        <surefire.excludedGroups>e2e</surefire.excludedGroups>
+        <!--
+            Tests tagged 'e2e' are excluded by default (slow, browser-based).
+            Tests tagged 'hmrc-sandbox' are excluded by default because they
+            depend on HMRC's published fraud-prevention spec and (optionally)
+            the HMRC sandbox validator endpoint; the nightly workflow opts
+            in via -Dsurefire.excludedGroups=e2e to run them.
+        -->
+        <surefire.excludedGroups>e2e,hmrc-sandbox</surefire.excludedGroups>
         <jpackage-maven-plugin.version>1.4.0</jpackage-maven-plugin.version>
     </properties>
 
