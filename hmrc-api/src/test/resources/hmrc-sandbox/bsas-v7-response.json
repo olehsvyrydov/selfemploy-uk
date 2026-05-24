@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "bsasId": "c75f40a6-a3df-4429-a697-471eeb46ba0f",
+    "incomeSourceId": "XAIS12345678901",
+    "taxYear": "2026-27",
+    "requestedDateTime": "2026-05-12T11:04:55Z",
+    "summaryStatus": "valid"
+  },
+  "accountingPeriod": {
+    "startDate": "2026-04-06",
+    "endDate": "2027-04-05"
+  },
+  "adjustments": {
+    "incomeAdjustment": 1500.00,
+    "expensesAdjustment": -250.00,
+    "additionsAdjustment": 0.00,
+    "deductionsAdjustment": 75.50,
+    "averagingAdjustment": 9999.99
+  },
+  "newSchemaFieldFromHmrc": "tolerated by @JsonIgnoreProperties"
+}

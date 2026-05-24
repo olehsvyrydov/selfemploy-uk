@@ -1,0 +1,32 @@
+{
+  "losses": [
+    {
+      "lossId": "AAZZ1234567890a",
+      "businessId": "XAIS12345678901",
+      "incomeSourceId": "XAIS12345678901",
+      "lossType": "self-employment",
+      "taxYearClaimedFor": "2026-27",
+      "lossAmount": 2750.55,
+      "lastModified": "2026-05-10T09:14:32Z"
+    },
+    {
+      "lossId": "BBYY9876543210b",
+      "businessId": "XPIS98765432101",
+      "incomeSourceId": "XPIS98765432101",
+      "lossType": "uk-property-non-fhl",
+      "taxYearClaimedFor": "2025-26",
+      "lossAmount": 410.00,
+      "lastModified": "2025-11-02T17:22:00Z"
+    },
+    {
+      "lossId": "CCWW5555555555c",
+      "businessId": "XFPI11122233344",
+      "incomeSourceId": "XFPI11122233344",
+      "lossType": "foreign-property",
+      "taxYearClaimedFor": "2026-27",
+      "lossAmount": 1000.00,
+      "lastModified": "2026-04-09T08:00:00Z"
+    }
+  ],
+  "newSchemaFieldFromHmrc": "tolerated by @JsonIgnoreProperties"
+}

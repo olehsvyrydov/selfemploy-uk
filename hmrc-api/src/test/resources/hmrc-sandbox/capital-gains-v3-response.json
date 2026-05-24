@@ -1,0 +1,39 @@
+{
+  "taxYear": "2026-27",
+  "disposals": [
+    {
+      "disposalId": "DSP1100000000001",
+      "assetType": "residential-property",
+      "assetDescription": "Flat at 12 Acacia Avenue, Manchester",
+      "acquisitionDate": "2019-06-14",
+      "disposalDate": "2026-09-30",
+      "disposalProceeds": 285000.00,
+      "allowableCosts": 240000.00,
+      "gain": 45000.00,
+      "loss": 0.00
+    },
+    {
+      "disposalId": "DSP1100000000002",
+      "assetType": "crypto-asset",
+      "assetDescription": "BTC",
+      "acquisitionDate": "2021-03-02",
+      "disposalDate": "2026-11-11",
+      "disposalProceeds": 18000.00,
+      "allowableCosts": 12500.00,
+      "gain": 5500.00,
+      "loss": 0.00
+    },
+    {
+      "disposalId": "DSP1100000000003",
+      "assetType": "crypto-asset",
+      "assetDescription": "ETH",
+      "acquisitionDate": "2023-08-19",
+      "disposalDate": "2027-01-04",
+      "disposalProceeds": 2200.00,
+      "allowableCosts": 2900.00,
+      "gain": 0.00,
+      "loss": 700.00
+    }
+  ],
+  "newSchemaFieldFromHmrc": "tolerated by @JsonIgnoreProperties"
+}
