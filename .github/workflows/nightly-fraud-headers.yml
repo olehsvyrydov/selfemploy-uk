@@ -1,0 +1,78 @@
+# Nightly HMRC fraud-prevention headers contract check.
+#
+# Purpose: catch drift between what FraudPreventionService emits and what
+# HMRC's published DESKTOP_APP_DIRECT spec requires. Two modes:
+#
+#   1. Shape-lock (always runs). The contract test asserts every header
+#      HMRC currently lists as mandatory is produced locally, with the
+#      documented format. No external network call required, so the test
+#      passes deterministically even when HMRC's sandbox is down.
+#
+#   2. Live validator (opt-in). When the repository secret
+#      HMRC_FPH_VALIDATOR_TOKEN is configured, the test additionally POSTs
+#      the generated headers to HMRC's test-fraud-prevention-headers
+#      endpoint and fails on any HTTP 4xx/5xx, surfacing HMRC's diagnostics
+#      in the job log. The token must be acquired separately (HMRC
+#      application-restricted grant) and stored under repo Settings →
+#      Secrets → Actions. Without the secret the live step is automatically
+#      skipped — the shape-lock alone still detects drift introduced by us.
+#
+# Schedule: 03:00 UTC daily. Also runs on push to the active branch so
+# developers can verify the workflow itself before merge.
+
+name: Nightly HMRC Fraud Header Contract
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  push:
+    branches:
+      - feature/sprint-17-hmrc-march-2026-compliance
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fraud-header-contract:
+    name: Fraud Header Contract Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compile project (test scope)
+        run: mvn -B -pl hmrc-api -am test-compile --no-transfer-progress
+
+      # The contract test is tagged 'hmrc-sandbox' so it is excluded from
+      # the default test run. We clear that exclusion (keeping only 'e2e'
+      # excluded) so only the contract test executes here.
+      - name: Run fraud-prevention header contract test
+        env:
+          HMRC_FPH_VALIDATOR_TOKEN: ${{ secrets.HMRC_FPH_VALIDATOR_TOKEN }}
+        run: >-
+          mvn -B -pl hmrc-api -am
+          -Dsurefire.excludedGroups=e2e
+          -Dgroups=hmrc-sandbox
+          -Dtest=FraudPreventionHeadersHmrcContractTest
+          -Dsurefire.failIfNoSpecifiedTests=false
+          test
+          --no-transfer-progress
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-fraud-headers-reports
+          path: |
+            hmrc-api/target/surefire-reports/
+          retention-days: 14

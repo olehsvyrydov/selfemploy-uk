@@ -2,6 +2,7 @@ package uk.selfemploy.ui.service;
 
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.viewmodel.Deadline;
 
@@ -122,22 +123,17 @@ public class DeadlineNotificationService {
     }
 
     private void addQuarterlyDeadlines(List<Deadline> deadlines, TaxYear taxYear) {
-        // MTD quarterly deadlines: 5th of month following quarter end
-        // Q1: Apr-Jun -> 5 Aug
-        // Q2: Jul-Sep -> 5 Nov
-        // Q3: Oct-Dec -> 5 Feb
-        // Q4: Jan-Mar -> 5 May
-
-        int year = taxYear.startYear();
-
-        // Q1: 5 August
-        deadlines.add(Deadline.of("MTD Q1 Update Due", LocalDate.of(year, 8, 5)));
-        // Q2: 5 November
-        deadlines.add(Deadline.of("MTD Q2 Update Due", LocalDate.of(year, 11, 5)));
-        // Q3: 5 February (following year)
-        deadlines.add(Deadline.of("MTD Q3 Update Due", LocalDate.of(year + 1, 2, 5)));
-        // Q4: 5 May (following year)
-        deadlines.add(Deadline.of("MTD Q4 Update Due", LocalDate.of(year + 1, 5, 5)));
+        // MTD ITSA quarterly deadlines fall on the 7th of the month following quarter end
+        // (Obligations API v3 cadence, aligned with VAT MTD; deployed in production 2026-03-24).
+        // The Quarter enum already encodes the correct 7th-of-month dates; this method delegates
+        // to it so the source of truth is one place. Previously this method
+        // hardcoded the 5th — wrong cadence, late-submission penalty risk under FA 2021 Sch 24.
+        for (Quarter quarter : Quarter.values()) {
+            deadlines.add(Deadline.of(
+                "MTD " + quarter.name() + " Update Due",
+                quarter.getDeadline(taxYear)
+            ));
+        }
     }
 
     // === Notification Triggering ===

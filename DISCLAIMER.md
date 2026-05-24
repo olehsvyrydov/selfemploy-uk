@@ -38,4 +38,12 @@ To the maximum extent permitted by applicable law, in no event shall the authors
 
 ---
 
+## HMRC Individual Calculations v8 — Calculation Outputs
+
+Outputs of Individual Calculations v8 (including `transitionProfit`, crypto CGT, BADR multi-asset) are unaudited estimates. User remains the taxpayer under TMA 1970 s.7 and bears sole liability for accuracy under FA 2007 Sch.24 penalties (up to 100% of tax + interest).
+
+This software implements a Pre-Submission Confirmation gate before any final declaration is transmitted to HMRC. Submission cannot proceed until you have explicitly confirmed that the figures are accurate. The confirmation timestamp, your user identifier, a salted SHA-256 hash of your NINO, and a SHA-256 of the submitted tuple are recorded locally in an append-only audit log for evidential purposes (under FA 2009 Sch.55 enquiry conditions). Plaintext NINO and the raw HMRC payload are never persisted in the audit log.
+
+---
+
 By using this software, you acknowledge that tax calculations are estimates and that you bear responsibility for the accuracy of any submissions made to HMRC.

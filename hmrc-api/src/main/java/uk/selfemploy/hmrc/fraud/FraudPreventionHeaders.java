@@ -18,10 +18,17 @@ public interface FraudPreventionHeaders {
         String USER_IDS = "Gov-Client-User-IDs";
         String TIMEZONE = "Gov-Client-Timezone";
         String LOCAL_IPS = "Gov-Client-Local-IPs";
+        String LOCAL_IPS_TIMESTAMP = "Gov-Client-Local-IPs-Timestamp";
         String MAC_ADDRESSES = "Gov-Client-MAC-Addresses";
+        String MULTI_FACTOR = "Gov-Client-Multi-Factor";
         String SCREENS = "Gov-Client-Screens";
         String WINDOW_SIZE = "Gov-Client-Window-Size";
-        String USER_AGENT = "Gov-Client-Browser-JS-User-Agent";
+        // HMRC's DESKTOP_APP_DIRECT spec uses the bare 'Gov-Client-User-Agent'
+        // header carrying os-family / os-version / device-manufacturer / device-model
+        // key-value pairs. Distinct from the browser User-Agent header used by
+        // BROWSER_DIRECT connections.
+        String USER_AGENT = "Gov-Client-User-Agent";
+        String BROWSER_JS_USER_AGENT = "Gov-Client-Browser-JS-User-Agent";
         String VENDOR_VERSION = "Gov-Vendor-Version";
         String VENDOR_LICENSE_IDS = "Gov-Vendor-License-IDs";
         String VENDOR_PUBLIC_IP = "Gov-Vendor-Public-IP";

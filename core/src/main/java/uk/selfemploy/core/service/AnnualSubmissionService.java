@@ -9,7 +9,10 @@ import uk.selfemploy.common.domain.AnnualSubmissionSaga;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
 import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.legal.SubmissionConfirmation;
+import uk.selfemploy.core.audit.DeclarationAuditLog;
 import uk.selfemploy.core.auth.TokenProvider;
+import uk.selfemploy.core.exception.DeclarationNotConfirmedException;
 import uk.selfemploy.core.exception.ValidationException;
 import uk.selfemploy.hmrc.client.SelfAssessmentCalculationClient;
 import uk.selfemploy.hmrc.client.SelfAssessmentDeclarationClient;
@@ -18,6 +21,7 @@ import uk.selfemploy.hmrc.exception.HmrcApiException;
 import uk.selfemploy.hmrc.resilience.HmrcResilienceDecorator;
 import uk.selfemploy.persistence.repository.AnnualSubmissionSagaRepository;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +49,7 @@ public class AnnualSubmissionService {
     private final SelfAssessmentDeclarationClient declarationClient;
     private final HmrcResilienceDecorator resilienceDecorator;
     private final TokenProvider tokenProvider;
+    private final DeclarationAuditLog declarationAuditLog;
 
     @Inject
     public AnnualSubmissionService(
@@ -52,12 +57,14 @@ public class AnnualSubmissionService {
             @RestClient SelfAssessmentCalculationClient calculationClient,
             @RestClient SelfAssessmentDeclarationClient declarationClient,
             HmrcResilienceDecorator resilienceDecorator,
-            TokenProvider tokenProvider) {
+            TokenProvider tokenProvider,
+            DeclarationAuditLog declarationAuditLog) {
         this.repository = repository;
         this.calculationClient = calculationClient;
         this.declarationClient = declarationClient;
         this.resilienceDecorator = resilienceDecorator;
         this.tokenProvider = tokenProvider;
+        this.declarationAuditLog = declarationAuditLog;
     }
 
     /**
@@ -107,13 +114,19 @@ public class AnnualSubmissionService {
      * - INITIATED: Trigger tax calculation
      * - CALCULATING: Retrieve calculation result
      * - CALCULATED: Throw exception (user must explicitly confirm)
-     * - DECLARING: Complete declaration (resume from network failure)
+     * - DECLARING: Throw exception (resume must go through confirmDeclaration with confirmation)
      * - COMPLETED/FAILED: No action
+     *
+     * resume from {@code DECLARING} is
+     * no longer permitted via this method — any path that POSTs the final
+     * declaration must carry a {@link SubmissionConfirmation}. Callers resuming
+     * a saga must invoke
+     * {@link #confirmDeclaration(UUID, SubmissionConfirmation)} instead.
      *
      * @param sagaId The saga ID
      * @return Updated saga after step execution
      * @throws IllegalArgumentException if saga not found
-     * @throws IllegalStateException if in CALCULATED state (requires confirmDeclaration)
+     * @throws IllegalStateException if in CALCULATED or DECLARING state (requires confirmDeclaration)
      */
     public AnnualSubmissionSaga executeNextStep(UUID sagaId) {
         AnnualSubmissionSaga saga = getSagaOrThrow(sagaId);
@@ -126,7 +139,9 @@ public class AnnualSubmissionService {
                 case CALCULATING -> retrieveCalculation(saga);
                 case CALCULATED -> throw new IllegalStateException(
                         "User must confirm declaration before proceeding. Call confirmDeclaration().");
-                case DECLARING -> completeDeclaration(saga);
+                case DECLARING -> throw new IllegalStateException(
+                        "Resume of DECLARING must go through confirmDeclaration(sagaId, confirmation) " +
+                        "to re-capture pre-submission confirmation.");
                 case COMPLETED, FAILED -> {
                     log.warn("Saga {} is in terminal state {}, no action taken", sagaId, saga.state());
                     yield saga;
@@ -147,28 +162,67 @@ public class AnnualSubmissionService {
     /**
      * Confirms and submits the final declaration after user review.
      *
-     * <p>Can only be called when saga is in CALCULATED state.
-     * Transitions through DECLARING → COMPLETED.
+     * <p>Can be called when saga is in {@code CALCULATED} state (fresh submit)
+     * or {@code DECLARING} state (resume after network failure). Transitions
+     * through {@code DECLARING → COMPLETED}.
+     *
+     * <p><strong>Pre-Submission Confirmation gate:</strong>
+     * a non-null {@link SubmissionConfirmation} with {@code confirmedByUser=true}
+     * is required for every POST to the HMRC declaration endpoint. The
+     * confirmation timestamp, user identifier, salted SHA-256 of the NINO, and
+     * SHA-256 of the canonical submission tuple are appended to the local
+     * declaration audit log <em>before</em> the HMRC POST. The user remains the
+     * taxpayer under TMA 1970 s.8 and bears sole liability for accuracy under
+     * FA 2007 Sch.24.
      *
      * @param sagaId The saga ID
+     * @param confirmation user's pre-submission confirmation; must be non-null
+     *                     with {@code confirmedByUser=true}
      * @return Completed saga with HMRC confirmation
      * @throws IllegalArgumentException if saga not found
-     * @throws IllegalStateException if not in CALCULATED state
+     * @throws IllegalStateException if not in CALCULATED or DECLARING state
+     * @throws DeclarationNotConfirmedException if confirmation is null or not confirmed
      */
-    public AnnualSubmissionSaga confirmDeclaration(UUID sagaId) {
+    public AnnualSubmissionSaga confirmDeclaration(UUID sagaId, SubmissionConfirmation confirmation) {
+        requireValidConfirmation(confirmation);
+
         AnnualSubmissionSaga saga = getSagaOrThrow(sagaId);
 
-        if (saga.state() != AnnualSubmissionState.CALCULATED) {
+        if (saga.state() != AnnualSubmissionState.CALCULATED
+                && saga.state() != AnnualSubmissionState.DECLARING) {
             throw new IllegalStateException(
-                    "Can only confirm declaration from CALCULATED state. Current state: " + saga.state());
+                    "Can only confirm declaration from CALCULATED or DECLARING state. Current state: " + saga.state());
         }
 
-        log.info("User confirmed declaration for saga {}", sagaId);
+        log.info("User confirmed declaration for saga {} at {}", sagaId, confirmation.confirmedAt());
+
+        // Write audit line BEFORE the HMRC POST. If the POST fails, the audit
+        // line remains as evidence that the user confirmed the figures at this
+        // instant — which is the evidential-burden requirement from legal review.
+        // Use the HMRC wire-format tax year (e.g. "2024-25") so the recorded
+        // submission hash binds to the exact tuple sent to HMRC.
+        try {
+            declarationAuditLog.recordConfirmedSubmission(
+                    confirmation,
+                    saga.nino(),
+                    formatTaxYear(saga.taxYear()),
+                    saga.calculationId()
+            );
+        } catch (IOException e) {
+            // Audit failure must not silently allow a submission to proceed — fail closed.
+            log.error("Failed to write declaration audit line for saga {}: {}", sagaId, e.getMessage());
+            throw new IllegalStateException(
+                    "Declaration audit log write failed; submission aborted.", e);
+        }
 
         try {
-            // Transition to DECLARING and persist
-            AnnualSubmissionSaga declaringSaga = saga.withDeclaring();
-            repository.save(declaringSaga);
+            // Transition to DECLARING (idempotent on resume) and persist.
+            AnnualSubmissionSaga declaringSaga = saga.state() == AnnualSubmissionState.DECLARING
+                    ? saga
+                    : saga.withDeclaring();
+            if (saga.state() == AnnualSubmissionState.CALCULATED) {
+                repository.save(declaringSaga);
+            }
 
             // Submit declaration
             return completeDeclaration(declaringSaga);
@@ -182,6 +236,17 @@ public class AnnualSubmissionService {
             AnnualSubmissionSaga failedSaga = latestSaga.withFailed(errorMessage);
             repository.save(failedSaga);
             throw e;
+        }
+    }
+
+    private static void requireValidConfirmation(SubmissionConfirmation confirmation) {
+        if (confirmation == null) {
+            throw new DeclarationNotConfirmedException(
+                    "Pre-submission confirmation is required before any HMRC declaration POST.");
+        }
+        if (!confirmation.confirmedByUser()) {
+            throw new DeclarationNotConfirmedException(
+                    "User must actively confirm figures are accurate (confirmedByUser=true) before submission.");
         }
     }
 

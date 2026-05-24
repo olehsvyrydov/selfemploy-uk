@@ -6,7 +6,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.hmrc.fraud.collectors.DeviceIdCollector;
 import uk.selfemploy.hmrc.fraud.collectors.LocalIpsCollector;
+import uk.selfemploy.hmrc.fraud.collectors.LocalIpsTimestampCollector;
+import uk.selfemploy.hmrc.fraud.collectors.MacAddressesCollector;
 import uk.selfemploy.hmrc.fraud.collectors.TimezoneCollector;
+import uk.selfemploy.hmrc.fraud.collectors.UserAgentCollector;
 import uk.selfemploy.hmrc.fraud.collectors.UserIdsCollector;
 
 import java.util.Map;
@@ -28,7 +31,10 @@ class FraudPreventionServiceTest {
             new DeviceIdCollector(),
             new TimezoneCollector(),
             new LocalIpsCollector(),
+            new LocalIpsTimestampCollector(),
+            new MacAddressesCollector(),
             new UserIdsCollector(),
+            new UserAgentCollector(),
             "1.0.0-TEST"
         );
     }

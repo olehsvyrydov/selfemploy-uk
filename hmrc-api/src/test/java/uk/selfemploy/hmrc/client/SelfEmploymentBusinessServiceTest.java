@@ -30,24 +30,24 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests for BusinessDetailsService.
+ * Tests for SelfEmploymentBusinessService.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("BusinessDetailsService")
-class BusinessDetailsServiceTest {
+@DisplayName("SelfEmploymentBusinessService")
+class SelfEmploymentBusinessServiceTest {
 
     @Mock
-    private BusinessDetailsClient businessDetailsClient;
+    private SelfEmploymentBusinessClient selfEmploymentBusinessClient;
 
     @Mock
     private TokenStorageService tokenStorageService;
 
-    private BusinessDetailsService service;
+    private SelfEmploymentBusinessService service;
 
     @BeforeEach
     void setup() {
-        service = new BusinessDetailsService(businessDetailsClient, tokenStorageService);
+        service = new SelfEmploymentBusinessService(selfEmploymentBusinessClient, tokenStorageService);
     }
 
     @Nested
@@ -66,10 +66,10 @@ class BusinessDetailsServiceTest {
                 createBusinessDetails("XAIS12345678901", "Software Development"),
                 createBusinessDetails("XAIS98765432101", "Consulting")
             );
-            BusinessDetailsClient.BusinessListResponse response =
-                new BusinessDetailsClient.BusinessListResponse(businesses);
+            SelfEmploymentBusinessClient.BusinessListResponse response =
+                new SelfEmploymentBusinessClient.BusinessListResponse(businesses);
 
-            when(businessDetailsClient.listBusinesses(eq(nino), anyString()))
+            when(selfEmploymentBusinessClient.listBusinesses(eq(nino), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(response));
 
             // When
@@ -89,16 +89,16 @@ class BusinessDetailsServiceTest {
             OAuthTokens tokens = createValidTokens();
             when(tokenStorageService.loadTokens()).thenReturn(Optional.of(tokens));
 
-            BusinessDetailsClient.BusinessListResponse response =
-                new BusinessDetailsClient.BusinessListResponse(List.of());
-            when(businessDetailsClient.listBusinesses(anyString(), anyString()))
+            SelfEmploymentBusinessClient.BusinessListResponse response =
+                new SelfEmploymentBusinessClient.BusinessListResponse(List.of());
+            when(selfEmploymentBusinessClient.listBusinesses(anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(response));
 
             // When
             service.listBusinesses(nino).toCompletableFuture().get();
 
             // Then
-            verify(businessDetailsClient).listBusinesses(eq(nino), eq("Bearer test_access_token"));
+            verify(selfEmploymentBusinessClient).listBusinesses(eq(nino), eq("Bearer test_access_token"));
         }
 
         @Test
@@ -123,9 +123,9 @@ class BusinessDetailsServiceTest {
             OAuthTokens tokens = createValidTokens();
             when(tokenStorageService.loadTokens()).thenReturn(Optional.of(tokens));
 
-            BusinessDetailsClient.BusinessListResponse response =
-                new BusinessDetailsClient.BusinessListResponse(List.of());
-            when(businessDetailsClient.listBusinesses(eq(nino), anyString()))
+            SelfEmploymentBusinessClient.BusinessListResponse response =
+                new SelfEmploymentBusinessClient.BusinessListResponse(List.of());
+            when(selfEmploymentBusinessClient.listBusinesses(eq(nino), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(response));
 
             // When
@@ -150,7 +150,7 @@ class BusinessDetailsServiceTest {
             when(tokenStorageService.loadTokens()).thenReturn(Optional.of(tokens));
 
             BusinessDetails expectedDetails = createBusinessDetails(businessId, "Software Development");
-            when(businessDetailsClient.getBusinessDetails(eq(nino), eq(businessId), anyString()))
+            when(selfEmploymentBusinessClient.getBusinessDetails(eq(nino), eq(businessId), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(expectedDetails));
 
             // When
@@ -237,9 +237,9 @@ class BusinessDetailsServiceTest {
             OAuthTokens tokens = createValidTokens();
             when(tokenStorageService.loadTokens()).thenReturn(Optional.of(tokens));
 
-            BusinessDetailsClient.BusinessListResponse response =
-                new BusinessDetailsClient.BusinessListResponse(List.of());
-            when(businessDetailsClient.listBusinesses(anyString(), anyString()))
+            SelfEmploymentBusinessClient.BusinessListResponse response =
+                new SelfEmploymentBusinessClient.BusinessListResponse(List.of());
+            when(selfEmploymentBusinessClient.listBusinesses(anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(response));
 
             // When
@@ -247,7 +247,7 @@ class BusinessDetailsServiceTest {
 
             // Then
             assertThat(result).isNotNull();
-            verify(businessDetailsClient).listBusinesses(eq("AA123456A"), anyString());
+            verify(selfEmploymentBusinessClient).listBusinesses(eq("AA123456A"), anyString());
         }
 
         @Test
@@ -258,16 +258,16 @@ class BusinessDetailsServiceTest {
             OAuthTokens tokens = createValidTokens();
             when(tokenStorageService.loadTokens()).thenReturn(Optional.of(tokens));
 
-            BusinessDetailsClient.BusinessListResponse response =
-                new BusinessDetailsClient.BusinessListResponse(List.of());
-            when(businessDetailsClient.listBusinesses(anyString(), anyString()))
+            SelfEmploymentBusinessClient.BusinessListResponse response =
+                new SelfEmploymentBusinessClient.BusinessListResponse(List.of());
+            when(selfEmploymentBusinessClient.listBusinesses(anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(response));
 
             // When
             service.listBusinesses(nino).toCompletableFuture().get();
 
             // Then - spaces should be removed
-            verify(businessDetailsClient).listBusinesses(eq("AA123456A"), anyString());
+            verify(selfEmploymentBusinessClient).listBusinesses(eq("AA123456A"), anyString());
         }
 
         @Test

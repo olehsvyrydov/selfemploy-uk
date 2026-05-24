@@ -9,8 +9,11 @@ import uk.selfemploy.common.domain.AnnualSubmissionSaga;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
 import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.legal.SubmissionConfirmation;
+import uk.selfemploy.core.audit.DeclarationAuditLog;
 import uk.selfemploy.core.auth.TokenException;
 import uk.selfemploy.core.auth.TokenProvider;
+import uk.selfemploy.core.exception.DeclarationNotConfirmedException;
 import uk.selfemploy.core.exception.ValidationException;
 import uk.selfemploy.hmrc.client.SelfAssessmentCalculationClient;
 import uk.selfemploy.hmrc.client.SelfAssessmentDeclarationClient;
@@ -20,7 +23,9 @@ import uk.selfemploy.hmrc.exception.HmrcValidationException;
 import uk.selfemploy.hmrc.resilience.HmrcResilienceDecorator;
 import uk.selfemploy.persistence.repository.AnnualSubmissionSagaRepository;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,12 +52,15 @@ class AnnualSubmissionServiceTest {
     private SelfAssessmentDeclarationClient declarationClient;
     private HmrcResilienceDecorator resilienceDecorator;
     private TokenProvider tokenProvider;
+    private DeclarationAuditLog declarationAuditLog;
 
     private static final String TEST_NINO = "AA123456A";
     private static final TaxYear TEST_TAX_YEAR = TaxYear.of(2024);
     private static final String TEST_CALCULATION_ID = "calc-12345";
     private static final String TEST_CHARGE_REFERENCE = "XA123456789012";
     private static final String TEST_BEARER_TOKEN = "Bearer test-access-token";
+    private static final SubmissionConfirmation VALID_CONFIRMATION =
+        new SubmissionConfirmation("test-user", true, Instant.parse("2026-01-15T09:30:00Z"));
 
     @BeforeEach
     void setUp() {
@@ -61,13 +69,15 @@ class AnnualSubmissionServiceTest {
         declarationClient = mock(SelfAssessmentDeclarationClient.class);
         resilienceDecorator = mock(HmrcResilienceDecorator.class);
         tokenProvider = mock(TokenProvider.class);
+        declarationAuditLog = mock(DeclarationAuditLog.class);
 
         service = new AnnualSubmissionService(
             repository,
             calculationClient,
             declarationClient,
             resilienceDecorator,
-            tokenProvider
+            tokenProvider,
+            declarationAuditLog
         );
 
         // Default behavior: resilience decorator just passes through
@@ -310,7 +320,7 @@ class AnnualSubmissionServiceTest {
             )).thenReturn(hmrcResponse);
 
             // When
-            AnnualSubmissionSaga result = service.confirmDeclaration(saga.id());
+            AnnualSubmissionSaga result = service.confirmDeclaration(saga.id(), VALID_CONFIRMATION);
 
             // Then
             assertThat(result.state()).isEqualTo(AnnualSubmissionState.COMPLETED);
@@ -333,7 +343,7 @@ class AnnualSubmissionServiceTest {
             when(repository.findById(saga.id())).thenReturn(Optional.of(saga));
 
             // When / Then
-            assertThatThrownBy(() -> service.confirmDeclaration(saga.id()))
+            assertThatThrownBy(() -> service.confirmDeclaration(saga.id(), VALID_CONFIRMATION))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("CALCULATED");
         }
@@ -346,7 +356,7 @@ class AnnualSubmissionServiceTest {
             when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
 
             // When / Then
-            assertThatThrownBy(() -> service.confirmDeclaration(nonExistentId))
+            assertThatThrownBy(() -> service.confirmDeclaration(nonExistentId, VALID_CONFIRMATION))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Saga not found");
         }
@@ -452,8 +462,8 @@ class AnnualSubmissionServiceTest {
         }
 
         @Test
-        @DisplayName("should resume from DECLARING state after network failure")
-        void shouldResumeFromDeclaring() {
+        @DisplayName("should resume from DECLARING state via confirmDeclaration(gate also applies to resume)")
+        void shouldResumeFromDeclaringViaConfirmDeclaration() {
             // Given - Saga in DECLARING state (declaration was being submitted)
             AnnualSubmissionSaga saga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
                 .withCalculating(TEST_CALCULATION_ID)
@@ -468,12 +478,126 @@ class AnnualSubmissionServiceTest {
             when(declarationClient.submitDeclaration(any(), any(), any(), any()))
                 .thenReturn(hmrcResponse);
 
-            // When - Resume by calling executeNextStep
-            AnnualSubmissionSaga result = service.executeNextStep(saga.id());
+            // When - Resume by calling confirmDeclaration with confirmation
+            AnnualSubmissionSaga result = service.confirmDeclaration(saga.id(), VALID_CONFIRMATION);
 
             // Then - Should complete the declaration
             assertThat(result.state()).isEqualTo(AnnualSubmissionState.COMPLETED);
             assertThat(result.hmrcConfirmation()).isEqualTo(TEST_CHARGE_REFERENCE);
+        }
+
+        @Test
+        @DisplayName("should reject executeNextStep from DECLARING (must use confirmDeclaration)")
+        void shouldRejectExecuteNextStepFromDeclaring() {
+            // Given - Saga in DECLARING state
+            AnnualSubmissionSaga saga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
+                .withCalculating(TEST_CALCULATION_ID)
+                .withCalculated(createTestCalculationResult())
+                .withDeclaring();
+            when(repository.findById(saga.id())).thenReturn(Optional.of(saga));
+
+            // When / Then
+            assertThatThrownBy(() -> service.executeNextStep(saga.id()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("confirmDeclaration");
+        }
+    }
+
+    @Nested
+    @DisplayName("Pre-Submission Confirmation Gate")
+    class PreSubmissionConfirmationGateTests {
+
+        @Test
+        @DisplayName("should reject submission when confirmation is null")
+        void shouldRejectSubmissionWhenConfirmationIsNull() throws IOException {
+            // Given
+            AnnualSubmissionSaga saga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
+                .withCalculating(TEST_CALCULATION_ID)
+                .withCalculated(createTestCalculationResult());
+            when(repository.findById(saga.id())).thenReturn(Optional.of(saga));
+
+            // When / Then
+            assertThatThrownBy(() -> service.confirmDeclaration(saga.id(), null))
+                .isInstanceOf(DeclarationNotConfirmedException.class)
+                .hasMessageContaining("confirmation is required");
+
+            // Then: never called HMRC, never wrote audit
+            verify(declarationClient, never()).submitDeclaration(any(), any(), any(), any());
+            // Mock-level proof that no audit line was written. End-to-end proof that
+            // a real FileSystemDeclarationAuditLog leaves zero bytes on disk under the
+            // rejection path lives in FileSystemDeclarationAuditLogTest (per QA note,
+            //).
+            verify(declarationAuditLog, never()).recordConfirmedSubmission(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("should reject submission when confirmedByUser is false")
+        void shouldRejectSubmissionWhenNotConfirmedByUser() throws IOException {
+            // Given
+            AnnualSubmissionSaga saga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
+                .withCalculating(TEST_CALCULATION_ID)
+                .withCalculated(createTestCalculationResult());
+            when(repository.findById(saga.id())).thenReturn(Optional.of(saga));
+
+            SubmissionConfirmation notConfirmed =
+                new SubmissionConfirmation("test-user", false, Instant.now());
+
+            // When / Then
+            assertThatThrownBy(() -> service.confirmDeclaration(saga.id(), notConfirmed))
+                .isInstanceOf(DeclarationNotConfirmedException.class)
+                .hasMessageContaining("confirmedByUser=true");
+
+            verify(declarationClient, never()).submitDeclaration(any(), any(), any(), any());
+            verify(declarationAuditLog, never()).recordConfirmedSubmission(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("should write audit line BEFORE submitting to HMRC")
+        void shouldWriteAuditLineBeforeHmrcPost() throws IOException {
+            // Given
+            AnnualSubmissionSaga saga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
+                .withCalculating(TEST_CALCULATION_ID)
+                .withCalculated(createTestCalculationResult());
+            when(repository.findById(saga.id())).thenReturn(Optional.of(saga));
+
+            FinalDeclarationResponse hmrcResponse = new FinalDeclarationResponse(
+                TEST_CHARGE_REFERENCE, LocalDateTime.now());
+            when(declarationClient.submitDeclaration(any(), any(), any(), any()))
+                .thenReturn(hmrcResponse);
+
+            // When
+            service.confirmDeclaration(saga.id(), VALID_CONFIRMATION);
+
+            // Then: audit was called with the expected raw NINO (hasher will salt+hash internally)
+            org.mockito.InOrder order = inOrder(declarationAuditLog, declarationClient);
+            order.verify(declarationAuditLog).recordConfirmedSubmission(
+                eq(VALID_CONFIRMATION),
+                eq(TEST_NINO),
+                eq("2024-25"),
+                eq(TEST_CALCULATION_ID)
+            );
+            order.verify(declarationClient).submitDeclaration(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("should abort submission when audit log write fails (fail-closed)")
+        void shouldAbortWhenAuditFails() throws IOException {
+            // Given
+            AnnualSubmissionSaga saga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
+                .withCalculating(TEST_CALCULATION_ID)
+                .withCalculated(createTestCalculationResult());
+            when(repository.findById(saga.id())).thenReturn(Optional.of(saga));
+
+            doThrow(new IOException("disk full"))
+                .when(declarationAuditLog).recordConfirmedSubmission(any(), any(), any(), any());
+
+            // When / Then
+            assertThatThrownBy(() -> service.confirmDeclaration(saga.id(), VALID_CONFIRMATION))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("audit log write failed");
+
+            // HMRC was never called when audit failed
+            verify(declarationClient, never()).submitDeclaration(any(), any(), any(), any());
         }
     }
 
@@ -592,7 +716,7 @@ class AnnualSubmissionServiceTest {
                 .thenReturn(hmrcResponse);
 
             // When
-            service.confirmDeclaration(saga.id());
+            service.confirmDeclaration(saga.id(), VALID_CONFIRMATION);
 
             // Then
             verify(tokenProvider).getValidToken();
@@ -640,7 +764,13 @@ class AnnualSubmissionServiceTest {
                     new BigDecimal("40000.00"),
                     new BigDecimal("2000.00")
                 )
-            )
+            ),
+            // v8 additions — null in this baseline test fixture;
+            // CalculationResponseV8Test covers populated cases.
+            null,  // transitionProfit
+            null,  // transitionProfitAcceleratedAmount
+            null,  // studentLoansAndPostgraduateLoan
+            null   // capitalGainsTax
         );
     }
 }

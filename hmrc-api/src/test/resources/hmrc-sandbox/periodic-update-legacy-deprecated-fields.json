@@ -1,0 +1,37 @@
+{
+  "_comment": "Synthetic fixture for SLFEMPUK-34: a historical Self-Employment Business v5 periodic update JSON that still carries the fields deprecated by the HMRC changelog on 2026-04-24 (averagingAdjustment) and 2026-05-12 (adjustments.overlapReliefUsed). The MtdPeriodicUpdateClientTest deserialises this fixture into PeriodicUpdate to prove that @JsonIgnoreProperties tolerates legacy persisted data without exception and without ever surfacing the deprecated values to application code.",
+  "periodDates": {
+    "periodStartDate": "2024-04-06",
+    "periodEndDate": "2024-07-05"
+  },
+  "periodIncome": {
+    "turnover": 12500.00,
+    "other": 250.00
+  },
+  "periodExpenses": {
+    "costOfGoodsBought": 1000.00,
+    "staffCosts": 4500.00,
+    "travelCosts": 350.00,
+    "premisesRunningCosts": 800.00,
+    "adminCosts": 120.00,
+    "advertisingCosts": 60.00,
+    "interest": 0.00,
+    "financialCharges": 0.00,
+    "badDebt": 0.00,
+    "professionalFees": 200.00,
+    "depreciation": 0.00,
+    "other": 0.00
+  },
+  "adjustments": {
+    "includedNonTaxableProfits": 0.00,
+    "basisAdjustment": 0.00,
+    "overlapReliefUsed": 1234.56,
+    "accountingAdjustment": 0.00,
+    "averagingAdjustment": 789.10,
+    "outstandingBusinessIncome": 0.00,
+    "balancingChargeBpra": 0.00,
+    "balancingChargeOther": 0.00,
+    "goodsAndServicesOwnUse": 0.00
+  },
+  "averagingAdjustment": 789.10
+}

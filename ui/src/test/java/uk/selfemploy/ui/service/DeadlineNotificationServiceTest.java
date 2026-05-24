@@ -59,11 +59,11 @@ class DeadlineNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("Default notification triggers are 30, 7, 1 days before")
+        @DisplayName("Default notification triggers are 14, 3, 0 days before")
         void defaultTriggerDays() {
             NotificationPreferences prefs = service.getPreferences();
 
-            assertThat(prefs.getTriggerDays()).containsExactly(30, 7, 1);
+            assertThat(prefs.getTriggerDays()).containsExactly(14, 3, 0);
         }
 
         @Test
@@ -104,39 +104,39 @@ class DeadlineNotificationServiceTest {
     class DeadlineDetectionTests {
 
         @Test
-        @DisplayName("Detects deadline 30 days away")
-        void detectsDeadline30DaysAway() {
-            LocalDate deadlineDate = LocalDate.now().plusDays(30);
+        @DisplayName("Detects deadline 14 days away (T-14 trigger)")
+        void detectsDeadline14DaysAway() {
+            LocalDate deadlineDate = LocalDate.now().plusDays(14);
             Deadline deadline = Deadline.of("Test Deadline", deadlineDate);
 
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
 
             assertThat(notifications).hasSize(1);
-            assertThat(notifications.get(0).triggerDays()).isEqualTo(30);
+            assertThat(notifications.get(0).triggerDays()).isEqualTo(14);
         }
 
         @Test
-        @DisplayName("Detects deadline 7 days away")
-        void detectsDeadline7DaysAway() {
-            LocalDate deadlineDate = LocalDate.now().plusDays(7);
+        @DisplayName("Detects deadline 3 days away (T-3 trigger)")
+        void detectsDeadline3DaysAway() {
+            LocalDate deadlineDate = LocalDate.now().plusDays(3);
             Deadline deadline = Deadline.of("Test Deadline", deadlineDate);
 
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
 
             assertThat(notifications).hasSize(1);
-            assertThat(notifications.get(0).triggerDays()).isEqualTo(7);
+            assertThat(notifications.get(0).triggerDays()).isEqualTo(3);
         }
 
         @Test
-        @DisplayName("Detects deadline 1 day away")
-        void detectsDeadline1DayAway() {
-            LocalDate deadlineDate = LocalDate.now().plusDays(1);
+        @DisplayName("Detects deadline today (T-0 trigger)")
+        void detectsDeadlineTodayInDeadlineDetection() {
+            LocalDate deadlineDate = LocalDate.now();
             Deadline deadline = Deadline.of("Test Deadline", deadlineDate);
 
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
 
             assertThat(notifications).hasSize(1);
-            assertThat(notifications.get(0).triggerDays()).isEqualTo(1);
+            assertThat(notifications.get(0).triggerDays()).isZero();
         }
 
         @Test
@@ -498,26 +498,31 @@ class DeadlineNotificationServiceTest {
     class PriorityTests {
 
         @Test
-        @DisplayName("30 days triggers LOW priority")
-        void thirtyDaysIsLow() {
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(30));
+        @DisplayName("14 days triggers LOW priority ( cadence)")
+        void fourteenDaysIsLow() {
+            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(14));
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
 
             assertThat(notifications.get(0).priority()).isEqualTo(NotificationPriority.LOW);
         }
 
         @Test
-        @DisplayName("7 days triggers MEDIUM priority")
-        void sevenDaysIsMedium() {
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+        @DisplayName("3 days triggers MEDIUM priority ( cadence)")
+        void threeDaysIsMedium() {
+            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(3));
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
 
             assertThat(notifications.get(0).priority()).isEqualTo(NotificationPriority.MEDIUM);
         }
 
         @Test
-        @DisplayName("1 day triggers HIGH priority")
+        @DisplayName("1 day still triggers HIGH priority when a user configures a 1-day reminder")
         void oneDayIsHigh() {
+            // Default cadence is T-14/T-3/T-0 — HIGH priority (1 day) is unreachable via
+            // defaults by design. This test verifies the priority mapping still works for
+            // users who reinstate a 1-day reminder via NotificationPreferences.
+            service.getPreferences().setTriggerDays(java.util.List.of(1));
+
             Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(1));
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
 

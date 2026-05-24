@@ -1,0 +1,16 @@
+{
+  "giftAidPayments": {
+    "currentYearAmount": 1200.00,
+    "oneOffCurrentYearAmount": 200.00,
+    "amountTreatedAsPreviousYear": 0.00,
+    "currentYearTreatedAsPreviousYear": 0.00
+  },
+  "gifts": {
+    "investmentsAmount": 500.00,
+    "landAndBuildings": 0.00,
+    "sharesOrSecurities": 0.00
+  },
+  "nonUkCharitiesCharityNames": ["Should be ignored — non-UK fields removed in v3"],
+  "giftsToOverseasCharities": 999.99,
+  "futureSchemaFieldFromHmrc": true
+}

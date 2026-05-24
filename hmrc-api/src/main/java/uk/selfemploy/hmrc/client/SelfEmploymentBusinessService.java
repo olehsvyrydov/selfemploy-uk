@@ -17,13 +17,17 @@ import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 
 /**
- * Service for retrieving business details from HMRC Self-Employment API.
- * Handles authentication, NINO validation, and API calls.
+ * Service for retrieving self-employment businesses from HMRC Self-Employment Business API v5.
+ *
+ * <p>Handles authentication, NINO validation, and API calls. Returns {@link BusinessDetails}
+ * DTOs (the per-business data shape shared across the MTD ITSA APIs); does NOT call the
+ * distinct Business Details API at {@code /individuals/business/details} — that is
+ * handled separately by {@code BusinessDetailsService}.
  */
 @ApplicationScoped
-public class BusinessDetailsService {
+public class SelfEmploymentBusinessService {
 
-    private static final Logger log = LoggerFactory.getLogger(BusinessDetailsService.class);
+    private static final Logger log = LoggerFactory.getLogger(SelfEmploymentBusinessService.class);
 
     /**
      * NINO format: 2 letters, 6 digits, 1 letter (A-D).
@@ -36,14 +40,14 @@ public class BusinessDetailsService {
         Pattern.CASE_INSENSITIVE
     );
 
-    private final BusinessDetailsClient businessDetailsClient;
+    private final SelfEmploymentBusinessClient selfEmploymentBusinessClient;
     private final TokenStorageService tokenStorageService;
 
     @Inject
-    public BusinessDetailsService(
-            @RestClient BusinessDetailsClient businessDetailsClient,
+    public SelfEmploymentBusinessService(
+            @RestClient SelfEmploymentBusinessClient selfEmploymentBusinessClient,
             TokenStorageService tokenStorageService) {
-        this.businessDetailsClient = businessDetailsClient;
+        this.selfEmploymentBusinessClient = selfEmploymentBusinessClient;
         this.tokenStorageService = tokenStorageService;
     }
 
@@ -67,7 +71,7 @@ public class BusinessDetailsService {
             log.info("Listing businesses for NINO: {}****{}",
                 normalizedNino.substring(0, 2), normalizedNino.substring(7));
 
-            return businessDetailsClient.listBusinesses(normalizedNino, authorization)
+            return selfEmploymentBusinessClient.listBusinesses(normalizedNino, authorization)
                 .thenApply(response -> {
                     List<BusinessDetails> businesses = response.selfEmployments();
                     log.info("Found {} self-employment businesses",
@@ -97,7 +101,7 @@ public class BusinessDetailsService {
 
             log.info("Getting business details for business ID: {}", businessId);
 
-            return businessDetailsClient.getBusinessDetails(normalizedNino, businessId, authorization);
+            return selfEmploymentBusinessClient.getBusinessDetails(normalizedNino, businessId, authorization);
         });
     }
 

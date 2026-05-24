@@ -2,24 +2,56 @@ package uk.selfemploy.hmrc.client;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import uk.selfemploy.common.dto.CumulativeSummary;
 import uk.selfemploy.common.dto.PeriodicUpdate;
 import uk.selfemploy.hmrc.client.dto.HmrcSubmissionResponse;
 
 /**
- * REST client for HMRC MTD Self-Employment Periodic Updates API.
+ * REST client for HMRC MTD Self-Employment Business API v5 (periodic + cumulative updates).
  *
  * <p>Submits quarterly periodic updates as required by Making Tax Digital.</p>
  *
+ * <p><strong>Deprecated fields (HMRC changelog 2026-04-24 and 2026-05-12):</strong>
+ * The {@code averagingAdjustment} field is deprecated across all tax years for the
+ * Self-Employment Business v5 response bodies, and {@code adjustments.overlapReliefUsed}
+ * is deprecated for tax years 2024-25 and later. This client and its DTOs
+ * ({@link uk.selfemploy.common.dto.PeriodicUpdate},
+ * {@link uk.selfemploy.common.dto.CumulativeSummary}) intentionally model NEITHER
+ * field, so the application can never submit them on the wire. Historical persisted
+ * JSON containing these fields is tolerated by {@code @JsonIgnoreProperties} on the
+ * DTO records. If HMRC returns {@link #ERROR_OVERLAP_RELIEF_USED_NOT_ALLOWED} the
+ * caller must surface the user-facing remediation guidance described on the constant.
+ *
  * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api">
  *     HMRC Self-Employment Business API</a>
+ * @see <a href="https://github.com/hmrc/income-tax-mtd-changelog">HMRC MTD changelog</a>
  */
 @RegisterRestClient(configKey = "hmrc-mtd-api")
+@RegisterClientHeaders(HmrcHeaderFactory.class)
+@ClientHeaderParam(name = "Accept", value = "application/vnd.hmrc.5.0+json")
 @Path("/individuals/business/self-employment")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public interface MtdPeriodicUpdateClient {
+
+    /**
+     * HMRC error code introduced 2026-05-12 — returned when a Self-Employment
+     * Business v5 submission includes {@code adjustments.overlapReliefUsed} for
+     * tax year 2024-25 or later. Overlap relief was abolished by basis-period
+     * reform; the application MUST present a user-facing explanation pointing
+     * the user at their transition-profit figure rather than re-trying the
+     * submission with the same value.
+     *
+     * <p>This constant exists primarily so {@link uk.selfemploy.hmrc.exception
+     * HMRC error handlers} can match by symbolic name, but in practice our
+     * outgoing DTOs cannot encode {@code overlapReliefUsed} at all — see the
+     * class-level Javadoc and the contract tests in
+     * {@code MtdPeriodicUpdateClientTest}.
+     */
+    String ERROR_OVERLAP_RELIEF_USED_NOT_ALLOWED = "RULE_OVERLAP_RELIEF_USED_NOT_ALLOWED";
 
     /**
      * Submits a periodic update for a self-employment business.

@@ -132,9 +132,9 @@ class HmrcHeaderFactoryTest {
         }
 
         @Test
-        @DisplayName("should add Accept header for JSON")
-        void shouldAddAcceptHeaderForJson() {
-            // Given
+        @DisplayName("should NOT add a default Accept header — each client declares its own MTD API version via @ClientHeaderParam")
+        void shouldNotAddDefaultAcceptHeader() {
+            // Given — no client has supplied an Accept header (factory should leave it absent)
             when(tokenStorageService.loadTokens()).thenReturn(Optional.empty());
             when(fraudPreventionService.generateHeaders()).thenReturn(new LinkedHashMap<>());
 
@@ -144,8 +144,31 @@ class HmrcHeaderFactoryTest {
             // When
             MultivaluedMap<String, String> result = headerFactory.update(incomingHeaders, outgoingHeaders);
 
-            // Then
-            assertThat(result.getFirst("Accept")).isEqualTo("application/vnd.hmrc.1.0+json");
+            // Then — factory must NOT silently add vnd.hmrc.1.0+json (or any hardcoded version).
+            // HMRC APIs have per-endpoint versions (Calc v8, SE Business v5, Obligations v3, etc.);
+            // a single hardcoded value caused HTTP 406 against every v2+ endpoint after the 2026-03-24
+            // production deployment. Clients must declare Accept via @ClientHeaderParam on their interface.
+            assertThat(result.containsKey("Accept"))
+                .as("HmrcHeaderFactory must not auto-add an Accept header — each REST client interface declares its own MTD API version")
+                .isFalse();
+        }
+
+        @Test
+        @DisplayName("should preserve a client-supplied Accept header from @ClientHeaderParam")
+        void shouldPreserveClientSuppliedAcceptHeader() {
+            // Given — a REST client interface has declared its Accept header (e.g. Calculations v8)
+            when(tokenStorageService.loadTokens()).thenReturn(Optional.empty());
+            when(fraudPreventionService.generateHeaders()).thenReturn(new LinkedHashMap<>());
+
+            MultivaluedMap<String, String> incomingHeaders = new MultivaluedHashMap<>();
+            MultivaluedMap<String, String> outgoingHeaders = new MultivaluedHashMap<>();
+            outgoingHeaders.add("Accept", "application/vnd.hmrc.8.0+json");
+
+            // When
+            MultivaluedMap<String, String> result = headerFactory.update(incomingHeaders, outgoingHeaders);
+
+            // Then — the client-declared version survives unchanged
+            assertThat(result.getFirst("Accept")).isEqualTo("application/vnd.hmrc.8.0+json");
         }
 
         @Test

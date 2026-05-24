@@ -18,15 +18,42 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Encrypted file-based token storage using AES-256-GCM.
- * Uses a machine-specific key derived from hardware identifiers.
+ * Encrypted file-based token storage using AES-256-GCM with PBKDF2-HMAC-SHA256 key
+ * derivation against a random, user-private 32-byte key seed.
+ *
+ * <p>The previous implementation derived the
+ * KDF password from publicly-inferable machine properties
+ * ({@code user.name + os.name + user.home + hostname}) with a deterministic salt.
+ * Any local process running as the user could re-derive the key trivially. This
+ * implementation replaces both:
+ *
+ * <ul>
+ *   <li>The password source is a random 32-byte seed persisted in a sibling
+ *       {@code .keyseed} file with 0600 POSIX permissions (best-effort on Windows).
+ *       Generated once on first save; not derivable from public machine metadata.</li>
+ *   <li>The salt is freshly randomised per encryption (16 bytes) and stored
+ *       prepended to the ciphertext.</li>
+ *   <li>PBKDF2 iteration count is 600 000 — OWASP 2023 minimum for HMAC-SHA256.</li>
+ *   <li>Both files are written with restrictive POSIX permissions where supported.</li>
+ * </ul>
+ *
+ * <p>File format: {@code [salt(16) | iv(12) | ciphertext]}. The old format is not
+ * forward-compatible; any tokens stored under the previous implementation must be
+ * re-acquired via the OAuth flow (hobby-mode / pre-GA acceptable).
+ *
+ * <p>Future work (out of scope for ): OS-native keystore integration —
+ * Windows DPAPI, macOS Keychain Services, Linux libsecret / KWallet — would
+ * remove the key seed file entirely. Tracked as a follow-up after Sprint 17.
  */
 public class EncryptedFileTokenStorage implements TokenStorage {
 
@@ -35,22 +62,43 @@ public class EncryptedFileTokenStorage implements TokenStorage {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_TAG_LENGTH = 128;
     private static final int GCM_IV_LENGTH = 12;
+    private static final int SALT_LENGTH = 16;
+    private static final int KEY_SEED_LENGTH = 32;
     private static final int KEY_LENGTH = 256;
-    private static final int ITERATIONS = 65536;
+    /** OWASP 2023 minimum for PBKDF2-HMAC-SHA256. */
+    static final int DEFAULT_ITERATIONS = 600_000;
     private static final String KEY_ALGORITHM = "PBKDF2WithHmacSHA256";
     private static final String STORAGE_TYPE = "Encrypted File";
+    private static final String KEY_SEED_SUFFIX = ".keyseed";
+
+    private static final Set<PosixFilePermission> OWNER_READ_WRITE_ONLY =
+        PosixFilePermissions.fromString("rw-------");
 
     private final Path filePath;
+    private final Path keySeedPath;
+    private final int iterations;
     private final ObjectMapper objectMapper;
     private final SecureRandom secureRandom;
-    private final byte[] salt;
 
     public EncryptedFileTokenStorage(Path filePath) {
+        this(filePath, DEFAULT_ITERATIONS);
+    }
+
+    /**
+     * Package-private constructor allowing tests to use a lower PBKDF2 iteration
+     * count for speed. Production code should always use the
+     * {@link #EncryptedFileTokenStorage(Path)} constructor.
+     */
+    EncryptedFileTokenStorage(Path filePath, int iterations) {
+        if (iterations < 1) {
+            throw new IllegalArgumentException("iterations must be >= 1");
+        }
         this.filePath = filePath;
+        this.keySeedPath = filePath.resolveSibling(filePath.getFileName() + KEY_SEED_SUFFIX);
+        this.iterations = iterations;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.secureRandom = new SecureRandom();
-        this.salt = deriveSalt();
     }
 
     @Override
@@ -58,7 +106,6 @@ public class EncryptedFileTokenStorage implements TokenStorage {
         log.debug("Saving tokens to encrypted file");
 
         try {
-            // Serialize tokens to JSON
             TokenData data = new TokenData(
                 tokens.accessToken(),
                 tokens.refreshToken(),
@@ -69,12 +116,12 @@ public class EncryptedFileTokenStorage implements TokenStorage {
             );
             String json = objectMapper.writeValueAsString(data);
 
-            // Encrypt
-            byte[] encrypted = encrypt(json.getBytes(StandardCharsets.UTF_8));
+            byte[] keySeed = readOrCreateKeySeed();
+            byte[] encrypted = encrypt(json.getBytes(StandardCharsets.UTF_8), keySeed);
 
-            // Write to file
             Files.createDirectories(filePath.getParent());
             Files.write(filePath, encrypted);
+            restrictPermissions(filePath);
 
             log.info("Tokens saved to encrypted storage");
         } catch (GeneralSecurityException e) {
@@ -96,14 +143,11 @@ public class EncryptedFileTokenStorage implements TokenStorage {
         log.debug("Loading tokens from encrypted file");
 
         try {
-            // Read encrypted data
             byte[] encrypted = Files.readAllBytes(filePath);
-
-            // Decrypt
-            byte[] decrypted = decrypt(encrypted);
+            byte[] keySeed = readKeySeedForLoad();
+            byte[] decrypted = decrypt(encrypted, keySeed);
             String json = new String(decrypted, StandardCharsets.UTF_8);
 
-            // Deserialize
             TokenData data = objectMapper.readValue(json, TokenData.class);
 
             OAuthTokens tokens = new OAuthTokens(
@@ -118,7 +162,8 @@ public class EncryptedFileTokenStorage implements TokenStorage {
             log.info("Tokens loaded from encrypted storage");
             return Optional.of(tokens);
         } catch (GeneralSecurityException e) {
-            log.error("Decryption failed - file may be corrupted", e);
+            log.error("Decryption failed — file may be corrupted, key seed lost, or tokens were "
+                + "written by an older (earlier-format) version. Re-authenticate to recover.", e);
             throw new TokenStorageException(StorageError.DECRYPTION_FAILED, e);
         } catch (IOException e) {
             log.error("Failed to read token file", e);
@@ -131,11 +176,12 @@ public class EncryptedFileTokenStorage implements TokenStorage {
 
     @Override
     public void delete() throws TokenStorageException {
-        log.debug("Deleting token file");
+        log.debug("Deleting token file and key seed");
 
         try {
             Files.deleteIfExists(filePath);
-            log.info("Token file deleted");
+            Files.deleteIfExists(keySeedPath);
+            log.info("Token file and key seed deleted");
         } catch (IOException e) {
             log.error("Failed to delete token file", e);
             throw new TokenStorageException(StorageError.FILE_ACCESS_ERROR, e);
@@ -152,98 +198,117 @@ public class EncryptedFileTokenStorage implements TokenStorage {
         return STORAGE_TYPE;
     }
 
-    private byte[] encrypt(byte[] plaintext) throws GeneralSecurityException {
-        // Generate random IV
+    private byte[] encrypt(byte[] plaintext, byte[] keySeed) throws GeneralSecurityException {
+        byte[] salt = new byte[SALT_LENGTH];
+        secureRandom.nextBytes(salt);
+
         byte[] iv = new byte[GCM_IV_LENGTH];
         secureRandom.nextBytes(iv);
 
-        // Derive key
-        SecretKey key = deriveKey();
+        SecretKey key = deriveKey(keySeed, salt);
 
-        // Encrypt
         Cipher cipher = Cipher.getInstance(ALGORITHM);
-        GCMParameterSpec parameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
-        cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
+        cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
         byte[] ciphertext = cipher.doFinal(plaintext);
 
-        // Prepend IV to ciphertext
-        ByteBuffer buffer = ByteBuffer.allocate(GCM_IV_LENGTH + ciphertext.length);
+        ByteBuffer buffer = ByteBuffer.allocate(SALT_LENGTH + GCM_IV_LENGTH + ciphertext.length);
+        buffer.put(salt);
         buffer.put(iv);
         buffer.put(ciphertext);
 
         return buffer.array();
     }
 
-    private byte[] decrypt(byte[] encryptedData) throws GeneralSecurityException {
-        if (encryptedData.length < GCM_IV_LENGTH) {
-            throw new GeneralSecurityException("Invalid encrypted data - too short");
+    private byte[] decrypt(byte[] encryptedData, byte[] keySeed) throws GeneralSecurityException {
+        if (encryptedData.length < SALT_LENGTH + GCM_IV_LENGTH) {
+            throw new GeneralSecurityException("Invalid encrypted data — too short for salt + IV header");
         }
 
-        // Extract IV
         ByteBuffer buffer = ByteBuffer.wrap(encryptedData);
+        byte[] salt = new byte[SALT_LENGTH];
+        buffer.get(salt);
         byte[] iv = new byte[GCM_IV_LENGTH];
         buffer.get(iv);
-
-        // Extract ciphertext
         byte[] ciphertext = new byte[buffer.remaining()];
         buffer.get(ciphertext);
 
-        // Derive key
-        SecretKey key = deriveKey();
+        SecretKey key = deriveKey(keySeed, salt);
 
-        // Decrypt
         Cipher cipher = Cipher.getInstance(ALGORITHM);
-        GCMParameterSpec parameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
-        cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
-
+        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
         return cipher.doFinal(ciphertext);
     }
 
-    private SecretKey deriveKey() throws GeneralSecurityException {
-        // Derive password from machine identifiers
-        String password = deriveMachinePassword();
-
-        // Use PBKDF2 to derive key
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(KEY_ALGORITHM);
-        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATIONS, KEY_LENGTH);
-        SecretKey tmp = factory.generateSecret(spec);
-
-        return new SecretKeySpec(tmp.getEncoded(), "AES");
+    private SecretKey deriveKey(byte[] keySeed, byte[] salt) throws GeneralSecurityException {
+        // Use the hex-encoded random key seed as the PBKDF2 password input. This is not
+        // a user-memorable secret — it is a 32-byte CSPRNG-generated value persisted in
+        // a 0600 file alongside the token store. Combined with the per-file random salt,
+        // two attackers each guessing username/hostname cannot collide on the derived key.
+        char[] password = HexFormat.of().formatHex(keySeed).toCharArray();
+        try {
+            SecretKeyFactory factory = SecretKeyFactory.getInstance(KEY_ALGORITHM);
+            PBEKeySpec spec = new PBEKeySpec(password, salt, iterations, KEY_LENGTH);
+            SecretKey tmp = factory.generateSecret(spec);
+            return new SecretKeySpec(tmp.getEncoded(), "AES");
+        } finally {
+            java.util.Arrays.fill(password, '\0');
+        }
     }
 
-    private String deriveMachinePassword() {
-        // Combine machine-specific identifiers
-        StringBuilder sb = new StringBuilder();
-        sb.append(System.getProperty("user.name", ""));
-        sb.append(System.getProperty("os.name", ""));
-        sb.append(System.getProperty("user.home", ""));
-
-        // Add some additional entropy
-        try {
-            java.net.InetAddress localhost = java.net.InetAddress.getLocalHost();
-            sb.append(localhost.getHostName());
-        } catch (Exception e) {
-            // Ignore - use what we have
+    private byte[] readOrCreateKeySeed() throws IOException {
+        if (Files.exists(keySeedPath)) {
+            byte[] existing = Files.readAllBytes(keySeedPath);
+            if (existing.length == KEY_SEED_LENGTH) {
+                return existing;
+            }
+            log.warn("Existing key seed has wrong length ({} bytes), regenerating", existing.length);
         }
 
-        return sb.toString();
+        byte[] seed = new byte[KEY_SEED_LENGTH];
+        secureRandom.nextBytes(seed);
+
+        Files.createDirectories(keySeedPath.getParent());
+        Files.write(keySeedPath, seed);
+        restrictPermissions(keySeedPath);
+
+        log.info("Generated new 32-byte key seed at {}", keySeedPath);
+        return seed;
     }
 
-    private byte[] deriveSalt() {
-        // Use consistent salt based on application name
+    private byte[] readKeySeedForLoad() throws IOException, GeneralSecurityException {
+        if (!Files.exists(keySeedPath)) {
+            throw new GeneralSecurityException(
+                "Key seed file missing at " + keySeedPath
+                    + " — token store cannot be decrypted. Delete the token file and re-authenticate.");
+        }
+        byte[] seed = Files.readAllBytes(keySeedPath);
+        if (seed.length != KEY_SEED_LENGTH) {
+            throw new GeneralSecurityException(
+                "Key seed file has wrong length: expected " + KEY_SEED_LENGTH + " bytes, got " + seed.length);
+        }
+        return seed;
+    }
+
+    /**
+     * Best-effort restriction of file permissions to owner-only read/write (POSIX 0600).
+     * No-op on non-POSIX filesystems (typically Windows); on Windows, ACLs are inherited
+     * from the parent directory which is normally {@code %APPDATA%} or {@code %LOCALAPPDATA%}
+     * — both user-private by default.
+     */
+    private void restrictPermissions(Path path) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return digest.digest("uk.selfemploy.hmrc.oauth.tokens".getBytes(StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            // Fallback to hardcoded salt
-            return "selfemploy-hmrc-token-storage".getBytes(StandardCharsets.UTF_8);
+            Files.setPosixFilePermissions(path, OWNER_READ_WRITE_ONLY);
+        } catch (UnsupportedOperationException unsupported) {
+            // Non-POSIX filesystem (e.g. Windows NTFS) — rely on inherited ACLs.
+        } catch (IOException e) {
+            log.warn("Could not set restrictive permissions on {} — {}", path, e.getMessage());
         }
     }
 
     /**
      * Internal data class for JSON serialization.
      */
-    private record TokenData (
+    private record TokenData(
         String accessToken,
         String refreshToken,
         long expiresIn,

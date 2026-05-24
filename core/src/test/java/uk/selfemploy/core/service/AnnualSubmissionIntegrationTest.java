@@ -14,6 +14,8 @@ import uk.selfemploy.common.domain.AnnualSubmissionSaga;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
 import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.legal.SubmissionConfirmation;
+import uk.selfemploy.core.audit.DeclarationAuditLog;
 import uk.selfemploy.core.auth.TokenProvider;
 import uk.selfemploy.core.exception.ValidationException;
 import uk.selfemploy.hmrc.client.SelfAssessmentCalculationClient;
@@ -26,6 +28,7 @@ import uk.selfemploy.hmrc.resilience.HmrcResilienceDecorator;
 import uk.selfemploy.persistence.repository.AnnualSubmissionSagaRepository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,7 +41,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Integration tests for SE-403 Annual Self Assessment.
- * Tests based on /rob's QA test specification.
+ * Tests verify the Saga pattern: state transitions, resume capability, input validation, terminal-state edge cases.
  *
  * <p>Test IDs: IT-403-011 to IT-403-028 (Integration Tests)
  *
@@ -48,7 +51,6 @@ import static org.mockito.Mockito.*;
  * - Input validation
  * - Edge cases for terminal states
  *
- * @see docs/sprints/sprint-4/testing/rob-qa-SE-403.md
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -70,6 +72,9 @@ class AnnualSubmissionIntegrationTest {
     @Mock
     private TokenProvider tokenProvider;
 
+    @Mock
+    private DeclarationAuditLog declarationAuditLog;
+
     private AnnualSubmissionService service;
 
     private static final String TEST_NINO = "AA123456A";
@@ -77,6 +82,8 @@ class AnnualSubmissionIntegrationTest {
     private static final String TEST_CALCULATION_ID = "calc-integration-12345";
     private static final String TEST_CHARGE_REFERENCE = "SA-INT-123456789";
     private static final String TEST_BEARER_TOKEN = "Bearer test-access-token";
+    private static final SubmissionConfirmation VALID_CONFIRMATION =
+            new SubmissionConfirmation("integration-user", true, Instant.parse("2026-01-15T09:30:00Z"));
 
     @BeforeEach
     void setUp() {
@@ -85,7 +92,8 @@ class AnnualSubmissionIntegrationTest {
                 calculationClient,
                 declarationClient,
                 resilienceDecorator,
-                tokenProvider
+                tokenProvider,
+                declarationAuditLog
         );
 
         // Default behavior: resilience decorator just passes through
@@ -139,7 +147,7 @@ class AnnualSubmissionIntegrationTest {
         }
 
         @Test
-        @DisplayName("IT-403-012: Resume from DECLARING state after network failure")
+        @DisplayName("IT-403-012: Resume from DECLARING state via confirmDeclaration (gate applies to resume)")
         void shouldResumeFromDeclaringStateAfterNetworkFailure() {
             // Given: Saga in DECLARING state (network failure occurred during declaration)
             AnnualSubmissionSaga declaringSaga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
@@ -157,8 +165,9 @@ class AnnualSubmissionIntegrationTest {
             when(declarationClient.submitDeclaration(any(), any(), any(), any()))
                     .thenReturn(hmrcResponse);
 
-            // When: Resume by calling executeNextStep
-            AnnualSubmissionSaga result = service.executeNextStep(declaringSaga.id());
+            // When: Resume by calling confirmDeclaration with confirmation(
+            // gate applies to all POST paths including resume)
+            AnnualSubmissionSaga result = service.confirmDeclaration(declaringSaga.id(), VALID_CONFIRMATION);
 
             // Then: Should complete the declaration
             assertThat(result.state()).isEqualTo(AnnualSubmissionState.COMPLETED);
@@ -311,7 +320,7 @@ class AnnualSubmissionIntegrationTest {
             when(declarationClient.submitDeclaration(any(), any(), any(), any()))
                     .thenReturn(new FinalDeclarationResponse(TEST_CHARGE_REFERENCE, LocalDateTime.now()));
 
-            AnnualSubmissionSaga completedSaga = service.confirmDeclaration(newSaga.id());
+            AnnualSubmissionSaga completedSaga = service.confirmDeclaration(newSaga.id(), VALID_CONFIRMATION);
             assertThat(completedSaga.state()).isEqualTo(AnnualSubmissionState.COMPLETED);
             assertThat(completedSaga.hmrcConfirmation()).isEqualTo(TEST_CHARGE_REFERENCE);
         }
@@ -494,7 +503,7 @@ class AnnualSubmissionIntegrationTest {
             when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
 
             // When / Then
-            assertThatThrownBy(() -> service.confirmDeclaration(nonExistentId))
+            assertThatThrownBy(() -> service.confirmDeclaration(nonExistentId, VALID_CONFIRMATION))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Saga not found");
         }
@@ -551,7 +560,7 @@ class AnnualSubmissionIntegrationTest {
                     .thenThrow(serverError);
 
             // When / Then
-            assertThatThrownBy(() -> service.confirmDeclaration(calculatedSaga.id()))
+            assertThatThrownBy(() -> service.confirmDeclaration(calculatedSaga.id(), VALID_CONFIRMATION))
                     .isInstanceOf(HmrcServerException.class);
 
             // Verify state transitions: first to DECLARING, then to FAILED
@@ -574,7 +583,7 @@ class AnnualSubmissionIntegrationTest {
             when(repository.findById(calculatingSaga.id())).thenReturn(Optional.of(calculatingSaga));
 
             // When / Then
-            assertThatThrownBy(() -> service.confirmDeclaration(calculatingSaga.id()))
+            assertThatThrownBy(() -> service.confirmDeclaration(calculatingSaga.id(), VALID_CONFIRMATION))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("CALCULATED");
         }
@@ -613,7 +622,9 @@ class AnnualSubmissionIntegrationTest {
                     new CalculationResponse.NationalInsuranceBreakdown(
                             new CalculationResponse.NationalInsuranceBreakdown.Class2Nics(BigDecimal.ZERO),
                             new CalculationResponse.NationalInsuranceBreakdown.Class4Nics(BigDecimal.ZERO, BigDecimal.ZERO)
-                    )
+                    ),
+                    // v8 additions — not exercised by this scenario.
+                    null, null, null, null
             );
 
             when(calculationClient.getCalculation(any(), any(), any(), any()))
@@ -658,7 +669,9 @@ class AnnualSubmissionIntegrationTest {
                                     new BigDecimal("987429.99"),
                                     BigDecimal.ZERO
                             )
-                    )
+                    ),
+                    // v8 additions — not exercised by this scenario.
+                    null, null, null, null
             );
 
             when(calculationClient.getCalculation(any(), any(), any(), any()))
@@ -711,7 +724,9 @@ class AnnualSubmissionIntegrationTest {
                                 new BigDecimal("40000.00"),
                                 new BigDecimal("2000.00")
                         )
-                )
+                ),
+                // v8 additions — null in this baseline helper.
+                null, null, null, null
         );
     }
 }

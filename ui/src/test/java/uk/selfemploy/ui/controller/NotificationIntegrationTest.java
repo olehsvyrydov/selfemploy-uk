@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for SE-309: Deadline Notifications.
  * Tests notification service integration with UI components.
  *
- * Based on /rob's QA test case specification (26 test cases).
+ * Based on the QA test case specification (26 test cases).
  *
  * <p>Test Categories:</p>
  * <ul>
@@ -99,45 +99,47 @@ class NotificationIntegrationTest {
     class NotificationTriggerTests {
 
         @Test
-        @DisplayName("TC-309-004: Notification Trigger - 30 Days (LOW priority)")
-        void triggerAt30Days() {
-            // Given: Deadline exactly 30 days away
-            Deadline deadline = Deadline.of("Test Deadline", LocalDate.now().plusDays(30));
+        @DisplayName("TC-309-004: Notification Trigger - 14 Days (LOW priority)")
+        void triggerAt14Days() {
+            // Given: Deadline exactly 14 days away (T-14 trigger)
+            Deadline deadline = Deadline.of("Test Deadline", LocalDate.now().plusDays(14));
 
             // When: Deadline is checked
             List<DeadlineNotification> notifications = notificationService.checkDeadline(deadline);
 
-            // Then: LOW priority notification triggered
+            // Then: LOW priority notification triggered (14 > 7 in NotificationPriority bands)
             assertThat(notifications).hasSize(1);
             assertThat(notifications.get(0).priority()).isEqualTo(NotificationPriority.LOW);
-            assertThat(notifications.get(0).triggerDays()).isEqualTo(30);
+            assertThat(notifications.get(0).triggerDays()).isEqualTo(14);
         }
 
         @Test
-        @DisplayName("TC-309-005: Notification Trigger - 7 Days (MEDIUM priority)")
-        void triggerAt7Days() {
-            // Given: Deadline exactly 7 days away
-            Deadline deadline = Deadline.of("Test Deadline", LocalDate.now().plusDays(7));
+        @DisplayName("TC-309-005: Notification Trigger - 3 Days (MEDIUM priority)")
+        void triggerAt3Days() {
+            // Given: Deadline exactly 3 days away (T-3 trigger)
+            Deadline deadline = Deadline.of("Test Deadline", LocalDate.now().plusDays(3));
 
             // When: Deadline is checked
             List<DeadlineNotification> notifications = notificationService.checkDeadline(deadline);
 
-            // Then: MEDIUM priority notification triggered
+            // Then: MEDIUM priority notification triggered (3 <= 7 band)
             assertThat(notifications).hasSize(1);
             assertThat(notifications.get(0).priority()).isEqualTo(NotificationPriority.MEDIUM);
-            assertThat(notifications.get(0).triggerDays()).isEqualTo(7);
+            assertThat(notifications.get(0).triggerDays()).isEqualTo(3);
         }
 
         @Test
-        @DisplayName("TC-309-006: Notification Trigger - 1 Day (HIGH priority)")
+        @DisplayName("TC-309-006: Notification Trigger - 1 Day still HIGH when user reinstates 1-day reminder")
         void triggerAt1Day() {
-            // Given: Deadline exactly 1 day away
+            // Default cadence (T-14/T-3/T-0) is T-14/T-3/T-0 — HIGH is unreachable
+            // via defaults. This test verifies the priority mapping still works for users
+            // who configure a 1-day reminder.
+            notificationService.getPreferences().setTriggerDays(java.util.List.of(1));
+
             Deadline deadline = Deadline.of("Test Deadline", LocalDate.now().plusDays(1));
 
-            // When: Deadline is checked
             List<DeadlineNotification> notifications = notificationService.checkDeadline(deadline);
 
-            // Then: HIGH priority notification triggered
             assertThat(notifications).hasSize(1);
             assertThat(notifications.get(0).priority()).isEqualTo(NotificationPriority.HIGH);
             assertThat(notifications.get(0).triggerDays()).isEqualTo(1);
@@ -297,25 +299,28 @@ class NotificationIntegrationTest {
             // When: Deadlines are retrieved
             List<Deadline> deadlines = notificationService.getDeadlinesForTaxYear(taxYear);
 
-            // Then: Q1 (5 Aug), Q2 (5 Nov), Q3 (5 Feb), Q4 (5 May)
+            // Then: Q1 (7 Aug), Q2 (7 Nov), Q3 (7 Feb), Q4 (7 May) — Obligations API v3 cadence
+            // matching HMRC's 7th-of-month rule. Was previously the 5th, which
+            // would have caused users to miss the real deadline and trigger penalty points
+            // under FA 2021 Sch 24).
             List<Deadline> mtdDeadlines = deadlines.stream()
                 .filter(d -> d.label().contains("MTD"))
                 .toList();
 
             assertThat(mtdDeadlines).hasSize(4);
 
-            // Q1: 5 August 2025
+            // Q1: 7 August 2025
             assertThat(mtdDeadlines).anyMatch(d ->
-                d.label().contains("Q1") && d.date().equals(LocalDate.of(2025, 8, 5)));
-            // Q2: 5 November 2025
+                d.label().contains("Q1") && d.date().equals(LocalDate.of(2025, 8, 7)));
+            // Q2: 7 November 2025
             assertThat(mtdDeadlines).anyMatch(d ->
-                d.label().contains("Q2") && d.date().equals(LocalDate.of(2025, 11, 5)));
-            // Q3: 5 February 2026
+                d.label().contains("Q2") && d.date().equals(LocalDate.of(2025, 11, 7)));
+            // Q3: 7 February 2026
             assertThat(mtdDeadlines).anyMatch(d ->
-                d.label().contains("Q3") && d.date().equals(LocalDate.of(2026, 2, 5)));
-            // Q4: 5 May 2026
+                d.label().contains("Q3") && d.date().equals(LocalDate.of(2026, 2, 7)));
+            // Q4: 7 May 2026
             assertThat(mtdDeadlines).anyMatch(d ->
-                d.label().contains("Q4") && d.date().equals(LocalDate.of(2026, 5, 5)));
+                d.label().contains("Q4") && d.date().equals(LocalDate.of(2026, 5, 7)));
         }
     }
 
@@ -350,8 +355,8 @@ class NotificationIntegrationTest {
             // When: Check getTriggerDays()
             List<Integer> triggerDays = prefs.getTriggerDays();
 
-            // Then: Returns [30, 7, 1]
-            assertThat(triggerDays).containsExactly(30, 7, 1);
+            // Then: Returns [14, 3, 0] ( cadence)
+            assertThat(triggerDays).containsExactly(14, 3, 0);
         }
 
         @Test
@@ -516,7 +521,7 @@ class NotificationIntegrationTest {
         @Test
         @DisplayName("TC-309-026: No Notification for Non-Trigger Days")
         void noNotificationForNonTriggerDays() {
-            // Given: Deadline 15 days away (not in default triggers [30, 7, 1])
+            // Given: Deadline 15 days away (not in default triggers [14, 3, 0])
             Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(15));
 
             // When: Check for notifications
