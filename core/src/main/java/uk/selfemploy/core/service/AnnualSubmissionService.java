@@ -117,7 +117,7 @@ public class AnnualSubmissionService {
      * - DECLARING: Throw exception (resume must go through confirmDeclaration with confirmation)
      * - COMPLETED/FAILED: No action
      *
-     * <p><strong>SLFEMPUK-35 / S17-11:</strong> resume from {@code DECLARING} is
+     * resume from {@code DECLARING} is
      * no longer permitted via this method — any path that POSTs the final
      * declaration must carry a {@link SubmissionConfirmation}. Callers resuming
      * a saga must invoke
@@ -141,7 +141,7 @@ public class AnnualSubmissionService {
                         "User must confirm declaration before proceeding. Call confirmDeclaration().");
                 case DECLARING -> throw new IllegalStateException(
                         "Resume of DECLARING must go through confirmDeclaration(sagaId, confirmation) " +
-                        "to re-capture pre-submission confirmation (SLFEMPUK-35).");
+                        "to re-capture pre-submission confirmation.");
                 case COMPLETED, FAILED -> {
                     log.warn("Saga {} is in terminal state {}, no action taken", sagaId, saga.state());
                     yield saga;
@@ -166,7 +166,7 @@ public class AnnualSubmissionService {
      * or {@code DECLARING} state (resume after network failure). Transitions
      * through {@code DECLARING → COMPLETED}.
      *
-     * <p><strong>SLFEMPUK-35 / S17-11 — Pre-Submission Confirmation gate:</strong>
+     * <p><strong>Pre-Submission Confirmation gate:</strong>
      * a non-null {@link SubmissionConfirmation} with {@code confirmedByUser=true}
      * is required for every POST to the HMRC declaration endpoint. The
      * confirmation timestamp, user identifier, salted SHA-256 of the NINO, and
@@ -198,7 +198,7 @@ public class AnnualSubmissionService {
 
         // Write audit line BEFORE the HMRC POST. If the POST fails, the audit
         // line remains as evidence that the user confirmed the figures at this
-        // instant — which is the evidential-burden requirement from /alex.
+        // instant — which is the evidential-burden requirement from legal review.
         // Use the HMRC wire-format tax year (e.g. "2024-25") so the recorded
         // submission hash binds to the exact tuple sent to HMRC.
         try {
@@ -212,7 +212,7 @@ public class AnnualSubmissionService {
             // Audit failure must not silently allow a submission to proceed — fail closed.
             log.error("Failed to write declaration audit line for saga {}: {}", sagaId, e.getMessage());
             throw new IllegalStateException(
-                    "Declaration audit log write failed; submission aborted (SLFEMPUK-35).", e);
+                    "Declaration audit log write failed; submission aborted.", e);
         }
 
         try {
@@ -242,11 +242,11 @@ public class AnnualSubmissionService {
     private static void requireValidConfirmation(SubmissionConfirmation confirmation) {
         if (confirmation == null) {
             throw new DeclarationNotConfirmedException(
-                    "Pre-submission confirmation is required before any HMRC declaration POST (SLFEMPUK-35).");
+                    "Pre-submission confirmation is required before any HMRC declaration POST.");
         }
         if (!confirmation.confirmedByUser()) {
             throw new DeclarationNotConfirmedException(
-                    "User must actively confirm figures are accurate (confirmedByUser=true) before submission (SLFEMPUK-35).");
+                    "User must actively confirm figures are accurate (confirmedByUser=true) before submission.");
         }
     }
 

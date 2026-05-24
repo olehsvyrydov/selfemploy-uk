@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * <p>Handles authentication, NINO validation, and API calls. Returns {@link BusinessDetails}
  * DTOs (the per-business data shape shared across the MTD ITSA APIs); does NOT call the
  * distinct Business Details API at {@code /individuals/business/details} — that is
- * handled separately by {@code BusinessDetailsService} (S17-03).
+ * handled separately by {@code BusinessDetailsService}.
  */
 @ApplicationScoped
 public class SelfEmploymentBusinessService {

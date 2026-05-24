@@ -18,10 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Security-property tests for the S17-06 hardened {@link EncryptedFileTokenStorage}.
+ * Security-property tests for the hardened {@link EncryptedFileTokenStorage}.
  *
  * <p>These tests exist specifically to lock in the threat-model improvements made
- * for SLFEMPUK-30: a stolen token file is useless without the per-install random
+ * for the threat model fix: a stolen token file is useless without the per-install random
  * key seed; the key seed file is 0600 on POSIX systems; two installs of the app
  * produce uncorrelated ciphertexts; and the salt is fresh per write so the same
  * tokens never encrypt to identical bytes.
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>Tests use a low PBKDF2 iteration count via the package-private constructor
  * so the suite is fast (production uses {@code DEFAULT_ITERATIONS} = 600 000).
  */
-@DisplayName("EncryptedFileTokenStorage — S17-06 security properties (SLFEMPUK-30)")
+@DisplayName("EncryptedFileTokenStorage — security properties")
 class EncryptedFileTokenStorageSecurityTest {
 
     @TempDir
@@ -160,7 +160,7 @@ class EncryptedFileTokenStorageSecurityTest {
             EncryptedFileTokenStorage attackerStorage = new EncryptedFileTokenStorage(attacker, FAST_ITERATIONS);
             assertThatThrownBy(attackerStorage::load)
                 .as("ciphertext copied to a directory with the attacker's key seed must NOT decrypt — "
-                    + "this is the core S17-06 threat model: the stolen file is useless without the seed")
+                    + "this is the core threat model: the stolen file is useless without the seed")
                 .isInstanceOf(TokenStorageException.class);
         }
 

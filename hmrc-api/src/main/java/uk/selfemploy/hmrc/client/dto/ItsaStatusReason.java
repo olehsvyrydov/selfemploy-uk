@@ -15,8 +15,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * <p><strong>Privacy note (UK GDPR Art. 9):</strong> two of the new reasons relate to
  * special-category data — {@link #BLIND_PERSONS_ALLOWANCE} (health) and
  * {@link #MINISTERS_OF_RELIGION} (religious belief). Lawful basis must be UK GDPR
- * Art. 9(2)(b) (social security / legal obligation), NOT consent. See SLFEMPUK-39
- * (S17-15) for the lawful-basis register entry that must accompany any UI surface
+ * Art. 9(2)(b) (social security / legal obligation), NOT consent. See the lawful-basis register
+ * for the lawful-basis register entry that must accompany any UI surface
  * showing these reasons.
  *
  * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-individual-details-api">

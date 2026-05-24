@@ -13,7 +13,7 @@ import java.util.Set;
  * Request body for a single state benefit submission against HMRC Individuals
  * State Benefits API v2.
  *
- * <p><strong>SLFEMPUK-32 / S17-08 — new business validation rule:</strong> HMRC's
+ * <p><strong>New business validation rule:</strong> HMRC's
  * 2026-03-24 v2 deployment rejects any submission where {@code taxPaid} is populated
  * AND {@code benefitType} is one of {@link BenefitType#STATE_PENSION},
  * {@link BenefitType#BEREAVEMENT_ALLOWANCE}, or {@link BenefitType#OTHER_STATE_BENEFITS}.

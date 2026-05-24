@@ -19,12 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * TDD tests for {@link FileSystemDeclarationAuditLog} — SLFEMPUK-35 / S17-11.
+ * TDD tests for {@link FileSystemDeclarationAuditLog}.
  *
  * <p>Validates wire format, append-only behaviour, and the absolute requirement
  * that plaintext NINO never appears in the log file.
  */
-@DisplayName("FileSystemDeclarationAuditLog (SLFEMPUK-35)")
+@DisplayName("FileSystemDeclarationAuditLog")
 class FileSystemDeclarationAuditLogTest {
 
     private static final String TEST_NINO = "AA123456A";

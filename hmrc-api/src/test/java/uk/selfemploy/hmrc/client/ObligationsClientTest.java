@@ -43,7 +43,7 @@ class ObligationsClientTest {
         }
 
         @Test
-        @DisplayName("Accept header declares HMRC v3 (SLFEMPUK-29)")
+        @DisplayName("Accept header declares HMRC v3")
         void acceptHeaderIsV3() {
             ClientHeaderParam header = ObligationsClient.class.getAnnotation(ClientHeaderParam.class);
             assertThat(header).isNotNull();

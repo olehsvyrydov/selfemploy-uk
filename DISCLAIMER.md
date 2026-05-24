@@ -38,7 +38,7 @@ To the maximum extent permitted by applicable law, in no event shall the authors
 
 ---
 
-## HMRC Individual Calculations v8 — Calculation Outputs (SLFEMPUK-35)
+## HMRC Individual Calculations v8 — Calculation Outputs
 
 Outputs of Individual Calculations v8 (including `transitionProfit`, crypto CGT, BADR multi-asset) are unaudited estimates. User remains the taxpayer under TMA 1970 s.7 and bears sole liability for accuracy under FA 2007 Sch.24 penalties (up to 100% of tax + interest).
 

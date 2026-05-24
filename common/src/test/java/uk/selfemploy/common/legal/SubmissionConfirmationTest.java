@@ -9,9 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * TDD tests for {@link SubmissionConfirmation} — SLFEMPUK-35 / S17-11.
+ * TDD tests for {@link SubmissionConfirmation}.
  */
-@DisplayName("SubmissionConfirmation (SLFEMPUK-35)")
+@DisplayName("SubmissionConfirmation")
 class SubmissionConfirmationTest {
 
     @Test

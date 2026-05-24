@@ -462,7 +462,7 @@ class AnnualSubmissionServiceTest {
         }
 
         @Test
-        @DisplayName("should resume from DECLARING state via confirmDeclaration (SLFEMPUK-35: gate also applies to resume)")
+        @DisplayName("should resume from DECLARING state via confirmDeclaration(gate also applies to resume)")
         void shouldResumeFromDeclaringViaConfirmDeclaration() {
             // Given - Saga in DECLARING state (declaration was being submitted)
             AnnualSubmissionSaga saga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
@@ -504,7 +504,7 @@ class AnnualSubmissionServiceTest {
     }
 
     @Nested
-    @DisplayName("Pre-Submission Confirmation Gate (SLFEMPUK-35 / S17-11)")
+    @DisplayName("Pre-Submission Confirmation Gate")
     class PreSubmissionConfirmationGateTests {
 
         @Test
@@ -525,8 +525,8 @@ class AnnualSubmissionServiceTest {
             verify(declarationClient, never()).submitDeclaration(any(), any(), any(), any());
             // Mock-level proof that no audit line was written. End-to-end proof that
             // a real FileSystemDeclarationAuditLog leaves zero bytes on disk under the
-            // rejection path lives in FileSystemDeclarationAuditLogTest (per /qa note,
-            // SLFEMPUK-35 review).
+            // rejection path lives in FileSystemDeclarationAuditLogTest (per QA note,
+            //).
             verify(declarationAuditLog, never()).recordConfirmedSubmission(any(), any(), any(), any());
         }
 
@@ -765,7 +765,7 @@ class AnnualSubmissionServiceTest {
                     new BigDecimal("2000.00")
                 )
             ),
-            // v8 additions (SLFEMPUK-28 / S17-04) — null in this baseline test fixture;
+            // v8 additions — null in this baseline test fixture;
             // CalculationResponseV8Test covers populated cases.
             null,  // transitionProfit
             null,  // transitionProfitAcceleratedAmount

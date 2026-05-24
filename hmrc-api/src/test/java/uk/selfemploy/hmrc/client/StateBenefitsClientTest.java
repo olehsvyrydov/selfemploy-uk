@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Contract + validator tests for StateBenefitsClient (HMRC Individuals State
- * Benefits API v2 — SLFEMPUK-32 / S17-08).
+ * Benefits API v2).
  *
  * <p>Locks the v2 Accept header and the new {@code taxPaid}-prohibited business
  * rule that HMRC introduced in the 2026-03-24 production deployment.
@@ -45,7 +45,7 @@ class StateBenefitsClientTest {
         }
 
         @Test
-        @DisplayName("Accept header declares HMRC v2 (SLFEMPUK-32)")
+        @DisplayName("Accept header declares HMRC v2")
         void acceptHeaderIsV2() {
             ClientHeaderParam header = StateBenefitsClient.class.getAnnotation(ClientHeaderParam.class);
             assertThat(header).isNotNull();

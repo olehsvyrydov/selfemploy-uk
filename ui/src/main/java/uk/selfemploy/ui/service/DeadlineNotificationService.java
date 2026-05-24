@@ -126,7 +126,7 @@ public class DeadlineNotificationService {
         // MTD ITSA quarterly deadlines fall on the 7th of the month following quarter end
         // (Obligations API v3 cadence, aligned with VAT MTD; deployed in production 2026-03-24).
         // The Quarter enum already encodes the correct 7th-of-month dates; this method delegates
-        // to it so the source of truth is one place. Fixes SLFEMPUK-29 / S17-05 (previously
+        // to it so the source of truth is one place. Fixes  (previously
         // hardcoded to the 5th — wrong cadence, late-submission penalty risk under FA 2021 Sch 24).
         for (Quarter quarter : Quarter.values()) {
             deadlines.add(Deadline.of(

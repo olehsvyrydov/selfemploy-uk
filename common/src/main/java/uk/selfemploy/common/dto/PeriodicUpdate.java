@@ -16,7 +16,7 @@ import java.time.LocalDate;
  * periodDates object.</p>
  *
  * <p><strong>Deprecated HMRC fields intentionally absent</strong> (changelog
- * 2026-04-24, 2026-05-12, SLFEMPUK-34):
+ * 2026-04-24, 2026-05-12):
  * neither {@code averagingAdjustment} nor {@code adjustments.overlapReliefUsed}
  * is modelled here. Submitting {@code overlapReliefUsed} for tax year 2024-25 or
  * later triggers {@code RULE_OVERLAP_RELIEF_USED_NOT_ALLOWED}. The

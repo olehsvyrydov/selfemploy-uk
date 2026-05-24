@@ -31,7 +31,7 @@ import java.util.Set;
  * Encrypted file-based token storage using AES-256-GCM with PBKDF2-HMAC-SHA256 key
  * derivation against a random, user-private 32-byte key seed.
  *
- * <p><strong>SLFEMPUK-30 / S17-06:</strong> the previous implementation derived the
+ * <p>The previous implementation derived the
  * KDF password from publicly-inferable machine properties
  * ({@code user.name + os.name + user.home + hostname}) with a deterministic salt.
  * Any local process running as the user could re-derive the key trivially. This
@@ -51,7 +51,7 @@ import java.util.Set;
  * forward-compatible; any tokens stored under the previous implementation must be
  * re-acquired via the OAuth flow (hobby-mode / pre-GA acceptable).
  *
- * <p>Future work (out of scope for S17-06): OS-native keystore integration —
+ * <p>Future work (out of scope for ): OS-native keystore integration —
  * Windows DPAPI, macOS Keychain Services, Linux libsecret / KWallet — would
  * remove the key seed file entirely. Tracked as a follow-up after Sprint 17.
  */
@@ -163,7 +163,7 @@ public class EncryptedFileTokenStorage implements TokenStorage {
             return Optional.of(tokens);
         } catch (GeneralSecurityException e) {
             log.error("Decryption failed — file may be corrupted, key seed lost, or tokens were "
-                + "written by an older (pre-SLFEMPUK-30) version. Re-authenticate to recover.", e);
+                + "written by an older (earlier-format) version. Re-authenticate to recover.", e);
             throw new TokenStorageException(StorageError.DECRYPTION_FAILED, e);
         } catch (IOException e) {
             log.error("Failed to read token file", e);

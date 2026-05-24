@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Contract + DTO + enum tests for SaIndividualDetailsClient (HMRC SA Individual
- * Details API v2 — SLFEMPUK-31 / S17-07).
+ * Details API v2).
  *
  * <p>Locks the seven new ITSA sign-up reason codes added 2026-05-15, the
  * {@code Digitally Exempt} rename, and the {@code CLIENT_NOT_MTD_ENROLLED}
@@ -46,7 +46,7 @@ class SaIndividualDetailsClientTest {
         }
 
         @Test
-        @DisplayName("Accept header declares HMRC v2 (SLFEMPUK-31)")
+        @DisplayName("Accept header declares HMRC v2")
         void acceptHeaderIsV2() {
             ClientHeaderParam header = SaIndividualDetailsClient.class.getAnnotation(ClientHeaderParam.class);
             assertThat(header).isNotNull();

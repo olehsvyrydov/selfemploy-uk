@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @see <a href="https://github.com/hmrc/income-tax-mtd-changelog">HMRC MTD ITSA changelog</a>
  */
-@DisplayName("Quarter — MTD ITSA 7th-of-month deadline cadence (SLFEMPUK-29)")
+@DisplayName("Quarter — MTD ITSA 7th-of-month deadline cadence")
 class QuarterDeadlinesTest {
 
     /** Tax year 2026-27 — the first MTD ITSA mandation year (income threshold >£50k). */

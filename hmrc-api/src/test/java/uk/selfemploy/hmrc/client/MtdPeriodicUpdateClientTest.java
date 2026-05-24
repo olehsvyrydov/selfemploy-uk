@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Contract + DTO tests for MtdPeriodicUpdateClient (HMRC Self-Employment Business
- * API v5 — SLFEMPUK-34 / S17-10).
+ * API v5).
  *
  * <p>Locks the v5 Accept header, the {@link MtdPeriodicUpdateClient#ERROR_OVERLAP_RELIEF_USED_NOT_ALLOWED}
  * constant, and — most importantly — the absence of the two HMRC-deprecated
@@ -202,7 +202,7 @@ class MtdPeriodicUpdateClientTest {
                 }
             })
                 .as("@JsonIgnoreProperties(ignoreUnknown = true) must absorb legacy averagingAdjustment "
-                    + "and overlapReliefUsed values produced by versions of the app shipped before SLFEMPUK-34")
+                    + "and overlapReliefUsed values produced by versions of the app shipped before the HMRC deprecation lock-in")
                 .doesNotThrowAnyException();
         }
     }
@@ -214,7 +214,7 @@ class MtdPeriodicUpdateClientTest {
         for (RecordComponent c : recordClass.getRecordComponents()) {
             assertThat(DEPRECATED_FIELD_NAMES)
                 .as("%s.%s must not exist — HMRC deprecated this field (changelog 2026-04-24 / 2026-05-12, "
-                    + "SLFEMPUK-34); re-introducing it risks RULE_OVERLAP_RELIEF_USED_NOT_ALLOWED rejections "
+                    + "the HMRC deprecation lock-in); re-introducing it risks RULE_OVERLAP_RELIEF_USED_NOT_ALLOWED rejections "
                     + "and silent data loss on the response side.", recordClass.getSimpleName(), c.getName())
                 .doesNotContain(c.getName());
         }

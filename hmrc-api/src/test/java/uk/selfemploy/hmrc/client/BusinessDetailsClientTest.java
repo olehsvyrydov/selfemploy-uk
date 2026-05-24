@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       shape that downstream services rely on.</li>
  * </ul>
  *
- * <p>Full HTTP round-trip is covered by the WireMock integration tests (S17-13).
+ * <p>Full HTTP round-trip is covered by the WireMock integration tests.
  */
 @DisplayName("BusinessDetailsClient (Business Details API v2)")
 class BusinessDetailsClientTest {
@@ -38,7 +38,7 @@ class BusinessDetailsClientTest {
     class InterfaceContract {
 
         @Test
-        @DisplayName("path is /individuals/business/details (SLFEMPUK-27)")
+        @DisplayName("path is /individuals/business/details")
         void pathIsCorrect() {
             Path path = BusinessDetailsClient.class.getAnnotation(Path.class);
             assertThat(path)
@@ -48,7 +48,7 @@ class BusinessDetailsClientTest {
         }
 
         @Test
-        @DisplayName("Accept header declares HMRC v2 (SLFEMPUK-27)")
+        @DisplayName("Accept header declares HMRC v2")
         void acceptHeaderIsV2() {
             ClientHeaderParam header = BusinessDetailsClient.class.getAnnotation(ClientHeaderParam.class);
             assertThat(header)

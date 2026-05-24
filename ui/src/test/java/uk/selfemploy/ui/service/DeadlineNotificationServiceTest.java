@@ -59,7 +59,7 @@ class DeadlineNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("Default notification triggers are 14, 3, 0 days before (SLFEMPUK-29 / S17-05)")
+        @DisplayName("Default notification triggers are 14, 3, 0 days before")
         void defaultTriggerDays() {
             NotificationPreferences prefs = service.getPreferences();
 
@@ -104,7 +104,7 @@ class DeadlineNotificationServiceTest {
     class DeadlineDetectionTests {
 
         @Test
-        @DisplayName("Detects deadline 14 days away (T-14 trigger; SLFEMPUK-29)")
+        @DisplayName("Detects deadline 14 days away (T-14 trigger)")
         void detectsDeadline14DaysAway() {
             LocalDate deadlineDate = LocalDate.now().plusDays(14);
             Deadline deadline = Deadline.of("Test Deadline", deadlineDate);
@@ -116,7 +116,7 @@ class DeadlineNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("Detects deadline 3 days away (T-3 trigger; SLFEMPUK-29)")
+        @DisplayName("Detects deadline 3 days away (T-3 trigger)")
         void detectsDeadline3DaysAway() {
             LocalDate deadlineDate = LocalDate.now().plusDays(3);
             Deadline deadline = Deadline.of("Test Deadline", deadlineDate);
@@ -128,7 +128,7 @@ class DeadlineNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("Detects deadline today (T-0 trigger; SLFEMPUK-29)")
+        @DisplayName("Detects deadline today (T-0 trigger)")
         void detectsDeadlineTodayInDeadlineDetection() {
             LocalDate deadlineDate = LocalDate.now();
             Deadline deadline = Deadline.of("Test Deadline", deadlineDate);
@@ -498,7 +498,7 @@ class DeadlineNotificationServiceTest {
     class PriorityTests {
 
         @Test
-        @DisplayName("14 days triggers LOW priority (SLFEMPUK-29 / S17-05 cadence)")
+        @DisplayName("14 days triggers LOW priority ( cadence)")
         void fourteenDaysIsLow() {
             Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(14));
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
@@ -507,7 +507,7 @@ class DeadlineNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("3 days triggers MEDIUM priority (SLFEMPUK-29 / S17-05 cadence)")
+        @DisplayName("3 days triggers MEDIUM priority ( cadence)")
         void threeDaysIsMedium() {
             Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(3));
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);

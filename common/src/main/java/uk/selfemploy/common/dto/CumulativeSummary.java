@@ -21,7 +21,7 @@ import java.math.BigDecimal;
  * <p>Both endpoints use the same Accept header: application/vnd.hmrc.5.0+json</p>
  *
  * <p><strong>Deprecated HMRC fields intentionally absent</strong> (changelog
- * 2026-04-24, 2026-05-12, SLFEMPUK-34):
+ * 2026-04-24, 2026-05-12):
  * neither {@code averagingAdjustment} nor {@code adjustments.overlapReliefUsed}
  * is modelled here — both were deprecated for the v5 cumulative endpoint and
  * {@code overlapReliefUsed} additionally triggers

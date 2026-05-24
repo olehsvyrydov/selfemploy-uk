@@ -13,9 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * TDD tests for {@link NinoHasher} — SLFEMPUK-35 / S17-11.
+ * TDD tests for {@link NinoHasher}.
  */
-@DisplayName("NinoHasher (SLFEMPUK-35)")
+@DisplayName("NinoHasher")
 class NinoHasherTest {
 
     private static final String TEST_NINO = "AA123456A";

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for SE-309: Deadline Notifications.
  * Tests notification service integration with UI components.
  *
- * Based on /rob's QA test case specification (26 test cases).
+ * Based on QA's QA test case specification (26 test cases).
  *
  * <p>Test Categories:</p>
  * <ul>
@@ -99,7 +99,7 @@ class NotificationIntegrationTest {
     class NotificationTriggerTests {
 
         @Test
-        @DisplayName("TC-309-004: Notification Trigger - 14 Days (LOW priority) — SLFEMPUK-29 cadence")
+        @DisplayName("TC-309-004: Notification Trigger - 14 Days (LOW priority)")
         void triggerAt14Days() {
             // Given: Deadline exactly 14 days away (T-14 trigger)
             Deadline deadline = Deadline.of("Test Deadline", LocalDate.now().plusDays(14));
@@ -114,7 +114,7 @@ class NotificationIntegrationTest {
         }
 
         @Test
-        @DisplayName("TC-309-005: Notification Trigger - 3 Days (MEDIUM priority) — SLFEMPUK-29 cadence")
+        @DisplayName("TC-309-005: Notification Trigger - 3 Days (MEDIUM priority)")
         void triggerAt3Days() {
             // Given: Deadline exactly 3 days away (T-3 trigger)
             Deadline deadline = Deadline.of("Test Deadline", LocalDate.now().plusDays(3));
@@ -131,7 +131,7 @@ class NotificationIntegrationTest {
         @Test
         @DisplayName("TC-309-006: Notification Trigger - 1 Day still HIGH when user reinstates 1-day reminder")
         void triggerAt1Day() {
-            // Default cadence after SLFEMPUK-29 is T-14/T-3/T-0 — HIGH is unreachable
+            // Default cadence (T-14/T-3/T-0) is T-14/T-3/T-0 — HIGH is unreachable
             // via defaults. This test verifies the priority mapping still works for users
             // who configure a 1-day reminder.
             notificationService.getPreferences().setTriggerDays(java.util.List.of(1));
@@ -300,7 +300,7 @@ class NotificationIntegrationTest {
             List<Deadline> deadlines = notificationService.getDeadlinesForTaxYear(taxYear);
 
             // Then: Q1 (7 Aug), Q2 (7 Nov), Q3 (7 Feb), Q4 (7 May) — Obligations API v3 cadence
-            // Updated in SLFEMPUK-29 / S17-05 to match HMRC's 7th-of-month rule (was 5th, which
+            // Updated in  to match HMRC's 7th-of-month rule (was 5th, which
             // would have caused users to miss the real deadline and trigger penalty points
             // under FA 2021 Sch 24).
             List<Deadline> mtdDeadlines = deadlines.stream()
@@ -355,7 +355,7 @@ class NotificationIntegrationTest {
             // When: Check getTriggerDays()
             List<Integer> triggerDays = prefs.getTriggerDays();
 
-            // Then: Returns [14, 3, 0] (SLFEMPUK-29 / S17-05 cadence)
+            // Then: Returns [14, 3, 0] ( cadence)
             assertThat(triggerDays).containsExactly(14, 3, 0);
         }
 

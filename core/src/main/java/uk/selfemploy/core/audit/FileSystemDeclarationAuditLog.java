@@ -22,7 +22,7 @@ import java.util.Set;
  * JSONL-backed {@link DeclarationAuditLog} writing one canonical line per
  * confirmed Self Assessment final declaration submission.
  *
- * <p><strong>SLFEMPUK-35 / S17-11:</strong> the file is opened in
+ * <p>The file is opened in
  * {@code APPEND + CREATE} mode for every write — no in-process buffer holds
  * unflushed lines, and the file is never re-read or rewritten. This makes the
  * log resilient to crashes mid-submission and makes after-the-fact tampering

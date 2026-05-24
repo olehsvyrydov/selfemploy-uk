@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.within;
 
 /**
  * Contract + DTO tests for SelfAssessmentCalculationClient migrated to HMRC Individual
- * Calculations API v8 (SLFEMPUK-28 / S17-04).
+ * Calculations API v8.
  *
  * <p>v5, v6, v7 were retired in production on 2026-03-24. This test class is the
  * regression guard: if anyone downgrades the Accept header or removes the new v8
@@ -35,7 +35,7 @@ class CalculationResponseV8Test {
     class InterfaceContract {
 
         @Test
-        @DisplayName("SelfAssessmentCalculationClient declares Accept: application/vnd.hmrc.8.0+json (SLFEMPUK-28)")
+        @DisplayName("SelfAssessmentCalculationClient declares Accept: application/vnd.hmrc.8.0+json")
         void clientAcceptsV8() {
             ClientHeaderParam header = SelfAssessmentCalculationClient.class.getAnnotation(ClientHeaderParam.class);
             assertThat(header).isNotNull();

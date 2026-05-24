@@ -18,12 +18,12 @@ import java.util.Set;
 /**
  * Salted SHA-256 hasher for NINOs intended for the local declaration audit log.
  *
- * <p><strong>SLFEMPUK-35 / S17-11:</strong> the declaration audit log must record
+ * <p>The declaration audit log must record
  * that <em>a</em> NINO was submitted without storing the plaintext value
  * (GDPR Art.5(1)(c) data minimisation). Plain SHA-256 of a NINO is trivially
  * brute-forceable — the space is ~100 million values — so a per-install random
  * salt is used. The salt is stored alongside the audit directory in a 0600 file;
- * this is the same threat model as the S17-06 key-seed work
+ * this is the same threat model as the random-key-seed approach
  * (see {@code EncryptedFileTokenStorage}): an attacker with local read access
  * has already won.
  *

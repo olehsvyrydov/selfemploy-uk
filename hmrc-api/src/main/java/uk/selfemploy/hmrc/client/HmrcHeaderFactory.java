@@ -24,7 +24,7 @@ import java.util.Optional;
  * BSAS v7, etc.); each REST client interface declares its own Accept header via
  * {@code @ClientHeaderParam(name="Accept", value="application/vnd.hmrc.{N}.0+json")}.
  *
- * <p>See SLFEMPUK-25 (S17-01) and ADR-017.
+ * <p>and ADR-017.
  */
 @ApplicationScoped
 public class HmrcHeaderFactory implements ClientHeadersFactory {

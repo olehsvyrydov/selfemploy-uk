@@ -132,7 +132,7 @@ class HmrcHeaderFactoryTest {
         }
 
         @Test
-        @DisplayName("should NOT add a default Accept header — each client declares its own MTD API version via @ClientHeaderParam (SLFEMPUK-25)")
+        @DisplayName("should NOT add a default Accept header — each client declares its own MTD API version via @ClientHeaderParam")
         void shouldNotAddDefaultAcceptHeader() {
             // Given — no client has supplied an Accept header (factory should leave it absent)
             when(tokenStorageService.loadTokens()).thenReturn(Optional.empty());
@@ -154,7 +154,7 @@ class HmrcHeaderFactoryTest {
         }
 
         @Test
-        @DisplayName("should preserve a client-supplied Accept header from @ClientHeaderParam (SLFEMPUK-25)")
+        @DisplayName("should preserve a client-supplied Accept header from @ClientHeaderParam")
         void shouldPreserveClientSuppliedAcceptHeader() {
             // Given — a REST client interface has declared its Accept header (e.g. Calculations v8)
             when(tokenStorageService.loadTokens()).thenReturn(Optional.empty());

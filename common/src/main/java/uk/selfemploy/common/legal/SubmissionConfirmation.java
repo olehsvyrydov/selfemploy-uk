@@ -7,7 +7,7 @@ import java.util.Objects;
  * User confirmation that figures in a Self Assessment final declaration are
  * accurate, captured prior to invoking the HMRC declaration endpoint.
  *
- * <p><strong>SLFEMPUK-35 / S17-11:</strong> per /alex (legal) recommendation,
+ * <p>Per legal review recommendation,
  * a Pre-Submission Confirmation gate must precede any POST to HMRC's final
  * declaration endpoint. This record carries the user's explicit acknowledgement
  * and the timestamp at which it was given. The presence of a valid

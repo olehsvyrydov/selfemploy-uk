@@ -41,7 +41,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Integration tests for SE-403 Annual Self Assessment.
- * Tests based on /rob's QA test specification.
+ * Tests based on QA's QA test specification.
  *
  * <p>Test IDs: IT-403-011 to IT-403-028 (Integration Tests)
  *
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.*;
  * - Input validation
  * - Edge cases for terminal states
  *
- * @see docs/sprints/sprint-4/testing/rob-qa-SE-403.md
+ * @see docs/sprints/sprint-4/testingQA-qa-SE-403.md
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -148,7 +148,7 @@ class AnnualSubmissionIntegrationTest {
         }
 
         @Test
-        @DisplayName("IT-403-012: Resume from DECLARING state via confirmDeclaration (SLFEMPUK-35 gate applies to resume)")
+        @DisplayName("IT-403-012: Resume from DECLARING state via confirmDeclaration (gate applies to resume)")
         void shouldResumeFromDeclaringStateAfterNetworkFailure() {
             // Given: Saga in DECLARING state (network failure occurred during declaration)
             AnnualSubmissionSaga declaringSaga = AnnualSubmissionSaga.create(TEST_TAX_YEAR, TEST_NINO)
@@ -166,7 +166,7 @@ class AnnualSubmissionIntegrationTest {
             when(declarationClient.submitDeclaration(any(), any(), any(), any()))
                     .thenReturn(hmrcResponse);
 
-            // When: Resume by calling confirmDeclaration with confirmation (SLFEMPUK-35:
+            // When: Resume by calling confirmDeclaration with confirmation(
             // gate applies to all POST paths including resume)
             AnnualSubmissionSaga result = service.confirmDeclaration(declaringSaga.id(), VALID_CONFIRMATION);
 
@@ -624,7 +624,7 @@ class AnnualSubmissionIntegrationTest {
                             new CalculationResponse.NationalInsuranceBreakdown.Class2Nics(BigDecimal.ZERO),
                             new CalculationResponse.NationalInsuranceBreakdown.Class4Nics(BigDecimal.ZERO, BigDecimal.ZERO)
                     ),
-                    // v8 additions (SLFEMPUK-28 / S17-04) — not exercised by this scenario.
+                    // v8 additions — not exercised by this scenario.
                     null, null, null, null
             );
 
@@ -671,7 +671,7 @@ class AnnualSubmissionIntegrationTest {
                                     BigDecimal.ZERO
                             )
                     ),
-                    // v8 additions (SLFEMPUK-28 / S17-04) — not exercised by this scenario.
+                    // v8 additions — not exercised by this scenario.
                     null, null, null, null
             );
 
@@ -726,7 +726,7 @@ class AnnualSubmissionIntegrationTest {
                                 new BigDecimal("2000.00")
                         )
                 ),
-                // v8 additions (SLFEMPUK-28 / S17-04) — null in this baseline helper.
+                // v8 additions — null in this baseline helper.
                 null, null, null, null
         );
     }

@@ -19,7 +19,7 @@ import java.util.concurrent.CompletionStage;
  *
  * <p>Path: {@code /individuals/business/self-employment/{nino}}. Lists self-employment
  * businesses and fetches per-business detail. A separate {@code BusinessDetailsClient}
- * (S17-03) handles the distinct Business Details API at
+ * handles the distinct Business Details API at
  * {@code /individuals/business/details/{nino}} (v2).
  *
  * @see <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api">

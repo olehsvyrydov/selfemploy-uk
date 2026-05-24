@@ -7,7 +7,7 @@ import java.io.IOException;
 /**
  * Append-only sink for Pre-Submission Confirmation audit records.
  *
- * <p><strong>SLFEMPUK-35 / S17-11:</strong> for every final declaration submitted
+ * <p>For every final declaration submitted
  * to HMRC, one line is written here containing the confirmation timestamp,
  * the user identifier, a salted SHA-256 hash of the NINO, and a SHA-256 of the
  * canonical submission tuple. Plaintext NINO and the raw HMRC payload are

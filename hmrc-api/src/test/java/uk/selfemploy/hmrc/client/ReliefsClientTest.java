@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Contract + DTO tests for ReliefsClient (HMRC Individuals Reliefs API v3 —
- * SLFEMPUK-33 / S17-09).
+ * ).
  *
  * <p>Locks the v3 Accept header and the "no non-UK charitable giving fields"
  * removal: the {@link Reliefs} record has no component for any of the removed
@@ -41,7 +41,7 @@ class ReliefsClientTest {
         }
 
         @Test
-        @DisplayName("Accept header declares HMRC v3 (SLFEMPUK-33)")
+        @DisplayName("Accept header declares HMRC v3")
         void acceptHeaderIsV3() {
             ClientHeaderParam header = ReliefsClient.class.getAnnotation(ClientHeaderParam.class);
             assertThat(header).isNotNull();

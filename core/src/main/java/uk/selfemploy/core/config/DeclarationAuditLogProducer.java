@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 /**
- * CDI producer for {@link DeclarationAuditLog} — SLFEMPUK-35 / S17-11.
+ * CDI producer for {@link DeclarationAuditLog}.
  *
  * <p>Resolves the audit log location following the same platform convention used
  * by {@code TokenStorageService}:
