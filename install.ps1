@@ -25,7 +25,7 @@ param(
 
 # --- Configuration -----------------------------------------------------------
 
-$RequiredJavaVersion = 21
+$RequiredJavaVersion = 25
 $RequiredMavenMajor = 3
 $RequiredMavenMinor = 6
 $AppName = "UK Self-Employment Manager"
@@ -160,9 +160,9 @@ function Test-Maven {
 function Show-JavaInstall {
     Write-Host ""
     Write-Warn "Install Java $RequiredJavaVersion+ (Temurin recommended):"
-    Write-Host "  winget:     winget install EclipseAdoptium.Temurin.21.JDK"
-    Write-Host "  Chocolatey: choco install temurin21"
-    Write-Host "  Scoop:      scoop install temurin21-jdk"
+    Write-Host "  winget:     winget install EclipseAdoptium.Temurin.${RequiredJavaVersion}.JDK"
+    Write-Host "  Chocolatey: choco install temurin${RequiredJavaVersion}"
+    Write-Host "  Scoop:      scoop install temurin${RequiredJavaVersion}-jdk"
     Write-Host "  Manual:     https://adoptium.net/temurin/releases/"
     Write-Host ""
 }

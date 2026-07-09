@@ -60,7 +60,7 @@ A **free, privacy-first desktop application** for UK self-employed individuals t
 | Component | Technology |
 |-----------|------------|
 | Backend | Quarkus 3.x |
-| UI | JavaFX 21+ |
+| UI | JavaFX 25+ |
 | Database | H2 (AES-256 encrypted) |
 | Build | Maven + jpackage |
 | Platforms | Windows, macOS, Linux |

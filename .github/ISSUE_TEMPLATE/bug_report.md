@@ -32,7 +32,7 @@ If applicable, add screenshots to help explain your problem.
 ## Environment
 
 - **OS:** [e.g., Windows 11, macOS 14, Ubuntu 24.04]
-- **Java Version:** [e.g., OpenJDK 21.0.1]
+- **Java Version:** [e.g., OpenJDK 25.0.1]
 - **App Version:** [e.g., 0.1.0]
 
 ## Additional Context

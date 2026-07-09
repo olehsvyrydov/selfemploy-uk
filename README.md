@@ -44,7 +44,7 @@ See the full [Installation Guide](https://selfemploy.uk/install-guide.html) for 
 
 ### Build from Source (Developers)
 
-Requires Java 21+ (JDK) and Maven 3.6+.
+Requires Java 25+ (JDK) and Maven 3.6+.
 
 ```bash
 git clone https://github.com/olehsvyrydov/selfemploy-uk.git
@@ -102,7 +102,7 @@ selfemploy-uk/
 | Component | Technology |
 |-----------|------------|
 | Backend | Quarkus 3.x |
-| UI | JavaFX 21+ |
+| UI | JavaFX 25+ |
 | Database | SQLite (local) + H2 (persistence) |
 | Migrations | Flyway |
 | Build | Maven + jpackage |

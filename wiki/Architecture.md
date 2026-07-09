@@ -76,14 +76,14 @@ common ◄─── persistence ◄─── core ◄─── ui ◄─── a
 
 | Layer | Technology | Version |
 |-------|------------|---------|
-| DI Framework | Quarkus | 3.17.x |
-| UI Framework | JavaFX | 21.x |
+| DI Framework | Quarkus | 3.37.x |
+| UI Framework | JavaFX | 25.x |
 | Database | H2 (encrypted) | 2.3.x |
-| ORM | Hibernate + Panache | 6.x |
-| Migrations | Flyway | 10.x |
+| ORM | Hibernate + Panache | 7.x |
+| Migrations | Flyway | 12.x (BOM-managed) |
 | HTTP Client | Quarkus REST Client | 3.x |
 | Build | Maven | 3.9+ |
-| Native | GraalVM | 21+ |
+| Native | GraalVM | 25+ |
 
 ---
 
