@@ -40,7 +40,7 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*"; }
 
 show_help() {
-    cat << 'EOF'
+    cat << EOF
 UK Self-Employment Manager - Installation Script
 
 Usage:
@@ -52,7 +52,7 @@ Usage:
   ./install.sh --help       Show this help message
 
 Developer mode (default):
-  Requires Java 25+ and Maven 3.6+. Builds from source.
+  Requires Java ${REQUIRED_JAVA_VERSION}+ and Maven ${REQUIRED_MAVEN_MAJOR}.${REQUIRED_MAVEN_MINOR}+. Builds from source.
 
 Install mode (--install):
   Downloads the pre-built installer from GitHub Releases.
