@@ -37,36 +37,35 @@
         <maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
 
         <!-- Java Version -->
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Quarkus -->
-        <quarkus.platform.version>3.20.3</quarkus.platform.version>
+        <quarkus.platform.version>3.37.2</quarkus.platform.version>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
 
         <!-- JavaFX -->
-        <javafx.version>21.0.5</javafx.version>
+        <javafx.version>25.0.3</javafx.version>
 
-        <!-- Database -->
+        <!-- Database: Flyway version comes from the Quarkus BOM.
+             H2 is pinned to preserve on-disk format compatibility with existing user databases. -->
         <h2.version>2.3.232</h2.version>
-        <flyway.version>10.21.0</flyway.version>
 
         <!-- Lombok -->
-        <lombok.version>1.18.34</lombok.version>
+        <lombok.version>1.18.46</lombok.version>
 
-        <!-- Testing -->
-        <junit.version>5.11.3</junit.version>
-        <mockito.version>5.14.2</mockito.version>
-        <assertj.version>3.26.3</assertj.version>
+        <!-- Testing: JUnit is managed by the Quarkus BOM -->
+        <mockito.version>5.23.0</mockito.version>
+        <assertj.version>3.27.7</assertj.version>
         <testfx.version>4.0.18</testfx.version>
 
         <!-- Build Plugins -->
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
         <!--
             Tests tagged 'e2e' are excluded by default (slow, browser-based).
             Tests tagged 'hmrc-sandbox' are excluded by default because they
@@ -151,25 +150,14 @@
                 <scope>provided</scope>
             </dependency>
 
-            <!-- Database -->
+            <!-- Database: flyway-core version comes from the Quarkus BOM; h2 is pinned below -->
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-core</artifactId>
-                <version>${flyway.version}</version>
-            </dependency>
 
-            <!-- Testing -->
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
+            <!-- Testing: junit-jupiter version comes from the Quarkus BOM; assertj-core is pinned below -->
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>

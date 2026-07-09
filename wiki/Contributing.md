@@ -42,7 +42,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](ht
 
 ### Prerequisites
 
-- Java 21+
+- Java 25+
 - Maven 3.9+
 - Git
 

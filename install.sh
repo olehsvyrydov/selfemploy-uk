@@ -17,7 +17,7 @@ set -euo pipefail
 
 # --- Configuration -----------------------------------------------------------
 
-REQUIRED_JAVA_VERSION=21
+REQUIRED_JAVA_VERSION=25
 REQUIRED_MAVEN_MAJOR=3
 REQUIRED_MAVEN_MINOR=6
 APP_NAME="UK Self-Employment Manager"
@@ -52,7 +52,7 @@ Usage:
   ./install.sh --help       Show this help message
 
 Developer mode (default):
-  Requires Java 21+ and Maven 3.6+. Builds from source.
+  Requires Java 25+ and Maven 3.6+. Builds from source.
 
 Install mode (--install):
   Downloads the pre-built installer from GitHub Releases.
@@ -139,14 +139,14 @@ suggest_java_install() {
     warn "Install Java $REQUIRED_JAVA_VERSION+ (Temurin recommended):"
     case "$os" in
         linux)
-            echo "  Ubuntu/Debian:  sudo apt install temurin-21-jdk"
-            echo "  Fedora/RHEL:    sudo dnf install java-21-openjdk-devel"
-            echo "  Arch:           sudo pacman -S jdk21-openjdk"
-            echo "  SDKMAN:         sdk install java 21-tem"
+            echo "  Ubuntu/Debian:  sudo apt install temurin-${REQUIRED_JAVA_VERSION}-jdk"
+            echo "  Fedora/RHEL:    sudo dnf install java-${REQUIRED_JAVA_VERSION}-openjdk-devel"
+            echo "  Arch:           sudo pacman -S jdk${REQUIRED_JAVA_VERSION}-openjdk"
+            echo "  SDKMAN:         sdk install java ${REQUIRED_JAVA_VERSION}-tem"
             ;;
         macos)
-            echo "  Homebrew:       brew install --cask temurin@21"
-            echo "  SDKMAN:         sdk install java 21-tem"
+            echo "  Homebrew:       brew install --cask temurin@${REQUIRED_JAVA_VERSION}"
+            echo "  SDKMAN:         sdk install java ${REQUIRED_JAVA_VERSION}-tem"
             ;;
         *)
             echo "  Download from:  https://adoptium.net/temurin/releases/"

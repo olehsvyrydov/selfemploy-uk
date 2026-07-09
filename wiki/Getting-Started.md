@@ -28,7 +28,7 @@ Visit [selfemploy.uk](https://selfemploy.uk) or download the latest installer fr
 ### Option 2: Build from Source (Developers)
 
 **Prerequisites:**
-- **Java 21** or later (JDK, not JRE) — [Adoptium](https://adoptium.net/) recommended
+- **Java 25** or later (JDK, not JRE) — [Adoptium](https://adoptium.net/) recommended
 - **Maven 3.6+** (for building from source)
 - **Git** (for cloning the repository)
 
@@ -109,7 +109,7 @@ Your encrypted database is stored at:
 ### Application won't start
 
 1. Check Java version: `java -version`
-2. Ensure Java 21+ is installed
+2. Ensure Java 25+ is installed
 3. Check for conflicting processes
 
 ### Database errors
