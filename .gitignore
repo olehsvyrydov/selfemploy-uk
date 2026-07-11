@@ -152,8 +152,15 @@ drafts/
 *.temp
 *.bak
 
-# Claude Code
+# AI / agent tooling and local state (not part of the product)
 CLAUDE.md
+.claude/
+.mcp.json
+.praxis/
+.workflow-state.json
+AGENTS.md
+NOTICE.md
+testuser.md
 
 # Documentation (managed separately)
 docs/
