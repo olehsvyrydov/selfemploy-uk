@@ -176,8 +176,8 @@
             <HBox alignment="CENTER_LEFT" spacing="12">
                 <Label text="✓" styleClass="success-icon"/>
                 <VBox spacing="4">
-                    <Label text="Submission Successful" styleClass="success-title"/>
-                    <Label text="Your Annual Self Assessment has been submitted to HMRC." styleClass="success-text"/>
+                    <Label text="Estimate calculated" styleClass="success-title"/>
+                    <Label text="Your Annual Self Assessment figures have been calculated locally. They have not been submitted to HMRC." styleClass="success-text"/>
                 </VBox>
             </HBox>
             <HBox spacing="8">

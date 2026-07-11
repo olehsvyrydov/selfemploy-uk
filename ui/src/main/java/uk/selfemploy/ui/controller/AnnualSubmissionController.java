@@ -6,15 +6,11 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
-import uk.selfemploy.common.domain.Submission;
 import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
-import uk.selfemploy.common.enums.SubmissionStatus;
-import uk.selfemploy.common.enums.SubmissionType;
 import uk.selfemploy.common.legal.Disclaimers;
-import uk.selfemploy.ui.service.CoreServiceFactory;
-import uk.selfemploy.ui.service.SqliteSubmissionRepository;
-import uk.selfemploy.ui.service.SubmissionRecord;
+import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
+import uk.selfemploy.core.calculator.TaxLiabilityResult;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionDeclarationViewModel;
 
@@ -23,11 +19,9 @@ import javafx.stage.Stage;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -293,7 +287,6 @@ public class AnnualSubmissionController {
      */
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
-        System.out.println("[DEBUG] setDialogStage called, stage = " + stage);
     }
 
     /**
@@ -302,7 +295,6 @@ public class AnnualSubmissionController {
      */
     private void updateDialogWidth(int currentStep) {
         if (dialogStage == null) {
-            System.out.println("[DEBUG] dialogStage is null, cannot resize");
             return;
         }
 
@@ -313,11 +305,7 @@ public class AnnualSubmissionController {
         };
 
         double currentWidth = dialogStage.getWidth();
-        System.out.println("[DEBUG] updateDialogWidth called for step " + currentStep +
-            ", current=" + currentWidth + ", target=" + targetWidth);
-
         if (Math.abs(currentWidth - targetWidth) < 1) {
-            System.out.println("[DEBUG] Already at target width, skipping");
             return;
         }
 
@@ -340,19 +328,14 @@ public class AnnualSubmissionController {
             dialogStage.setMinWidth(originalMinWidth);
             dialogStage.setMaxWidth(Double.MAX_VALUE);
         });
-
-        System.out.println("[DEBUG] After resize: stage.getWidth() = " + dialogStage.getWidth());
     }
 
     // === Event Handlers ===
 
     @FXML
     private void handleCalculate() {
-        System.out.println("[DEBUG] handleCalculate() called, current step = " + viewModel.getCurrentStep());
         viewModel.executeNextStep();
-        // TODO: Call backend service to calculate tax
-        // For now, simulate with mock data
-        simulateCalculation();
+        calculateEstimate();
     }
 
     @FXML
@@ -362,16 +345,15 @@ public class AnnualSubmissionController {
 
     @FXML
     private void handleSubmit() {
-        boolean confirmed = AppDialog.confirm("Confirm Submission",
-            "Submit Annual Self Assessment\n\n"
-            + "Are you sure you want to submit your Annual Self Assessment to HMRC?\n\n"
-            + "This action cannot be undone.",
-            "Submit", "Cancel");
-        if (confirmed) {
-            viewModel.confirmAndSubmit();
-            // TODO: Call backend service to submit
-            simulateSubmission();
-        }
+        // Direct submission to HMRC is not implemented yet. Rather than fabricate a
+        // submission reference and an "Accepted" status (which would tell the user they
+        // had filed when nothing was sent), the app is honest that these figures are a
+        // local estimate only and have not reached HMRC.
+        AppDialog.info("Not submitted to HMRC",
+            "Direct submission to HMRC is not available in this version yet.\n\n"
+            + "Your Self Assessment figures have been calculated locally as an estimate — "
+            + "they have NOT been sent to HMRC. To file, use HMRC's own online service or "
+            + "an approved Making Tax Digital product.");
     }
 
     @FXML
@@ -467,7 +449,6 @@ public class AnnualSubmissionController {
         // Listen for current step changes
         viewModel.currentStepProperty().addListener((obs, oldVal, newVal) -> {
             int step = newVal.intValue();
-            System.out.println("[DEBUG] Step changed: " + oldVal + " -> " + newVal + " (dialogStage=" + dialogStage + ")");
             updateStepIndicator(step);
             updateActionButtons(step);
             updateDialogWidth(step);
@@ -601,8 +582,7 @@ public class AnnualSubmissionController {
                 // Hide declaration card on completion (SE-506)
                 declarationCard.setVisible(false);
                 declarationCard.setManaged(false);
-                // TODO: Set submission reference
-                submissionReference.setText("SA-" + viewModel.getSagaId().toString().substring(0, 8).toUpperCase());
+                submissionReference.setText("");
             }
             case FAILED -> {
                 // Error panel is shown via binding
@@ -645,133 +625,41 @@ public class AnnualSubmissionController {
         return CURRENCY_FORMAT.format(amount);
     }
 
-    // === Temporary Simulation Methods (will be replaced by backend service) ===
-
-    private void simulateCalculation() {
-        // Simulate async calculation
-        new Thread(() -> {
-            try {
-                Thread.sleep(2000); // Simulate network delay
-
-                // Create mock result using common module's TaxCalculationResult
-                javafx.application.Platform.runLater(() -> {
-                    TaxCalculationResult result = TaxCalculationResult.create(
-                        "calc-sim-" + System.currentTimeMillis(),  // calculationId
-                        viewModel.getTotalIncome(),                 // totalIncome
-                        viewModel.getTotalExpenses(),               // totalExpenses
-                        viewModel.getNetProfit(),                   // netProfit
-                        new BigDecimal("5430.00"),                  // incomeTax
-                        new BigDecimal("165.00"),                   // nationalInsuranceClass2
-                        new BigDecimal("1980.00")                   // nationalInsuranceClass4
-                    );
-
-                    viewModel.setCalculationResult(result);
-                    viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
-                    viewModel.setLoading(false);
-                });
-
-            } catch (InterruptedException e) {
-                javafx.application.Platform.runLater(() -> {
-                    viewModel.setErrorMessage("Calculation failed: " + e.getMessage());
-                    viewModel.setCurrentState(AnnualSubmissionState.FAILED);
-                    viewModel.setLoading(false);
-                });
-            }
-        }).start();
-    }
-
-    private void simulateSubmission() {
-        // Simulate async submission
-        new Thread(() -> {
-            try {
-                Thread.sleep(3000); // Simulate network delay
-
-                javafx.application.Platform.runLater(() -> {
-                    // Generate HMRC reference
-                    String hmrcReference = "SA-" + viewModel.getSagaId().toString().substring(0, 8).toUpperCase();
-
-                    // BUG-10H-002: Save submission to SQLite for history persistence
-                    saveSubmissionToSqlite(hmrcReference);
-
-                    viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
-                    viewModel.setLoading(false);
-                });
-
-            } catch (InterruptedException e) {
-                javafx.application.Platform.runLater(() -> {
-                    viewModel.setErrorMessage("Submission failed: " + e.getMessage());
-                    viewModel.setCurrentState(AnnualSubmissionState.FAILED);
-                    viewModel.setLoading(false);
-                });
-            }
-        }).start();
-    }
+    // === Local tax estimate (no HMRC call) ===
 
     /**
-     * Saves the annual submission to SQLite for history persistence.
-     * BUG-10H-002: Annual submissions were not being saved to history.
+     * Calculates a local tax estimate for the reviewed figures using the application's own
+     * {@link TaxLiabilityCalculator} — the same engine as the Dashboard and Tax Summary.
      *
-     * <p>Package-private for testing.</p>
-     *
-     * @param hmrcReference The HMRC reference for the submission
+     * <p>These figures are an estimate only and are never sent to HMRC; the previous
+     * implementation displayed hard-coded tax amounts, which misrepresented the user's
+     * position. Package-private for testing.</p>
      */
-    void saveSubmissionToSqlite(String hmrcReference) {
+    void calculateEstimate() {
+        TaxYear taxYear = viewModel.getTaxYear();
+        BigDecimal netProfit = viewModel.getNetProfit() != null ? viewModel.getNetProfit() : BigDecimal.ZERO;
         try {
-            UUID businessId = CoreServiceFactory.getDefaultBusinessId();
-            if (businessId == null) {
-                LOG.warning("Cannot save annual submission: businessId is null");
-                return;
-            }
+            TaxLiabilityCalculator calculator = new TaxLiabilityCalculator(taxYear.startYear());
+            TaxLiabilityResult liability = calculator.calculate(netProfit);
 
-            TaxYear taxYear = viewModel.getTaxYear();
-            if (taxYear == null) {
-                LOG.warning("Cannot save annual submission: taxYear is null");
-                return;
-            }
-
-            // Get declaration details if available
-            Instant declarationAcceptedAt = null;
-            String declarationTextHash = null;
-            if (declarationViewModel != null && declarationViewModel.isCompleteProperty().get()) {
-                var declaration = declarationViewModel.buildDeclaration();
-                if (declaration.isPresent()) {
-                    declarationAcceptedAt = declaration.get().completedAt();
-                    // Use declaration ID as a unique identifier for the declaration
-                    declarationTextHash = declaration.get().declarationId();
-                }
-            }
-
-            // Create domain Submission object
-            Submission submission = new Submission(
-                UUID.randomUUID(),
-                businessId,
-                SubmissionType.ANNUAL,
-                taxYear,
-                taxYear.startDate(),
-                taxYear.endDate(),
+            TaxCalculationResult result = TaxCalculationResult.create(
+                "local-estimate-" + taxYear.label(),
                 viewModel.getTotalIncome(),
                 viewModel.getTotalExpenses(),
-                viewModel.getNetProfit(),
-                SubmissionStatus.ACCEPTED,
-                hmrcReference,
-                null, // errorMessage
-                Instant.now(),
-                Instant.now(),
-                declarationAcceptedAt != null ? declarationAcceptedAt : Instant.now(),
-                declarationTextHash,
-                null, // utr
-                null  // nino
+                netProfit,
+                liability.incomeTax(),
+                liability.niClass2(),
+                liability.niClass4()
             );
 
-            // Convert to persistence record and save
-            SqliteSubmissionRepository repository = new SqliteSubmissionRepository(businessId);
-            SubmissionRecord record = SubmissionRecord.fromDomainSubmission(submission);
-            repository.save(record);
-
-            LOG.info("Annual submission saved to SQLite: id=" + record.id() + ", reference=" + hmrcReference);
-
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to save annual submission to SQLite (non-fatal): " + e.getMessage(), e);
+            viewModel.setCalculationResult(result);
+            viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
+            viewModel.setLoading(false);
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "Failed to calculate tax estimate", e);
+            viewModel.setErrorMessage("Could not calculate your estimate: " + e.getMessage());
+            viewModel.setCurrentState(AnnualSubmissionState.FAILED);
+            viewModel.setLoading(false);
         }
     }
 }
