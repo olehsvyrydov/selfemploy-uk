@@ -584,5 +584,22 @@ class ImportOrchestrationServiceTest {
 
             assertThat(marked).noneMatch(ImportedTransactionRow::isDuplicate);
         }
+
+        @Test
+        @DisplayName("an undated row is passed through as a non-duplicate rather than crashing the scan")
+        void shouldNotCrashOnUndatedRow() {
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+            when(expenseService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+
+            ImportedTransactionRow undated = ImportedTransactionRow.create(
+                null, "No date", new BigDecimal("42.00"), TransactionType.INCOME, null, false, 0);
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(
+                List.of(undated, incomeRow("Invoice 1", "100.00")));
+
+            assertThat(marked).hasSize(2);
+            assertThat(marked.get(0).isDuplicate()).isFalse();
+            assertThat(marked.get(1).isDuplicate()).isFalse();
+        }
     }
 }

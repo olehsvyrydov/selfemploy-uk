@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.service;
 
+import uk.selfemploy.common.util.VersionInfo;
 import uk.selfemploy.hmrc.fraud.FraudPreventionService;
 import uk.selfemploy.hmrc.fraud.collectors.DeviceIdCollector;
 import uk.selfemploy.hmrc.fraud.collectors.LocalIpsCollector;
@@ -24,9 +25,18 @@ import java.util.logging.Logger;
 final class HmrcFraudHeaders {
 
     private static final Logger LOG = Logger.getLogger(HmrcFraudHeaders.class.getName());
-    private static final String APP_VERSION = "1.0.0";
 
     private static volatile FraudPreventionService service;
+
+    /**
+     * The build version for {@code Gov-Vendor-Version}, sourced from the packaged
+     * build metadata so it tracks the real release rather than a hard-coded value.
+     */
+    private static String appVersion() {
+        String version = VersionInfo.getVersion();
+        return (version == null || version.isBlank() || "unknown".equals(version))
+            ? "1.0.0" : version;
+    }
 
     private HmrcFraudHeaders() {
     }
@@ -68,7 +78,7 @@ final class HmrcFraudHeaders {
                         new MacAddressesCollector(),
                         new UserIdsCollector(),
                         new UserAgentCollector(),
-                        APP_VERSION);
+                        appVersion());
                     service = local;
                 }
             }

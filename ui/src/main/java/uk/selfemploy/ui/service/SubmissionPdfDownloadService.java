@@ -63,6 +63,7 @@ public class SubmissionPdfDownloadService {
     private static final Color STATUS_ACCEPTED_BG = new Color(212, 237, 218);
     private static final Color STATUS_REJECTED_BG = new Color(248, 215, 218);
     private static final Color STATUS_PENDING_BG = new Color(255, 243, 205);
+    private static final Color STATUS_NOT_SUBMITTED_BG = new Color(226, 232, 240);
 
     // Formatters
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMMM yyyy");
@@ -452,7 +453,8 @@ public class SubmissionPdfDownloadService {
         return switch (status) {
             case ACCEPTED -> STATUS_ACCEPTED_BG;
             case REJECTED -> STATUS_REJECTED_BG;
-            case PENDING, SUBMITTED, NOT_SUBMITTED -> STATUS_PENDING_BG;
+            case PENDING, SUBMITTED -> STATUS_PENDING_BG;
+            case NOT_SUBMITTED -> STATUS_NOT_SUBMITTED_BG;
         };
     }
 

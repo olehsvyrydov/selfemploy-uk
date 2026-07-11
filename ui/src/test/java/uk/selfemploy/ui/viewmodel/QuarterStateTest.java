@@ -100,5 +100,17 @@ class QuarterStateTest {
                     .isEqualTo(QuarterStatus.OVERDUE);
             }
         }
+
+        @Test
+        @DisplayName("null calendar context fails closed as FUTURE instead of throwing")
+        void nullArgumentsFailClosed() {
+            LocalDate day = LocalDate.of(2025, 8, 1);
+            assertThat(QuarterState.resolveStatus(null, TY_2025, day, false))
+                .isEqualTo(QuarterStatus.FUTURE);
+            assertThat(QuarterState.resolveStatus(Quarter.Q2, null, day, false))
+                .isEqualTo(QuarterStatus.FUTURE);
+            assertThat(QuarterState.resolveStatus(Quarter.Q2, TY_2025, null, false))
+                .isEqualTo(QuarterStatus.FUTURE);
+        }
     }
 }

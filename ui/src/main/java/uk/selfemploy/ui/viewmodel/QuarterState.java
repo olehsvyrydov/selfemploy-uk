@@ -49,6 +49,10 @@ public final class QuarterState {
      */
     public static QuarterStatus resolveStatus(Quarter quarter, TaxYear taxYear,
                                               LocalDate today, boolean hasData) {
+        if (quarter == null || taxYear == null || today == null) {
+            // Fail closed: with no calendar context there is nothing due yet.
+            return QuarterStatus.FUTURE;
+        }
         LocalDate start = quarter.getStartDate(taxYear);
         LocalDate end = quarter.getEndDate(taxYear);
         LocalDate deadline = quarter.getDeadline(taxYear);

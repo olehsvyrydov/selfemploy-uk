@@ -14,8 +14,9 @@ import java.util.UUID;
  * already been sent to HMRC, so edits and deletes to such records can warn the
  * user that their submitted figures would no longer match.
  *
- * <p>Only submissions that actually reached HMRC count (ACCEPTED or SUBMITTED).
- * Local estimates (NOT_SUBMITTED) and rejected attempts do not lock a period.</p>
+ * <p>Only submissions that are in flight at, or accepted by, HMRC count — PENDING,
+ * SUBMITTED or ACCEPTED (see {@link SubmissionStatus#locksSubmittedPeriod()}). Local
+ * estimates (NOT_SUBMITTED) and rejected attempts do not lock a period.</p>
  */
 public final class SubmittedPeriodIndex {
 

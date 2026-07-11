@@ -133,7 +133,11 @@ public class ImportOrchestrationService {
 
         Set<TaxYear> taxYears = new HashSet<>();
         for (ImportedTransactionRow row : rows) {
-            taxYears.add(taxYearFor(row.date()));
+            // Undated rows cannot be placed in a tax year; they are handled as
+            // non-duplicates below rather than crashing the whole import.
+            if (row.date() != null) {
+                taxYears.add(taxYearFor(row.date()));
+            }
         }
 
         Set<String> incomeKeys = new HashSet<>();
@@ -156,6 +160,13 @@ public class ImportOrchestrationService {
         List<ImportedTransactionRow> result = new ArrayList<>(rows.size());
         int duplicates = 0;
         for (ImportedTransactionRow row : rows) {
+            // An incomplete row cannot form a match key, so it is left unchanged
+            // (treated as a non-duplicate) rather than breaking the import.
+            if (row.date() == null || row.amount() == null
+                || row.description() == null || row.type() == null) {
+                result.add(row);
+                continue;
+            }
             String key = MatchingUtils.createExactKey(row.date(), row.amount(), row.description());
             boolean isDuplicate = row.type() == TransactionType.INCOME
                 ? incomeKeys.contains(key)
