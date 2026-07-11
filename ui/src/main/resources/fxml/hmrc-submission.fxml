@@ -88,7 +88,7 @@
         <!-- Important Information -->
         <VBox styleClass="info-box" spacing="8">
             <Label text="ℹ Important Information" styleClass="info-title"/>
-            <Label text="• Quarterly updates use the HMRC Making Tax Digital APIs; annual figures are calculated locally as an estimate and are not sent to HMRC in this version" styleClass="info-text" wrapText="true"/>
+            <Label fx:id="submissionChannelInfoLabel" text="• Quarterly updates and annual declarations both use the HMRC Making Tax Digital APIs" styleClass="info-text" wrapText="true"/>
             <Label text="• All calculations are estimates - verify with a qualified accountant" styleClass="info-text" wrapText="true"/>
             <Label text="• You are responsible for the accuracy of any information you submit" styleClass="info-text" wrapText="true"/>
         </VBox>

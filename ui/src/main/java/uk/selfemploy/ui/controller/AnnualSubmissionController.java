@@ -465,58 +465,141 @@ public class AnnualSubmissionController {
     }
 
     /**
-     * Runs the real annual submission against HMRC off the FX thread: trigger a
-     * crystallisation calculation (T1.1), compare it with the app's own estimate,
-     * then submit the final declaration (T1.2). The declaration only proceeds
-     * because the six-part declaration is complete, which is the user's explicit
-     * confirmation.
+     * Starts the real annual submission against HMRC. First triggers a crystallisation
+     * calculation off the FX thread; the final declaration is only sent once the
+     * taxpayer has seen HMRC's own figures and explicitly confirmed them
+     * (see {@link #onCalculationReady}). The taxpayer never declares figures they have
+     * not been shown.
      */
     private void submitToHmrc(String nino) {
         TaxYear taxYear = viewModel.getTaxYear();
-        DeclarationConfirmation confirmation = new DeclarationConfirmation(true, Instant.now());
 
         viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
         viewModel.setLoading(true);
+        updateStepIndicator(4);
 
         Thread.startVirtualThread(() -> {
+            CalculationOutcome calcOutcome;
             try {
-                CalculationOutcome calcOutcome = calculationService().calculate(nino, taxYear, true);
-                if (calcOutcome instanceof CalculationOutcome.Failure failure) {
-                    failOnFxThread("HMRC could not calculate your return: " + failure.message());
-                    return;
-                }
-                var calculation = ((CalculationOutcome.Success) calcOutcome).calculation();
+                calcOutcome = calculationService().calculate(nino, taxYear, true);
+            } catch (RuntimeException e) {
+                LOG.log(Level.SEVERE, "Unexpected error requesting HMRC calculation", e);
+                failOnFxThread("Unexpected error requesting your HMRC calculation: " + e.getMessage());
+                return;
+            }
+            CalculationOutcome outcome = calcOutcome;
+            javafx.application.Platform.runLater(() -> onCalculationReady(nino, taxYear, outcome));
+        });
+    }
 
-                TaxCalculationResult local = viewModel.getCalculationResult();
-                HmrcCalculationComparison comparison = new HmrcCalculationComparison(
-                    local != null ? local.incomeTax() : null,
-                    local != null ? local.nationalInsuranceClass2() : null,
-                    local != null ? local.nationalInsuranceClass4() : null,
-                    calculation);
-                if (comparison.hasMismatch()) {
-                    LOG.warning("App estimate and HMRC calculation differ for " + taxYear.label());
-                }
+    /**
+     * On the FX thread: show HMRC's returned figures next to the app's own estimate and
+     * require the taxpayer to confirm HMRC's figures before the final declaration is
+     * sent. When the two calculations diverge the taxpayer is warned explicitly.
+     * Declining leaves the return undeclared and returns to the review step.
+     */
+    private void onCalculationReady(String nino, TaxYear taxYear, CalculationOutcome calcOutcome) {
+        if (calcOutcome instanceof CalculationOutcome.Failure failure) {
+            failOnFxThread("HMRC could not calculate your return: " + failure.message());
+            return;
+        }
+        CalculationOutcome.Success success = (CalculationOutcome.Success) calcOutcome;
 
-                DeclarationOutcome declOutcome = declarationService()
-                    .submitFinalDeclaration(nino, taxYear, calculation.calculationId(), confirmation);
-                if (declOutcome instanceof DeclarationOutcome.Failure failure) {
-                    failOnFxThread("HMRC did not accept the declaration: " + failure.message());
-                    return;
-                }
+        TaxCalculationResult local = viewModel.getCalculationResult();
+        HmrcCalculationComparison comparison = new HmrcCalculationComparison(
+            local != null ? local.incomeTax() : null,
+            local != null ? local.nationalInsuranceClass2() : null,
+            local != null ? local.nationalInsuranceClass4() : null,
+            success.calculation());
 
-                String reference = ((DeclarationOutcome.Success) declOutcome).hmrcReference();
-                persistSubmission(taxYear, reference);
+        viewModel.setLoading(false);
+        boolean confirmed = AppDialog.confirm(
+            comparison.hasMismatch() ? "HMRC's figures differ — review before declaring"
+                                     : "Confirm HMRC's figures",
+            buildHmrcFiguresMessage(comparison),
+            "Declare these figures to HMRC", "Cancel");
+        if (!confirmed) {
+            // Nothing has been declared; return to the review step.
+            viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
+            updateStepIndicator(3);
+            return;
+        }
 
-                javafx.application.Platform.runLater(() -> {
-                    lastHmrcReference = reference;
-                    viewModel.setLoading(false);
-                    viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
-                });
+        declareToHmrc(nino, taxYear, success.calculationId());
+    }
+
+    /**
+     * Sends the final declaration for the confirmed calculation off the FX thread.
+     */
+    private void declareToHmrc(String nino, TaxYear taxYear, String calculationId) {
+        DeclarationConfirmation confirmation = new DeclarationConfirmation(true, Instant.now());
+        viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
+        viewModel.setLoading(true);
+        updateStepIndicator(4);
+
+        Thread.startVirtualThread(() -> {
+            DeclarationOutcome declOutcome;
+            try {
+                declOutcome = declarationService()
+                    .submitFinalDeclaration(nino, taxYear, calculationId, confirmation);
             } catch (RuntimeException e) {
                 LOG.log(Level.SEVERE, "Unexpected error submitting to HMRC", e);
                 failOnFxThread("Unexpected error submitting to HMRC: " + e.getMessage());
+                return;
             }
+            DeclarationOutcome outcome = declOutcome;
+            javafx.application.Platform.runLater(() -> onDeclarationComplete(taxYear, outcome));
         });
+    }
+
+    private void onDeclarationComplete(TaxYear taxYear, DeclarationOutcome declOutcome) {
+        if (declOutcome instanceof DeclarationOutcome.Failure failure) {
+            failOnFxThread("HMRC did not accept the declaration: " + failure.message());
+            return;
+        }
+        String reference = ((DeclarationOutcome.Success) declOutcome).hmrcReference();
+        boolean persisted = persistSubmission(taxYear, reference);
+
+        lastHmrcReference = reference;
+        viewModel.setLoading(false);
+        viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
+
+        if (!persisted) {
+            // HMRC accepted the declaration but the local record could not be saved.
+            // Say so plainly rather than leaving the history looking empty.
+            AppDialog.warning("Declared to HMRC, but not saved locally",
+                "HMRC accepted your declaration (reference " + reference + "), but it could not "
+                + "be saved to your local submission history. Please keep a note of this reference.");
+        }
+    }
+
+    /**
+     * Builds the side-by-side message shown before declaring: the app's estimate and
+     * HMRC's figure for each line, flagging any that differ.
+     */
+    private String buildHmrcFiguresMessage(HmrcCalculationComparison comparison) {
+        StringBuilder sb = new StringBuilder();
+        if (comparison.hasMismatch()) {
+            sb.append("HMRC's calculation does not match this app's estimate. Review both "
+                + "figures below before you declare — HMRC's figures are what will be declared "
+                + "as final.\n\n");
+        } else {
+            sb.append("HMRC has calculated your return. These are the figures that will be "
+                + "declared as final:\n\n");
+        }
+        sb.append(String.format("%-14s %12s %12s%n", "", "This app", "HMRC"));
+        for (HmrcCalculationComparison.Line line : comparison.lines()) {
+            sb.append(String.format("%-14s %12s %12s  %s%n",
+                line.label(),
+                formatFigure(line.appValue()),
+                formatFigure(line.hmrcValue()),
+                line.matches() ? "" : "differs"));
+        }
+        return sb.toString();
+    }
+
+    private String formatFigure(BigDecimal amount) {
+        return amount == null ? "—" : formatCurrency(amount);
     }
 
     private void failOnFxThread(String message) {
@@ -524,17 +607,22 @@ public class AnnualSubmissionController {
             viewModel.setLoading(false);
             viewModel.setErrorMessage(message);
             viewModel.setCurrentState(AnnualSubmissionState.FAILED);
+            // Return the indicator to the review step so the taxpayer can retry.
+            updateStepIndicator(3);
         });
     }
 
     /**
      * Records the completed annual submission with the real HMRC reference so the
      * submission history is truthful.
+     *
+     * @return true if the record was saved, false if saving failed
      */
-    private void persistSubmission(TaxYear taxYear, String hmrcReference) {
+    boolean persistSubmission(TaxYear taxYear, String hmrcReference) {
         try {
+            String id = UUID.randomUUID().toString();
             SubmissionRecord record = new SubmissionRecord(
-                UUID.randomUUID().toString(),
+                id,
                 CoreServiceFactory.getDefaultBusinessId().toString(),
                 "ANNUAL",
                 taxYear.startYear(),
@@ -547,9 +635,14 @@ public class AnnualSubmissionController {
                 hmrcReference,
                 null,
                 Instant.now());
-            SqliteDataStore.getInstance().saveSubmission(record);
+            SqliteDataStore store = SqliteDataStore.getInstance();
+            store.saveSubmission(record);
+            // saveSubmission logs and swallows SQL errors, so confirm the row is
+            // actually there before telling the caller the save succeeded.
+            return store.findSubmissionById(id).isPresent();
         } catch (RuntimeException e) {
             LOG.log(Level.WARNING, "Failed to persist submission record", e);
+            return false;
         }
     }
 

@@ -437,4 +437,97 @@ class AnnualSubmissionControllerTest {
             assertThat(code).doesNotContain("SubmissionStatus.ACCEPTED");
         }
     }
+
+    // === Persisting a real HMRC submission to SQLite ===
+
+    @Nested
+    @DisplayName("Persisting a completed submission")
+    class SubmissionPersistenceTests {
+
+        private UUID testBusinessId;
+
+        @BeforeEach
+        void enableInMemoryDb() {
+            uk.selfemploy.ui.service.SqliteTestSupport.enableTestMode();
+            testBusinessId = UUID.randomUUID();
+            CoreServiceFactory.setDefaultBusinessIdForTesting(testBusinessId);
+            // Satisfy the submissions → business foreign key.
+            uk.selfemploy.ui.service.SqliteDataStore.getInstance().ensureBusinessExists(testBusinessId);
+        }
+
+        @AfterEach
+        void resetDb() {
+            uk.selfemploy.ui.service.SqliteTestSupport.disableTestMode();
+            CoreServiceFactory.shutdown();
+        }
+
+        private AnnualSubmissionController controllerWithFigures(TaxYear taxYear) {
+            AnnualSubmissionController controller = new AnnualSubmissionController();
+            AnnualSubmissionViewModel viewModel = new AnnualSubmissionViewModel();
+            viewModel.setTotalIncome(new BigDecimal("50000.00"));
+            viewModel.setTotalExpenses(new BigDecimal("10000.00"));
+            viewModel.setNetProfit(new BigDecimal("40000.00"));
+            viewModel.startSubmission(taxYear);
+            try {
+                java.lang.reflect.Field field = AnnualSubmissionController.class.getDeclaredField("viewModel");
+                field.setAccessible(true);
+                field.set(controller, viewModel);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to set viewModel", e);
+            }
+            return controller;
+        }
+
+        @Test
+        @DisplayName("saves the real HMRC reference with a SUBMITTED status and reports success")
+        void savesSubmissionWithRealReference() {
+            TaxYear taxYear = TaxYear.of(2025);
+            AnnualSubmissionController controller = controllerWithFigures(taxYear);
+
+            boolean persisted = controller.persistSubmission(taxYear, "HMRC-REF-9001");
+
+            assertThat(persisted).isTrue();
+            var repository = new uk.selfemploy.ui.service.SqliteSubmissionRepository(testBusinessId);
+            var saved = repository.findAll();
+            assertThat(saved).hasSize(1);
+            var record = saved.get(0);
+            assertThat(record.hmrcReference()).isEqualTo("HMRC-REF-9001");
+            assertThat(record.type()).isEqualTo("ANNUAL");
+            // Truthful status: sent to HMRC, never the fabricated ACCEPTED of the old code.
+            assertThat(record.status()).isEqualTo("SUBMITTED");
+            assertThat(record.taxYearStart()).isEqualTo(2025);
+            assertThat(record.totalIncome()).isEqualByComparingTo(new BigDecimal("50000.00"));
+            assertThat(record.totalExpenses()).isEqualByComparingTo(new BigDecimal("10000.00"));
+            assertThat(record.netProfit()).isEqualByComparingTo(new BigDecimal("40000.00"));
+        }
+
+        @Test
+        @DisplayName("derives the period dates from the tax year")
+        void setsPeriodDatesFromTaxYear() {
+            TaxYear taxYear = TaxYear.of(2025);
+            AnnualSubmissionController controller = controllerWithFigures(taxYear);
+
+            controller.persistSubmission(taxYear, "HMRC-REF-PERIOD");
+
+            var record = new uk.selfemploy.ui.service.SqliteSubmissionRepository(testBusinessId)
+                .findAll().get(0);
+            assertThat(record.periodStart()).isEqualTo(taxYear.startDate());
+            assertThat(record.periodEnd()).isEqualTo(taxYear.endDate());
+        }
+
+        @Test
+        @DisplayName("reports failure instead of a false success when the save does not land")
+        void reportsFailureWhenSaveDoesNotLand() {
+            // If the local save fails after HMRC accepted the declaration, the method
+            // must report false so the caller can warn the user, not claim success.
+            TaxYear taxYear = TaxYear.of(2025);
+            AnnualSubmissionController controller = controllerWithFigures(taxYear);
+            // Close the database so the write (and the read-back check) cannot succeed.
+            uk.selfemploy.ui.service.SqliteDataStore.getInstance().close();
+
+            boolean persisted = controller.persistSubmission(taxYear, "HMRC-REF-NOSAVE");
+
+            assertThat(persisted).isFalse();
+        }
+    }
 }
