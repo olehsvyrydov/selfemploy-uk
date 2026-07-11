@@ -11,6 +11,18 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
 import uk.selfemploy.core.calculator.TaxLiabilityResult;
+import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.HmrcCalculationComparison;
+import uk.selfemploy.ui.service.HmrcCalculationService;
+import uk.selfemploy.ui.service.HmrcCalculationService.CalculationOutcome;
+import uk.selfemploy.ui.service.HmrcFinalDeclarationService;
+import uk.selfemploy.ui.service.HmrcFinalDeclarationService.DeclarationConfirmation;
+import uk.selfemploy.ui.service.HmrcFinalDeclarationService.DeclarationOutcome;
+import uk.selfemploy.ui.service.OAuthServiceFactory;
+import uk.selfemploy.ui.service.SqliteDataStore;
+import uk.selfemploy.ui.service.SubmissionCredentialGate;
+import uk.selfemploy.ui.service.SubmissionEnvironment;
+import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionDeclarationViewModel;
 
@@ -19,9 +31,11 @@ import javafx.stage.Stage;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -134,6 +148,36 @@ public class AnnualSubmissionController {
     private AnnualSubmissionViewModel viewModel;
     private SubmissionDeclarationViewModel declarationViewModel;
 
+    // HMRC clients, constructed lazily so unit tests that never submit don't touch
+    // the OAuth service or database.
+    private HmrcCalculationService calculationService;
+    private HmrcFinalDeclarationService declarationService;
+
+    // The real HMRC reference from the last successful declaration, shown on the
+    // success panel. Never fabricated.
+    private String lastHmrcReference = "";
+
+    HmrcCalculationService calculationService() {
+        if (calculationService == null) {
+            calculationService = new HmrcCalculationService();
+        }
+        return calculationService;
+    }
+
+    HmrcFinalDeclarationService declarationService() {
+        if (declarationService == null) {
+            declarationService = new HmrcFinalDeclarationService();
+        }
+        return declarationService;
+    }
+
+    /** Visible for testing: inject stubbed HMRC clients. */
+    void setHmrcServices(HmrcCalculationService calculationService,
+                         HmrcFinalDeclarationService declarationService) {
+        this.calculationService = calculationService;
+        this.declarationService = declarationService;
+    }
+
     /**
      * Initializes the controller after FXML injection.
      * Sets up data bindings and listeners.
@@ -242,7 +286,11 @@ public class AnnualSubmissionController {
      */
     private void initializeDisclaimers() {
         if (submissionDisclaimerText != null) {
-            submissionDisclaimerText.setText(Disclaimers.HMRC_SUBMISSION_DISCLAIMER);
+            // Name the environment so the user always knows whether this is the HMRC
+            // sandbox or production.
+            submissionDisclaimerText.setText(
+                SubmissionEnvironment.current().badgeLabel() + " — "
+                + Disclaimers.HMRC_SUBMISSION_DISCLAIMER);
         }
     }
 
@@ -345,15 +393,125 @@ public class AnnualSubmissionController {
 
     @FXML
     private void handleSubmit() {
-        // Direct submission to HMRC is not implemented yet. Rather than fabricate a
-        // submission reference and an "Accepted" status (which would tell the user they
-        // had filed when nothing was sent), the app is honest that these figures are a
-        // local estimate only and have not reached HMRC.
-        AppDialog.info("Not submitted to HMRC",
-            "Direct submission to HMRC is not available in this version yet.\n\n"
-            + "Your Self Assessment figures have been calculated locally as an estimate — "
-            + "they have NOT been sent to HMRC. To file, use HMRC's own online service or "
-            + "an approved Making Tax Digital product.");
+        // Block BEFORE any HMRC call if the taxpayer cannot actually submit, with an
+        // actionable message rather than a failed request.
+        boolean connected = isConnectedToHmrc();
+        String nino = SqliteDataStore.getInstance().loadNino();
+        SubmissionCredentialGate.Decision gate = SubmissionCredentialGate.evaluate(connected, nino);
+        if (!gate.allowed()) {
+            AppDialog.info("Can't submit yet", gate.message());
+            return;
+        }
+
+        SubmissionEnvironment environment = SubmissionEnvironment.current();
+        boolean proceed = AppDialog.confirm("Submit to " + environment.badgeLabel() + "?",
+            "This will trigger a real HMRC tax calculation for " + viewModel.getTaxYear().label()
+            + " and submit your final declaration to " + environment.badgeLabel() + ".\n\n"
+            + "The figures you have confirmed will be declared final. Continue?",
+            "Submit", "Cancel");
+        if (!proceed) {
+            return;
+        }
+
+        submitToHmrc(nino);
+    }
+
+    private boolean isConnectedToHmrc() {
+        try {
+            return OAuthServiceFactory.getOAuthService().isConnected();
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "Could not determine HMRC connection state", e);
+            return false;
+        }
+    }
+
+    /**
+     * Runs the real annual submission against HMRC off the FX thread: trigger a
+     * crystallisation calculation (T1.1), compare it with the app's own estimate,
+     * then submit the final declaration (T1.2). The declaration only proceeds
+     * because the six-part declaration is complete, which is the user's explicit
+     * confirmation.
+     */
+    private void submitToHmrc(String nino) {
+        TaxYear taxYear = viewModel.getTaxYear();
+        DeclarationConfirmation confirmation = new DeclarationConfirmation(true, Instant.now());
+
+        viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
+        viewModel.setLoading(true);
+
+        Thread.startVirtualThread(() -> {
+            try {
+                CalculationOutcome calcOutcome = calculationService().calculate(nino, taxYear, true);
+                if (calcOutcome instanceof CalculationOutcome.Failure failure) {
+                    failOnFxThread("HMRC could not calculate your return: " + failure.message());
+                    return;
+                }
+                var calculation = ((CalculationOutcome.Success) calcOutcome).calculation();
+
+                TaxCalculationResult local = viewModel.getCalculationResult();
+                HmrcCalculationComparison comparison = new HmrcCalculationComparison(
+                    local != null ? local.incomeTax() : null,
+                    local != null ? local.nationalInsuranceClass2() : null,
+                    local != null ? local.nationalInsuranceClass4() : null,
+                    calculation);
+                if (comparison.hasMismatch()) {
+                    LOG.warning("App estimate and HMRC calculation differ for " + taxYear.label());
+                }
+
+                DeclarationOutcome declOutcome = declarationService()
+                    .submitFinalDeclaration(nino, taxYear, calculation.calculationId(), confirmation);
+                if (declOutcome instanceof DeclarationOutcome.Failure failure) {
+                    failOnFxThread("HMRC did not accept the declaration: " + failure.message());
+                    return;
+                }
+
+                String reference = ((DeclarationOutcome.Success) declOutcome).hmrcReference();
+                persistSubmission(taxYear, reference);
+
+                javafx.application.Platform.runLater(() -> {
+                    lastHmrcReference = reference;
+                    viewModel.setLoading(false);
+                    viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
+                });
+            } catch (RuntimeException e) {
+                LOG.log(Level.SEVERE, "Unexpected error submitting to HMRC", e);
+                failOnFxThread("Unexpected error submitting to HMRC: " + e.getMessage());
+            }
+        });
+    }
+
+    private void failOnFxThread(String message) {
+        javafx.application.Platform.runLater(() -> {
+            viewModel.setLoading(false);
+            viewModel.setErrorMessage(message);
+            viewModel.setCurrentState(AnnualSubmissionState.FAILED);
+        });
+    }
+
+    /**
+     * Records the completed annual submission with the real HMRC reference so the
+     * submission history is truthful.
+     */
+    private void persistSubmission(TaxYear taxYear, String hmrcReference) {
+        try {
+            SubmissionRecord record = new SubmissionRecord(
+                UUID.randomUUID().toString(),
+                CoreServiceFactory.getDefaultBusinessId().toString(),
+                "ANNUAL",
+                taxYear.startYear(),
+                taxYear.startDate(),
+                taxYear.endDate(),
+                viewModel.getTotalIncome(),
+                viewModel.getTotalExpenses(),
+                viewModel.getNetProfit(),
+                "SUBMITTED",
+                hmrcReference,
+                null,
+                Instant.now());
+            SqliteDataStore.getInstance().saveSubmission(record);
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "Failed to persist submission record", e);
+        }
     }
 
     @FXML
@@ -582,7 +740,8 @@ public class AnnualSubmissionController {
                 // Hide declaration card on completion (SE-506)
                 declarationCard.setVisible(false);
                 declarationCard.setManaged(false);
-                submissionReference.setText("");
+                // Show the real HMRC reference from the declaration (never fabricated).
+                submissionReference.setText(lastHmrcReference != null ? lastHmrcReference : "");
             }
             case FAILED -> {
                 // Error panel is shown via binding
