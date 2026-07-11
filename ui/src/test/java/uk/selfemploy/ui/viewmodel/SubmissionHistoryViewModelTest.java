@@ -112,6 +112,21 @@ class SubmissionHistoryViewModelTest {
         }
 
         @Test
+        @DisplayName("total submissions excludes local NOT_SUBMITTED rows so it reconciles with the breakdown")
+        void totalExcludesNotSubmitted() {
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.QUARTERLY_Q1, "2025/26", SubmissionStatus.ACCEPTED
+            ));
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.ANNUAL, "2025/26", SubmissionStatus.NOT_SUBMITTED
+            ));
+
+            // Two rows exist, but only one is a real submission.
+            assertThat(viewModel.getTotalCount()).isEqualTo(1);
+            assertThat(viewModel.getAcceptedCount()).isEqualTo(1);
+        }
+
+        @Test
         @DisplayName("should update accepted count")
         void shouldUpdateAcceptedCount() {
             // Given & When

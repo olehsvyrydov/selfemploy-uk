@@ -391,7 +391,10 @@ public class SubmissionHistoryViewModel {
     // === Private Methods ===
 
     private void updateStats() {
-        totalCount.set(submissions.size());
+        // "Total Submissions" counts only rows actually sent to HMRC, so it
+        // reconciles with the status breakdown; local NOT_SUBMITTED rows are not
+        // submissions and are excluded.
+        totalCount.set(countSubmittedToHmrc(submissions));
         acceptedCount.set(countByStatus(SubmissionStatus.ACCEPTED));
         pendingCount.set(countByStatus(SubmissionStatus.PENDING));
         rejectedCount.set(countByStatus(SubmissionStatus.REJECTED));
@@ -400,10 +403,16 @@ public class SubmissionHistoryViewModel {
 
     private void updateFilteredStats() {
         List<SubmissionTableRow> filtered = getFilteredSubmissions();
-        filteredTotalCount.set(filtered.size());
+        filteredTotalCount.set(countSubmittedToHmrc(filtered));
         filteredAcceptedCount.set(countByStatusInList(filtered, SubmissionStatus.ACCEPTED));
         filteredPendingCount.set(countByStatusInList(filtered, SubmissionStatus.PENDING));
         filteredRejectedCount.set(countByStatusInList(filtered, SubmissionStatus.REJECTED));
+    }
+
+    private int countSubmittedToHmrc(List<SubmissionTableRow> list) {
+        return (int) list.stream()
+            .filter(s -> s.status() != null && s.status().isSentToHmrc())
+            .count();
     }
 
     private int countByStatus(SubmissionStatus status) {
