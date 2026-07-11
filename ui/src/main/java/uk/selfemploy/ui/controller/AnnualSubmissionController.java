@@ -4,6 +4,8 @@ import uk.selfemploy.ui.component.AppDialog;
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
 import uk.selfemploy.common.domain.TaxCalculationResult;
@@ -60,6 +62,7 @@ public class AnnualSubmissionController {
 
     // === FXML Injected Elements ===
 
+    @FXML private BorderPane rootPane;
     @FXML private ScrollPane rootScroll;
     @FXML private Label taxYearLabel;
 
@@ -96,6 +99,7 @@ public class AnnualSubmissionController {
     // Success Panel
     @FXML private VBox successPanel;
     @FXML private Label submissionReference;
+    @FXML private Button doneButton;
 
     // Submission Disclaimer Banner (SE-509)
     @FXML private HBox submissionDisclaimerBanner;
@@ -335,6 +339,41 @@ public class AnnualSubmissionController {
      */
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
+        if (stage != null && stage.getScene() != null) {
+            // Escape closes the dialog on every non-destructive step. A submission in
+            // progress is not interrupted, and steps with confirmed input still ask
+            // before discarding via handleCancel.
+            stage.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    handleEscape();
+                    event.consume();
+                }
+            });
+        }
+    }
+
+    private void handleEscape() {
+        AnnualSubmissionState state = viewModel != null ? viewModel.getCurrentState() : null;
+        if (state == AnnualSubmissionState.DECLARING) {
+            // A live HMRC submission is running; do not let Escape interrupt it.
+            return;
+        }
+        if (state == AnnualSubmissionState.COMPLETED) {
+            closeDialog();
+            return;
+        }
+        handleCancel();
+    }
+
+    @FXML
+    private void handleDone() {
+        closeDialog();
+    }
+
+    private void closeDialog() {
+        if (dialogStage != null) {
+            dialogStage.close();
+        }
     }
 
     /**
@@ -529,7 +568,7 @@ public class AnnualSubmissionController {
             "Yes, cancel", "Keep editing");
         if (confirmed) {
             viewModel.cancel();
-            // TODO: Navigate back to previous screen
+            closeDialog();
         }
     }
 

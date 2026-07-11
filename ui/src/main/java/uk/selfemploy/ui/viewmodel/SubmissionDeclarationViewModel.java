@@ -46,6 +46,8 @@ public class SubmissionDeclarationViewModel {
 
     private static final int DECLARATION_COUNT = 6;
     private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm:ss z 'on' d MMMM yyyy");
+    private static final DateTimeFormatter UTC_TIMESTAMP_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss 'on' d MMMM yyyy");
 
     // === Clock and Tax Year ===
@@ -241,9 +243,12 @@ public class SubmissionDeclarationViewModel {
         if (cachedDeclaration == null) {
             return "";
         }
-        return cachedDeclaration.completedAt()
-                .atZone(ZoneId.systemDefault())
-                .format(TIMESTAMP_FORMATTER);
+        // Show local time (with its zone) alongside UTC so the displayed timestamp
+        // is reconcilable with the UTC-based declaration ID.
+        java.time.Instant completedAt = cachedDeclaration.completedAt();
+        String local = completedAt.atZone(ZoneId.systemDefault()).format(TIMESTAMP_FORMATTER);
+        String utc = completedAt.atZone(java.time.ZoneOffset.UTC).format(UTC_TIMESTAMP_FORMATTER);
+        return local + " (" + utc + " UTC)";
     }
 
     /**
