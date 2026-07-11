@@ -21,6 +21,7 @@ import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
+import uk.selfemploy.ui.viewmodel.QuarterState;
 import uk.selfemploy.ui.viewmodel.QuarterStatus;
 import uk.selfemploy.ui.viewmodel.QuarterViewModel;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
@@ -74,6 +75,12 @@ public class QuarterlyUpdatesController implements Initializable, MainController
 
     // Tax year label
     @FXML private Label taxYearLabel;
+
+    // "(Current)" badges - shown only on the current quarter's card
+    @FXML private Label q1CurrentBadge;
+    @FXML private Label q2CurrentBadge;
+    @FXML private Label q3CurrentBadge;
+    @FXML private Label q4CurrentBadge;
 
     // Quarter data labels - Q1
     @FXML private Label q1StatusBadge;
@@ -274,7 +281,7 @@ public class QuarterlyUpdatesController implements Initializable, MainController
      * Creates a QuarterViewModel for the given quarter.
      */
     private QuarterViewModel createQuarterViewModel(Quarter quarter, Quarter currentQuarter, LocalDate today) {
-        boolean isCurrent = quarter == currentQuarter;
+        boolean isCurrent = QuarterState.isCurrentQuarter(quarter, taxYear, today);
         QuarterStatus status = determineStatus(quarter, today);
 
         BigDecimal totalIncome = null;
@@ -298,33 +305,7 @@ public class QuarterlyUpdatesController implements Initializable, MainController
      * Determines the status of a quarter based on the current date.
      */
     private QuarterStatus determineStatus(Quarter quarter, LocalDate today) {
-        LocalDate quarterEnd = quarter.getEndDate(taxYear);
-        LocalDate deadline = quarter.getDeadline(taxYear);
-
-        // Future: quarter hasn't started yet
-        if (today.isBefore(quarter.getStartDate(taxYear))) {
-            return QuarterStatus.FUTURE;
-        }
-
-        // Overdue: deadline has passed and not submitted
-        // TODO: Check submission status from database
-        if (today.isAfter(deadline)) {
-            // For now, assume not submitted if deadline passed
-            // In future, check SubmissionRepository
-            return QuarterStatus.OVERDUE;
-        }
-
-        // Draft: quarter has ended but deadline not yet passed, or current quarter with data
-        if (today.isAfter(quarterEnd) || hasDataForQuarter(quarter)) {
-            return QuarterStatus.DRAFT;
-        }
-
-        // Current quarter with no data yet - treat as Draft
-        if (Quarter.forDate(today) == quarter) {
-            return QuarterStatus.DRAFT;
-        }
-
-        return QuarterStatus.FUTURE;
+        return QuarterState.resolveStatus(quarter, taxYear, today, hasDataForQuarter(quarter));
     }
 
     /**
@@ -352,11 +333,16 @@ public class QuarterlyUpdatesController implements Initializable, MainController
             taxYearLabel.setText(getTaxYearLabelText());
         }
 
-        // Update current quarter label
+        // Update current quarter label - only meaningful when viewing the tax year
+        // that actually contains today.
         if (currentQuarterLabel != null) {
-            Quarter current = Quarter.forDate(LocalDate.now(clock));
-            if (current != null) {
+            LocalDate today = LocalDate.now(clock);
+            Quarter current = Quarter.forDate(today);
+            if (taxYear != null && taxYear.contains(today) && current != null) {
                 currentQuarterLabel.setText("Current Quarter: " + current.name());
+            } else {
+                currentQuarterLabel.setText("Viewing " + (taxYear != null ? taxYear.label() : "")
+                    + " (not the current tax year)");
             }
         }
 
@@ -454,6 +440,22 @@ public class QuarterlyUpdatesController implements Initializable, MainController
                 card.getStyleClass().add(status.getCardStyleClass());
             }
         }
+
+        // Show the "(Current)" badge only on the current quarter's card
+        Label currentBadge = getCurrentBadgeForQuarter(quarter);
+        if (currentBadge != null) {
+            currentBadge.setVisible(viewModel.isCurrent());
+            currentBadge.setManaged(viewModel.isCurrent());
+        }
+    }
+
+    private Label getCurrentBadgeForQuarter(Quarter quarter) {
+        return switch (quarter) {
+            case Q1 -> q1CurrentBadge;
+            case Q2 -> q2CurrentBadge;
+            case Q3 -> q3CurrentBadge;
+            case Q4 -> q4CurrentBadge;
+        };
     }
 
     // ====== Quarter-specific accessor methods ======
