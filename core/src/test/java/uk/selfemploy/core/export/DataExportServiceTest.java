@@ -255,6 +255,9 @@ class DataExportServiceTest {
                 .thenReturn(new BigDecimal("5000.00"));
             when(expenseService.getTotalByTaxYear(eq(BUSINESS_ID), any(TaxYear.class)))
                 .thenReturn(new BigDecimal("1000.00"));
+            // Only 800 of the 1000 gross expenses are allowable; net profit is taxable.
+            when(expenseService.getDeductibleTotal(eq(BUSINESS_ID), any(TaxYear.class)))
+                .thenReturn(new BigDecimal("800.00"));
 
             Path outputDir = tempDir;
 
@@ -275,7 +278,9 @@ class DataExportServiceTest {
             String summaryContent = Files.readString(result.summaryFilePath());
             assertThat(summaryContent).contains("Total Income");
             assertThat(summaryContent).contains("Total Expenses");
-            assertThat(summaryContent).contains("Net Profit");
+            assertThat(summaryContent).contains("Allowable Expenses: GBP 800.00");
+            // Net profit is turnover minus allowable expenses: 5000 - 800 = 4200 (not 4000).
+            assertThat(summaryContent).contains("Net Profit (taxable): GBP 4200.00");
         }
 
         @Test

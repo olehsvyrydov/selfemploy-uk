@@ -249,20 +249,23 @@ public class DataExportService {
                 return CombinedExportResult.failure(expenseResult.errorMessage());
             }
 
-            // Calculate totals
+            // Calculate totals. Net profit is the taxable figure: turnover minus ALLOWABLE
+            // expenses, so it excludes disallowable spend (e.g. business entertainment).
             BigDecimal totalIncome = BigDecimal.ZERO;
             BigDecimal totalExpenses = BigDecimal.ZERO;
+            BigDecimal allowableExpenses = BigDecimal.ZERO;
 
             for (TaxYear taxYear : taxYears) {
-                totalIncome = totalIncome.add(incomeService.getTotalByTaxYear(businessId, taxYear));
-                totalExpenses = totalExpenses.add(expenseService.getTotalByTaxYear(businessId, taxYear));
+                totalIncome = totalIncome.add(nullToZero(incomeService.getTotalByTaxYear(businessId, taxYear)));
+                totalExpenses = totalExpenses.add(nullToZero(expenseService.getTotalByTaxYear(businessId, taxYear)));
+                allowableExpenses = allowableExpenses.add(nullToZero(expenseService.getDeductibleTotal(businessId, taxYear)));
             }
 
-            BigDecimal netProfit = totalIncome.subtract(totalExpenses);
+            BigDecimal netProfit = totalIncome.subtract(allowableExpenses);
 
             // Write summary
             Path summaryFile = outputDir.resolve("summary_" + timestamp + ".txt");
-            writeSummary(summaryFile, taxYears, totalIncome, totalExpenses, netProfit,
+            writeSummary(summaryFile, taxYears, totalIncome, totalExpenses, allowableExpenses, netProfit,
                 incomeResult.incomeCount(), expenseResult.expenseCount());
 
             return CombinedExportResult.success(
@@ -275,8 +278,13 @@ public class DataExportService {
         }
     }
 
+    private static BigDecimal nullToZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
     private void writeSummary(Path file, TaxYear[] taxYears, BigDecimal totalIncome,
-            BigDecimal totalExpenses, BigDecimal netProfit, int incomeCount, int expenseCount)
+            BigDecimal totalExpenses, BigDecimal allowableExpenses, BigDecimal netProfit,
+            int incomeCount, int expenseCount)
             throws IOException {
 
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
@@ -296,7 +304,9 @@ public class DataExportService {
             writer.newLine();
             writer.write(String.format("Total Expenses: GBP %.2f (%d records)", totalExpenses, expenseCount));
             writer.newLine();
-            writer.write(String.format("Net Profit: GBP %.2f", netProfit));
+            writer.write(String.format("Allowable Expenses: GBP %.2f", allowableExpenses));
+            writer.newLine();
+            writer.write(String.format("Net Profit (taxable): GBP %.2f", netProfit));
             writer.newLine();
             writer.newLine();
             writer.write("----- Files Generated -----");

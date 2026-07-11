@@ -148,7 +148,8 @@ class TaxSummaryViewModelTest {
         void shouldCalculateTaxWhenCalculateMethodCalled() {
             // Given
             viewModel.setTurnover(new BigDecimal("50000"));
-            viewModel.setTotalExpenses(new BigDecimal("10000"));
+            // Allowable expenses drive net profit; supply them as an allowable category.
+            viewModel.setExpenseBreakdown(Map.of(ExpenseCategory.OFFICE_COSTS, new BigDecimal("10000")));
             viewModel.setTaxYear(TaxYear.of(2025)); // 2025/26 tax year
 
             // When

@@ -29,6 +29,7 @@ public class DashboardViewModel {
     // Financial metrics
     private final ObjectProperty<BigDecimal> totalIncome = new SimpleObjectProperty<>(BigDecimal.ZERO);
     private final ObjectProperty<BigDecimal> totalExpenses = new SimpleObjectProperty<>(BigDecimal.ZERO);
+    private final ObjectProperty<BigDecimal> allowableExpenses = new SimpleObjectProperty<>(BigDecimal.ZERO);
     private final ObjectProperty<BigDecimal> netProfit = new SimpleObjectProperty<>(BigDecimal.ZERO);
     private final ObjectProperty<BigDecimal> estimatedTax = new SimpleObjectProperty<>(BigDecimal.ZERO);
 
@@ -46,9 +47,10 @@ public class DashboardViewModel {
     private final ObservableList<ActivityItem> recentActivity = FXCollections.observableArrayList();
 
     public DashboardViewModel() {
-        // Recalculate net profit when income or expenses change
+        // Recalculate net profit when income or allowable expenses change. Net profit is the
+        // taxable figure (turnover minus allowable expenses), not turnover minus gross spend.
         totalIncome.addListener((obs, oldVal, newVal) -> updateNetProfit());
-        totalExpenses.addListener((obs, oldVal, newVal) -> updateNetProfit());
+        allowableExpenses.addListener((obs, oldVal, newVal) -> updateNetProfit());
 
         // Update progress and deadlines when tax year changes
         currentTaxYear.addListener((obs, oldVal, newVal) -> {
@@ -86,6 +88,18 @@ public class DashboardViewModel {
 
     public ObjectProperty<BigDecimal> totalExpensesProperty() {
         return totalExpenses;
+    }
+
+    public BigDecimal getAllowableExpenses() {
+        return allowableExpenses.get();
+    }
+
+    public void setAllowableExpenses(BigDecimal value) {
+        allowableExpenses.set(value != null ? value : BigDecimal.ZERO);
+    }
+
+    public ObjectProperty<BigDecimal> allowableExpensesProperty() {
+        return allowableExpenses;
     }
 
     public BigDecimal getNetProfit() {
@@ -206,8 +220,8 @@ public class DashboardViewModel {
 
     private void updateNetProfit() {
         BigDecimal income = getTotalIncome() != null ? getTotalIncome() : BigDecimal.ZERO;
-        BigDecimal expenses = getTotalExpenses() != null ? getTotalExpenses() : BigDecimal.ZERO;
-        netProfit.set(income.subtract(expenses));
+        BigDecimal allowable = getAllowableExpenses() != null ? getAllowableExpenses() : BigDecimal.ZERO;
+        netProfit.set(income.subtract(allowable));
     }
 
     private void updateYearProgress() {
@@ -292,12 +306,15 @@ public class DashboardViewModel {
         // Update current tax year
         setCurrentTaxYear(taxYear);
 
-        // Load totals
+        // Load totals. Gross expenses feed the "total expenses" card; allowable expenses
+        // feed the taxable net-profit and estimated-tax figures.
         BigDecimal incomeTotal = incomeService.getTotalByTaxYear(businessId, taxYear);
         BigDecimal expenseTotal = expenseService.getTotalByTaxYear(businessId, taxYear);
+        BigDecimal allowableTotal = expenseService.getDeductibleTotal(businessId, taxYear);
 
         setTotalIncome(incomeTotal != null ? incomeTotal : BigDecimal.ZERO);
         setTotalExpenses(expenseTotal != null ? expenseTotal : BigDecimal.ZERO);
+        setAllowableExpenses(allowableTotal != null ? allowableTotal : BigDecimal.ZERO);
 
         // Calculate estimated tax
         calculateEstimatedTax(taxYear);

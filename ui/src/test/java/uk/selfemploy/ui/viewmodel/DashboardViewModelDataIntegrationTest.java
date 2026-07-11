@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -48,6 +49,13 @@ class DashboardViewModelDataIntegrationTest {
         viewModel = new DashboardViewModel();
         taxYear = TaxYear.current();
         businessId = UUID.randomUUID();
+        // These tests treat all expenses as allowable, so the deductible total mirrors the
+        // gross total. lenient() because not every test loads data / reads net profit.
+        lenient().when(expenseService.getDeductibleTotal(eq(businessId), any(TaxYear.class)))
+            .thenAnswer(inv -> {
+                BigDecimal gross = expenseService.getTotalByTaxYear(inv.getArgument(0), inv.getArgument(1));
+                return gross != null ? gross : java.math.BigDecimal.ZERO;
+            });
     }
 
     @Nested

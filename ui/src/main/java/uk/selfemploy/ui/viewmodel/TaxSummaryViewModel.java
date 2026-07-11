@@ -88,7 +88,9 @@ public class TaxSummaryViewModel {
     public TaxSummaryViewModel() {
         // Set up listeners to recalculate net profit when turnover or expenses change
         turnover.addListener((obs, oldVal, newVal) -> updateNetProfit());
-        totalExpenses.addListener((obs, oldVal, newVal) -> updateNetProfit());
+        // Net profit is turnover minus ALLOWABLE expenses, so recompute when the
+        // allowable total changes (it is set after the gross total in recalculateExpenseTotals).
+        allowableExpenses.addListener((obs, oldVal, newVal) -> updateNetProfit());
     }
 
     // === Turnover (SA103 Box 15) ===
@@ -552,8 +554,10 @@ public class TaxSummaryViewModel {
 
     private void updateNetProfit() {
         BigDecimal income = getTurnover() != null ? getTurnover() : BigDecimal.ZERO;
-        BigDecimal expenses = getTotalExpenses() != null ? getTotalExpenses() : BigDecimal.ZERO;
-        netProfit.set(income.subtract(expenses));
+        // Taxable net profit deducts only allowable expenses; disallowable ones
+        // (e.g. business entertainment, depreciation) stay in the business but not the tax base.
+        BigDecimal allowable = getAllowableExpenses() != null ? getAllowableExpenses() : BigDecimal.ZERO;
+        netProfit.set(income.subtract(allowable));
     }
 
     private void recalculateExpenseTotals() {

@@ -134,7 +134,8 @@ class DashboardViewModelTest {
         @DisplayName("should calculate net profit as income minus expenses")
         void shouldCalculateNetProfit() {
             viewModel.setTotalIncome(new BigDecimal("24500.00"));
-            viewModel.setTotalExpenses(new BigDecimal("8230.00"));
+            // Net profit is turnover minus allowable expenses (the taxable figure).
+            viewModel.setAllowableExpenses(new BigDecimal("8230.00"));
 
             assertThat(viewModel.getNetProfit()).isEqualByComparingTo(new BigDecimal("16270.00"));
         }
@@ -143,7 +144,7 @@ class DashboardViewModelTest {
         @DisplayName("should handle negative profit (loss)")
         void shouldHandleNegativeProfit() {
             viewModel.setTotalIncome(new BigDecimal("5000.00"));
-            viewModel.setTotalExpenses(new BigDecimal("8000.00"));
+            viewModel.setAllowableExpenses(new BigDecimal("8000.00"));
 
             assertThat(viewModel.getNetProfit()).isEqualByComparingTo(new BigDecimal("-3000.00"));
         }
