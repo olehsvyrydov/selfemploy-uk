@@ -68,6 +68,21 @@ public record SubmissionRecord(
     }
 
     /**
+     * Returns a short human label for the period this submission covers,
+     * e.g. "Q1 2025/26" or "annual 2025/26".
+     */
+    public String getPeriodLabel() {
+        String taxYearLabel = getFormattedTaxYear();
+        if ("ANNUAL".equals(type)) {
+            return "annual " + taxYearLabel;
+        }
+        if (type != null && type.startsWith("QUARTERLY_")) {
+            return type.substring("QUARTERLY_".length()) + " " + taxYearLabel;
+        }
+        return taxYearLabel;
+    }
+
+    /**
      * Converts this record to a SubmissionTableRow for UI display.
      *
      * <p>Handles the conversion from SQLite storage format to UI display format:</p>

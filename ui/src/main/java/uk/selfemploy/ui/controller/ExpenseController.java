@@ -36,6 +36,8 @@ import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.SubmissionRecord;
+import uk.selfemploy.ui.service.SubmittedPeriodIndex;
 import uk.selfemploy.ui.viewmodel.ExpenseListViewModel;
 import uk.selfemploy.ui.viewmodel.ExpenseTableRow;
 
@@ -47,6 +49,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
@@ -602,10 +605,38 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     private void handleEditExpense(ExpenseTableRow row) {
         if (expenseService == null) return;
 
+        Optional<SubmissionRecord> covering = submittedPeriodCovering(row.date());
+        if (covering.isPresent() && !confirmSubmittedPeriodChange(covering.get(), "editing")) {
+            return;
+        }
+
         // Load full expense from service
         expenseService.findById(row.id()).ifPresent(expense -> {
             openExpenseDialog(expense);
         });
+    }
+
+    /**
+     * Returns the submitted HMRC period that covers the given date, if any.
+     */
+    private Optional<SubmissionRecord> submittedPeriodCovering(LocalDate date) {
+        return SubmittedPeriodIndex.forBusiness(businessId).coveringSubmission(date);
+    }
+
+    /**
+     * Warns that a record belongs to a period already sent to HMRC. Returns true
+     * if the user chose to proceed.
+     */
+    private boolean confirmSubmittedPeriodChange(SubmissionRecord covering, String action) {
+        String capitalisedAction = action.isEmpty()
+            ? action
+            : Character.toUpperCase(action.charAt(0)) + action.substring(1);
+        return AppDialog.confirm("This entry was submitted to HMRC",
+            "This entry falls in your " + covering.getPeriodLabel()
+                + " submission, which has already been sent to HMRC.\n\n"
+                + capitalisedAction + " it means your submitted figures will no longer match — "
+                + "you will need to resubmit or correct that period.\n\nContinue?",
+            "Continue", "Cancel");
     }
 
     private void handleViewReceipts(ExpenseTableRow row) {
@@ -667,12 +698,18 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     }
 
     private void handleDeleteExpense(ExpenseTableRow row) {
+        Optional<SubmissionRecord> covering = submittedPeriodCovering(row.date());
+        String submittedWarning = covering
+            .map(s -> "\n\n⚠ This entry is included in your " + s.getPeriodLabel()
+                + " submission to HMRC. Deleting it means you must resubmit or correct that period.")
+            .orElse("");
+
         boolean confirmed = AppDialog.confirm("Delete Expense?",
             "Are you sure you want to delete this expense entry?\n\n"
             + "Description: " + row.description() + "\n"
             + "Amount: " + row.getFormattedAmount() + "\n"
             + "Category: " + row.getCategoryDisplayName() + "\n\n"
-            + "This action cannot be undone.",
+            + "This action cannot be undone." + submittedWarning,
             "Delete", "Cancel");
 
         if (confirmed && expenseService != null) {
