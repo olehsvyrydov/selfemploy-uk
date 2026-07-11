@@ -16,7 +16,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -71,8 +70,12 @@ public final class HmrcCalculationService {
     /** The outcome of a calculation request. */
     public sealed interface CalculationOutcome {
 
-        /** HMRC returned a liability breakdown. */
-        record Success(CalculationResponse calculation) implements CalculationOutcome {
+        /**
+         * HMRC returned a liability breakdown. {@code calculationId} is the id from
+         * the trigger response (the authoritative reference for the declaration),
+         * which is not re-derived from the retrieve body.
+         */
+        record Success(CalculationResponse calculation, String calculationId) implements CalculationOutcome {
         }
 
         /** The request could not be completed; {@code reason} classifies why. */
@@ -117,7 +120,7 @@ public final class HmrcCalculationService {
             String token = bearerToken(false);
             String calculationId = triggerCalculation(nino, taxYear, crystallise, token);
             CalculationResponse calculation = retrieveWithPolling(nino, taxYear, calculationId, token);
-            return new CalculationOutcome.Success(calculation);
+            return new CalculationOutcome.Success(calculation, calculationId);
         } catch (CalcException e) {
             LOG.log(Level.INFO, "Calculation failed: " + e.reason + " - " + e.getMessage());
             return new CalculationOutcome.Failure(e.reason, e.getMessage(), e.httpStatus);
@@ -289,23 +292,7 @@ public final class HmrcCalculationService {
     // ==================== Fraud prevention headers ====================
 
     private void addFraudPreventionHeaders(HttpRequest.Builder builder) {
-        builder.header("Gov-Client-Connection-Method", "DESKTOP_APP_DIRECT");
-        builder.header("Gov-Vendor-Version", "SelfEmployment=1.0");
-        builder.header("Gov-Vendor-Product-Name", "UK Self-Employment Manager");
-        builder.header("Gov-Client-Timezone", timezoneHeader());
-        try {
-            builder.header("Gov-Client-Local-IPs", java.net.InetAddress.getLocalHost().getHostAddress());
-        } catch (Exception e) {
-            builder.header("Gov-Client-Local-IPs", "127.0.0.1");
-        }
-    }
-
-    private static String timezoneHeader() {
-        int offsetMillis = TimeZone.getDefault().getRawOffset();
-        int totalMinutes = offsetMillis / 60000;
-        String sign = totalMinutes < 0 ? "-" : "+";
-        int absMinutes = Math.abs(totalMinutes);
-        return String.format("UTC%s%02d:%02d", sign, absMinutes / 60, absMinutes % 60);
+        HmrcFraudHeaders.apply(builder);
     }
 
     // ==================== JSON ====================

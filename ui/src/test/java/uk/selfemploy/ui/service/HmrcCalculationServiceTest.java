@@ -125,7 +125,7 @@ class HmrcCalculationServiceTest {
         @DisplayName("triggers then retrieves and returns the liability breakdown")
         void triggerThenRetrieve() throws Exception {
             connected();
-            HttpResponse<String> trigger = response(202, "{\"id\":\"calc-abc-123\"}");
+            HttpResponse<String> trigger = response(202, "{\"id\":\"trigger-id-999\"}");
             HttpResponse<String> retrieve = response(200, CALCULATION_BODY);
             when(httpClient.<String>send(any(HttpRequest.class), any()))
                 .thenReturn(trigger).thenReturn(retrieve);
@@ -133,8 +133,11 @@ class HmrcCalculationServiceTest {
             CalculationOutcome outcome = service.calculate(NINO, TAX_YEAR, true);
 
             assertThat(outcome).isInstanceOf(CalculationOutcome.Success.class);
-            var calc = ((CalculationOutcome.Success) outcome).calculation();
-            assertThat(calc.calculationId()).isEqualTo("calc-abc-123");
+            CalculationOutcome.Success success = (CalculationOutcome.Success) outcome;
+            // The declaration reference is the authoritative id from the trigger,
+            // not whatever the retrieve body happens to carry.
+            assertThat(success.calculationId()).isEqualTo("trigger-id-999");
+            var calc = success.calculation();
             assertThat(calc.totalIncomeTaxAndNicsDue()).isEqualByComparingTo("5432.10");
             assertThat(calc.incomeTax().totalIncomeTax()).isEqualByComparingTo("3500.00");
             assertThat(calc.nics().class2Nics().amount()).isEqualByComparingTo("179.40");

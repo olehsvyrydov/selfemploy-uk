@@ -15,7 +15,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -221,23 +220,7 @@ public final class HmrcFinalDeclarationService {
     // ==================== Fraud prevention headers ====================
 
     private void addFraudPreventionHeaders(HttpRequest.Builder builder) {
-        builder.header("Gov-Client-Connection-Method", "DESKTOP_APP_DIRECT");
-        builder.header("Gov-Vendor-Version", "SelfEmployment=1.0");
-        builder.header("Gov-Vendor-Product-Name", "UK Self-Employment Manager");
-        builder.header("Gov-Client-Timezone", timezoneHeader());
-        try {
-            builder.header("Gov-Client-Local-IPs", java.net.InetAddress.getLocalHost().getHostAddress());
-        } catch (Exception e) {
-            builder.header("Gov-Client-Local-IPs", "127.0.0.1");
-        }
-    }
-
-    private static String timezoneHeader() {
-        int offsetMillis = TimeZone.getDefault().getRawOffset();
-        int totalMinutes = offsetMillis / 60000;
-        String sign = totalMinutes < 0 ? "-" : "+";
-        int absMinutes = Math.abs(totalMinutes);
-        return String.format("UTC%s%02d:%02d", sign, absMinutes / 60, absMinutes % 60);
+        HmrcFraudHeaders.apply(builder);
     }
 
     // ==================== JSON ====================
