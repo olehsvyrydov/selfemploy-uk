@@ -357,7 +357,7 @@ class ReconciliationServiceTest {
             Income otherBusinessIncome = new Income(
                 UUID.randomUUID(), OTHER_BUSINESS_ID, TEST_DATE,
                 new BigDecimal("100.00"), "Payment", IncomeCategory.SALES,
-                null, null, null, null, null);
+                null, null, null, null, null, null, null);
 
             List<ReconciliationMatch> matches = ReconciliationService.reconcile(
                 List.of(bankTx), List.of(otherBusinessIncome), List.of(), BUSINESS_ID, NOW);
@@ -489,7 +489,7 @@ class ReconciliationServiceTest {
             Income linkedIncome = new Income(
                 UUID.randomUUID(), BUSINESS_ID, TEST_DATE,
                 new BigDecimal("100.00"), "Payment", IncomeCategory.SALES,
-                null, null, null, null, bankTx.id());
+                null, null, null, null, bankTx.id(), null, null);
 
             List<ReconciliationMatch> matches = ReconciliationService.reconcile(
                 List.of(bankTx), List.of(linkedIncome), List.of(), BUSINESS_ID, NOW);

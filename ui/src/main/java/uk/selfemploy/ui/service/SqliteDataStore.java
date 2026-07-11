@@ -4,6 +4,7 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.common.enums.IncomeStatus;
 
 import uk.selfemploy.common.domain.BankTransaction;
 import uk.selfemploy.common.enums.ReviewStatus;
@@ -142,6 +143,8 @@ public final class SqliteDataStore {
         addColumnIfMissing("bank_transactions", "deleted_at", "TEXT");
         addColumnIfMissing("bank_transactions", "deleted_by", "TEXT");
         addColumnIfMissing("bank_transactions", "deletion_reason", "TEXT");
+        addColumnIfMissing("income", "client_name", "TEXT");
+        addColumnIfMissing("income", "status", "TEXT NOT NULL DEFAULT 'PAID'");
     }
 
     private void addColumnIfMissing(String table, String column, String type) {
@@ -227,6 +230,8 @@ public final class SqliteDataStore {
                     description TEXT NOT NULL,
                     category TEXT NOT NULL,
                     reference TEXT,
+                    client_name TEXT,
+                    status TEXT NOT NULL DEFAULT 'PAID',
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
                     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
@@ -855,8 +860,8 @@ public final class SqliteDataStore {
     public synchronized void saveIncome(Income income) {
         String sql = """
             INSERT OR REPLACE INTO income
-            (id, business_id, date, amount, description, category, reference)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (id, business_id, date, amount, description, category, reference, client_name, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, income.id().toString());
@@ -866,10 +871,13 @@ public final class SqliteDataStore {
             pstmt.setString(5, income.description());
             pstmt.setString(6, income.category().name());
             pstmt.setString(7, income.reference());
+            pstmt.setString(8, income.clientName());
+            pstmt.setString(9, income.status() != null ? income.status().name() : IncomeStatus.PAID.name());
             pstmt.executeUpdate();
             LOG.fine("Saved income: " + income.id());
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to save income: " + income.id(), e);
+            throw new DataStoreException("Failed to save income", e);
         }
     }
 
@@ -935,8 +943,21 @@ public final class SqliteDataStore {
             null, // bankTransactionRef - not stored in SQLite yet
             null, // invoiceNumber - not stored in SQLite yet
             null, // receiptPath - not stored in SQLite yet
-            null  // bankTransactionId - not stored in SQLite yet
+            null, // bankTransactionId - not stored in SQLite yet
+            rs.getString("client_name"),
+            parseIncomeStatus(rs.getString("status"))
         );
+    }
+
+    private static IncomeStatus parseIncomeStatus(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return IncomeStatus.PAID;
+        }
+        try {
+            return IncomeStatus.valueOf(raw);
+        } catch (IllegalArgumentException e) {
+            return IncomeStatus.PAID;
+        }
     }
 
     // === Business Operations ===

@@ -129,7 +129,7 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
         }
 
@@ -479,9 +479,9 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
-            when(incomeService.create(any(), any(), any(), any(), any(), any())).thenReturn(createdIncome);
+            when(incomeService.create(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(createdIncome);
 
             // When
             viewModel.save();
@@ -493,7 +493,9 @@ class IncomeDialogViewModelTest {
                 eq(new BigDecimal("1000.00")),
                 eq("Website design"),
                 eq(IncomeCategory.SALES),
-                isNull()
+                isNull(),
+                eq("Acme Corp"),
+                eq(IncomeStatus.PAID)
             );
         }
 
@@ -512,12 +514,12 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
             viewModel.loadIncome(existingIncome, "Acme Corp", IncomeStatus.PAID);
             viewModel.setDescription("Updated description");
 
-            when(incomeService.update(any(), any(), any(), any(), any(), any())).thenReturn(existingIncome);
+            when(incomeService.update(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(existingIncome);
 
             // When
             viewModel.save();
@@ -529,7 +531,9 @@ class IncomeDialogViewModelTest {
                 eq(new BigDecimal("2500.00")),
                 eq("Updated description"),
                 eq(IncomeCategory.SALES),
-                eq("INV-001")
+                eq("INV-001"),
+                eq("Acme Corp"),
+                eq(IncomeStatus.PAID)
             );
         }
 
@@ -552,9 +556,9 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
-            when(incomeService.create(any(), any(), any(), any(), any(), any())).thenReturn(createdIncome);
+            when(incomeService.create(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(createdIncome);
 
             viewModel.setOnSaveCallback(income -> {
                 callbackCalled.set(true);
@@ -580,7 +584,50 @@ class IncomeDialogViewModelTest {
 
             // Then
             assertThat(result).isFalse();
-            verify(incomeService, never()).create(any(), any(), any(), any(), any(), any());
+            verify(incomeService, never()).create(any(), any(), any(), any(), any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("should persist client name and status when creating income")
+        void shouldPersistClientNameAndStatusOnCreate() {
+            // Given a valid form with a client name distinct from the description
+            viewModel.setClientName("Acme Corp");
+            viewModel.setDescription("Website design");
+            viewModel.setAmount("1000.00");
+            viewModel.setDate(LocalDate.of(2025, 6, 15));
+            viewModel.setStatus(IncomeStatus.UNPAID);
+            Income created = new Income(UUID.randomUUID(), businessId, LocalDate.of(2025, 6, 15),
+                new BigDecimal("1000.00"), "Website design", IncomeCategory.SALES, null,
+                null, null, null, null, "Acme Corp", IncomeStatus.UNPAID);
+            when(incomeService.create(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(created);
+
+            // When
+            boolean result = viewModel.save();
+
+            // Then the client name and status reach the service (regression: they were dropped)
+            assertThat(result).isTrue();
+            verify(incomeService).create(
+                eq(businessId), eq(LocalDate.of(2025, 6, 15)), eq(new BigDecimal("1000.00")),
+                eq("Website design"), eq(IncomeCategory.SALES), isNull(),
+                eq("Acme Corp"), eq(IncomeStatus.UNPAID));
+        }
+
+        @Test
+        @DisplayName("should surface a persistence failure instead of failing silently")
+        void shouldSurfacePersistenceFailure() {
+            // Given a valid form and a service that fails to persist
+            viewModel.setClientName("Acme Corp");
+            viewModel.setDescription("Website design");
+            viewModel.setAmount("1000.00");
+            viewModel.setDate(LocalDate.of(2025, 6, 15));
+            when(incomeService.create(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("database is locked"));
+
+            // When / Then save() must not swallow the failure (regression: it returned false silently)
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> viewModel.save())
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("database is locked");
         }
     }
 
@@ -603,7 +650,7 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
             viewModel.loadIncome(existingIncome, "Acme Corp", IncomeStatus.PAID);
         }
@@ -693,7 +740,7 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
             viewModel.loadIncome(existingIncome, "Acme Corp", IncomeStatus.PAID);
 
@@ -760,7 +807,7 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             // When
@@ -796,7 +843,7 @@ class IncomeDialogViewModelTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             // When

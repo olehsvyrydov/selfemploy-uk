@@ -52,17 +52,21 @@ public record IncomeTableRow(
     }
 
     /**
-     * Creates an IncomeTableRow from an Income with default values.
-     * Uses description as client name and defaults to PAID status.
+     * Creates an IncomeTableRow from an Income, using the income's own client name
+     * and payment status.
+     *
+     * <p>Legacy records saved before those fields were persisted have no client name;
+     * for them the description is shown as a fallback so the column is not blank.
      *
      * @param income The income domain object
      * @return A new IncomeTableRow
      */
     public static IncomeTableRow fromIncome(Income income) {
-        // For now, we'll extract client name from the first part of description
-        // or use a placeholder. This should be replaced when Income domain is updated.
-        String clientName = extractClientName(income.description());
-        return fromIncome(income, clientName, IncomeStatus.PAID);
+        String clientName = (income.clientName() != null && !income.clientName().isBlank())
+            ? income.clientName()
+            : extractClientName(income.description());
+        IncomeStatus status = income.status() != null ? income.status() : IncomeStatus.PAID;
+        return fromIncome(income, clientName, status);
     }
 
     /**

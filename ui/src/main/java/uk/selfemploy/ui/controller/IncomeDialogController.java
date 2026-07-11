@@ -258,8 +258,17 @@ public class IncomeDialogController implements Initializable {
 
     @FXML
     void handleSave(ActionEvent event) {
-        if (viewModel != null && viewModel.save()) {
-            closeDialog();
+        if (viewModel == null) {
+            return;
+        }
+        try {
+            if (viewModel.save()) {
+                closeDialog();
+            }
+        } catch (RuntimeException e) {
+            String reason = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            AppDialog.error("Save Failed",
+                "This income entry could not be saved and your changes were not stored:\n\n" + reason);
         }
     }
 

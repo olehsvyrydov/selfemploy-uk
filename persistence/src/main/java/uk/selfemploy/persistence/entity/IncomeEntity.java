@@ -97,7 +97,9 @@ public class IncomeEntity {
             bankTransactionRef,
             invoiceNumber,
             receiptPath,
-            bankTransactionId
+            bankTransactionId,
+            null,
+            null
         );
     }
 

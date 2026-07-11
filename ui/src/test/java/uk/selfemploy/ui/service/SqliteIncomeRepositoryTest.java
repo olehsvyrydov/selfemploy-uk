@@ -91,7 +91,7 @@ class SqliteIncomeRepositoryTest {
                     null,
                     null,
                     null,
-                    null
+                    null, null, null
             );
             repository.save(updated);
 
@@ -325,7 +325,7 @@ class SqliteIncomeRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
         );
     }
 
@@ -341,7 +341,7 @@ class SqliteIncomeRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
         );
     }
 
@@ -357,7 +357,7 @@ class SqliteIncomeRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
         );
     }
 
@@ -373,7 +373,7 @@ class SqliteIncomeRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
         );
     }
 }

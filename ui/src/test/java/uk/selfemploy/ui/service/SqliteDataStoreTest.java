@@ -5,6 +5,7 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.common.enums.IncomeStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -299,6 +300,46 @@ class SqliteDataStoreTest {
         }
 
         @Test
+        @DisplayName("should persist client name and payment status distinctly from description")
+        void shouldPersistClientNameAndStatus() {
+            // Regression (B1/B2): client name and status were never written, so a reload
+            // lost the client name and the description leaked into the client column.
+            Income income = new Income(
+                    UUID.randomUUID(),
+                    testBusinessId,
+                    LocalDate.now().minusDays(1),
+                    new BigDecimal("1000.00"),
+                    "Website design and development",
+                    IncomeCategory.SALES,
+                    "INV-001",
+                    null, null, null, null,
+                    "Acme Corporation",
+                    IncomeStatus.UNPAID);
+
+            dataStore.saveIncome(income);
+            Optional<Income> found = dataStore.findIncomeById(income.id());
+
+            assertThat(found).isPresent();
+            assertThat(found.get().clientName()).isEqualTo("Acme Corporation");
+            assertThat(found.get().status()).isEqualTo(IncomeStatus.UNPAID);
+            // client name stays distinct from the description
+            assertThat(found.get().clientName()).isNotEqualTo(found.get().description());
+        }
+
+        @Test
+        @DisplayName("should default status to PAID and allow a null client name")
+        void shouldDefaultStatusAndAllowNullClientName() {
+            Income income = createTestIncome(testBusinessId); // built with null client name / status
+            dataStore.saveIncome(income);
+
+            Optional<Income> found = dataStore.findIncomeById(income.id());
+
+            assertThat(found).isPresent();
+            assertThat(found.get().clientName()).isNull();
+            assertThat(found.get().status()).isEqualTo(IncomeStatus.PAID);
+        }
+
+        @Test
         @DisplayName("should return empty when income not found")
         void shouldReturnEmptyWhenIncomeNotFound() {
             Optional<Income> found = dataStore.findIncomeById(UUID.randomUUID());
@@ -336,7 +377,7 @@ class SqliteDataStoreTest {
                     null,
                     null,
                     null,
-                    null
+                    null, null, null
             );
             dataStore.saveIncome(updated);
 
@@ -472,7 +513,7 @@ class SqliteDataStoreTest {
                     null,
                     null,
                     null,
-                    null
+                    null, null, null
             );
             dataStore.saveIncome(income);
 
@@ -1009,7 +1050,7 @@ class SqliteDataStoreTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
         );
     }
 
@@ -1029,7 +1070,7 @@ class SqliteDataStoreTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
         );
     }
 
