@@ -43,6 +43,16 @@ class SubmissionStatusTest {
     }
 
     @Test
+    @DisplayName("in-flight and accepted submissions lock their period; rejected and local do not")
+    void locksSubmittedPeriod() {
+        assertThat(SubmissionStatus.PENDING.locksSubmittedPeriod()).isTrue();
+        assertThat(SubmissionStatus.SUBMITTED.locksSubmittedPeriod()).isTrue();
+        assertThat(SubmissionStatus.ACCEPTED.locksSubmittedPeriod()).isTrue();
+        assertThat(SubmissionStatus.REJECTED.locksSubmittedPeriod()).isFalse();
+        assertThat(SubmissionStatus.NOT_SUBMITTED.locksSubmittedPeriod()).isFalse();
+    }
+
+    @Test
     @DisplayName("NOT_SUBMITTED has a display name that reads as a local record")
     void notSubmittedDisplayName() {
         assertThat(SubmissionStatus.NOT_SUBMITTED.getDisplayName().toLowerCase())

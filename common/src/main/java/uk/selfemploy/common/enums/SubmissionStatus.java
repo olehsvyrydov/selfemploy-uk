@@ -89,6 +89,17 @@ public enum SubmissionStatus {
     }
 
     /**
+     * Checks whether figures transmitted to HMRC under this status still stand, so
+     * a period carrying it should warn before its records are edited or deleted.
+     * PENDING (awaiting HMRC), SUBMITTED and ACCEPTED all lock the period; a
+     * REJECTED submission was not accepted (and will be resubmitted), and
+     * {@link #NOT_SUBMITTED} never reached HMRC.
+     */
+    public boolean locksSubmittedPeriod() {
+        return this == PENDING || this == SUBMITTED || this == ACCEPTED;
+    }
+
+    /**
      * Returns the CSS style class suffix for this status.
      * Used for styling status badges (e.g., "status-accepted").
      */

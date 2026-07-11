@@ -73,7 +73,7 @@ public final class SubmittedPeriodIndex {
 
     private static boolean wasSentToHmrc(SubmissionRecord s) {
         SubmissionStatus status = parseStatus(s.status());
-        return status != null && status.isSuccessful();
+        return status != null && status.locksSubmittedPeriod();
     }
 
     private static SubmissionStatus parseStatus(String name) {

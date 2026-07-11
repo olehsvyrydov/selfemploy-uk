@@ -71,6 +71,16 @@ class SubmittedPeriodIndexTest {
     }
 
     @Test
+    @DisplayName("a pending (awaiting HMRC) period still locks")
+    void pendingPeriodLocks() {
+        SubmissionRecord q1Pending = submission("QUARTERLY_Q1", 2025,
+            LocalDate.of(2025, 4, 6), LocalDate.of(2025, 7, 5), "PENDING", null);
+        SubmittedPeriodIndex index = new SubmittedPeriodIndex(List.of(q1Pending));
+
+        assertThat(index.isCovered(LocalDate.of(2025, 5, 1))).isTrue();
+    }
+
+    @Test
     @DisplayName("a local (NOT_SUBMITTED) period does not lock")
     void notSubmittedDoesNotLock() {
         SubmissionRecord local = submission("ANNUAL", 2025,
