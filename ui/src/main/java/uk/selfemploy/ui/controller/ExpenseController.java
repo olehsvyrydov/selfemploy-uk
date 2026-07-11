@@ -1,4 +1,6 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.ToastNotification;
+import uk.selfemploy.ui.component.AppDialog;
 
 import jakarta.inject.Inject;
 import javafx.animation.PauseTransition;
@@ -658,35 +660,26 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                 }
             } catch (java.io.IOException e) {
                 // Show error on JavaFX thread
-                javafx.application.Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Error");
-                    alert.setHeaderText("Could not open receipt");
-                    alert.setContentText(e.getMessage());
-                    alert.showAndWait();
-                });
+                javafx.application.Platform.runLater(() ->
+                    AppDialog.error("Error", "Could not open receipt\n\n" + e.getMessage()));
             }
         }).start();
     }
 
     private void handleDeleteExpense(ExpenseTableRow row) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Delete Expense?");
-        confirm.setHeaderText("Are you sure you want to delete this expense entry?");
-        confirm.setContentText(
-            "Description: " + row.description() + "\n" +
-            "Amount: " + row.getFormattedAmount() + "\n" +
-            "Category: " + row.getCategoryDisplayName() + "\n\n" +
-            "This action cannot be undone."
-        );
+        boolean confirmed = AppDialog.confirm("Delete Expense?",
+            "Are you sure you want to delete this expense entry?\n\n"
+            + "Description: " + row.description() + "\n"
+            + "Amount: " + row.getFormattedAmount() + "\n"
+            + "Category: " + row.getCategoryDisplayName() + "\n\n"
+            + "This action cannot be undone.",
+            "Delete", "Cancel");
 
-        confirm.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK && expenseService != null) {
-                expenseService.delete(row.id());
-                showToast("Expense deleted successfully");
-                refreshData();
-            }
-        });
+        if (confirmed && expenseService != null) {
+            expenseService.delete(row.id());
+            showToast("Expense deleted successfully");
+            refreshData();
+        }
     }
 
     private void openExpenseDialog(Expense expense) {
@@ -715,25 +708,11 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     }
 
     private void showToast(String message) {
-        // Simple toast notification using JavaFX PauseTransition
-        Alert toast = new Alert(Alert.AlertType.INFORMATION);
-        toast.setTitle(null);
-        toast.setHeaderText(null);
-        toast.setContentText(message);
-        toast.show();
-
-        // Auto-dismiss after 2 seconds using JavaFX animation (no raw threads)
-        PauseTransition delay = new PauseTransition(Duration.seconds(2));
-        delay.setOnFinished(event -> toast.close());
-        delay.play();
+        ToastNotification.showSuccess(message);
     }
 
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e.getMessage());
-        alert.showAndWait();
+        AppDialog.error("Error", message + (e != null && e.getMessage() != null ? "\n\n" + e.getMessage() : ""));
     }
 
     /**

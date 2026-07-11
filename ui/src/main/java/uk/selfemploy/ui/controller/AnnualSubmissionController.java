@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
@@ -361,22 +362,16 @@ public class AnnualSubmissionController {
 
     @FXML
     private void handleSubmit() {
-        // Show confirmation dialog
-        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmDialog.setTitle("Confirm Submission");
-        confirmDialog.setHeaderText("Submit Annual Self Assessment");
-        confirmDialog.setContentText(
-            "Are you sure you want to submit your Annual Self Assessment to HMRC?\n\n" +
-            "This action cannot be undone."
-        );
-
-        confirmDialog.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                viewModel.confirmAndSubmit();
-                // TODO: Call backend service to submit
-                simulateSubmission();
-            }
-        });
+        boolean confirmed = AppDialog.confirm("Confirm Submission",
+            "Submit Annual Self Assessment\n\n"
+            + "Are you sure you want to submit your Annual Self Assessment to HMRC?\n\n"
+            + "This action cannot be undone.",
+            "Submit", "Cancel");
+        if (confirmed) {
+            viewModel.confirmAndSubmit();
+            // TODO: Call backend service to submit
+            simulateSubmission();
+        }
     }
 
     @FXML
@@ -387,21 +382,15 @@ public class AnnualSubmissionController {
 
     @FXML
     private void handleCancel() {
-        // Show confirmation dialog
-        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmDialog.setTitle("Cancel Submission");
-        confirmDialog.setHeaderText("Cancel Annual Submission");
-        confirmDialog.setContentText(
-            "Are you sure you want to cancel this submission?\n\n" +
-            "All progress will be lost."
-        );
-
-        confirmDialog.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                viewModel.cancel();
-                // TODO: Navigate back to previous screen
-            }
-        });
+        boolean confirmed = AppDialog.confirm("Cancel Submission",
+            "Cancel Annual Submission\n\n"
+            + "Are you sure you want to cancel this submission?\n\n"
+            + "All progress will be lost.",
+            "Yes, cancel", "Keep editing");
+        if (confirmed) {
+            viewModel.cancel();
+            // TODO: Navigate back to previous screen
+        }
     }
 
     /**

@@ -1,7 +1,6 @@
 package uk.selfemploy.ui.controller;
 
 import jakarta.inject.Inject;
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -15,7 +14,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -25,6 +23,8 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.component.AppDialog;
+import uk.selfemploy.ui.component.ToastNotification;
 import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
@@ -437,28 +437,22 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     private void handleDeleteIncome(IncomeTableRow row) {
         if (row == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Income?");
-        alert.setHeaderText("Are you sure you want to delete this income entry?");
-        alert.setContentText(String.format(
-            "Client: %s%nAmount: %s%nDate: %s%n%nThis action cannot be undone.",
-            row.clientName(),
-            row.getFormattedAmount(),
-            row.getFormattedDate()
-        ));
+        boolean confirmed = AppDialog.confirm("Delete Income?",
+            "Are you sure you want to delete this income entry?\n\n" + String.format(
+                "Client: %s%nAmount: %s%nDate: %s%n%nThis action cannot be undone.",
+                row.clientName(),
+                row.getFormattedAmount(),
+                row.getFormattedDate()),
+            "Delete", "Cancel");
 
-        alert.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                if (incomeService != null) {
-                    boolean deleted = incomeService.delete(row.id());
-                    if (deleted) {
-                        viewModel.refresh();
-                        updateTable();
-                        showSuccessToast("Income deleted");
-                    }
-                }
+        if (confirmed && incomeService != null) {
+            boolean deleted = incomeService.delete(row.id());
+            if (deleted) {
+                viewModel.refresh();
+                updateTable();
+                showSuccessToast("Income deleted");
             }
-        });
+        }
     }
 
     private void openIncomeDialog(IncomeTableRow editRow) {
@@ -596,26 +590,11 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
 
     private void showSuccessToast(String message) {
         LOG.info("Income operation: {}", message);
-
-        // Toast notification using JavaFX PauseTransition
-        Alert toast = new Alert(Alert.AlertType.INFORMATION);
-        toast.setTitle(null);
-        toast.setHeaderText(null);
-        toast.setContentText(message);
-        toast.show();
-
-        // Auto-dismiss after 2 seconds using JavaFX animation (no raw threads)
-        PauseTransition delay = new PauseTransition(Duration.seconds(2));
-        delay.setOnFinished(event -> toast.close());
-        delay.play();
+        ToastNotification.showSuccess(message);
     }
 
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e.getMessage());
-        alert.showAndWait();
+        AppDialog.error("Error", message + (e.getMessage() != null ? "\n\n" + e.getMessage() : ""));
     }
 
     // === TaxYearAware Implementation ===

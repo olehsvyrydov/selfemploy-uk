@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -319,28 +320,22 @@ public class ImportHistoryController implements Initializable {
     }
 
     private void handleUndoClick(ImportHistoryItemViewModel item) {
-        // Show confirmation dialog (per /inga requirement)
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Undo Import?");
-        confirmation.setHeaderText("Are you sure you want to undo this import?");
-        confirmation.setContentText(String.format(
-            "This will remove:\n" +
-            "- %d income records (%s)\n" +
-            "- %d expense records (%s)\n\n" +
-            "Your tax calculations will be updated automatically.\n\n" +
-            "This action cannot be undone.",
-            item.getIncomeRecords(), item.getFormattedIncomeTotal(),
-            item.getExpenseRecords(), item.getFormattedExpenseTotal()
-        ));
-
-        confirmation.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                if (onUndoImport != null) {
-                    onUndoImport.accept(item);
-                }
-                LOG.info("Undo requested for import: {}", item.getId());
+        boolean confirmed = AppDialog.confirm("Undo Import?",
+            "Are you sure you want to undo this import?\n\n" + String.format(
+                "This will remove:\n"
+                + "- %d income records (%s)\n"
+                + "- %d expense records (%s)\n\n"
+                + "Your tax calculations will be updated automatically.\n\n"
+                + "This action cannot be undone.",
+                item.getIncomeRecords(), item.getFormattedIncomeTotal(),
+                item.getExpenseRecords(), item.getFormattedExpenseTotal()),
+            "Undo Import", "Cancel");
+        if (confirmed) {
+            if (onUndoImport != null) {
+                onUndoImport.accept(item);
             }
-        });
+            LOG.info("Undo requested for import: {}", item.getId());
+        }
     }
 
     // === Action Handlers ===

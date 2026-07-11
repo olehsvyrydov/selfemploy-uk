@@ -6,9 +6,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
@@ -33,6 +31,7 @@ import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
+import uk.selfemploy.ui.component.AppDialog;
 import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
@@ -45,7 +44,6 @@ import uk.selfemploy.ui.service.UiDuplicateDetectionService;
 import uk.selfemploy.ui.viewmodel.ImportAction;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import javafx.application.Platform;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.input.Clipboard;
@@ -764,19 +762,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
         boolean isProduction = "Production (Live)".equals(selected);
 
         if (isProduction) {
-            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-            Window owner = getOwnerWindow();
-            if (owner != null) confirm.initOwner(owner);
-            confirm.setTitle("Switch to Live Mode?");
-            confirm.setHeaderText("Switch to Live Mode?");
-            confirm.setContentText(
-                    "The app will connect to HMRC's live service. Your saved data stays the same.");
-            ButtonType stayButton = new ButtonType("Stay in Sandbox", ButtonBar.ButtonData.CANCEL_CLOSE);
-            ButtonType switchButton = new ButtonType("Switch to Live", ButtonBar.ButtonData.OK_DONE);
-            confirm.getButtonTypes().setAll(stayButton, switchButton);
-
-            var result = confirm.showAndWait();
-            if (result.isEmpty() || result.get() != switchButton) {
+            boolean switchToLive = AppDialog.confirm("Switch to Live Mode?",
+                    "The app will connect to HMRC's live service. Your saved data stays the same.",
+                    "Switch to Live", "Stay in Sandbox");
+            if (!switchToLive) {
                 // Revert silently without triggering the handler again
                 environmentChangeInProgress = true;
                 hmrcEnvironmentCombo.setValue("Sandbox (Testing)");
@@ -1332,12 +1321,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     @FXML
     void handleShowDisclaimer(ActionEvent event) {
-        Alert dialog = new Alert(Alert.AlertType.INFORMATION);
-        Window owner = getOwnerWindow();
-        if (owner != null) dialog.initOwner(owner);
-        dialog.setTitle("Disclaimer - UK Self-Employment Manager");
-        dialog.setHeaderText(Disclaimers.CONSUMER_RIGHTS_TITLE);
-        dialog.setContentText(
+        AppDialog.info("Disclaimer - UK Self-Employment Manager",
+                Disclaimers.CONSUMER_RIGHTS_TITLE + "\n\n" +
                 Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_1 + "\n\n" +
                 Disclaimers.CONSUMER_RIGHTS_PARAGRAPH_2 + "\n\n" +
                 Disclaimers.CONSUMER_RIGHTS_RECOMMENDATIONS_HEADER + "\n" +
@@ -1346,9 +1331,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_3 + "\n\n" +
                 Disclaimers.PDF_CONFIRMATION_DISCLAIMER + "\n\n" +
                 Disclaimers.CONSUMER_RIGHTS_ACKNOWLEDGMENT);
-        dialog.getDialogPane().setMinWidth(500);
-        dialog.getDialogPane().setMinHeight(400);
-        dialog.showAndWait();
     }
 
     // === About Section ===
@@ -1728,32 +1710,14 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     private void showInfo(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        Window owner = getOwnerWindow();
-        if (owner != null) alert.initOwner(owner);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        AppDialog.info(title, content);
     }
 
     private void showWarning(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        Window owner = getOwnerWindow();
-        if (owner != null) alert.initOwner(owner);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        AppDialog.warning(title, content);
     }
 
     private void showError(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        Window owner = getOwnerWindow();
-        if (owner != null) alert.initOwner(owner);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        AppDialog.error(title, content);
     }
 }

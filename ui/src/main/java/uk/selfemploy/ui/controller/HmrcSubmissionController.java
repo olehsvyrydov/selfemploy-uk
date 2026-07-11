@@ -1,11 +1,11 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -305,11 +305,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
 
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to load Quarterly Updates view", e);
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to open Quarterly Updates");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            AppDialog.error("Error", "Failed to open Quarterly Updates\n\n" + e.getMessage());
         }
     }
 
@@ -375,11 +371,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
 
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to load view: " + fxmlPath, e);
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to open " + title);
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            AppDialog.error("Error", "Failed to open " + title + "\n\n" + e.getMessage());
         }
     }
 

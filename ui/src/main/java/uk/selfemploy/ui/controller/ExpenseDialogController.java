@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -544,25 +545,16 @@ public class ExpenseDialogController implements Initializable {
     private void handleRemoveReceipt(ReceiptMetadata receipt) {
         if (receipt == null || viewModel == null) return;
 
-        // Show confirmation dialog
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Remove Receipt?");
-        confirm.setHeaderText("Remove this receipt?");
-        confirm.setContentText("File: " + receipt.originalFilename());
-
-        confirm.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                viewModel.removeReceipt(receipt.receiptId());
-            }
-        });
+        boolean confirmed = AppDialog.confirm("Remove Receipt?",
+            "Remove this receipt?\n\nFile: " + receipt.originalFilename(),
+            "Remove", "Cancel");
+        if (confirmed) {
+            viewModel.removeReceipt(receipt.receiptId());
+        }
     }
 
     private void showReceiptErrorAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        AppDialog.error(title, message);
     }
 
     private void openFileChooser() {
@@ -683,38 +675,22 @@ public class ExpenseDialogController implements Initializable {
     }
 
     private boolean showUnsavedChangesDialog() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Unsaved Changes");
-        alert.setHeaderText("You have unsaved changes");
-        alert.setContentText("Do you want to discard your changes?");
-
-        ButtonType discardBtn = new ButtonType("Discard", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        alert.getButtonTypes().setAll(discardBtn, cancelBtn);
-
-        return alert.showAndWait()
-            .map(result -> result == discardBtn)
-            .orElse(false);
+        return AppDialog.confirm("Unsaved Changes",
+            "You have unsaved changes\n\nDo you want to discard your changes?",
+            "Discard", "Cancel");
     }
 
     private boolean showDeleteConfirmation() {
         if (viewModel == null) return false;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Expense?");
-        alert.setHeaderText("Are you sure you want to delete this expense entry?");
-        alert.setContentText(
-            "Description: " + viewModel.getDescription() + "\n" +
-            "Amount: £" + viewModel.getAmount() + "\n" +
-            (viewModel.getCategory() != null ?
-                "Category: " + viewModel.getCategory().getDisplayName() : "") + "\n\n" +
-            "This action cannot be undone."
-        );
-
-        return alert.showAndWait()
-            .map(result -> result == ButtonType.OK)
-            .orElse(false);
+        return AppDialog.confirm("Delete Expense?",
+            "Are you sure you want to delete this expense entry?\n\n"
+            + "Description: " + viewModel.getDescription() + "\n"
+            + "Amount: £" + viewModel.getAmount() + "\n"
+            + (viewModel.getCategory() != null
+                ? "Category: " + viewModel.getCategory().getDisplayName() : "") + "\n\n"
+            + "This action cannot be undone.",
+            "Delete", "Cancel");
     }
 
     private void closeDialog() {

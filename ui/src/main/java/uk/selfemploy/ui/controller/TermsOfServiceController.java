@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.application.HostServices;
 import javafx.application.Platform;
@@ -13,7 +14,6 @@ import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.ui.viewmodel.TermsOfServiceViewModel;
 
 import java.net.URL;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
@@ -263,18 +263,10 @@ public class TermsOfServiceController implements Initializable {
     // === Private Helper Methods ===
 
     private void showDeclineConfirmation() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle(viewModel.getDeclineConfirmationTitle());
-        alert.setHeaderText(viewModel.getDeclineConfirmationTitle());
-        alert.setContentText(viewModel.getDeclineConfirmationMessage());
-
-        ButtonType returnButton = new ButtonType("Return to Terms");
-        ButtonType exitButton = new ButtonType("Exit Application", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        alert.getButtonTypes().setAll(returnButton, exitButton);
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == exitButton) {
+        boolean exit = AppDialog.confirm(viewModel.getDeclineConfirmationTitle(),
+            viewModel.getDeclineConfirmationMessage(),
+            "Exit Application", "Return to Terms");
+        if (exit) {
             if (onDeclinedCallback != null) {
                 onDeclinedCallback.run();
             }
@@ -308,11 +300,9 @@ public class TermsOfServiceController implements Initializable {
     private void handlePrintAction() {
         // For now, show a simple info dialog
         // In production, this would generate a PDF or open print dialog
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Print / Export");
-        alert.setHeaderText("Print Terms of Service");
-        alert.setContentText("The Terms of Service will be exported to a PDF file for printing or saving.");
-        alert.showAndWait();
+        AppDialog.info("Print / Export",
+            "Print Terms of Service\n\n"
+            + "The Terms of Service will be exported to a PDF file for printing or saving.");
 
         // TODO: Implement actual PDF generation
         // This would use a PDF library to generate a document with the ToS content

@@ -1,4 +1,6 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.ToastNotification;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
@@ -993,14 +995,11 @@ public class BankImportWizardController implements Initializable {
     }
 
     private void showParseWarning(String summary, List<String> details) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Parse Warnings");
-        alert.setHeaderText(summary);
-        alert.setContentText(String.join("\n", details.subList(0, Math.min(details.size(), 10))));
+        String body = summary + "\n\n" + String.join("\n", details.subList(0, Math.min(details.size(), 10)));
         if (details.size() > 10) {
-            alert.setContentText(alert.getContentText() + "\n... and " + (details.size() - 10) + " more");
+            body += "\n... and " + (details.size() - 10) + " more";
         }
-        alert.showAndWait();
+        AppDialog.warning("Parse Warnings", body);
     }
 
     private void refreshConfirmSummary() {
@@ -1079,25 +1078,11 @@ public class BankImportWizardController implements Initializable {
 
     private void showSuccessToast(String message) {
         LOG.info("Import success: {}", message);
-
-        Alert toast = new Alert(Alert.AlertType.INFORMATION);
-        toast.setTitle(null);
-        toast.setHeaderText(null);
-        toast.setContentText(message);
-        toast.show();
-
-        PauseTransition delay = new PauseTransition(Duration.seconds(2));
-        delay.setOnFinished(event -> toast.close());
-        delay.play();
+        ToastNotification.showSuccess(message);
     }
 
     private void showError(String message, Exception e) {
         LOG.error(message, e);
-
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e.getMessage());
-        alert.showAndWait();
+        AppDialog.error("Error", message + (e != null && e.getMessage() != null ? "\n\n" + e.getMessage() : ""));
     }
 }
