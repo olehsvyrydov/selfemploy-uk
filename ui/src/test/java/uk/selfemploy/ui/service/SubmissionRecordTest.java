@@ -190,6 +190,26 @@ class SubmissionRecordTest {
         }
 
         @Test
+        @DisplayName("should map a NOT_SUBMITTED record as a local, non-HMRC row")
+        void shouldMapNotSubmittedRecord() {
+            SubmissionRecord record = new SubmissionRecord(
+                TEST_ID, TEST_BUSINESS_ID, "ANNUAL", 2025,
+                LocalDate.of(2025, 4, 6), LocalDate.of(2026, 4, 5),
+                new BigDecimal("50000.00"), new BigDecimal("10000.00"),
+                new BigDecimal("40000.00"),
+                "NOT_SUBMITTED", null, null, TEST_SUBMITTED_AT
+            );
+
+            SubmissionTableRow row = record.toTableRow();
+
+            assertThat(row.status()).isEqualTo(SubmissionStatus.NOT_SUBMITTED);
+            assertThat(row.status().isSentToHmrc()).isFalse();
+            assertThat(row.hmrcReference()).isNull();
+            // Must not be shown as "Pending" - it was never sent to HMRC.
+            assertThat(row.getReferenceDisplay()).isEqualTo("Not submitted to HMRC");
+        }
+
+        @Test
         @DisplayName("should convert submittedAt Instant to LocalDateTime")
         void shouldConvertSubmittedAtToLocalDateTime() {
             Instant instant = Instant.parse("2026-01-15T10:30:00Z");

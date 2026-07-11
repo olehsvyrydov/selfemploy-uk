@@ -426,6 +426,7 @@ public class SubmissionHistoryController implements Initializable {
             case REJECTED -> FontIcon.of(FontAwesomeSolid.TIMES_CIRCLE, 14);
             case PENDING -> FontIcon.of(FontAwesomeSolid.CLOCK, 14);
             case SUBMITTED -> FontIcon.of(FontAwesomeSolid.PAPER_PLANE, 14);
+            case NOT_SUBMITTED -> FontIcon.of(FontAwesomeSolid.BAN, 14);
         };
         icon.getStyleClass().add("status-icon");
         return icon;
@@ -443,6 +444,7 @@ public class SubmissionHistoryController implements Initializable {
             case REJECTED -> "\u2717"; // x mark
             case PENDING -> "\u23F1"; // stopwatch
             case SUBMITTED -> "\u2709"; // envelope
+            case NOT_SUBMITTED -> "\u2014"; // em dash - never sent
         };
     }
 

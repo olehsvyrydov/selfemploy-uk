@@ -145,6 +145,120 @@ public final class SqliteDataStore {
         addColumnIfMissing("bank_transactions", "deletion_reason", "TEXT");
         addColumnIfMissing("income", "client_name", "TEXT");
         addColumnIfMissing("income", "status", "TEXT NOT NULL DEFAULT 'PAID'");
+        migrateSubmissionHonesty();
+    }
+
+    /**
+     * Makes the submission history honest.
+     *
+     * <p>Older builds fabricated an HMRC annual submission: they wrote rows with an
+     * invented "SA-..." reference and a status of ACCEPTED, even though nothing was
+     * ever sent to HMRC. This migration widens the status CHECK constraint to allow
+     * NOT_SUBMITTED (older on-disk tables were created without it), then relabels
+     * every fabricated row as NOT_SUBMITTED and clears its counterfeit reference so
+     * the history screen can no longer present it as an accepted HMRC filing.</p>
+     *
+     * <p>A real HMRC reference is never of the "SA-" form, so the relabel targets
+     * exactly the fabricated rows. Both steps are idempotent.</p>
+     */
+    void migrateSubmissionHonesty() {
+        try {
+            String ddl = null;
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(
+                     "SELECT sql FROM sqlite_master WHERE type='table' AND name='submissions'")) {
+                if (rs.next()) {
+                    ddl = rs.getString(1);
+                }
+            }
+            if (ddl == null) {
+                return; // no submissions table yet
+            }
+            if (!ddl.contains("NOT_SUBMITTED")) {
+                rebuildSubmissionsTableWithHonestCheck();
+            }
+            try (Statement stmt = connection.createStatement()) {
+                int relabelled = stmt.executeUpdate(
+                    "UPDATE submissions SET status = 'NOT_SUBMITTED', hmrc_reference = NULL "
+                    + "WHERE hmrc_reference LIKE 'SA-%'");
+                if (relabelled > 0) {
+                    LOG.info("Relabelled " + relabelled
+                        + " fabricated submission row(s) as NOT_SUBMITTED");
+                }
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to migrate submission history to honest state", e);
+            throw new RuntimeException("Submission history migration failed", e);
+        }
+    }
+
+    /**
+     * Rebuilds the submissions table so its status CHECK constraint allows
+     * NOT_SUBMITTED. SQLite cannot alter a CHECK constraint in place, so the table
+     * is recreated and its data copied across.
+     */
+    private void rebuildSubmissionsTableWithHonestCheck() throws SQLException {
+        boolean autoCommit = connection.getAutoCommit();
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("PRAGMA foreign_keys = OFF");
+            connection.setAutoCommit(false);
+            stmt.execute("""
+                CREATE TABLE submissions_new (
+                    id TEXT PRIMARY KEY,
+                    business_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    tax_year_start INTEGER NOT NULL,
+                    period_start TEXT NOT NULL,
+                    period_end TEXT NOT NULL,
+                    total_income TEXT NOT NULL,
+                    total_expenses TEXT NOT NULL,
+                    net_profit TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    hmrc_reference TEXT,
+                    error_message TEXT,
+                    submitted_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
+                    CHECK (type IN ('QUARTERLY_Q1', 'QUARTERLY_Q2', 'QUARTERLY_Q3', 'QUARTERLY_Q4', 'ANNUAL')),
+                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED', 'NOT_SUBMITTED'))
+                )
+            """);
+            stmt.execute("""
+                INSERT INTO submissions_new
+                    (id, business_id, type, tax_year_start, period_start, period_end,
+                     total_income, total_expenses, net_profit, status, hmrc_reference,
+                     error_message, submitted_at, created_at)
+                SELECT id, business_id, type, tax_year_start, period_start, period_end,
+                     total_income, total_expenses, net_profit, status, hmrc_reference,
+                     error_message, submitted_at, created_at
+                FROM submissions
+            """);
+            stmt.execute("DROP TABLE submissions");
+            stmt.execute("ALTER TABLE submissions_new RENAME TO submissions");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_tax_year ON submissions(tax_year_start)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status)");
+            connection.commit();
+            LOG.info("Rebuilt submissions table to allow NOT_SUBMITTED status");
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(autoCommit);
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+            }
+        }
+    }
+
+    /**
+     * Test-only hook: runs raw DDL/DML against the current connection so migration
+     * tests can stage a legacy schema. Not for production use.
+     */
+    void executeRawForTest(String sql) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql);
+        }
     }
 
     private void addColumnIfMissing(String table, String column, String type) {
@@ -284,7 +398,7 @@ public final class SqliteDataStore {
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
                     CHECK (type IN ('QUARTERLY_Q1', 'QUARTERLY_Q2', 'QUARTERLY_Q3', 'QUARTERLY_Q4', 'ANNUAL')),
-                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED'))
+                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED', 'NOT_SUBMITTED'))
                 )
             """);
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");

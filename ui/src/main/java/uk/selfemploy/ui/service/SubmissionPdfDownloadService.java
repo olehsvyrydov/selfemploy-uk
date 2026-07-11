@@ -452,7 +452,7 @@ public class SubmissionPdfDownloadService {
         return switch (status) {
             case ACCEPTED -> STATUS_ACCEPTED_BG;
             case REJECTED -> STATUS_REJECTED_BG;
-            case PENDING, SUBMITTED -> STATUS_PENDING_BG;
+            case PENDING, SUBMITTED, NOT_SUBMITTED -> STATUS_PENDING_BG;
         };
     }
 
@@ -465,6 +465,7 @@ public class SubmissionPdfDownloadService {
             case REJECTED -> "[X]";
             case PENDING -> "[...]";
             case SUBMITTED -> "[>]";
+            case NOT_SUBMITTED -> "[--]";
         };
     }
 
