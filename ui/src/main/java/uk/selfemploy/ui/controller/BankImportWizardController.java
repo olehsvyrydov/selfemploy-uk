@@ -982,7 +982,10 @@ public class BankImportWizardController implements Initializable {
         CsvTransactionParser.ParseResult result =
             orchestrationService.parseTransactions(file.toPath(), viewModel.getColumnMapping());
 
-        viewModel.setTransactions(result.transactions());
+        // Flag rows that already exist so the wizard can skip them by default.
+        List<ImportedTransactionRow> transactions =
+            orchestrationService.markDuplicates(result.transactions());
+        viewModel.setTransactions(transactions);
 
         if (!result.warnings().isEmpty()) {
             LOG.warn("CSV parse warnings: {}", result.warnings());
@@ -990,8 +993,9 @@ public class BankImportWizardController implements Initializable {
             showParseWarning(warningMessage, result.warnings());
         }
 
-        LOG.info("Parsed {} transactions ({} warnings)",
-                result.transactions().size(), result.warnings().size());
+        LOG.info("Parsed {} transactions ({} warnings, {} duplicates)",
+                transactions.size(), result.warnings().size(),
+                transactions.stream().filter(ImportedTransactionRow::isDuplicate).count());
     }
 
     private void showParseWarning(String summary, List<String> details) {

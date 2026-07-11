@@ -2,7 +2,11 @@ package uk.selfemploy.ui.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Income;
+import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.core.reconciliation.MatchingUtils;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.viewmodel.ColumnMapping;
@@ -16,7 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -103,6 +109,75 @@ public class ImportOrchestrationService {
      */
     public CsvTransactionParser.ParseResult parseTransactions(Path csvFile, ColumnMapping mapping) {
         return csvParser.parse(csvFile, mapping);
+    }
+
+    /**
+     * Flags parsed transactions that already exist in the database.
+     *
+     * <p>The CSV parser cannot know about stored data, so it leaves every row as
+     * not-a-duplicate. Without this pass, re-importing the same statement created
+     * duplicate records and the wizard reported "Duplicates: 0". Here each row is
+     * compared against the income (for income rows) or expense (for expense rows)
+     * records already stored for the tax year the row falls in, using the same
+     * exact-match key as the Settings reconciliation flow (date + absolute amount +
+     * normalised description). Matching rows are returned flagged as duplicates,
+     * which the wizard then excludes from import by default.</p>
+     *
+     * @param rows the parsed transactions
+     * @return a new list with matching rows marked as duplicates; order is preserved
+     */
+    public List<ImportedTransactionRow> markDuplicates(List<ImportedTransactionRow> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return rows == null ? List.of() : rows;
+        }
+
+        Set<TaxYear> taxYears = new HashSet<>();
+        for (ImportedTransactionRow row : rows) {
+            taxYears.add(taxYearFor(row.date()));
+        }
+
+        Set<String> incomeKeys = new HashSet<>();
+        Set<String> expenseKeys = new HashSet<>();
+        for (TaxYear taxYear : taxYears) {
+            if (incomeService != null) {
+                for (Income income : incomeService.findByTaxYear(businessId, taxYear)) {
+                    incomeKeys.add(MatchingUtils.createExactKey(
+                        income.date(), income.amount(), income.description()));
+                }
+            }
+            if (expenseService != null) {
+                for (Expense expense : expenseService.findByTaxYear(businessId, taxYear)) {
+                    expenseKeys.add(MatchingUtils.createExactKey(
+                        expense.date(), expense.amount(), expense.description()));
+                }
+            }
+        }
+
+        List<ImportedTransactionRow> result = new ArrayList<>(rows.size());
+        int duplicates = 0;
+        for (ImportedTransactionRow row : rows) {
+            String key = MatchingUtils.createExactKey(row.date(), row.amount(), row.description());
+            boolean isDuplicate = row.type() == TransactionType.INCOME
+                ? incomeKeys.contains(key)
+                : expenseKeys.contains(key);
+            if (isDuplicate) {
+                duplicates++;
+                result.add(row.withDuplicateStatus(true));
+            } else {
+                result.add(row);
+            }
+        }
+
+        LOG.info("Duplicate scan: {} of {} imported rows already exist", duplicates, rows.size());
+        return result;
+    }
+
+    /**
+     * Returns the UK tax year (6 April - 5 April) that the given date falls in.
+     */
+    private static TaxYear taxYearFor(LocalDate date) {
+        TaxYear candidate = TaxYear.of(date.getYear());
+        return candidate.contains(date) ? candidate : TaxYear.of(date.getYear() - 1);
     }
 
     /**

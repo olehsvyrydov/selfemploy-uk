@@ -486,4 +486,103 @@ class ImportOrchestrationServiceTest {
             assertThat(result.headers()).containsExactly("Date", "Amount");
         }
     }
+
+    @Nested
+    @DisplayName("Duplicate Detection (B4)")
+    class DuplicateDetection {
+
+        private final LocalDate date = LocalDate.of(2025, 6, 15);
+
+        private ImportedTransactionRow incomeRow(String description, String amount) {
+            return ImportedTransactionRow.create(date, description, new BigDecimal(amount),
+                TransactionType.INCOME, null, false, 0);
+        }
+
+        private ImportedTransactionRow expenseRow(String description, String amount) {
+            return ImportedTransactionRow.create(date, description, new BigDecimal(amount),
+                TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 0);
+        }
+
+        private uk.selfemploy.common.domain.Income existingIncome(String description, String amount) {
+            return uk.selfemploy.common.domain.Income.create(businessId, date, new BigDecimal(amount),
+                description, IncomeCategory.SALES, null);
+        }
+
+        private uk.selfemploy.common.domain.Expense existingExpense(String description, String amount) {
+            return uk.selfemploy.common.domain.Expense.create(businessId, date, new BigDecimal(amount),
+                description, ExpenseCategory.OFFICE_COSTS, null, null);
+        }
+
+        @Test
+        @DisplayName("re-importing identical rows flags them all as duplicates")
+        void shouldFlagIdenticalReimportAsDuplicates() {
+            // Given the same 3 income + 2 expense records already exist in the store
+            List<uk.selfemploy.common.domain.Income> existingIncomes = List.of(
+                existingIncome("Invoice 1", "100.00"),
+                existingIncome("Invoice 2", "200.00"),
+                existingIncome("Invoice 3", "300.00"));
+            List<uk.selfemploy.common.domain.Expense> existingExpenses = List.of(
+                existingExpense("Stationery", "10.00"),
+                existingExpense("Postage", "20.00"));
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(existingIncomes);
+            when(expenseService.findByTaxYear(eq(businessId), any())).thenReturn(existingExpenses);
+
+            List<ImportedTransactionRow> reimport = List.of(
+                incomeRow("Invoice 1", "100.00"),
+                incomeRow("Invoice 2", "200.00"),
+                incomeRow("Invoice 3", "300.00"),
+                expenseRow("Stationery", "10.00"),
+                expenseRow("Postage", "20.00"));
+
+            // When
+            List<ImportedTransactionRow> marked = service.markDuplicates(reimport);
+
+            // Then all 5 are flagged as duplicates (regression: this used to be 0)
+            assertThat(marked).allMatch(ImportedTransactionRow::isDuplicate);
+            assertThat(marked.stream().filter(ImportedTransactionRow::isDuplicate).count()).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("only rows matching an existing record are flagged")
+        void shouldFlagOnlyMatchingRows() {
+            when(incomeService.findByTaxYear(eq(businessId), any()))
+                .thenReturn(List.of(existingIncome("Invoice 1", "100.00")));
+            when(expenseService.findByTaxYear(eq(businessId), any()))
+                .thenReturn(List.of());
+
+            List<ImportedTransactionRow> rows = List.of(
+                incomeRow("Invoice 1", "100.00"),   // duplicate
+                incomeRow("Invoice 9", "999.00"));  // new
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(rows);
+
+            assertThat(marked.get(0).isDuplicate()).isTrue();
+            assertThat(marked.get(1).isDuplicate()).isFalse();
+        }
+
+        @Test
+        @DisplayName("an income row is not matched against an existing expense of the same amount")
+        void shouldNotCrossMatchIncomeAgainstExpense() {
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+            when(expenseService.findByTaxYear(eq(businessId), any()))
+                .thenReturn(List.of(existingExpense("Invoice 1", "100.00")));
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(
+                List.of(incomeRow("Invoice 1", "100.00")));
+
+            assertThat(marked.get(0).isDuplicate()).isFalse();
+        }
+
+        @Test
+        @DisplayName("no existing records means nothing is flagged")
+        void shouldFlagNothingWhenStoreEmpty() {
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+            when(expenseService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(
+                List.of(incomeRow("Invoice 1", "100.00"), expenseRow("Postage", "20.00")));
+
+            assertThat(marked).noneMatch(ImportedTransactionRow::isDuplicate);
+        }
+    }
 }
