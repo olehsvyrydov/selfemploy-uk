@@ -391,12 +391,13 @@ public class SubmissionHistoryViewModel {
     // === Private Methods ===
 
     private void updateStats() {
-        // "Total Submissions" counts only rows actually sent to HMRC, so it
-        // reconciles with the status breakdown; local NOT_SUBMITTED rows are not
-        // submissions and are excluded.
+        // "Total Submissions" counts only rows actually sent to HMRC, so it reconciles
+        // with the Accepted/Pending/Rejected breakdown: local NOT_SUBMITTED rows are
+        // excluded, and SUBMITTED (sent, awaiting HMRC's outcome) is shown in the
+        // Pending bucket since there is no separate "Submitted" card.
         totalCount.set(countSubmittedToHmrc(submissions));
         acceptedCount.set(countByStatus(SubmissionStatus.ACCEPTED));
-        pendingCount.set(countByStatus(SubmissionStatus.PENDING));
+        pendingCount.set(countAwaitingHmrc(submissions));
         rejectedCount.set(countByStatus(SubmissionStatus.REJECTED));
         submittedCount.set(countByStatus(SubmissionStatus.SUBMITTED));
     }
@@ -405,13 +406,25 @@ public class SubmissionHistoryViewModel {
         List<SubmissionTableRow> filtered = getFilteredSubmissions();
         filteredTotalCount.set(countSubmittedToHmrc(filtered));
         filteredAcceptedCount.set(countByStatusInList(filtered, SubmissionStatus.ACCEPTED));
-        filteredPendingCount.set(countByStatusInList(filtered, SubmissionStatus.PENDING));
+        filteredPendingCount.set(countAwaitingHmrc(filtered));
         filteredRejectedCount.set(countByStatusInList(filtered, SubmissionStatus.REJECTED));
     }
 
     private int countSubmittedToHmrc(List<SubmissionTableRow> list) {
         return (int) list.stream()
             .filter(s -> s.status() != null && s.status().isSentToHmrc())
+            .count();
+    }
+
+    /**
+     * Counts rows sent to HMRC but not yet accepted or rejected — PENDING (queued) and
+     * SUBMITTED (sent, awaiting processing). Both are shown under the "Pending" card so
+     * the total reconciles with Accepted + Pending + Rejected.
+     */
+    private int countAwaitingHmrc(List<SubmissionTableRow> list) {
+        return (int) list.stream()
+            .filter(s -> s.status() == SubmissionStatus.PENDING
+                || s.status() == SubmissionStatus.SUBMITTED)
             .count();
     }
 

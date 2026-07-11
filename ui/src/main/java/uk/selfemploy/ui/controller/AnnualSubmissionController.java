@@ -474,9 +474,11 @@ public class AnnualSubmissionController {
     private void submitToHmrc(String nino) {
         TaxYear taxYear = viewModel.getTaxYear();
 
+        // Lock the form and block Escape while a live HMRC round-trip is in flight, but
+        // stay on the review step: nothing is declared until the taxpayer confirms
+        // HMRC's figures, so the step indicator must not jump to the Submit step yet.
         viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
         viewModel.setLoading(true);
-        updateStepIndicator(4);
 
         Thread.startVirtualThread(() -> {
             CalculationOutcome calcOutcome;
@@ -519,8 +521,10 @@ public class AnnualSubmissionController {
             buildHmrcFiguresMessage(comparison),
             "Declare these figures to HMRC", "Cancel");
         if (!confirmed) {
-            // Nothing has been declared; return to the review step.
+            // Nothing has been declared; return to the review step and re-enable the
+            // declaration controls the in-flight lock disabled.
             viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
+            unlockDeclarationControls();
             updateStepIndicator(3);
             return;
         }
@@ -529,10 +533,12 @@ public class AnnualSubmissionController {
     }
 
     /**
-     * Sends the final declaration for the confirmed calculation off the FX thread.
+     * Sends the final declaration for the confirmed calculation off the FX thread and
+     * persists the result there too, so no SQLite I/O runs on the FX thread.
      */
     private void declareToHmrc(String nino, TaxYear taxYear, String calculationId) {
         DeclarationConfirmation confirmation = new DeclarationConfirmation(true, Instant.now());
+        // The declaration is now actually being sent, so advance to the Submit step.
         viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
         viewModel.setLoading(true);
         updateStepIndicator(4);
@@ -547,19 +553,18 @@ public class AnnualSubmissionController {
                 failOnFxThread("Unexpected error submitting to HMRC: " + e.getMessage());
                 return;
             }
-            DeclarationOutcome outcome = declOutcome;
-            javafx.application.Platform.runLater(() -> onDeclarationComplete(taxYear, outcome));
+            if (declOutcome instanceof DeclarationOutcome.Failure failure) {
+                failOnFxThread("HMRC did not accept the declaration: " + failure.message());
+                return;
+            }
+            String reference = ((DeclarationOutcome.Success) declOutcome).hmrcReference();
+            // Persist on this virtual thread; the FX thread only renders the outcome.
+            boolean persisted = persistSubmission(taxYear, reference);
+            javafx.application.Platform.runLater(() -> onDeclarationComplete(reference, persisted));
         });
     }
 
-    private void onDeclarationComplete(TaxYear taxYear, DeclarationOutcome declOutcome) {
-        if (declOutcome instanceof DeclarationOutcome.Failure failure) {
-            failOnFxThread("HMRC did not accept the declaration: " + failure.message());
-            return;
-        }
-        String reference = ((DeclarationOutcome.Success) declOutcome).hmrcReference();
-        boolean persisted = persistSubmission(taxYear, reference);
-
+    private void onDeclarationComplete(String reference, boolean persisted) {
         lastHmrcReference = reference;
         viewModel.setLoading(false);
         viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
@@ -847,22 +852,10 @@ public class AnnualSubmissionController {
                 reviewButton.setDisable(false);
             }
             case DECLARING -> {
-                // Keep calculation visible, disable all buttons
+                // Keep calculation visible, disable all buttons while HMRC I/O is in flight.
                 calculateButton.setDisable(true);
                 reviewButton.setDisable(true);
-                // Unbind before setting - submitButton is bound to declarationViewModel.isCompleteProperty()
-                submitButton.disableProperty().unbind();
-                submitButton.setDisable(true);
-                // Disable all 6 declaration checkboxes during submission (SE-512)
-                if (declarationViewModel != null) {
-                    declarationViewModel.disabledProperty().set(true);
-                }
-                decl1Checkbox.setDisable(true);
-                decl2Checkbox.setDisable(true);
-                decl3Checkbox.setDisable(true);
-                decl4Checkbox.setDisable(true);
-                decl5Checkbox.setDisable(true);
-                decl6Checkbox.setDisable(true);
+                lockDeclarationControls();
             }
             case COMPLETED -> {
                 successPanel.setVisible(true);
@@ -879,24 +872,48 @@ public class AnnualSubmissionController {
                 // Error panel is shown via binding
                 calculateButton.setDisable(false);
                 reviewButton.setDisable(false);
-                // Rebind to original binding - submitButton disabled until all declarations complete
-                if (declarationViewModel != null) {
-                    submitButton.disableProperty().bind(declarationViewModel.isCompleteProperty().not());
-                } else {
-                    submitButton.setDisable(false);
-                }
-                // Re-enable checkboxes
-                if (declarationViewModel != null) {
-                    declarationViewModel.disabledProperty().set(false);
-                }
-                decl1Checkbox.setDisable(false);
-                decl2Checkbox.setDisable(false);
-                decl3Checkbox.setDisable(false);
-                decl4Checkbox.setDisable(false);
-                decl5Checkbox.setDisable(false);
-                decl6Checkbox.setDisable(false);
+                unlockDeclarationControls();
             }
         }
+    }
+
+    /**
+     * Disables the Submit button and the six declaration checkboxes while a live HMRC
+     * round-trip is in flight, so nothing can be re-submitted or re-ticked mid-call.
+     */
+    private void lockDeclarationControls() {
+        // Unbind before setting - submitButton is bound to declarationViewModel.isCompleteProperty()
+        submitButton.disableProperty().unbind();
+        submitButton.setDisable(true);
+        if (declarationViewModel != null) {
+            declarationViewModel.disabledProperty().set(true);
+        }
+        setDeclarationCheckboxesDisabled(true);
+    }
+
+    /**
+     * Re-enables the declaration controls and rebinds the Submit button to the
+     * declaration-complete state, so the taxpayer can retry after a failure or after
+     * cancelling the HMRC-figures confirmation.
+     */
+    private void unlockDeclarationControls() {
+        if (declarationViewModel != null) {
+            submitButton.disableProperty().bind(declarationViewModel.isCompleteProperty().not());
+            declarationViewModel.disabledProperty().set(false);
+        } else {
+            submitButton.disableProperty().unbind();
+            submitButton.setDisable(false);
+        }
+        setDeclarationCheckboxesDisabled(false);
+    }
+
+    private void setDeclarationCheckboxesDisabled(boolean disabled) {
+        decl1Checkbox.setDisable(disabled);
+        decl2Checkbox.setDisable(disabled);
+        decl3Checkbox.setDisable(disabled);
+        decl4Checkbox.setDisable(disabled);
+        decl5Checkbox.setDisable(disabled);
+        decl6Checkbox.setDisable(disabled);
     }
 
     private VBox getStepContainer(int step) {

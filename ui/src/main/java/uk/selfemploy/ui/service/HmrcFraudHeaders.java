@@ -32,20 +32,25 @@ final class HmrcFraudHeaders {
     }
 
     /**
-     * Adds every fraud-prevention header to the builder. If header collection
-     * fails for any reason it is logged and skipped rather than blocking the
-     * request, so submission never fails purely on header assembly.
+     * Adds every fraud-prevention header to the builder. HMRC rejects any MTD request
+     * that is missing its mandatory {@code Gov-Client-*}/{@code Gov-Vendor-*} headers,
+     * so if a mandatory header cannot be assembled this fails fast with a clear message
+     * rather than sending a request that HMRC is guaranteed to reject.
      */
     static void apply(HttpRequest.Builder builder) {
+        Map<String, String> headers;
         try {
-            Map<String, String> headers = service().generateHeaders();
-            for (Map.Entry<String, String> header : headers.entrySet()) {
-                if (header.getKey() != null && header.getValue() != null) {
-                    builder.header(header.getKey(), header.getValue());
-                }
-            }
+            headers = service().generateHeaders();
         } catch (RuntimeException e) {
-            LOG.log(Level.WARNING, "Failed to collect fraud-prevention headers", e);
+            LOG.log(Level.SEVERE, "Could not assemble mandatory HMRC fraud-prevention headers", e);
+            throw new IllegalStateException(
+                "Could not assemble the fraud-prevention information HMRC requires for this "
+                + "submission. Please try again; if it keeps happening, restart the app.", e);
+        }
+        for (Map.Entry<String, String> header : headers.entrySet()) {
+            if (header.getKey() != null && header.getValue() != null) {
+                builder.header(header.getKey(), header.getValue());
+            }
         }
     }
 
