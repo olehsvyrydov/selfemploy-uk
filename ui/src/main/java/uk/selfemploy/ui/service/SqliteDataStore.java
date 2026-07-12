@@ -437,6 +437,50 @@ public final class SqliteDataStore {
         return loadSetting("display_name");
     }
 
+    // === Onboarding Operations ===
+
+    /**
+     * Records whether the first-run onboarding has been completed (or skipped).
+     */
+    public synchronized void saveOnboardingCompleted(boolean completed) {
+        saveSetting("onboarding_completed", completed ? "true" : "false");
+    }
+
+    /**
+     * Returns true if first-run onboarding has been completed or skipped.
+     */
+    public synchronized boolean isOnboardingCompleted() {
+        return "true".equals(loadSetting("onboarding_completed"));
+    }
+
+    /**
+     * Saves the tax year chosen during onboarding (e.g. "2025/26"), or null to clear.
+     */
+    public synchronized void saveOnboardingTaxYear(String taxYear) {
+        saveSetting("onboarding_tax_year", taxYear);
+    }
+
+    /**
+     * Loads the tax year chosen during onboarding, or null if not set.
+     */
+    public synchronized String loadOnboardingTaxYear() {
+        return loadSetting("onboarding_tax_year");
+    }
+
+    /**
+     * Saves the business type chosen during onboarding (a {@code BusinessType} name), or null to clear.
+     */
+    public synchronized void saveBusinessType(String businessType) {
+        saveSetting("business_type", businessType);
+    }
+
+    /**
+     * Loads the business type chosen during onboarding, or null if not set.
+     */
+    public synchronized String loadBusinessType() {
+        return loadSetting("business_type");
+    }
+
     // === UTR Operations ===
 
     /**

@@ -518,7 +518,7 @@ public class OnboardingController implements Initializable {
             "Skip", "Cancel");
         if (confirmed) {
             viewModel.skipSetup();
-            notifyCompletion();
+            closeAndNavigate("dashboard");
         }
     }
 
