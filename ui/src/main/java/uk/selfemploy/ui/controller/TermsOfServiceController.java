@@ -8,6 +8,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import uk.selfemploy.core.service.TermsAcceptanceService;
@@ -45,6 +47,7 @@ public class TermsOfServiceController implements Initializable {
     @FXML private Button printBtn;
     @FXML private Button declineBtn;
     @FXML private Button acceptBtn;
+    @FXML private Button closeBtn;
 
     private TermsOfServiceViewModel viewModel;
     private Stage dialogStage;
@@ -102,6 +105,10 @@ public class TermsOfServiceController implements Initializable {
         acceptBtn.managedProperty().bind(viewModel.actionButtonsVisibleProperty());
         declineBtn.visibleProperty().bind(viewModel.actionButtonsVisibleProperty());
         declineBtn.managedProperty().bind(viewModel.actionButtonsVisibleProperty());
+
+        // Close button is shown only in settings (read-only) mode
+        closeBtn.visibleProperty().bind(viewModel.closeButtonVisibleProperty());
+        closeBtn.managedProperty().bind(viewModel.closeButtonVisibleProperty());
 
         // Add style class when scrolled to bottom
         viewModel.scrolledToBottomProperty().addListener((obs, oldVal, newVal) -> {
@@ -171,6 +178,19 @@ public class TermsOfServiceController implements Initializable {
      */
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
+        // Escape closes the dialog in read-only (settings) mode only. handleClose() self-guards:
+        // it does nothing in first-launch mode, where acceptance is mandatory.
+        stage.sceneProperty().addListener((obs, oldScene, scene) -> {
+            if (scene != null) {
+                scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                    if (event.getCode() == KeyCode.ESCAPE && viewModel != null
+                            && viewModel.isCloseButtonVisible()) {
+                        viewModel.handleClose();
+                        event.consume();
+                    }
+                });
+            }
+        });
     }
 
     /**

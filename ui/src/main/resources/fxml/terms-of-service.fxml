@@ -359,5 +359,7 @@
                 onAction="#handleDecline"/>
         <Button fx:id="acceptBtn" text="I Accept" styleClass="button-success"
                 onAction="#handleAccept" disable="true"/>
+        <Button fx:id="closeBtn" text="Close" styleClass="button-success"
+                onAction="#handleClose"/>
     </HBox>
 </VBox>
