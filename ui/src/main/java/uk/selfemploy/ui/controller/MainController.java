@@ -190,6 +190,11 @@ public class MainController implements Initializable {
                     );
                 }
 
+                // Wire empty-state call to action for the Bank Review screen (import lives on Income)
+                if (controller instanceof TransactionReviewController reviewController) {
+                    reviewController.setNavigateToImport(() -> loadView(View.INCOME));
+                }
+
                 // Wire post-import navigation callback for Income and Expense controllers
                 if (controller instanceof IncomeController incomeController) {
                     incomeController.setNavigateToTransactionReview(

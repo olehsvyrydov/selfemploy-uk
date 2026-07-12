@@ -102,6 +102,9 @@ public class TransactionReviewController implements Initializable, MainControlle
     private TransactionReviewViewModel viewModel;
     private TaxYear currentTaxYear;
 
+    // Navigation callback wired by MainController for the empty-state call to action
+    private Runnable navigateToImport;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupStatusFilter();
@@ -695,6 +698,21 @@ public class TransactionReviewController implements Initializable, MainControlle
         if (viewModel != null) {
             viewModel.loadTransactions();
             updateTable();
+        }
+    }
+
+    /**
+     * Sets the callback used by the empty-state call to action to navigate to the import
+     * flow (the Income screen, which hosts bank-statement import). Wired by {@code MainController}.
+     */
+    public void setNavigateToImport(Runnable navigateToImport) {
+        this.navigateToImport = navigateToImport;
+    }
+
+    @FXML
+    private void handleGoToImport(ActionEvent event) {
+        if (navigateToImport != null) {
+            navigateToImport.run();
         }
     }
 
