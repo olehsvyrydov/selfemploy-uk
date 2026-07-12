@@ -7,9 +7,7 @@
 
 <!--
     SE-508: Terms of Service UI
-    Full-screen modal dialog for Terms of Service acceptance.
-    Design specification: /aura
-    Legal content: /alex (Version 1.0)
+    Full-screen modal dialog for Terms of Service acceptance (Version 1.0).
 
     Key Features:
     - Scroll tracking: Accept button only enabled after scrolling to bottom
@@ -34,10 +32,10 @@
 
         <!-- ToS Header -->
         <VBox styleClass="tos-header" alignment="CENTER" spacing="12">
-            <Label text="[DOC]" styleClass="tos-icon"/>
+            <Label text="§" styleClass="tos-icon"/>
             <Label text="Terms of Service" styleClass="tos-title"/>
             <HBox alignment="CENTER" spacing="8">
-                <Label fx:id="versionLabel" text="Version 2.0" styleClass="tos-version"/>
+                <Label fx:id="versionLabel" text="Version 1.0" styleClass="tos-version"/>
                 <Label text="|" styleClass="tos-separator"/>
                 <Label fx:id="lastUpdatedLabel" text="Last Updated: 8 February 2026"
                        styleClass="tos-updated-date"/>
@@ -82,6 +80,8 @@
                                onAction="#scrollToSection" userData="section13"/>
                     <Hyperlink text="14. General Provisions" styleClass="toc-link"
                                onAction="#scrollToSection" userData="section14"/>
+                    <Hyperlink text="15. Contact" styleClass="toc-link"
+                               onAction="#scrollToSection" userData="section15"/>
                 </VBox>
             </VBox>
 
@@ -308,10 +308,10 @@
                     </VBox>
 
                     <!-- Contact Information -->
-                    <VBox styleClass="tos-section" spacing="8">
+                    <VBox fx:id="section15" styleClass="tos-section" spacing="8">
                         <Label text="15. CONTACT" styleClass="tos-section-title"/>
                         <Label styleClass="tos-section-text" wrapText="true"
-                               text="For questions about these Terms: GitHub Issues: [Repository URL]; Email: [Support email if available]"/>
+                               text="For questions about these Terms, please open an issue on GitHub: https://github.com/olehsvyrydov/selfemploy-uk/issues"/>
                     </VBox>
 
                     <!-- Final Declaration -->
@@ -325,7 +325,7 @@
                         <Label styleClass="tos-compliance-text" wrapText="true"
                                text="These Terms of Service comply with the Unfair Contract Terms Act 1977 and Consumer Rights Act 2015."/>
                         <Label styleClass="tos-compliance-text" wrapText="true"
-                               text="Version 2.0"/>
+                               text="Version 1.0"/>
                     </VBox>
 
                     <!-- End Marker (for scroll detection) -->
