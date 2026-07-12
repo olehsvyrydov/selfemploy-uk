@@ -1,5 +1,7 @@
 package uk.selfemploy.ui.service.db;
 
+import uk.selfemploy.ui.service.sql.NamedSql;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,8 @@ import java.util.logging.Logger;
 public class SqliteMigrationRunner {
 
     private static final Logger LOG = Logger.getLogger(SqliteMigrationRunner.class.getName());
+
+    private static final NamedSql SQL = NamedSql.load("/sql/schema-version.sql");
 
     /** A single ordered schema change. */
     public interface Migration {
@@ -77,26 +81,19 @@ public class SqliteMigrationRunner {
 
     private void ensureSchemaVersionTable() throws SQLException {
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS schema_version (
-                    version INTEGER PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-                )
-            """);
+            stmt.execute(SQL.get("createSchemaVersionTable"));
         }
     }
 
     private int currentVersion() throws SQLException {
         try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COALESCE(MAX(version), 0) FROM schema_version")) {
+             ResultSet rs = stmt.executeQuery(SQL.get("maxSchemaVersion"))) {
             return rs.next() ? rs.getInt(1) : 0;
         }
     }
 
     private void record(Migration migration) throws SQLException {
-        try (PreparedStatement pstmt =
-                 connection.prepareStatement("INSERT INTO schema_version (version, name) VALUES (?, ?)")) {
+        try (PreparedStatement pstmt = connection.prepareStatement(SQL.get("insertSchemaVersion"))) {
             pstmt.setInt(1, migration.version());
             pstmt.setString(2, migration.name());
             pstmt.executeUpdate();
