@@ -6,7 +6,7 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.lang.reflect.Field;
+import uk.selfemploy.ui.service.sql.NamedSql;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -35,6 +35,8 @@ import java.util.logging.Logger;
 public class SqliteWizardProgressRepository implements WizardProgressRepository {
 
     private static final Logger LOG = Logger.getLogger(SqliteWizardProgressRepository.class.getName());
+
+    private static final NamedSql SQL = NamedSql.load("/sql/wizard-progress.sql");
 
     // Encryption constants - matching EncryptedFileTokenStorage pattern
     private static final String ALGORITHM = "AES/GCM/NoPadding";
@@ -77,18 +79,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
             Connection connection = getConnection();
             if (connection != null) {
                 try (Statement stmt = connection.createStatement()) {
-                    stmt.execute("""
-                        CREATE TABLE IF NOT EXISTS wizard_progress (
-                            id INTEGER PRIMARY KEY,
-                            wizard_type TEXT NOT NULL,
-                            current_step INTEGER NOT NULL,
-                            checklist_state TEXT,
-                            nino_entered TEXT,
-                            created_at TEXT NOT NULL,
-                            updated_at TEXT NOT NULL,
-                            UNIQUE(wizard_type)
-                        )
-                    """);
+                    stmt.execute(SQL.get("createTable"));
                     LOG.fine("Ensured wizard_progress table exists");
                 }
             }
@@ -101,7 +92,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
     public Optional<WizardProgress> findByType(String wizardType) {
         validateWizardType(wizardType);
 
-        String sql = "SELECT * FROM wizard_progress WHERE wizard_type = ?";
+        String sql = SQL.get("findByType");
         try {
             Connection connection = getConnection();
             if (connection == null) {
@@ -128,16 +119,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
             throw new IllegalArgumentException("Progress cannot be null");
         }
 
-        String sql = """
-            INSERT INTO wizard_progress
-            (wizard_type, current_step, checklist_state, nino_entered, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(wizard_type) DO UPDATE SET
-                current_step = excluded.current_step,
-                checklist_state = excluded.checklist_state,
-                nino_entered = excluded.nino_entered,
-                updated_at = excluded.updated_at
-        """;
+        String sql = SQL.get("upsert");
 
         try {
             Connection connection = getConnection();
@@ -167,7 +149,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
     public boolean deleteByType(String wizardType) {
         validateWizardType(wizardType);
 
-        String sql = "DELETE FROM wizard_progress WHERE wizard_type = ?";
+        String sql = SQL.get("deleteByType");
         try {
             Connection connection = getConnection();
             if (connection == null) {
@@ -196,7 +178,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
      * @return The raw encrypted NINO value, or null if not found
      */
     String getRawNinoFromDatabase(String wizardType) {
-        String sql = "SELECT nino_entered FROM wizard_progress WHERE wizard_type = ?";
+        String sql = SQL.get("findRawNino");
         try {
             Connection connection = getConnection();
             if (connection == null) {
@@ -359,17 +341,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
         }
     }
 
-    /**
-     * Gets the database connection using reflection to access SqliteDataStore's private connection.
-     */
     private Connection getConnection() {
-        try {
-            Field connectionField = SqliteDataStore.class.getDeclaredField("connection");
-            connectionField.setAccessible(true);
-            return (Connection) connectionField.get(dataStore);
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to get connection via reflection", e);
-            return null;
-        }
+        return dataStore.connection();
     }
 }

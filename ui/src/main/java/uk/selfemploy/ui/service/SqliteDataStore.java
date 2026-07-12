@@ -1336,6 +1336,17 @@ public final class SqliteDataStore {
     }
 
     /**
+     * Returns the shared SQLite connection for repositories in this package that persist
+     * their own tables against the same database. Package-private so collaborating
+     * repositories no longer need reflection to reach it.
+     *
+     * @return the live connection, or null if not yet initialised
+     */
+    Connection connection() {
+        return connection;
+    }
+
+    /**
      * Returns the count of expenses.
      */
     public synchronized long countExpenses() {
