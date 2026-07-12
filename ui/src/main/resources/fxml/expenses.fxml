@@ -109,6 +109,10 @@
             <Label text="No Expenses Recorded" styleClass="empty-state-title"/>
             <Label text="Start tracking your business costs by adding your first expense entry."
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
+            <HBox alignment="CENTER" spacing="12">
+                <Button text="+ Add Expense" styleClass="button-warning" onAction="#handleAddExpense"/>
+                <Button text="Import CSV" styleClass="button-secondary" onAction="#handleImportBankStatement"/>
+            </HBox>
         </VBox>
 
     </VBox>
