@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -425,6 +426,7 @@ public class SubmissionHistoryController implements Initializable {
             case REJECTED -> FontIcon.of(FontAwesomeSolid.TIMES_CIRCLE, 14);
             case PENDING -> FontIcon.of(FontAwesomeSolid.CLOCK, 14);
             case SUBMITTED -> FontIcon.of(FontAwesomeSolid.PAPER_PLANE, 14);
+            case NOT_SUBMITTED -> FontIcon.of(FontAwesomeSolid.BAN, 14);
         };
         icon.getStyleClass().add("status-icon");
         return icon;
@@ -442,6 +444,7 @@ public class SubmissionHistoryController implements Initializable {
             case REJECTED -> "\u2717"; // x mark
             case PENDING -> "\u23F1"; // stopwatch
             case SUBMITTED -> "\u2709"; // envelope
+            case NOT_SUBMITTED -> "\u2014"; // em dash - never sent
         };
     }
 
@@ -628,15 +631,10 @@ public class SubmissionHistoryController implements Initializable {
         } catch (IOException e) {
             LOG.error("Failed to generate PDF for submission: {}", selected.hmrcReference(), e);
 
-            // Show error dialog
-            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
-            errorAlert.setTitle("PDF Generation Failed");
-            errorAlert.setHeaderText("Could not generate PDF");
-            errorAlert.setContentText(
-                "An error occurred while generating the PDF confirmation. " +
-                "Please try again. Error: " + e.getMessage()
-            );
-            errorAlert.showAndWait();
+            AppDialog.error("PDF Generation Failed",
+                "Could not generate PDF\n\n"
+                + "An error occurred while generating the PDF confirmation. "
+                + "Please try again. Error: " + e.getMessage());
         } catch (Exception e) {
             LOG.error("Unexpected error generating PDF: {}", e.getMessage(), e);
         }
@@ -726,11 +724,7 @@ public class SubmissionHistoryController implements Initializable {
     }
 
     private void showUrlDialog(String url) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("HMRC Guidance");
-        alert.setHeaderText("Visit HMRC website for more information");
-        alert.setContentText("Please visit:\n" + url);
-        alert.showAndWait();
+        AppDialog.info("HMRC Guidance", "Visit HMRC website for more information\n\nPlease visit:\n" + url);
     }
 
     /**

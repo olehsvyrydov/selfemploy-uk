@@ -18,7 +18,7 @@ public class SqliteTermsAcceptanceService extends TermsAcceptanceService {
 
     private static final Logger LOG = Logger.getLogger(SqliteTermsAcceptanceService.class.getName());
 
-    private final SqliteTermsAcceptanceRepository sqliteRepository;
+    private final TermsAcceptanceRepository sqliteRepository;
 
     public SqliteTermsAcceptanceService() {
         super(null); // Parent won't be used - we override all methods
@@ -28,7 +28,7 @@ public class SqliteTermsAcceptanceService extends TermsAcceptanceService {
     /**
      * Constructor for testing with custom repository.
      */
-    SqliteTermsAcceptanceService(SqliteTermsAcceptanceRepository repository) {
+    SqliteTermsAcceptanceService(TermsAcceptanceRepository repository) {
         super(null);
         this.sqliteRepository = repository;
     }

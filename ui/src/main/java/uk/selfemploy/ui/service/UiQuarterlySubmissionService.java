@@ -52,26 +52,19 @@ public class UiQuarterlySubmissionService {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     /**
-     * Returns the HMRC Accept header for the Self-Employment Business API.
+     * Returns the HMRC Accept header for the Self-Employment Business (MTD) API.
      *
-     * <p><strong>API Version Selection:</strong></p>
-     * <ul>
-     *   <li>Tax year 2024-25 and earlier: v5.0 (uses POST /period endpoint)</li>
-     *   <li>Tax year 2025-26 onwards: v7.0 (uses PUT /cumulative endpoint)</li>
-     * </ul>
+     * <p>The API is versioned at v5.0 for every tax year this application submits.
+     * The move from periodic to cumulative reporting for MTD ITSA (2025-26 onwards)
+     * is an <em>endpoint</em> change within v5.0 (POST /period vs PUT /cumulative),
+     * not a version bump. The cumulative shape is selected by the submission
+     * strategy, not by the Accept header.</p>
      *
-     * <p>The API version aligns with the endpoint change from periodic to cumulative
-     * reporting introduced for MTD ITSA from tax year 2025-26.</p>
-     *
-     * @param taxYear the tax year for the submission
-     * @return the Accept header value (v5.0 for 2024-25 and earlier, v7.0 for 2025-26 onwards)
+     * @param taxYear the tax year for the submission (unused; retained for callers
+     *                and future version pinning should HMRC introduce one)
+     * @return the Accept header value, always {@code application/vnd.hmrc.5.0+json}
      */
     String getAcceptHeader(TaxYear taxYear) {
-        // Tax year 2025-26 onwards uses v7.0 with cumulative endpoint
-        // Tax year 2024-25 and earlier uses v5.0 with period endpoint
-        if (taxYear != null && taxYear.startYear() >= 2025) {
-            return "application/vnd.hmrc.7.0+json";
-        }
         return "application/vnd.hmrc.5.0+json";
     }
 

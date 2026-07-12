@@ -123,10 +123,18 @@ public record SubmissionTableRow(
     }
 
     /**
-     * Returns the HMRC reference or "Pending" if not yet assigned.
+     * Returns the HMRC reference, or an honest placeholder when there is none.
+     * A record that was never sent to HMRC has no reference and must not be shown
+     * as "Pending" (which would imply it is awaiting an HMRC response).
      */
     public String getReferenceDisplay() {
-        return hmrcReference != null && !hmrcReference.isBlank() ? hmrcReference : "Pending";
+        if (hmrcReference != null && !hmrcReference.isBlank()) {
+            return hmrcReference;
+        }
+        if (status != null && !status.isSentToHmrc()) {
+            return "Not submitted to HMRC";
+        }
+        return "Pending";
     }
 
     /**

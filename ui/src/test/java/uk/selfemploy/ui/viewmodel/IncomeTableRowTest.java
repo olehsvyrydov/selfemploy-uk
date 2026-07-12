@@ -40,7 +40,7 @@ class IncomeTableRowTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             // When
@@ -72,7 +72,7 @@ class IncomeTableRowTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             // When
@@ -82,6 +82,30 @@ class IncomeTableRowTest {
             assertThat(row.id()).isEqualTo(income.id());
             assertThat(row.clientName()).isNotEmpty();
             assertThat(row.status()).isEqualTo(IncomeStatus.PAID);
+        }
+
+        @Test
+        @DisplayName("should use the income's own client name and status, distinct from description")
+        void shouldUseIncomeClientNameAndStatus() {
+            // Regression (B1/B2): the row used to synthesise the client name from the
+            // description and always defaulted the status to PAID.
+            Income income = new Income(
+                UUID.randomUUID(),
+                BUSINESS_ID,
+                LocalDate.of(2025, 6, 15),
+                new BigDecimal("2500.00"),
+                "Website redesign",
+                IncomeCategory.SALES,
+                "INV-001",
+                null, null, null, null,
+                "Acme Corporation",
+                IncomeStatus.UNPAID);
+
+            IncomeTableRow row = IncomeTableRow.fromIncome(income);
+
+            assertThat(row.clientName()).isEqualTo("Acme Corporation");
+            assertThat(row.clientName()).isNotEqualTo(row.description());
+            assertThat(row.status()).isEqualTo(IncomeStatus.UNPAID);
         }
     }
 

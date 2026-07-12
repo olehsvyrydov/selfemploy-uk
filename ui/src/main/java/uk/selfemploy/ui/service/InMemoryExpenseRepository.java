@@ -7,42 +7,25 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Expense repository with SQLite persistence.
- * Data is loaded from SQLite on startup and saved to SQLite on every change.
+ * In-memory expense store used as a test double for {@link InMemoryExpenseService} in the UI's
+ * standalone mode. Holds no external state: data lives only in {@link #storage} for the lifetime
+ * of the instance. The shipping app persists expenses through {@link SqliteExpenseRepository}.
  */
 public class InMemoryExpenseRepository {
 
-    private static final Logger LOG = Logger.getLogger(InMemoryExpenseRepository.class.getName());
-
     private final Map<UUID, Expense> storage = new ConcurrentHashMap<>();
-    private final SqliteDataStore dataStore;
 
     public InMemoryExpenseRepository() {
-        this.dataStore = SqliteDataStore.getInstance();
-        loadFromDatabase();
     }
 
     /**
-     * Loads all expenses from the SQLite database into memory.
-     */
-    private void loadFromDatabase() {
-        List<Expense> expenses = dataStore.loadAllExpenses();
-        for (Expense expense : expenses) {
-            storage.put(expense.id(), expense);
-        }
-        LOG.info("Loaded " + expenses.size() + " expenses from SQLite database");
-    }
-
-    /**
-     * Saves an expense to both memory and SQLite database.
+     * Saves an expense to the in-memory store.
      */
     public Expense save(Expense expense) {
         storage.put(expense.id(), expense);
-        dataStore.saveExpense(expense);
         return expense;
     }
 

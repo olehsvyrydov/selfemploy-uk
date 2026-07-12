@@ -90,7 +90,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             when(incomeRepository.findByDateRange(eq(BUSINESS_ID), any(), any()))
@@ -157,7 +157,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             when(incomeRepository.findByDateRange(eq(BUSINESS_ID), any(), any()))
@@ -195,7 +195,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             when(incomeRepository.findByDateRange(eq(BUSINESS_ID), any(), any()))
@@ -228,7 +228,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             when(incomeRepository.findByDateRange(eq(BUSINESS_ID), any(), any()))
@@ -261,7 +261,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             when(incomeRepository.findByDateRange(eq(BUSINESS_ID), any(), any()))
@@ -325,7 +325,7 @@ class DuplicateDetectorTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
             Expense existingExpense = new Expense(
                 UUID.randomUUID(),

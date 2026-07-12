@@ -78,7 +78,27 @@ public final class ToastNotification {
             Platform.runLater(() -> showExternalBrowserToast(message, url));
             return;
         }
+        displayToast(createToastContent(message, url), message);
+    }
 
+    /**
+     * Shows a transient success toast (e.g. "Income saved"). Non-blocking, auto-dismisses.
+     *
+     * @param message the success message to display
+     */
+    public static void showSuccess(String message) {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> showSuccess(message));
+            return;
+        }
+        displayToast(createSuccessContent(message), message);
+    }
+
+    /**
+     * Shows the given toast content as an auto-dismissing popup anchored near the bottom of the
+     * active window. Uses a {@link Popup} (not a JavaFX Alert), so it renders reliably.
+     */
+    private static void displayToast(HBox toast, String message) {
         try {
             Window ownerWindow = findActiveWindow();
             if (ownerWindow == null) {
@@ -86,41 +106,26 @@ public final class ToastNotification {
                 return;
             }
 
-            // Create popup
             Popup popup = new Popup();
             popup.setAutoHide(false);
             popup.setAutoFix(true);
-
-            // Create toast content
-            HBox toast = createToastContent(message, url);
             popup.getContent().add(toast);
 
-            // Position at bottom center of owner window (inside the window, not at edge)
+            // Position centered horizontally, 100px from the bottom of the owner window.
             double toastWidth = 280;
             double toastHeight = 60;
-            double windowX = ownerWindow.getX();
-            double windowY = ownerWindow.getY();
-            double windowW = ownerWindow.getWidth();
-            double windowH = ownerWindow.getHeight();
+            double x = ownerWindow.getX() + (ownerWindow.getWidth() - toastWidth) / 2;
+            double y = ownerWindow.getY() + ownerWindow.getHeight() - toastHeight - 100;
 
-            // Position centered horizontally, 100px from bottom of window
-            double x = windowX + (windowW - toastWidth) / 2;
-            double y = windowY + windowH - toastHeight - 100;
-
-            // Initial state for animation
             toast.setOpacity(0);
-
-            // Show popup
             popup.show(ownerWindow, x, y);
-            LOG.fine("Toast shown at position: " + x + ", " + y);
+            LOG.fine("Toast shown: " + message);
 
-            // Entry animation (fade in)
             FadeTransition fadeIn = new FadeTransition(Duration.millis(ANIMATION_DURATION_MS), toast);
             fadeIn.setFromValue(0);
             fadeIn.setToValue(1);
             fadeIn.play();
 
-            // Schedule auto-dismiss
             PauseTransition pause = new PauseTransition(Duration.millis(DISPLAY_DURATION_MS));
             pause.setOnFinished(e -> {
                 FadeTransition fadeOut = new FadeTransition(Duration.millis(ANIMATION_DURATION_MS), toast);
@@ -134,6 +139,34 @@ public final class ToastNotification {
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Could not show toast notification", e);
         }
+    }
+
+    /**
+     * Creates success toast content with a checkmark icon.
+     */
+    private static HBox createSuccessContent(String message) {
+        Label iconLabel = new Label("✓");
+        iconLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #4ade80;");
+
+        Label messageLabel = new Label(message);
+        messageLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: #f8fafc;");
+
+        HBox toast = new HBox(10);
+        toast.setAlignment(Pos.CENTER_LEFT);
+        toast.setPadding(new Insets(12, 16, 12, 16));
+        toast.setStyle(
+            "-fx-background-color: #1e293b;" +
+            "-fx-background-radius: 8;" +
+            "-fx-border-color: #475569;" +
+            "-fx-border-width: 1;" +
+            "-fx-border-radius: 8;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 5);" +
+            "-fx-min-width: 250;" +
+            "-fx-min-height: 50;"
+        );
+        toast.getChildren().addAll(iconLabel, messageLabel);
+        toast.setAccessibleText(message);
+        return toast;
     }
 
     /**

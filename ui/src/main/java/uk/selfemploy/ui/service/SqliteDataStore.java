@@ -1,30 +1,13 @@
 package uk.selfemploy.ui.service;
 
-import uk.selfemploy.common.domain.Expense;
-import uk.selfemploy.common.domain.Income;
-import uk.selfemploy.common.enums.ExpenseCategory;
-import uk.selfemploy.common.enums.IncomeCategory;
-
-import uk.selfemploy.common.domain.BankTransaction;
-import uk.selfemploy.common.enums.ReviewStatus;
-import uk.selfemploy.core.reconciliation.MatchTier;
-import uk.selfemploy.core.reconciliation.ReconciliationMatch;
-import uk.selfemploy.core.reconciliation.ReconciliationStatus;
-
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,7 +33,23 @@ public final class SqliteDataStore {
 
     private final Path databasePath;
     private final boolean inMemory;
+
+    /**
+     * The primary connection: used for schema init/migration, and the sole connection in in-memory
+     * (test) mode. In file mode it also serves the thread that constructed the store.
+     */
     private Connection connection;
+
+    /**
+     * File mode only: each thread gets its own connection so concurrent threads (e.g. a background
+     * CSV-import thread writing while the JavaFX thread reads) never share one non-thread-safe
+     * {@link Connection}. In-memory mode keeps the single shared {@link #connection}, since a
+     * {@code :memory:} database is private to its connection.
+     */
+    private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
+
+    /** Every connection handed out, tracked so {@link #close()} can release them all. */
+    private final List<Connection> openConnections = new CopyOnWriteArrayList<>();
 
     private SqliteDataStore() {
         this(false);
@@ -128,6 +127,12 @@ public final class SqliteDataStore {
             configureSqlite();
             createTables();
             migrateSchema();
+
+            if (!inMemory) {
+                // The constructing thread reuses the primary connection; other threads open their own.
+                openConnections.add(connection);
+                threadConnection.set(connection);
+            }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to initialize SQLite database", e);
         }
@@ -142,6 +147,122 @@ public final class SqliteDataStore {
         addColumnIfMissing("bank_transactions", "deleted_at", "TEXT");
         addColumnIfMissing("bank_transactions", "deleted_by", "TEXT");
         addColumnIfMissing("bank_transactions", "deletion_reason", "TEXT");
+        addColumnIfMissing("income", "client_name", "TEXT");
+        addColumnIfMissing("income", "status", "TEXT NOT NULL DEFAULT 'PAID'");
+        migrateSubmissionHonesty();
+    }
+
+    /**
+     * Makes the submission history honest.
+     *
+     * <p>Older builds fabricated an HMRC annual submission: they wrote rows with an
+     * invented "SA-..." reference and a status of ACCEPTED, even though nothing was
+     * ever sent to HMRC. This migration widens the status CHECK constraint to allow
+     * NOT_SUBMITTED (older on-disk tables were created without it), then relabels
+     * every fabricated row as NOT_SUBMITTED and clears its counterfeit reference so
+     * the history screen can no longer present it as an accepted HMRC filing.</p>
+     *
+     * <p>A real HMRC reference is never of the "SA-" form, so the relabel targets
+     * exactly the fabricated rows. Both steps are idempotent.</p>
+     */
+    void migrateSubmissionHonesty() {
+        try {
+            String ddl = null;
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(
+                     "SELECT sql FROM sqlite_master WHERE type='table' AND name='submissions'")) {
+                if (rs.next()) {
+                    ddl = rs.getString(1);
+                }
+            }
+            if (ddl == null) {
+                return; // no submissions table yet
+            }
+            if (!ddl.contains("NOT_SUBMITTED")) {
+                rebuildSubmissionsTableWithHonestCheck();
+            }
+            try (Statement stmt = connection.createStatement()) {
+                int relabelled = stmt.executeUpdate(
+                    "UPDATE submissions SET status = 'NOT_SUBMITTED', hmrc_reference = NULL "
+                    + "WHERE hmrc_reference LIKE 'SA-%'");
+                if (relabelled > 0) {
+                    LOG.info("Relabelled " + relabelled
+                        + " fabricated submission row(s) as NOT_SUBMITTED");
+                }
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to migrate submission history to honest state", e);
+            throw new RuntimeException("Submission history migration failed", e);
+        }
+    }
+
+    /**
+     * Rebuilds the submissions table so its status CHECK constraint allows
+     * NOT_SUBMITTED. SQLite cannot alter a CHECK constraint in place, so the table
+     * is recreated and its data copied across.
+     */
+    private void rebuildSubmissionsTableWithHonestCheck() throws SQLException {
+        boolean autoCommit = connection.getAutoCommit();
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("PRAGMA foreign_keys = OFF");
+            connection.setAutoCommit(false);
+            stmt.execute("""
+                CREATE TABLE submissions_new (
+                    id TEXT PRIMARY KEY,
+                    business_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    tax_year_start INTEGER NOT NULL,
+                    period_start TEXT NOT NULL,
+                    period_end TEXT NOT NULL,
+                    total_income TEXT NOT NULL,
+                    total_expenses TEXT NOT NULL,
+                    net_profit TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    hmrc_reference TEXT,
+                    error_message TEXT,
+                    submitted_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
+                    CHECK (type IN ('QUARTERLY_Q1', 'QUARTERLY_Q2', 'QUARTERLY_Q3', 'QUARTERLY_Q4', 'ANNUAL')),
+                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED', 'NOT_SUBMITTED'))
+                )
+            """);
+            stmt.execute("""
+                INSERT INTO submissions_new
+                    (id, business_id, type, tax_year_start, period_start, period_end,
+                     total_income, total_expenses, net_profit, status, hmrc_reference,
+                     error_message, submitted_at, created_at)
+                SELECT id, business_id, type, tax_year_start, period_start, period_end,
+                     total_income, total_expenses, net_profit, status, hmrc_reference,
+                     error_message, submitted_at, created_at
+                FROM submissions
+            """);
+            stmt.execute("DROP TABLE submissions");
+            stmt.execute("ALTER TABLE submissions_new RENAME TO submissions");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_tax_year ON submissions(tax_year_start)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status)");
+            connection.commit();
+            LOG.info("Rebuilt submissions table to allow NOT_SUBMITTED status");
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(autoCommit);
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+            }
+        }
+    }
+
+    /**
+     * Test-only hook: runs raw DDL/DML against the current connection so migration
+     * tests can stage a legacy schema. Not for production use.
+     */
+    void executeRawForTest(String sql) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql);
+        }
     }
 
     private void addColumnIfMissing(String table, String column, String type) {
@@ -227,6 +348,8 @@ public final class SqliteDataStore {
                     description TEXT NOT NULL,
                     category TEXT NOT NULL,
                     reference TEXT,
+                    client_name TEXT,
+                    status TEXT NOT NULL DEFAULT 'PAID',
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
                     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
@@ -279,7 +402,7 @@ public final class SqliteDataStore {
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
                     CHECK (type IN ('QUARTERLY_Q1', 'QUARTERLY_Q2', 'QUARTERLY_Q3', 'QUARTERLY_Q4', 'ANNUAL')),
-                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED'))
+                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED', 'NOT_SUBMITTED'))
                 )
             """);
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
@@ -397,7 +520,7 @@ public final class SqliteDataStore {
         if (value == null) {
             // Delete the setting if value is null (to clear it)
             String sql = "DELETE FROM settings WHERE key = ?";
-            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
                 pstmt.setString(1, key);
                 pstmt.executeUpdate();
             } catch (SQLException e) {
@@ -405,7 +528,7 @@ public final class SqliteDataStore {
             }
         } else {
             String sql = "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)";
-            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
                 pstmt.setString(1, key);
                 pstmt.setString(2, value);
                 pstmt.executeUpdate();
@@ -417,7 +540,7 @@ public final class SqliteDataStore {
 
     private String loadSetting(String key) {
         String sql = "SELECT value FROM settings WHERE key = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
             pstmt.setString(1, key);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -753,192 +876,6 @@ public final class SqliteDataStore {
         return "sandbox".equals(loadHmrcEnvironment());
     }
 
-    // === Expense Operations ===
-
-    /**
-     * Saves an expense to the database.
-     */
-    public synchronized void saveExpense(Expense expense) {
-        String sql = """
-            INSERT OR REPLACE INTO expenses
-            (id, business_id, date, amount, description, category, receipt_path, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, expense.id().toString());
-            pstmt.setString(2, expense.businessId().toString());
-            pstmt.setString(3, expense.date().toString());
-            pstmt.setString(4, expense.amount().toPlainString());
-            pstmt.setString(5, expense.description());
-            pstmt.setString(6, expense.category().name());
-            pstmt.setString(7, expense.receiptPath());
-            pstmt.setString(8, expense.notes());
-            pstmt.executeUpdate();
-            LOG.fine("Saved expense: " + expense.id());
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save expense: " + expense.id(), e);
-        }
-    }
-
-    /**
-     * Loads all expenses from the database.
-     */
-    public synchronized List<Expense> loadAllExpenses() {
-        List<Expense> expenses = new ArrayList<>();
-        String sql = "SELECT * FROM expenses ORDER BY date DESC";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                expenses.add(mapExpense(rs));
-            }
-            LOG.info("Loaded " + expenses.size() + " expenses from database");
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to load expenses", e);
-        }
-        return expenses;
-    }
-
-    /**
-     * Finds an expense by ID.
-     */
-    public synchronized Optional<Expense> findExpenseById(UUID id) {
-        String sql = "SELECT * FROM expenses WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapExpense(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find expense: " + id, e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Deletes an expense by ID.
-     */
-    public synchronized boolean deleteExpense(UUID id) {
-        String sql = "DELETE FROM expenses WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            int affected = pstmt.executeUpdate();
-            return affected > 0;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to delete expense: " + id, e);
-            return false;
-        }
-    }
-
-    private Expense mapExpense(ResultSet rs) throws SQLException {
-        return new Expense(
-            UUID.fromString(rs.getString("id")),
-            UUID.fromString(rs.getString("business_id")),
-            LocalDate.parse(rs.getString("date")),
-            new BigDecimal(rs.getString("amount")),
-            rs.getString("description"),
-            ExpenseCategory.valueOf(rs.getString("category")),
-            rs.getString("receipt_path"),
-            rs.getString("notes"),
-            null, // bankTransactionRef - not stored in SQLite yet
-            null, // supplierRef - not stored in SQLite yet
-            null, // invoiceNumber - not stored in SQLite yet
-            null  // bankTransactionId - not stored in SQLite yet
-        );
-    }
-
-    // === Income Operations ===
-
-    /**
-     * Saves an income entry to the database.
-     */
-    public synchronized void saveIncome(Income income) {
-        String sql = """
-            INSERT OR REPLACE INTO income
-            (id, business_id, date, amount, description, category, reference)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, income.id().toString());
-            pstmt.setString(2, income.businessId().toString());
-            pstmt.setString(3, income.date().toString());
-            pstmt.setString(4, income.amount().toPlainString());
-            pstmt.setString(5, income.description());
-            pstmt.setString(6, income.category().name());
-            pstmt.setString(7, income.reference());
-            pstmt.executeUpdate();
-            LOG.fine("Saved income: " + income.id());
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save income: " + income.id(), e);
-        }
-    }
-
-    /**
-     * Loads all income entries from the database.
-     */
-    public synchronized List<Income> loadAllIncome() {
-        List<Income> incomeList = new ArrayList<>();
-        String sql = "SELECT * FROM income ORDER BY date DESC";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                incomeList.add(mapIncome(rs));
-            }
-            LOG.info("Loaded " + incomeList.size() + " income entries from database");
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to load income", e);
-        }
-        return incomeList;
-    }
-
-    /**
-     * Finds an income entry by ID.
-     */
-    public synchronized Optional<Income> findIncomeById(UUID id) {
-        String sql = "SELECT * FROM income WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapIncome(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find income: " + id, e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Deletes an income entry by ID.
-     */
-    public synchronized boolean deleteIncome(UUID id) {
-        String sql = "DELETE FROM income WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            int affected = pstmt.executeUpdate();
-            return affected > 0;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to delete income: " + id, e);
-            return false;
-        }
-    }
-
-    private Income mapIncome(ResultSet rs) throws SQLException {
-        return new Income(
-            UUID.fromString(rs.getString("id")),
-            UUID.fromString(rs.getString("business_id")),
-            LocalDate.parse(rs.getString("date")),
-            new BigDecimal(rs.getString("amount")),
-            rs.getString("description"),
-            IncomeCategory.valueOf(rs.getString("category")),
-            rs.getString("reference"),
-            null, // bankTransactionRef - not stored in SQLite yet
-            null, // invoiceNumber - not stored in SQLite yet
-            null, // receiptPath - not stored in SQLite yet
-            null  // bankTransactionId - not stored in SQLite yet
-        );
-    }
-
     // === Business Operations ===
 
     /**
@@ -947,166 +884,12 @@ public final class SqliteDataStore {
      */
     public synchronized void ensureBusinessExists(UUID businessId) {
         String sql = "INSERT OR IGNORE INTO business (id) VALUES (?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to ensure business exists: " + businessId, e);
         }
-    }
-
-    // === Query Methods ===
-
-    /**
-     * Finds expenses by business ID.
-     */
-    public synchronized List<Expense> findExpensesByBusinessId(UUID businessId) {
-        List<Expense> expenses = new ArrayList<>();
-        String sql = "SELECT * FROM expenses WHERE business_id = ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                expenses.add(mapExpense(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find expenses by business ID", e);
-        }
-        return expenses;
-    }
-
-    /**
-     * Finds expenses by date range for a business.
-     */
-    public synchronized List<Expense> findExpensesByDateRange(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        List<Expense> expenses = new ArrayList<>();
-        String sql = "SELECT * FROM expenses WHERE business_id = ? AND date >= ? AND date <= ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                expenses.add(mapExpense(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find expenses by date range", e);
-        }
-        return expenses;
-    }
-
-    /**
-     * Finds income by business ID.
-     */
-    public synchronized List<Income> findIncomeByBusinessId(UUID businessId) {
-        List<Income> incomeList = new ArrayList<>();
-        String sql = "SELECT * FROM income WHERE business_id = ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                incomeList.add(mapIncome(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find income by business ID", e);
-        }
-        return incomeList;
-    }
-
-    /**
-     * Finds income by date range for a business.
-     */
-    public synchronized List<Income> findIncomeByDateRange(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        List<Income> incomeList = new ArrayList<>();
-        String sql = "SELECT * FROM income WHERE business_id = ? AND date >= ? AND date <= ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                incomeList.add(mapIncome(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find income by date range", e);
-        }
-        return incomeList;
-    }
-
-    // === Aggregation Methods ===
-
-    /**
-     * Calculates total expenses for a business within a date range.
-     */
-    public synchronized BigDecimal calculateTotalExpenses(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        String sql = "SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM expenses WHERE business_id = ? AND date >= ? AND date <= ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to calculate total expenses", e);
-        }
-        return BigDecimal.ZERO;
-    }
-
-    /**
-     * Calculates allowable expenses for a business within a date range.
-     */
-    public synchronized BigDecimal calculateAllowableExpenses(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        // Get allowable categories
-        List<String> allowableCategories = Arrays.stream(ExpenseCategory.values())
-                .filter(ExpenseCategory::isAllowable)
-                .map(Enum::name)
-                .toList();
-
-        if (allowableCategories.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        String placeholders = String.join(",", allowableCategories.stream().map(c -> "?").toList());
-        String sql = "SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM expenses " +
-                "WHERE business_id = ? AND date >= ? AND date <= ? AND category IN (" + placeholders + ")";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            int idx = 4;
-            for (String category : allowableCategories) {
-                pstmt.setString(idx++, category);
-            }
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
-        }
-        return BigDecimal.ZERO;
-    }
-
-    /**
-     * Calculates total income for a business within a date range.
-     */
-    public synchronized BigDecimal calculateTotalIncome(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        String sql = "SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM income WHERE business_id = ? AND date >= ? AND date <= ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to calculate total income", e);
-        }
-        return BigDecimal.ZERO;
     }
 
     // === Transaction Support ===
@@ -1116,22 +899,23 @@ public final class SqliteDataStore {
      * Rolls back on any exception.
      */
     public synchronized boolean executeInTransaction(Runnable action) {
+        Connection conn = connection();
         try {
-            connection.setAutoCommit(false);
+            conn.setAutoCommit(false);
             action.run();
-            connection.commit();
+            conn.commit();
             return true;
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Transaction failed, rolling back", e);
             try {
-                connection.rollback();
+                conn.rollback();
             } catch (SQLException rollbackEx) {
                 LOG.log(Level.SEVERE, "Rollback failed", rollbackEx);
             }
             return false;
         } finally {
             try {
-                connection.setAutoCommit(true);
+                conn.setAutoCommit(true);
             } catch (SQLException e) {
                 LOG.log(Level.WARNING, "Failed to restore auto-commit", e);
             }
@@ -1151,7 +935,7 @@ public final class SqliteDataStore {
      * Returns the current journal mode.
      */
     public synchronized String getJournalMode() {
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = connection().createStatement();
              ResultSet rs = stmt.executeQuery("PRAGMA journal_mode")) {
             if (rs.next()) {
                 return rs.getString(1);
@@ -1166,7 +950,7 @@ public final class SqliteDataStore {
      * Returns true if foreign keys are enabled.
      */
     public synchronized boolean areForeignKeysEnabled() {
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = connection().createStatement();
              ResultSet rs = stmt.executeQuery("PRAGMA foreign_keys")) {
             if (rs.next()) {
                 return rs.getInt(1) == 1;
@@ -1187,13 +971,24 @@ public final class SqliteDataStore {
     }
 
     /**
-     * Closes the database connection.
+     * Closes every database connection (the primary and every per-thread connection in file mode).
      */
     public synchronized void close() {
+        if (inMemory) {
+            closeQuietly(connection);
+        } else {
+            for (Connection conn : openConnections) {
+                closeQuietly(conn);
+            }
+            openConnections.clear();
+        }
+        LOG.info("SQLite connection(s) closed");
+    }
+
+    private void closeQuietly(Connection conn) {
         try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-                LOG.info("SQLite connection closed");
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
             }
         } catch (SQLException e) {
             LOG.log(Level.WARNING, "Error closing SQLite connection", e);
@@ -1201,807 +996,55 @@ public final class SqliteDataStore {
     }
 
     /**
-     * Returns the count of expenses.
-     */
-    public synchronized long countExpenses() {
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM expenses")) {
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count expenses", e);
-        }
-        return 0;
-    }
-
-    /**
-     * Returns the count of income entries.
-     */
-    public synchronized long countIncome() {
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM income")) {
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count income", e);
-        }
-        return 0;
-    }
-
-    // === Terms Acceptance Operations (SE-508) ===
-
-    /**
-     * Saves a Terms of Service acceptance.
+     * Returns the SQLite connection the calling thread should use. In file mode each thread gets
+     * its own connection (opened lazily) so concurrent threads never issue statements on a shared,
+     * non-thread-safe {@link Connection}; WAL mode plus {@code busy_timeout} (set on every
+     * connection) handle reader/writer concurrency across those connections. In-memory mode returns
+     * the single shared connection, because a {@code :memory:} database is private per connection.
      *
-     * @param tosVersion          The version of the ToS being accepted
-     * @param acceptedAt          The timestamp of acceptance (UTC)
-     * @param scrollCompletedAt   The timestamp when user scrolled to bottom (UTC)
-     * @param applicationVersion  The version of the application
-     * @return true if saved successfully, false otherwise
+     * <p>Package-private so collaborating repositories in this package can reach it.</p>
+     *
+     * @return the connection for this thread, or null if the store failed to initialise
      */
-    public synchronized boolean saveTermsAcceptance(String tosVersion, java.time.Instant acceptedAt,
-                                                     java.time.Instant scrollCompletedAt, String applicationVersion) {
-        String sql = """
-            INSERT INTO terms_acceptance (id, tos_version, accepted_at, scroll_completed_at, application_version)
-            VALUES (?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, UUID.randomUUID().toString());
-            pstmt.setString(2, tosVersion);
-            pstmt.setString(3, acceptedAt.toString());
-            pstmt.setString(4, scrollCompletedAt.toString());
-            pstmt.setString(5, applicationVersion);
-            pstmt.executeUpdate();
-            LOG.info("Saved Terms acceptance for version: " + tosVersion);
+    synchronized Connection connection() {
+        if (inMemory || connection == null) {
+            return connection;
+        }
+        Connection conn = threadConnection.get();
+        if (conn == null || isClosedQuietly(conn)) {
+            conn = openThreadConnection();
+            threadConnection.set(conn);
+            openConnections.add(conn);
+        }
+        return conn;
+    }
+
+    /**
+     * Opens a fresh file-mode connection for the calling thread and applies the per-connection
+     * pragmas. WAL is a persistent database-level setting established on the primary connection, so
+     * it is not re-issued here. Falls back to the shared primary connection if opening fails.
+     */
+    private Connection openThreadConnection() {
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + databasePath.toAbsolutePath());
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+                stmt.execute("PRAGMA synchronous = NORMAL");
+                stmt.execute("PRAGMA busy_timeout = 5000");
+            }
+            return conn;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to open per-thread SQLite connection; using shared connection", e);
+            return connection;
+        }
+    }
+
+    private static boolean isClosedQuietly(Connection conn) {
+        try {
+            return conn.isClosed();
+        } catch (SQLException e) {
             return true;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save Terms acceptance", e);
-            return false;
         }
     }
 
-    /**
-     * Gets the most recently accepted ToS version.
-     *
-     * @return Optional containing the version string, or empty if no acceptances exist
-     */
-    public synchronized Optional<String> getLatestAcceptedTermsVersion() {
-        String sql = "SELECT tos_version FROM terms_acceptance ORDER BY accepted_at DESC LIMIT 1";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return Optional.of(rs.getString("tos_version"));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to get latest Terms version", e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Gets the timestamp of the most recent Terms acceptance.
-     *
-     * @return Optional containing the timestamp, or empty if no acceptances exist
-     */
-    public synchronized Optional<java.time.Instant> getLatestTermsAcceptanceTimestamp() {
-        String sql = "SELECT accepted_at FROM terms_acceptance ORDER BY accepted_at DESC LIMIT 1";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return Optional.of(java.time.Instant.parse(rs.getString("accepted_at")));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to get Terms acceptance timestamp", e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Gets the scroll completed timestamp of the most recent Terms acceptance.
-     *
-     * @return Optional containing the timestamp, or empty if no acceptances exist
-     */
-    public synchronized Optional<java.time.Instant> getLatestTermsScrollCompletedTimestamp() {
-        String sql = "SELECT scroll_completed_at FROM terms_acceptance ORDER BY accepted_at DESC LIMIT 1";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return Optional.of(java.time.Instant.parse(rs.getString("scroll_completed_at")));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to get Terms scroll completed timestamp", e);
-        }
-        return Optional.empty();
-    }
-
-    // === Privacy Acknowledgment Operations (SE-507) ===
-
-    /**
-     * Saves a privacy notice acknowledgment.
-     *
-     * @param privacyVersion      The version of the privacy notice being acknowledged
-     * @param acknowledgedAt      The timestamp of acknowledgment (UTC)
-     * @param applicationVersion  The version of the application
-     * @return true if saved successfully, false otherwise
-     */
-    public synchronized boolean savePrivacyAcknowledgment(String privacyVersion, java.time.Instant acknowledgedAt,
-                                                           String applicationVersion) {
-        String sql = """
-            INSERT INTO privacy_acknowledgment (id, privacy_version, acknowledged_at, application_version)
-            VALUES (?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, UUID.randomUUID().toString());
-            pstmt.setString(2, privacyVersion);
-            pstmt.setString(3, acknowledgedAt.toString());
-            pstmt.setString(4, applicationVersion);
-            pstmt.executeUpdate();
-            LOG.info("Saved Privacy acknowledgment for version: " + privacyVersion);
-            return true;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save Privacy acknowledgment", e);
-            return false;
-        }
-    }
-
-    /**
-     * Gets the most recently acknowledged privacy notice version.
-     *
-     * @return Optional containing the version string, or empty if no acknowledgments exist
-     */
-    public synchronized Optional<String> getLatestAcknowledgedPrivacyVersion() {
-        String sql = "SELECT privacy_version FROM privacy_acknowledgment ORDER BY acknowledged_at DESC LIMIT 1";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return Optional.of(rs.getString("privacy_version"));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to get latest Privacy version", e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Gets the timestamp of the most recent Privacy acknowledgment.
-     *
-     * @return Optional containing the timestamp, or empty if no acknowledgments exist
-     */
-    public synchronized Optional<java.time.Instant> getLatestPrivacyAcknowledgmentTimestamp() {
-        String sql = "SELECT acknowledged_at FROM privacy_acknowledgment ORDER BY acknowledged_at DESC LIMIT 1";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return Optional.of(java.time.Instant.parse(rs.getString("acknowledged_at")));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to get Privacy acknowledgment timestamp", e);
-        }
-        return Optional.empty();
-    }
-
-    // === Bank Transaction Operations ===
-
-    /**
-     * Saves a bank transaction to the database.
-     * Uses INSERT OR REPLACE to handle updates.
-     */
-    public synchronized void saveBankTransaction(BankTransaction tx) {
-        String sql = """
-            INSERT OR REPLACE INTO bank_transactions
-            (id, business_id, import_audit_id, source_format_id, date, amount,
-             description, account_last_four, bank_transaction_id, transaction_hash,
-             review_status, income_id, expense_id, exclusion_reason,
-             is_business, confidence_score, suggested_category, created_at, updated_at,
-             deleted_at, deleted_by, deletion_reason)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, tx.id().toString());
-            pstmt.setString(2, tx.businessId().toString());
-            pstmt.setString(3, tx.importAuditId().toString());
-            pstmt.setString(4, tx.sourceFormatId());
-            pstmt.setString(5, tx.date().toString());
-            pstmt.setString(6, tx.amount().toPlainString());
-            pstmt.setString(7, tx.description());
-            pstmt.setString(8, tx.accountLastFour());
-            pstmt.setString(9, tx.bankTransactionId());
-            pstmt.setString(10, tx.transactionHash());
-            pstmt.setString(11, tx.reviewStatus().name());
-            pstmt.setString(12, tx.incomeId() != null ? tx.incomeId().toString() : null);
-            pstmt.setString(13, tx.expenseId() != null ? tx.expenseId().toString() : null);
-            pstmt.setString(14, tx.exclusionReason());
-            if (tx.isBusiness() != null) {
-                pstmt.setInt(15, tx.isBusiness() ? 1 : 0);
-            } else {
-                pstmt.setNull(15, Types.INTEGER);
-            }
-            pstmt.setString(16, tx.confidenceScore() != null ? tx.confidenceScore().toPlainString() : null);
-            pstmt.setString(17, tx.suggestedCategory() != null ? tx.suggestedCategory().name() : null);
-            pstmt.setString(18, tx.createdAt().toString());
-            pstmt.setString(19, tx.updatedAt() != null ? tx.updatedAt().toString() : tx.createdAt().toString());
-            pstmt.setString(20, tx.deletedAt() != null ? tx.deletedAt().toString() : null);
-            pstmt.setString(21, tx.deletedBy());
-            pstmt.setString(22, tx.deletionReason());
-            pstmt.executeUpdate();
-            LOG.fine("Saved bank transaction: " + tx.id());
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save bank transaction: " + tx.id(), e);
-        }
-    }
-
-    /**
-     * Finds all bank transactions for a business, ordered by date descending.
-     */
-    public synchronized List<BankTransaction> findBankTransactions(UUID businessId) {
-        List<BankTransaction> transactions = new ArrayList<>();
-        String sql = "SELECT * FROM bank_transactions WHERE business_id = ? AND deleted_at IS NULL ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                transactions.add(mapBankTransaction(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find bank transactions", e);
-        }
-        return transactions;
-    }
-
-    /**
-     * Finds a bank transaction by ID.
-     */
-    public synchronized Optional<BankTransaction> findBankTransactionById(UUID id) {
-        String sql = "SELECT * FROM bank_transactions WHERE id = ? AND deleted_at IS NULL";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapBankTransaction(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find bank transaction: " + id, e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Counts bank transactions by review status for a business.
-     */
-    public synchronized long countBankTransactionsByStatus(UUID businessId, String status) {
-        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND review_status = ? AND deleted_at IS NULL";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, status);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count bank transactions by status", e);
-        }
-        return 0;
-    }
-
-    /**
-     * Counts all bank transactions for a business.
-     */
-    public synchronized long countBankTransactions(UUID businessId) {
-        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND deleted_at IS NULL";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count bank transactions", e);
-        }
-        return 0;
-    }
-
-    /**
-     * Checks if a bank transaction with the given hash exists for a business.
-     */
-    public synchronized boolean existsByTransactionHash(UUID businessId, String hash) {
-        String sql = "SELECT COUNT(*) FROM bank_transactions WHERE business_id = ? AND transaction_hash = ? AND deleted_at IS NULL";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, hash);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong(1) > 0;
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to check transaction hash", e);
-        }
-        return false;
-    }
-
-    /**
-     * Soft-deletes a bank transaction by ID.
-     * Sets the deleted_at timestamp instead of removing the row,
-     * preserving data for the 6-year HMRC retention period (TMA 1970 s.12B).
-     */
-    public synchronized boolean deleteBankTransaction(UUID id) {
-        String sql = "UPDATE bank_transactions SET deleted_at = ?, deleted_by = ?, deletion_reason = ? WHERE id = ? AND deleted_at IS NULL";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, Instant.now().toString());
-            pstmt.setString(2, "local-user");
-            pstmt.setString(3, "User-initiated deletion");
-            pstmt.setString(4, id.toString());
-            int affected = pstmt.executeUpdate();
-            return affected > 0;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to soft-delete bank transaction: " + id, e);
-            return false;
-        }
-    }
-
-    /**
-     * Records a modification to a bank transaction in the audit log.
-     * This creates an immutable record of every state change for MTD compliance.
-     *
-     * @param bankTransactionId the transaction being modified
-     * @param modificationType  one of: CATEGORIZED, EXCLUDED, RECATEGORIZED, RESTORED,
-     *                          BUSINESS_PERSONAL_CHANGED, CATEGORY_CHANGED
-     * @param fieldName         the field that was changed (e.g. "review_status", "is_business")
-     * @param previousValue     the value before the change (null if not applicable)
-     * @param newValue          the value after the change
-     * @param modifiedBy        who made the change (e.g. "local-user")
-     */
-    public synchronized void logTransactionModification(
-            UUID bankTransactionId, String modificationType,
-            String fieldName, String previousValue, String newValue,
-            String modifiedBy) {
-        String sql = """
-            INSERT INTO transaction_modification_log
-            (id, bank_transaction_id, modification_type, field_name,
-             previous_value, new_value, modified_by, modified_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, UUID.randomUUID().toString());
-            pstmt.setString(2, bankTransactionId.toString());
-            pstmt.setString(3, modificationType);
-            pstmt.setString(4, fieldName);
-            pstmt.setString(5, previousValue);
-            pstmt.setString(6, newValue);
-            pstmt.setString(7, modifiedBy);
-            pstmt.setString(8, Instant.now().toString());
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to log transaction modification for: " + bankTransactionId, e);
-        }
-    }
-
-    /**
-     * Finds all modification log entries for a bank transaction, ordered by time ascending.
-     *
-     * @param bankTransactionId the transaction ID to look up
-     * @return list of log entries as field-value maps
-     */
-    public synchronized List<Map<String, String>> findModificationLogs(UUID bankTransactionId) {
-        List<Map<String, String>> logs = new ArrayList<>();
-        String sql = "SELECT * FROM transaction_modification_log WHERE bank_transaction_id = ? ORDER BY modified_at ASC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, bankTransactionId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                Map<String, String> entry = new HashMap<>();
-                entry.put("id", rs.getString("id"));
-                entry.put("bank_transaction_id", rs.getString("bank_transaction_id"));
-                entry.put("modification_type", rs.getString("modification_type"));
-                entry.put("field_name", rs.getString("field_name"));
-                entry.put("previous_value", rs.getString("previous_value"));
-                entry.put("new_value", rs.getString("new_value"));
-                entry.put("modified_by", rs.getString("modified_by"));
-                entry.put("modified_at", rs.getString("modified_at"));
-                logs.add(entry);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find modification logs for: " + bankTransactionId, e);
-        }
-        return logs;
-    }
-
-    private BankTransaction mapBankTransaction(ResultSet rs) throws SQLException {
-        String incomeIdStr = rs.getString("income_id");
-        String expenseIdStr = rs.getString("expense_id");
-        String confidenceStr = rs.getString("confidence_score");
-        String categoryStr = rs.getString("suggested_category");
-        String updatedAtStr = rs.getString("updated_at");
-        String deletedAtStr = rs.getString("deleted_at");
-
-        // Handle nullable is_business column
-        int isBusinessInt = rs.getInt("is_business");
-        Boolean isBusiness = rs.wasNull() ? null : (isBusinessInt == 1);
-
-        return new BankTransaction(
-            UUID.fromString(rs.getString("id")),
-            UUID.fromString(rs.getString("business_id")),
-            UUID.fromString(rs.getString("import_audit_id")),
-            rs.getString("source_format_id"),
-            LocalDate.parse(rs.getString("date")),
-            new BigDecimal(rs.getString("amount")),
-            rs.getString("description"),
-            rs.getString("account_last_four"),
-            rs.getString("bank_transaction_id"),
-            rs.getString("transaction_hash"),
-            ReviewStatus.valueOf(rs.getString("review_status")),
-            incomeIdStr != null ? UUID.fromString(incomeIdStr) : null,
-            expenseIdStr != null ? UUID.fromString(expenseIdStr) : null,
-            rs.getString("exclusion_reason"),
-            isBusiness,
-            confidenceStr != null ? new BigDecimal(confidenceStr) : null,
-            categoryStr != null ? ExpenseCategory.valueOf(categoryStr) : null,
-            Instant.parse(rs.getString("created_at")),
-            updatedAtStr != null ? Instant.parse(updatedAtStr) : null,
-            deletedAtStr != null ? Instant.parse(deletedAtStr) : null,
-            rs.getString("deleted_by"),
-            rs.getString("deletion_reason")
-        );
-    }
-
-    // === Submission Operations (BUG-10H-001) ===
-
-    /**
-     * Saves a submission record to the database.
-     * Uses INSERT OR REPLACE to handle updates.
-     *
-     * @param submission The submission record to save
-     */
-    public synchronized void saveSubmission(SubmissionRecord submission) {
-        String sql = """
-            INSERT OR REPLACE INTO submissions
-            (id, business_id, type, tax_year_start, period_start, period_end,
-             total_income, total_expenses, net_profit, status, hmrc_reference,
-             error_message, submitted_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, submission.id());
-            pstmt.setString(2, submission.businessId());
-            pstmt.setString(3, submission.type());
-            pstmt.setInt(4, submission.taxYearStart());
-            pstmt.setString(5, submission.periodStart().toString());
-            pstmt.setString(6, submission.periodEnd().toString());
-            pstmt.setString(7, submission.totalIncome().toPlainString());
-            pstmt.setString(8, submission.totalExpenses().toPlainString());
-            pstmt.setString(9, submission.netProfit().toPlainString());
-            pstmt.setString(10, submission.status());
-            pstmt.setString(11, submission.hmrcReference());
-            pstmt.setString(12, submission.errorMessage());
-            pstmt.setString(13, submission.submittedAt().toString());
-            pstmt.executeUpdate();
-            LOG.fine("Saved submission: " + submission.id());
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save submission: " + submission.id(), e);
-        }
-    }
-
-    /**
-     * Finds all submissions for a business, ordered by submitted_at descending.
-     *
-     * @param businessId The business ID
-     * @return List of submissions, newest first
-     */
-    public synchronized List<SubmissionRecord> findSubmissionsByBusinessId(UUID businessId) {
-        List<SubmissionRecord> submissions = new ArrayList<>();
-        String sql = "SELECT * FROM submissions WHERE business_id = ? ORDER BY submitted_at DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                submissions.add(mapSubmission(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find submissions by business ID", e);
-        }
-        return submissions;
-    }
-
-    /**
-     * Finds a submission by ID.
-     *
-     * @param id The submission ID
-     * @return The submission if found
-     */
-    public synchronized Optional<SubmissionRecord> findSubmissionById(String id) {
-        String sql = "SELECT * FROM submissions WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapSubmission(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find submission: " + id, e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Finds submissions by tax year for a business.
-     *
-     * @param businessId   The business ID
-     * @param taxYearStart The tax year start (e.g., 2025 for 2025/26)
-     * @return List of submissions for the tax year
-     */
-    public synchronized List<SubmissionRecord> findSubmissionsByTaxYear(UUID businessId, int taxYearStart) {
-        List<SubmissionRecord> submissions = new ArrayList<>();
-        String sql = "SELECT * FROM submissions WHERE business_id = ? AND tax_year_start = ? ORDER BY submitted_at DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setInt(2, taxYearStart);
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                submissions.add(mapSubmission(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find submissions by tax year", e);
-        }
-        return submissions;
-    }
-
-    /**
-     * Deletes a submission by ID.
-     *
-     * @param id The submission ID
-     * @return true if deleted, false if not found
-     */
-    public synchronized boolean deleteSubmission(String id) {
-        String sql = "DELETE FROM submissions WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id);
-            int affected = pstmt.executeUpdate();
-            return affected > 0;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to delete submission: " + id, e);
-            return false;
-        }
-    }
-
-    /**
-     * Counts submissions for a business.
-     *
-     * @param businessId The business ID
-     * @return The count of submissions
-     */
-    public synchronized long countSubmissions(UUID businessId) {
-        String sql = "SELECT COUNT(*) FROM submissions WHERE business_id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count submissions", e);
-        }
-        return 0;
-    }
-
-    /**
-     * Maps a ResultSet row to a SubmissionRecord.
-     */
-    private SubmissionRecord mapSubmission(ResultSet rs) throws SQLException {
-        return new SubmissionRecord(
-            rs.getString("id"),
-            rs.getString("business_id"),
-            rs.getString("type"),
-            rs.getInt("tax_year_start"),
-            LocalDate.parse(rs.getString("period_start")),
-            LocalDate.parse(rs.getString("period_end")),
-            new BigDecimal(rs.getString("total_income")),
-            new BigDecimal(rs.getString("total_expenses")),
-            new BigDecimal(rs.getString("net_profit")),
-            rs.getString("status"),
-            rs.getString("hmrc_reference"),
-            rs.getString("error_message"),
-            Instant.parse(rs.getString("submitted_at"))
-        );
-    }
-
-    // === Reconciliation Match Operations ===
-
-    /**
-     * Saves a reconciliation match to the database.
-     * Uses INSERT OR REPLACE to handle updates and unique constraint conflicts.
-     *
-     * @param match the reconciliation match to save
-     */
-    public synchronized void saveReconciliationMatch(ReconciliationMatch match) {
-        String sql = """
-            INSERT OR REPLACE INTO reconciliation_matches
-            (id, bank_transaction_id, manual_transaction_id, manual_transaction_type,
-             confidence, match_tier, status, business_id, created_at, resolved_at, resolved_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, match.id().toString());
-            pstmt.setString(2, match.bankTransactionId().toString());
-            pstmt.setString(3, match.manualTransactionId().toString());
-            pstmt.setString(4, match.manualTransactionType());
-            pstmt.setDouble(5, match.confidence());
-            pstmt.setString(6, match.matchTier().name());
-            pstmt.setString(7, match.status().name());
-            pstmt.setString(8, match.businessId().toString());
-            pstmt.setString(9, match.createdAt().toString());
-            pstmt.setString(10, match.resolvedAt() != null ? match.resolvedAt().toString() : null);
-            pstmt.setString(11, match.resolvedBy());
-            pstmt.executeUpdate();
-            LOG.fine("Saved reconciliation match: " + match.id());
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save reconciliation match: " + match.id(), e);
-        }
-    }
-
-    /**
-     * Saves multiple reconciliation matches in a single transaction.
-     *
-     * @param matches the list of reconciliation matches to save
-     */
-    public synchronized void saveReconciliationMatches(List<ReconciliationMatch> matches) {
-        if (matches == null || matches.isEmpty()) {
-            return;
-        }
-        executeInTransaction(() -> {
-            for (ReconciliationMatch match : matches) {
-                saveReconciliationMatch(match);
-            }
-        });
-    }
-
-    /**
-     * Finds a reconciliation match by ID.
-     *
-     * @param id the match ID
-     * @return the match if found
-     */
-    public synchronized Optional<ReconciliationMatch> findReconciliationMatchById(UUID id) {
-        String sql = "SELECT * FROM reconciliation_matches WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapReconciliationMatch(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find reconciliation match: " + id, e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Finds all reconciliation matches for a bank transaction.
-     *
-     * @param bankTransactionId the bank transaction ID
-     * @return list of matches for that bank transaction
-     */
-    public synchronized List<ReconciliationMatch> findReconciliationMatchesByBankTransactionId(UUID bankTransactionId) {
-        List<ReconciliationMatch> matches = new ArrayList<>();
-        String sql = "SELECT * FROM reconciliation_matches WHERE bank_transaction_id = ? ORDER BY confidence DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, bankTransactionId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                matches.add(mapReconciliationMatch(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find reconciliation matches by bank tx: " + bankTransactionId, e);
-        }
-        return matches;
-    }
-
-    /**
-     * Finds all reconciliation matches for a business.
-     *
-     * @param businessId the business ID
-     * @return list of all matches for that business
-     */
-    public synchronized List<ReconciliationMatch> findReconciliationMatchesByBusinessId(UUID businessId) {
-        List<ReconciliationMatch> matches = new ArrayList<>();
-        String sql = "SELECT * FROM reconciliation_matches WHERE business_id = ? ORDER BY created_at DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                matches.add(mapReconciliationMatch(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find reconciliation matches by business: " + businessId, e);
-        }
-        return matches;
-    }
-
-    /**
-     * Finds all unresolved reconciliation matches for a business.
-     *
-     * @param businessId the business ID
-     * @return list of unresolved matches
-     */
-    public synchronized List<ReconciliationMatch> findUnresolvedReconciliationMatches(UUID businessId) {
-        List<ReconciliationMatch> matches = new ArrayList<>();
-        String sql = "SELECT * FROM reconciliation_matches WHERE business_id = ? AND status = 'UNRESOLVED' ORDER BY confidence DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                matches.add(mapReconciliationMatch(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find unresolved reconciliation matches", e);
-        }
-        return matches;
-    }
-
-    /**
-     * Counts unresolved reconciliation matches for a business.
-     *
-     * @param businessId the business ID
-     * @return count of unresolved matches
-     */
-    public synchronized long countUnresolvedReconciliationMatches(UUID businessId) {
-        String sql = "SELECT COUNT(*) FROM reconciliation_matches WHERE business_id = ? AND status = 'UNRESOLVED'";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count unresolved reconciliation matches", e);
-        }
-        return 0;
-    }
-
-    /**
-     * Updates the status of a reconciliation match.
-     * This is the only modification allowed on reconciliation records
-     * (they must never be hard-deleted per statutory requirements).
-     *
-     * @param matchId    the match ID
-     * @param status     the new status
-     * @param resolvedAt when the status was changed
-     * @param resolvedBy who changed the status
-     * @return true if updated, false if not found
-     */
-    public synchronized boolean updateReconciliationMatchStatus(
-            UUID matchId, ReconciliationStatus status, Instant resolvedAt, String resolvedBy) {
-        String sql = "UPDATE reconciliation_matches SET status = ?, resolved_at = ?, resolved_by = ? WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, status.name());
-            pstmt.setString(2, resolvedAt != null ? resolvedAt.toString() : null);
-            pstmt.setString(3, resolvedBy);
-            pstmt.setString(4, matchId.toString());
-            int affected = pstmt.executeUpdate();
-            return affected > 0;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to update reconciliation match status: " + matchId, e);
-            return false;
-        }
-    }
-
-    /**
-     * Maps a ResultSet row to a ReconciliationMatch.
-     */
-    private ReconciliationMatch mapReconciliationMatch(ResultSet rs) throws SQLException {
-        String resolvedAtStr = rs.getString("resolved_at");
-        return new ReconciliationMatch(
-            UUID.fromString(rs.getString("id")),
-            UUID.fromString(rs.getString("bank_transaction_id")),
-            UUID.fromString(rs.getString("manual_transaction_id")),
-            rs.getString("manual_transaction_type"),
-            rs.getDouble("confidence"),
-            MatchTier.valueOf(rs.getString("match_tier")),
-            ReconciliationStatus.valueOf(rs.getString("status")),
-            UUID.fromString(rs.getString("business_id")),
-            Instant.parse(rs.getString("created_at")),
-            resolvedAtStr != null ? Instant.parse(resolvedAtStr) : null,
-            rs.getString("resolved_by")
-        );
-    }
 }

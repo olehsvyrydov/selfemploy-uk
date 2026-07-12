@@ -667,7 +667,7 @@ class UiDuplicateDetectionServiceTest {
             null,
             null,
             null,
-            null
+            null, null, null
         );
     }
 

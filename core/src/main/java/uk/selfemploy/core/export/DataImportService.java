@@ -392,7 +392,9 @@ public class DataImportService {
                             null, // bankTransactionRef
                             null, // invoiceNumber
                             null, // receiptPath
-                            null  // bankTransactionId
+                            null, // bankTransactionId
+                            null, // clientName
+                            null  // status (defaults to PAID)
                         );
                         incomes.add(income);
                     } catch (Exception e) {
@@ -424,7 +426,7 @@ public class DataImportService {
         String receiptPath = income.has("receiptPath") && !income.get("receiptPath").isNull()
             ? income.get("receiptPath").asText() : null;
         return new Income(UUID.randomUUID(), placeholderBusinessId, date, amount, description, category, reference,
-            bankTransactionRef, invoiceNumber, receiptPath, null);
+            bankTransactionRef, invoiceNumber, receiptPath, null, null, null);
     }
 
     private Expense parseJsonExpenseNode(JsonNode expense) {

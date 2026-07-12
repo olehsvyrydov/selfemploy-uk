@@ -333,40 +333,41 @@ public class IncomeDialogViewModel {
             return false;
         }
 
-        try {
-            Income savedIncome;
-            BigDecimal parsedAmount = getParsedAmount();
-            String ref = reference.get().isBlank() ? null : reference.get();
+        Income savedIncome;
+        BigDecimal parsedAmount = getParsedAmount();
+        String ref = reference.get().isBlank() ? null : reference.get();
+        String client = clientName.get() != null && !clientName.get().isBlank() ? clientName.get() : null;
+        IncomeStatus statusValue = status.get() != null ? status.get() : IncomeStatus.PAID;
 
-            if (editMode.get()) {
-                savedIncome = incomeService.update(
-                    existingIncomeId,
-                    date.get(),
-                    parsedAmount,
-                    description.get(),
-                    category.get(),
-                    ref
-                );
-            } else {
-                savedIncome = incomeService.create(
-                    businessId,
-                    date.get(),
-                    parsedAmount,
-                    description.get(),
-                    category.get(),
-                    ref
-                );
-            }
-
-            if (onSaveCallback != null) {
-                onSaveCallback.accept(savedIncome);
-            }
-
-            return true;
-        } catch (Exception e) {
-            // Handle validation exceptions from service
-            return false;
+        if (editMode.get()) {
+            savedIncome = incomeService.update(
+                existingIncomeId,
+                date.get(),
+                parsedAmount,
+                description.get(),
+                category.get(),
+                ref,
+                client,
+                statusValue
+            );
+        } else {
+            savedIncome = incomeService.create(
+                businessId,
+                date.get(),
+                parsedAmount,
+                description.get(),
+                category.get(),
+                ref,
+                client,
+                statusValue
+            );
         }
+
+        if (onSaveCallback != null) {
+            onSaveCallback.accept(savedIncome);
+        }
+
+        return true;
     }
 
     /**

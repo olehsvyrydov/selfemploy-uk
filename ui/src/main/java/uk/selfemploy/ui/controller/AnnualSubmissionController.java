@@ -1,18 +1,30 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import uk.selfemploy.common.domain.AnnualSubmissionState;
-import uk.selfemploy.common.domain.Submission;
 import uk.selfemploy.common.domain.TaxCalculationResult;
 import uk.selfemploy.common.domain.TaxYear;
-import uk.selfemploy.common.enums.SubmissionStatus;
-import uk.selfemploy.common.enums.SubmissionType;
 import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
+import uk.selfemploy.core.calculator.TaxLiabilityResult;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.HmrcCalculationComparison;
+import uk.selfemploy.ui.service.HmrcCalculationService;
+import uk.selfemploy.ui.service.HmrcCalculationService.CalculationOutcome;
+import uk.selfemploy.ui.service.HmrcFinalDeclarationService;
+import uk.selfemploy.ui.service.HmrcFinalDeclarationService.DeclarationConfirmation;
+import uk.selfemploy.ui.service.HmrcFinalDeclarationService.DeclarationOutcome;
+import uk.selfemploy.ui.service.OAuthServiceFactory;
+import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.SqliteSubmissionRepository;
+import uk.selfemploy.ui.service.SubmissionCredentialGate;
+import uk.selfemploy.ui.service.SubmissionEnvironment;
 import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionDeclarationViewModel;
@@ -51,6 +63,7 @@ public class AnnualSubmissionController {
 
     // === FXML Injected Elements ===
 
+    @FXML private BorderPane rootPane;
     @FXML private ScrollPane rootScroll;
     @FXML private Label taxYearLabel;
 
@@ -87,6 +100,7 @@ public class AnnualSubmissionController {
     // Success Panel
     @FXML private VBox successPanel;
     @FXML private Label submissionReference;
+    @FXML private Button doneButton;
 
     // Submission Disclaimer Banner (SE-509)
     @FXML private HBox submissionDisclaimerBanner;
@@ -138,6 +152,36 @@ public class AnnualSubmissionController {
 
     private AnnualSubmissionViewModel viewModel;
     private SubmissionDeclarationViewModel declarationViewModel;
+
+    // HMRC clients, constructed lazily so unit tests that never submit don't touch
+    // the OAuth service or database.
+    private HmrcCalculationService calculationService;
+    private HmrcFinalDeclarationService declarationService;
+
+    // The real HMRC reference from the last successful declaration, shown on the
+    // success panel. Never fabricated.
+    private String lastHmrcReference = "";
+
+    HmrcCalculationService calculationService() {
+        if (calculationService == null) {
+            calculationService = new HmrcCalculationService();
+        }
+        return calculationService;
+    }
+
+    HmrcFinalDeclarationService declarationService() {
+        if (declarationService == null) {
+            declarationService = new HmrcFinalDeclarationService();
+        }
+        return declarationService;
+    }
+
+    /** Visible for testing: inject stubbed HMRC clients. */
+    void setHmrcServices(HmrcCalculationService calculationService,
+                         HmrcFinalDeclarationService declarationService) {
+        this.calculationService = calculationService;
+        this.declarationService = declarationService;
+    }
 
     /**
      * Initializes the controller after FXML injection.
@@ -247,7 +291,11 @@ public class AnnualSubmissionController {
      */
     private void initializeDisclaimers() {
         if (submissionDisclaimerText != null) {
-            submissionDisclaimerText.setText(Disclaimers.HMRC_SUBMISSION_DISCLAIMER);
+            // Name the environment so the user always knows whether this is the HMRC
+            // sandbox or production.
+            submissionDisclaimerText.setText(
+                SubmissionEnvironment.current().badgeLabel() + " — "
+                + Disclaimers.HMRC_SUBMISSION_DISCLAIMER);
         }
     }
 
@@ -292,7 +340,41 @@ public class AnnualSubmissionController {
      */
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
-        System.out.println("[DEBUG] setDialogStage called, stage = " + stage);
+        if (stage != null && stage.getScene() != null) {
+            // Escape closes the dialog on every non-destructive step. A submission in
+            // progress is not interrupted, and steps with confirmed input still ask
+            // before discarding via handleCancel.
+            stage.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    handleEscape();
+                    event.consume();
+                }
+            });
+        }
+    }
+
+    private void handleEscape() {
+        AnnualSubmissionState state = viewModel != null ? viewModel.getCurrentState() : null;
+        if (state == AnnualSubmissionState.DECLARING) {
+            // A live HMRC submission is running; do not let Escape interrupt it.
+            return;
+        }
+        if (state == AnnualSubmissionState.COMPLETED) {
+            closeDialog();
+            return;
+        }
+        handleCancel();
+    }
+
+    @FXML
+    private void handleDone() {
+        closeDialog();
+    }
+
+    private void closeDialog() {
+        if (dialogStage != null) {
+            dialogStage.close();
+        }
     }
 
     /**
@@ -301,7 +383,6 @@ public class AnnualSubmissionController {
      */
     private void updateDialogWidth(int currentStep) {
         if (dialogStage == null) {
-            System.out.println("[DEBUG] dialogStage is null, cannot resize");
             return;
         }
 
@@ -312,11 +393,7 @@ public class AnnualSubmissionController {
         };
 
         double currentWidth = dialogStage.getWidth();
-        System.out.println("[DEBUG] updateDialogWidth called for step " + currentStep +
-            ", current=" + currentWidth + ", target=" + targetWidth);
-
         if (Math.abs(currentWidth - targetWidth) < 1) {
-            System.out.println("[DEBUG] Already at target width, skipping");
             return;
         }
 
@@ -339,19 +416,14 @@ public class AnnualSubmissionController {
             dialogStage.setMinWidth(originalMinWidth);
             dialogStage.setMaxWidth(Double.MAX_VALUE);
         });
-
-        System.out.println("[DEBUG] After resize: stage.getWidth() = " + dialogStage.getWidth());
     }
 
     // === Event Handlers ===
 
     @FXML
     private void handleCalculate() {
-        System.out.println("[DEBUG] handleCalculate() called, current step = " + viewModel.getCurrentStep());
         viewModel.executeNextStep();
-        // TODO: Call backend service to calculate tax
-        // For now, simulate with mock data
-        simulateCalculation();
+        calculateEstimate();
     }
 
     @FXML
@@ -361,22 +433,217 @@ public class AnnualSubmissionController {
 
     @FXML
     private void handleSubmit() {
-        // Show confirmation dialog
-        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmDialog.setTitle("Confirm Submission");
-        confirmDialog.setHeaderText("Submit Annual Self Assessment");
-        confirmDialog.setContentText(
-            "Are you sure you want to submit your Annual Self Assessment to HMRC?\n\n" +
-            "This action cannot be undone."
-        );
+        // Block BEFORE any HMRC call if the taxpayer cannot actually submit, with an
+        // actionable message rather than a failed request.
+        boolean connected = isConnectedToHmrc();
+        String nino = SqliteDataStore.getInstance().loadNino();
+        SubmissionCredentialGate.Decision gate = SubmissionCredentialGate.evaluate(connected, nino);
+        if (!gate.allowed()) {
+            AppDialog.info("Can't submit yet", gate.message());
+            return;
+        }
 
-        confirmDialog.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                viewModel.confirmAndSubmit();
-                // TODO: Call backend service to submit
-                simulateSubmission();
+        SubmissionEnvironment environment = SubmissionEnvironment.current();
+        boolean proceed = AppDialog.confirm("Submit to " + environment.badgeLabel() + "?",
+            "This will trigger a real HMRC tax calculation for " + viewModel.getTaxYear().label()
+            + " and submit your final declaration to " + environment.badgeLabel() + ".\n\n"
+            + "The figures you have confirmed will be declared final. Continue?",
+            "Submit", "Cancel");
+        if (!proceed) {
+            return;
+        }
+
+        submitToHmrc(nino);
+    }
+
+    private boolean isConnectedToHmrc() {
+        try {
+            return OAuthServiceFactory.getOAuthService().isConnected();
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "Could not determine HMRC connection state", e);
+            return false;
+        }
+    }
+
+    /**
+     * Starts the real annual submission against HMRC. First triggers a crystallisation
+     * calculation off the FX thread; the final declaration is only sent once the
+     * taxpayer has seen HMRC's own figures and explicitly confirmed them
+     * (see {@link #onCalculationReady}). The taxpayer never declares figures they have
+     * not been shown.
+     *
+     * <p>The wizard stays on the review step throughout the calculation; the Submit step
+     * is not marked active until {@link #declareToHmrc} actually sends the declaration.
+     */
+    private void submitToHmrc(String nino) {
+        TaxYear taxYear = viewModel.getTaxYear();
+
+        viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
+        viewModel.setLoading(true);
+
+        Thread.startVirtualThread(() -> {
+            CalculationOutcome calcOutcome;
+            try {
+                calcOutcome = calculationService().calculate(nino, taxYear, true);
+            } catch (RuntimeException e) {
+                LOG.log(Level.SEVERE, "Unexpected error requesting HMRC calculation", e);
+                failOnFxThread("Unexpected error requesting your HMRC calculation: " + e.getMessage());
+                return;
             }
+            CalculationOutcome outcome = calcOutcome;
+            javafx.application.Platform.runLater(() -> onCalculationReady(nino, taxYear, outcome));
         });
+    }
+
+    /**
+     * On the FX thread: show HMRC's returned figures next to the app's own estimate and
+     * require the taxpayer to confirm HMRC's figures before the final declaration is
+     * sent. When the two calculations diverge the taxpayer is warned explicitly.
+     * Declining leaves the return undeclared and returns to the review step.
+     */
+    private void onCalculationReady(String nino, TaxYear taxYear, CalculationOutcome calcOutcome) {
+        if (calcOutcome instanceof CalculationOutcome.Failure failure) {
+            failOnFxThread("HMRC could not calculate your return: " + failure.message());
+            return;
+        }
+        CalculationOutcome.Success success = (CalculationOutcome.Success) calcOutcome;
+
+        TaxCalculationResult local = viewModel.getCalculationResult();
+        HmrcCalculationComparison comparison = new HmrcCalculationComparison(
+            local != null ? local.incomeTax() : null,
+            local != null ? local.nationalInsuranceClass2() : null,
+            local != null ? local.nationalInsuranceClass4() : null,
+            success.calculation());
+
+        viewModel.setLoading(false);
+        boolean confirmed = AppDialog.confirm(
+            comparison.hasMismatch() ? "HMRC's figures differ — review before declaring"
+                                     : "Confirm HMRC's figures",
+            buildHmrcFiguresMessage(comparison),
+            "Declare these figures to HMRC", "Cancel");
+        if (!confirmed) {
+            viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
+            unlockDeclarationControls();
+            updateStepIndicator(3);
+            return;
+        }
+
+        declareToHmrc(nino, taxYear, success.calculationId());
+    }
+
+    /**
+     * Sends the final declaration for the confirmed calculation off the FX thread and
+     * persists the result there too, so no SQLite I/O runs on the FX thread.
+     */
+    private void declareToHmrc(String nino, TaxYear taxYear, String calculationId) {
+        DeclarationConfirmation confirmation = new DeclarationConfirmation(true, Instant.now());
+        viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
+        viewModel.setLoading(true);
+        updateStepIndicator(4);
+
+        Thread.startVirtualThread(() -> {
+            DeclarationOutcome declOutcome;
+            try {
+                declOutcome = declarationService()
+                    .submitFinalDeclaration(nino, taxYear, calculationId, confirmation);
+            } catch (RuntimeException e) {
+                LOG.log(Level.SEVERE, "Unexpected error submitting to HMRC", e);
+                failOnFxThread("Unexpected error submitting to HMRC: " + e.getMessage());
+                return;
+            }
+            if (declOutcome instanceof DeclarationOutcome.Failure failure) {
+                failOnFxThread("HMRC did not accept the declaration: " + failure.message());
+                return;
+            }
+            String reference = ((DeclarationOutcome.Success) declOutcome).hmrcReference();
+            boolean persisted = persistSubmission(taxYear, reference);
+            javafx.application.Platform.runLater(() -> onDeclarationComplete(reference, persisted));
+        });
+    }
+
+    private void onDeclarationComplete(String reference, boolean persisted) {
+        lastHmrcReference = reference;
+        viewModel.setLoading(false);
+        viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
+
+        if (!persisted) {
+            AppDialog.warning("Declared to HMRC, but not saved locally",
+                "HMRC accepted your declaration (reference " + reference + "), but it could not "
+                + "be saved to your local submission history. Please keep a note of this reference.");
+        }
+    }
+
+    /**
+     * Builds the side-by-side message shown before declaring: the app's estimate and
+     * HMRC's figure for each line, flagging any that differ.
+     */
+    private String buildHmrcFiguresMessage(HmrcCalculationComparison comparison) {
+        StringBuilder sb = new StringBuilder();
+        if (comparison.hasMismatch()) {
+            sb.append("HMRC's calculation does not match this app's estimate. Review both "
+                + "figures below before you declare — HMRC's figures are what will be declared "
+                + "as final.\n\n");
+        } else {
+            sb.append("HMRC has calculated your return. These are the figures that will be "
+                + "declared as final:\n\n");
+        }
+        sb.append(String.format("%-14s %12s %12s%n", "", "This app", "HMRC"));
+        for (HmrcCalculationComparison.Line line : comparison.lines()) {
+            sb.append(String.format("%-14s %12s %12s  %s%n",
+                line.label(),
+                formatFigure(line.appValue()),
+                formatFigure(line.hmrcValue()),
+                line.matches() ? "" : "differs"));
+        }
+        return sb.toString();
+    }
+
+    private String formatFigure(BigDecimal amount) {
+        return amount == null ? "—" : formatCurrency(amount);
+    }
+
+    private void failOnFxThread(String message) {
+        javafx.application.Platform.runLater(() -> {
+            viewModel.setLoading(false);
+            viewModel.setErrorMessage(message);
+            viewModel.setCurrentState(AnnualSubmissionState.FAILED);
+            updateStepIndicator(3);
+        });
+    }
+
+    /**
+     * Records the completed annual submission with the real HMRC reference so the
+     * submission history is truthful.
+     *
+     * @return true if the record was saved, false if saving failed
+     */
+    boolean persistSubmission(TaxYear taxYear, String hmrcReference) {
+        try {
+            String id = UUID.randomUUID().toString();
+            SubmissionRecord record = new SubmissionRecord(
+                id,
+                CoreServiceFactory.getDefaultBusinessId().toString(),
+                "ANNUAL",
+                taxYear.startYear(),
+                taxYear.startDate(),
+                taxYear.endDate(),
+                viewModel.getTotalIncome(),
+                viewModel.getTotalExpenses(),
+                viewModel.getNetProfit(),
+                "SUBMITTED",
+                hmrcReference,
+                null,
+                Instant.now());
+            SqliteSubmissionRepository repository =
+                new SqliteSubmissionRepository(CoreServiceFactory.getDefaultBusinessId());
+            repository.save(record);
+            // save logs and swallows SQL errors, so confirm the row is actually there
+            // before telling the caller the save succeeded.
+            return repository.findById(id).isPresent();
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "Failed to persist submission record", e);
+            return false;
+        }
     }
 
     @FXML
@@ -387,21 +654,15 @@ public class AnnualSubmissionController {
 
     @FXML
     private void handleCancel() {
-        // Show confirmation dialog
-        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmDialog.setTitle("Cancel Submission");
-        confirmDialog.setHeaderText("Cancel Annual Submission");
-        confirmDialog.setContentText(
-            "Are you sure you want to cancel this submission?\n\n" +
-            "All progress will be lost."
-        );
-
-        confirmDialog.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                viewModel.cancel();
-                // TODO: Navigate back to previous screen
-            }
-        });
+        boolean confirmed = AppDialog.confirm("Cancel Submission",
+            "Cancel Annual Submission\n\n"
+            + "Are you sure you want to cancel this submission?\n\n"
+            + "All progress will be lost.",
+            "Yes, cancel", "Keep editing");
+        if (confirmed) {
+            viewModel.cancel();
+            closeDialog();
+        }
     }
 
     /**
@@ -478,7 +739,6 @@ public class AnnualSubmissionController {
         // Listen for current step changes
         viewModel.currentStepProperty().addListener((obs, oldVal, newVal) -> {
             int step = newVal.intValue();
-            System.out.println("[DEBUG] Step changed: " + oldVal + " -> " + newVal + " (dialogStage=" + dialogStage + ")");
             updateStepIndicator(step);
             updateActionButtons(step);
             updateDialogWidth(step);
@@ -587,22 +847,9 @@ public class AnnualSubmissionController {
                 reviewButton.setDisable(false);
             }
             case DECLARING -> {
-                // Keep calculation visible, disable all buttons
                 calculateButton.setDisable(true);
                 reviewButton.setDisable(true);
-                // Unbind before setting - submitButton is bound to declarationViewModel.isCompleteProperty()
-                submitButton.disableProperty().unbind();
-                submitButton.setDisable(true);
-                // Disable all 6 declaration checkboxes during submission (SE-512)
-                if (declarationViewModel != null) {
-                    declarationViewModel.disabledProperty().set(true);
-                }
-                decl1Checkbox.setDisable(true);
-                decl2Checkbox.setDisable(true);
-                decl3Checkbox.setDisable(true);
-                decl4Checkbox.setDisable(true);
-                decl5Checkbox.setDisable(true);
-                decl6Checkbox.setDisable(true);
+                lockDeclarationControls();
             }
             case COMPLETED -> {
                 successPanel.setVisible(true);
@@ -612,31 +859,55 @@ public class AnnualSubmissionController {
                 // Hide declaration card on completion (SE-506)
                 declarationCard.setVisible(false);
                 declarationCard.setManaged(false);
-                // TODO: Set submission reference
-                submissionReference.setText("SA-" + viewModel.getSagaId().toString().substring(0, 8).toUpperCase());
+                // Show the real HMRC reference from the declaration (never fabricated).
+                submissionReference.setText(lastHmrcReference != null ? lastHmrcReference : "");
             }
             case FAILED -> {
                 // Error panel is shown via binding
                 calculateButton.setDisable(false);
                 reviewButton.setDisable(false);
-                // Rebind to original binding - submitButton disabled until all declarations complete
-                if (declarationViewModel != null) {
-                    submitButton.disableProperty().bind(declarationViewModel.isCompleteProperty().not());
-                } else {
-                    submitButton.setDisable(false);
-                }
-                // Re-enable checkboxes
-                if (declarationViewModel != null) {
-                    declarationViewModel.disabledProperty().set(false);
-                }
-                decl1Checkbox.setDisable(false);
-                decl2Checkbox.setDisable(false);
-                decl3Checkbox.setDisable(false);
-                decl4Checkbox.setDisable(false);
-                decl5Checkbox.setDisable(false);
-                decl6Checkbox.setDisable(false);
+                unlockDeclarationControls();
             }
         }
+    }
+
+    /**
+     * Disables the Submit button and the six declaration checkboxes while a live HMRC
+     * round-trip is in flight, so nothing can be re-submitted or re-ticked mid-call.
+     */
+    private void lockDeclarationControls() {
+        // Unbind before setting - submitButton is bound to declarationViewModel.isCompleteProperty()
+        submitButton.disableProperty().unbind();
+        submitButton.setDisable(true);
+        if (declarationViewModel != null) {
+            declarationViewModel.disabledProperty().set(true);
+        }
+        setDeclarationCheckboxesDisabled(true);
+    }
+
+    /**
+     * Re-enables the declaration controls and rebinds the Submit button to the
+     * declaration-complete state, so the taxpayer can retry after a failure or after
+     * cancelling the HMRC-figures confirmation.
+     */
+    private void unlockDeclarationControls() {
+        if (declarationViewModel != null) {
+            submitButton.disableProperty().bind(declarationViewModel.isCompleteProperty().not());
+            declarationViewModel.disabledProperty().set(false);
+        } else {
+            submitButton.disableProperty().unbind();
+            submitButton.setDisable(false);
+        }
+        setDeclarationCheckboxesDisabled(false);
+    }
+
+    private void setDeclarationCheckboxesDisabled(boolean disabled) {
+        decl1Checkbox.setDisable(disabled);
+        decl2Checkbox.setDisable(disabled);
+        decl3Checkbox.setDisable(disabled);
+        decl4Checkbox.setDisable(disabled);
+        decl5Checkbox.setDisable(disabled);
+        decl6Checkbox.setDisable(disabled);
     }
 
     private VBox getStepContainer(int step) {
@@ -656,133 +927,41 @@ public class AnnualSubmissionController {
         return CURRENCY_FORMAT.format(amount);
     }
 
-    // === Temporary Simulation Methods (will be replaced by backend service) ===
-
-    private void simulateCalculation() {
-        // Simulate async calculation
-        new Thread(() -> {
-            try {
-                Thread.sleep(2000); // Simulate network delay
-
-                // Create mock result using common module's TaxCalculationResult
-                javafx.application.Platform.runLater(() -> {
-                    TaxCalculationResult result = TaxCalculationResult.create(
-                        "calc-sim-" + System.currentTimeMillis(),  // calculationId
-                        viewModel.getTotalIncome(),                 // totalIncome
-                        viewModel.getTotalExpenses(),               // totalExpenses
-                        viewModel.getNetProfit(),                   // netProfit
-                        new BigDecimal("5430.00"),                  // incomeTax
-                        new BigDecimal("165.00"),                   // nationalInsuranceClass2
-                        new BigDecimal("1980.00")                   // nationalInsuranceClass4
-                    );
-
-                    viewModel.setCalculationResult(result);
-                    viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
-                    viewModel.setLoading(false);
-                });
-
-            } catch (InterruptedException e) {
-                javafx.application.Platform.runLater(() -> {
-                    viewModel.setErrorMessage("Calculation failed: " + e.getMessage());
-                    viewModel.setCurrentState(AnnualSubmissionState.FAILED);
-                    viewModel.setLoading(false);
-                });
-            }
-        }).start();
-    }
-
-    private void simulateSubmission() {
-        // Simulate async submission
-        new Thread(() -> {
-            try {
-                Thread.sleep(3000); // Simulate network delay
-
-                javafx.application.Platform.runLater(() -> {
-                    // Generate HMRC reference
-                    String hmrcReference = "SA-" + viewModel.getSagaId().toString().substring(0, 8).toUpperCase();
-
-                    // BUG-10H-002: Save submission to SQLite for history persistence
-                    saveSubmissionToSqlite(hmrcReference);
-
-                    viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
-                    viewModel.setLoading(false);
-                });
-
-            } catch (InterruptedException e) {
-                javafx.application.Platform.runLater(() -> {
-                    viewModel.setErrorMessage("Submission failed: " + e.getMessage());
-                    viewModel.setCurrentState(AnnualSubmissionState.FAILED);
-                    viewModel.setLoading(false);
-                });
-            }
-        }).start();
-    }
+    // === Local tax estimate (no HMRC call) ===
 
     /**
-     * Saves the annual submission to SQLite for history persistence.
-     * BUG-10H-002: Annual submissions were not being saved to history.
+     * Calculates a local tax estimate for the reviewed figures using the application's own
+     * {@link TaxLiabilityCalculator} — the same engine as the Dashboard and Tax Summary.
      *
-     * <p>Package-private for testing.</p>
-     *
-     * @param hmrcReference The HMRC reference for the submission
+     * <p>These figures are an estimate only and are never sent to HMRC; the previous
+     * implementation displayed hard-coded tax amounts, which misrepresented the user's
+     * position. Package-private for testing.</p>
      */
-    void saveSubmissionToSqlite(String hmrcReference) {
+    void calculateEstimate() {
+        TaxYear taxYear = viewModel.getTaxYear();
+        BigDecimal netProfit = viewModel.getNetProfit() != null ? viewModel.getNetProfit() : BigDecimal.ZERO;
         try {
-            UUID businessId = CoreServiceFactory.getDefaultBusinessId();
-            if (businessId == null) {
-                LOG.warning("Cannot save annual submission: businessId is null");
-                return;
-            }
+            TaxLiabilityCalculator calculator = new TaxLiabilityCalculator(taxYear.startYear());
+            TaxLiabilityResult liability = calculator.calculate(netProfit);
 
-            TaxYear taxYear = viewModel.getTaxYear();
-            if (taxYear == null) {
-                LOG.warning("Cannot save annual submission: taxYear is null");
-                return;
-            }
-
-            // Get declaration details if available
-            Instant declarationAcceptedAt = null;
-            String declarationTextHash = null;
-            if (declarationViewModel != null && declarationViewModel.isCompleteProperty().get()) {
-                var declaration = declarationViewModel.buildDeclaration();
-                if (declaration.isPresent()) {
-                    declarationAcceptedAt = declaration.get().completedAt();
-                    // Use declaration ID as a unique identifier for the declaration
-                    declarationTextHash = declaration.get().declarationId();
-                }
-            }
-
-            // Create domain Submission object
-            Submission submission = new Submission(
-                UUID.randomUUID(),
-                businessId,
-                SubmissionType.ANNUAL,
-                taxYear,
-                taxYear.startDate(),
-                taxYear.endDate(),
+            TaxCalculationResult result = TaxCalculationResult.create(
+                "local-estimate-" + taxYear.label(),
                 viewModel.getTotalIncome(),
                 viewModel.getTotalExpenses(),
-                viewModel.getNetProfit(),
-                SubmissionStatus.ACCEPTED,
-                hmrcReference,
-                null, // errorMessage
-                Instant.now(),
-                Instant.now(),
-                declarationAcceptedAt != null ? declarationAcceptedAt : Instant.now(),
-                declarationTextHash,
-                null, // utr
-                null  // nino
+                netProfit,
+                liability.incomeTax(),
+                liability.niClass2(),
+                liability.niClass4()
             );
 
-            // Convert to persistence record and save
-            SqliteSubmissionRepository repository = new SqliteSubmissionRepository(businessId);
-            SubmissionRecord record = SubmissionRecord.fromDomainSubmission(submission);
-            repository.save(record);
-
-            LOG.info("Annual submission saved to SQLite: id=" + record.id() + ", reference=" + hmrcReference);
-
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to save annual submission to SQLite (non-fatal): " + e.getMessage(), e);
+            viewModel.setCalculationResult(result);
+            viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
+            viewModel.setLoading(false);
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "Failed to calculate tax estimate", e);
+            viewModel.setErrorMessage("Could not calculate your estimate: " + e.getMessage());
+            viewModel.setCurrentState(AnnualSubmissionState.FAILED);
+            viewModel.setLoading(false);
         }
     }
 }

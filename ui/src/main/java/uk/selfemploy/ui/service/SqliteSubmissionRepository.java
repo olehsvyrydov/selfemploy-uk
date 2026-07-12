@@ -1,20 +1,34 @@
 package uk.selfemploy.ui.service;
 
+import uk.selfemploy.ui.service.sql.NamedSql;
+
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * SQLite-backed submission repository.
- * All operations directly query the database - no in-memory caching.
- * This ensures submission history is never lost and is always consistent.
+ * SQLite JDBC adapter for {@link SubmissionRepository}.
  *
- * <p>Implements BUG-10H-001: Submission History persistence per ADR-10H-001.</p>
+ * <p>Owns its own SQL (loaded from {@code /sql/submissions.sql}) and runs it against the shared
+ * connection from {@link SqliteDataStore}. The submissions table and its honesty migration are
+ * handled by {@code SqliteDataStore}'s schema initialisation.</p>
  *
- * <p>Follows the same pattern as {@link SqliteIncomeRepository} and
- * {@link SqliteExpenseRepository} for consistency.</p>
+ * <p>Follows the same pattern as {@link SqliteIncomeRepository} and {@link SqliteExpenseRepository}.</p>
  */
-public class SqliteSubmissionRepository {
+public class SqliteSubmissionRepository implements SubmissionRepository {
+
+    private static final Logger LOG = Logger.getLogger(SqliteSubmissionRepository.class.getName());
+
+    private static final NamedSql SQL = NamedSql.load("/sql/submissions.sql");
 
     private final SqliteDataStore dataStore;
     private final UUID businessId;
@@ -35,83 +49,135 @@ public class SqliteSubmissionRepository {
         dataStore.ensureBusinessExists(businessId);
     }
 
-    /**
-     * Saves a submission record to the database.
-     *
-     * @param submission The submission to save
-     * @return The saved submission
-     * @throws IllegalArgumentException if submission is null
-     */
+    @Override
     public SubmissionRecord save(SubmissionRecord submission) {
         if (submission == null) {
             throw new IllegalArgumentException("Submission cannot be null");
         }
-        dataStore.saveSubmission(submission);
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("insertSubmission"))) {
+            pstmt.setString(1, submission.id());
+            pstmt.setString(2, submission.businessId());
+            pstmt.setString(3, submission.type());
+            pstmt.setInt(4, submission.taxYearStart());
+            pstmt.setString(5, submission.periodStart().toString());
+            pstmt.setString(6, submission.periodEnd().toString());
+            pstmt.setString(7, submission.totalIncome().toPlainString());
+            pstmt.setString(8, submission.totalExpenses().toPlainString());
+            pstmt.setString(9, submission.netProfit().toPlainString());
+            pstmt.setString(10, submission.status());
+            pstmt.setString(11, submission.hmrcReference());
+            pstmt.setString(12, submission.errorMessage());
+            pstmt.setString(13, submission.submittedAt().toString());
+            pstmt.executeUpdate();
+            LOG.fine("Saved submission: " + submission.id());
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save submission: " + submission.id(), e);
+        }
         return submission;
     }
 
-    /**
-     * Finds all submissions for this business.
-     *
-     * @return All submissions sorted by submitted_at descending (newest first)
-     */
+    @Override
     public List<SubmissionRecord> findAll() {
-        return dataStore.findSubmissionsByBusinessId(businessId);
+        List<SubmissionRecord> submissions = new ArrayList<>();
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("findSubmissionsByBusiness"))) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                submissions.add(mapSubmission(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find submissions by business ID", e);
+        }
+        return submissions;
     }
 
-    /**
-     * Finds a submission by ID.
-     *
-     * @param id The submission ID
-     * @return The submission if found
-     * @throws IllegalArgumentException if id is null
-     */
+    @Override
     public Optional<SubmissionRecord> findById(String id) {
         if (id == null) {
             throw new IllegalArgumentException("Submission ID cannot be null");
         }
-        return dataStore.findSubmissionById(id);
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("findSubmissionById"))) {
+            pstmt.setString(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapSubmission(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to find submission: " + id, e);
+        }
+        return Optional.empty();
     }
 
-    /**
-     * Finds submissions by tax year.
-     *
-     * @param taxYearStart The tax year start (e.g., 2025 for 2025/26)
-     * @return Submissions for the tax year
-     */
+    @Override
     public List<SubmissionRecord> findByTaxYear(int taxYearStart) {
-        return dataStore.findSubmissionsByTaxYear(businessId, taxYearStart);
+        List<SubmissionRecord> submissions = new ArrayList<>();
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("findSubmissionsByBusinessAndTaxYear"))) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setInt(2, taxYearStart);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                submissions.add(mapSubmission(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find submissions by tax year", e);
+        }
+        return submissions;
     }
 
-    /**
-     * Deletes a submission by ID.
-     *
-     * @param id The submission ID
-     * @return true if deleted, false if not found
-     * @throws IllegalArgumentException if id is null
-     */
+    @Override
     public boolean delete(String id) {
         if (id == null) {
             throw new IllegalArgumentException("Submission ID cannot be null");
         }
-        return dataStore.deleteSubmission(id);
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("deleteSubmissionById"))) {
+            pstmt.setString(1, id);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to delete submission: " + id, e);
+            return false;
+        }
     }
 
-    /**
-     * Returns the count of all submissions for this business.
-     *
-     * @return The submission count
-     */
+    @Override
     public long count() {
-        return dataStore.countSubmissions(businessId);
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("countSubmissionsByBusiness"))) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to count submissions", e);
+        }
+        return 0;
     }
 
-    /**
-     * Returns the business ID for this repository.
-     *
-     * @return The business ID
-     */
+    @Override
     public UUID getBusinessId() {
         return businessId;
+    }
+
+    private SubmissionRecord mapSubmission(ResultSet rs) throws SQLException {
+        return new SubmissionRecord(
+            rs.getString("id"),
+            rs.getString("business_id"),
+            rs.getString("type"),
+            rs.getInt("tax_year_start"),
+            LocalDate.parse(rs.getString("period_start")),
+            LocalDate.parse(rs.getString("period_end")),
+            new BigDecimal(rs.getString("total_income")),
+            new BigDecimal(rs.getString("total_expenses")),
+            new BigDecimal(rs.getString("net_profit")),
+            rs.getString("status"),
+            rs.getString("hmrc_reference"),
+            rs.getString("error_message"),
+            Instant.parse(rs.getString("submitted_at"))
+        );
     }
 }

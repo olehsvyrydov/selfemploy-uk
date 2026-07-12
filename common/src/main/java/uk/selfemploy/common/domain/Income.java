@@ -1,6 +1,7 @@
 package uk.selfemploy.common.domain;
 
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.common.enums.IncomeStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,6 +18,12 @@ import java.util.UUID;
  *   <li>invoiceNumber - Invoice number for the income (e.g., "INV-2025-001")</li>
  *   <li>receiptPath - Path to the receipt/proof document</li>
  * </ul>
+ *
+ * <p>{@code clientName} identifies who the income was received from (e.g. "Acme Corporation")
+ * and is distinct from {@code description}. {@code status} records whether the income has been
+ * received ({@link IncomeStatus#PAID}) or is still outstanding ({@link IncomeStatus#UNPAID}).
+ * Both are optional at the domain level (bank-imported records may have neither); {@code status}
+ * defaults to {@link IncomeStatus#PAID} when not supplied.
  */
 public record Income(
     UUID id,
@@ -29,7 +36,9 @@ public record Income(
     String bankTransactionRef,
     String invoiceNumber,
     String receiptPath,
-    UUID bankTransactionId
+    UUID bankTransactionId,
+    String clientName,
+    IncomeStatus status
 ) {
     /**
      * Compact constructor for validation.
@@ -40,6 +49,9 @@ public record Income(
         validateAmount(amount);
         validateDescription(description);
         validateCategory(category);
+        if (status == null) {
+            status = IncomeStatus.PAID;
+        }
     }
 
     /**
@@ -63,7 +75,47 @@ public record Income(
             null,
             null,
             null,
-            null
+            null,
+            null,
+            IncomeStatus.PAID
+        );
+    }
+
+    /**
+     * Creates a new income with a generated ID, a client name and a payment status.
+     *
+     * @param businessId the business this income belongs to
+     * @param date the date of the income
+     * @param amount the income amount
+     * @param description description of the income
+     * @param category the income category (SALES, OTHER_INCOME)
+     * @param reference optional general reference
+     * @param clientName optional name of the client the income was received from
+     * @param status payment status; defaults to PAID when null
+     */
+    public static Income create(
+            UUID businessId,
+            LocalDate date,
+            BigDecimal amount,
+            String description,
+            IncomeCategory category,
+            String reference,
+            String clientName,
+            IncomeStatus status) {
+        return new Income(
+            UUID.randomUUID(),
+            businessId,
+            date,
+            amount,
+            description,
+            category,
+            reference,
+            null,
+            null,
+            null,
+            null,
+            clientName,
+            status
         );
     }
 
@@ -101,7 +153,9 @@ public record Income(
             bankTransactionRef,
             invoiceNumber,
             receiptPath,
-            null
+            null,
+            null,
+            IncomeStatus.PAID
         );
     }
 

@@ -6,6 +6,7 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.exception.ValidationException;
 import uk.selfemploy.persistence.repository.IncomeRepository;
 
@@ -47,13 +48,34 @@ public class IncomeService {
      */
     public Income create(UUID businessId, LocalDate date, BigDecimal amount,
                          String description, IncomeCategory category, String reference) {
+        return create(businessId, date, amount, description, category, reference, null, null);
+    }
+
+    /**
+     * Creates a new income entry, including client name and payment status.
+     *
+     * @param businessId   The business ID (required)
+     * @param date         The income date (must be within a valid tax year)
+     * @param amount       The income amount (must be positive)
+     * @param description  The description (required, max 100 chars)
+     * @param category     The income category (required)
+     * @param reference    Optional reference number
+     * @param clientName   Optional client the income was received from
+     * @param status       Payment status; defaults to PAID when null
+     * @return The created income
+     * @throws ValidationException if validation fails
+     */
+    public Income create(UUID businessId, LocalDate date, BigDecimal amount,
+                         String description, IncomeCategory category, String reference,
+                         String clientName, IncomeStatus status) {
         validateBusinessId(businessId);
         validateDate(date);
         validateAmount(amount);
         validateDescription(description);
         validateCategory(category);
 
-        Income income = Income.create(businessId, date, amount, description, category, reference);
+        Income income = Income.create(businessId, date, amount, description, category, reference,
+                clientName, status);
         return incomeRepository.save(income);
     }
 
@@ -85,6 +107,30 @@ public class IncomeService {
      */
     public Income update(UUID id, LocalDate date, BigDecimal amount,
                          String description, IncomeCategory category, String reference) {
+        return update(id, date, amount, description, category, reference, null, null);
+    }
+
+    /**
+     * Updates an existing income, including client name and payment status.
+     *
+     * <p>A null {@code clientName} or {@code status} preserves the existing stored value,
+     * so callers that do not manage those fields (e.g. bank-import reconciliation) leave
+     * them untouched.
+     *
+     * @param id          The income ID
+     * @param date        The updated date
+     * @param amount      The updated amount
+     * @param description The updated description
+     * @param category    The updated category
+     * @param reference   The updated reference
+     * @param clientName  The updated client name, or null to keep the existing value
+     * @param status      The updated payment status, or null to keep the existing value
+     * @return The updated income
+     * @throws ValidationException if income not found or validation fails
+     */
+    public Income update(UUID id, LocalDate date, BigDecimal amount,
+                         String description, IncomeCategory category, String reference,
+                         String clientName, IncomeStatus status) {
         if (id == null) {
             throw new ValidationException("id", "Income id cannot be null");
         }
@@ -108,7 +154,9 @@ public class IncomeService {
                 existingIncome.bankTransactionRef(),
                 existingIncome.invoiceNumber(),
                 existingIncome.receiptPath(),
-                existingIncome.bankTransactionId()
+                existingIncome.bankTransactionId(),
+                clientName != null ? clientName : existingIncome.clientName(),
+                status != null ? status : existingIncome.status()
         );
 
         return incomeRepository.update(updatedIncome);

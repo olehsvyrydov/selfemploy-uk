@@ -8,6 +8,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.core.bankimport.BankCsvParser;
+import uk.selfemploy.core.bankimport.BankFormatDetector;
+import uk.selfemploy.core.bankimport.CsvParseException;
+import uk.selfemploy.core.bankimport.ImportedTransaction;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.viewmodel.ColumnMapping;
@@ -16,11 +20,14 @@ import uk.selfemploy.ui.viewmodel.TransactionType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -484,6 +491,220 @@ class ImportOrchestrationServiceTest {
 
             mutableHeaders.add("Extra");
             assertThat(result.headers()).containsExactly("Date", "Amount");
+        }
+    }
+
+    @Nested
+    @DisplayName("Duplicate Detection (B4)")
+    class DuplicateDetection {
+
+        private final LocalDate date = LocalDate.of(2025, 6, 15);
+
+        private ImportedTransactionRow incomeRow(String description, String amount) {
+            return ImportedTransactionRow.create(date, description, new BigDecimal(amount),
+                TransactionType.INCOME, null, false, 0);
+        }
+
+        private ImportedTransactionRow expenseRow(String description, String amount) {
+            return ImportedTransactionRow.create(date, description, new BigDecimal(amount),
+                TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 0);
+        }
+
+        private uk.selfemploy.common.domain.Income existingIncome(String description, String amount) {
+            return uk.selfemploy.common.domain.Income.create(businessId, date, new BigDecimal(amount),
+                description, IncomeCategory.SALES, null);
+        }
+
+        private uk.selfemploy.common.domain.Expense existingExpense(String description, String amount) {
+            return uk.selfemploy.common.domain.Expense.create(businessId, date, new BigDecimal(amount),
+                description, ExpenseCategory.OFFICE_COSTS, null, null);
+        }
+
+        @Test
+        @DisplayName("re-importing identical rows flags them all as duplicates")
+        void shouldFlagIdenticalReimportAsDuplicates() {
+            // Given the same 3 income + 2 expense records already exist in the store
+            List<uk.selfemploy.common.domain.Income> existingIncomes = List.of(
+                existingIncome("Invoice 1", "100.00"),
+                existingIncome("Invoice 2", "200.00"),
+                existingIncome("Invoice 3", "300.00"));
+            List<uk.selfemploy.common.domain.Expense> existingExpenses = List.of(
+                existingExpense("Stationery", "10.00"),
+                existingExpense("Postage", "20.00"));
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(existingIncomes);
+            when(expenseService.findByTaxYear(eq(businessId), any())).thenReturn(existingExpenses);
+
+            List<ImportedTransactionRow> reimport = List.of(
+                incomeRow("Invoice 1", "100.00"),
+                incomeRow("Invoice 2", "200.00"),
+                incomeRow("Invoice 3", "300.00"),
+                expenseRow("Stationery", "10.00"),
+                expenseRow("Postage", "20.00"));
+
+            // When
+            List<ImportedTransactionRow> marked = service.markDuplicates(reimport);
+
+            // Then all 5 are flagged as duplicates (regression: this used to be 0)
+            assertThat(marked).allMatch(ImportedTransactionRow::isDuplicate);
+            assertThat(marked.stream().filter(ImportedTransactionRow::isDuplicate).count()).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("only rows matching an existing record are flagged")
+        void shouldFlagOnlyMatchingRows() {
+            when(incomeService.findByTaxYear(eq(businessId), any()))
+                .thenReturn(List.of(existingIncome("Invoice 1", "100.00")));
+            when(expenseService.findByTaxYear(eq(businessId), any()))
+                .thenReturn(List.of());
+
+            List<ImportedTransactionRow> rows = List.of(
+                incomeRow("Invoice 1", "100.00"),   // duplicate
+                incomeRow("Invoice 9", "999.00"));  // new
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(rows);
+
+            assertThat(marked.get(0).isDuplicate()).isTrue();
+            assertThat(marked.get(1).isDuplicate()).isFalse();
+        }
+
+        @Test
+        @DisplayName("an income row is not matched against an existing expense of the same amount")
+        void shouldNotCrossMatchIncomeAgainstExpense() {
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+            when(expenseService.findByTaxYear(eq(businessId), any()))
+                .thenReturn(List.of(existingExpense("Invoice 1", "100.00")));
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(
+                List.of(incomeRow("Invoice 1", "100.00")));
+
+            assertThat(marked.get(0).isDuplicate()).isFalse();
+        }
+
+        @Test
+        @DisplayName("no existing records means nothing is flagged")
+        void shouldFlagNothingWhenStoreEmpty() {
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+            when(expenseService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(
+                List.of(incomeRow("Invoice 1", "100.00"), expenseRow("Postage", "20.00")));
+
+            assertThat(marked).noneMatch(ImportedTransactionRow::isDuplicate);
+        }
+
+        @Test
+        @DisplayName("an undated row is passed through as a non-duplicate rather than crashing the scan")
+        void shouldNotCrashOnUndatedRow() {
+            when(incomeService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+            when(expenseService.findByTaxYear(eq(businessId), any())).thenReturn(List.of());
+
+            ImportedTransactionRow undated = ImportedTransactionRow.create(
+                null, "No date", new BigDecimal("42.00"), TransactionType.INCOME, null, false, 0);
+
+            List<ImportedTransactionRow> marked = service.markDuplicates(
+                List.of(undated, incomeRow("Invoice 1", "100.00")));
+
+            assertThat(marked).hasSize(2);
+            assertThat(marked.get(0).isDuplicate()).isFalse();
+            assertThat(marked.get(1).isDuplicate()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("autoDetectTransactions()")
+    class AutoDetect {
+
+        private final class StubParser implements BankCsvParser {
+            private final boolean matches;
+            private final List<ImportedTransaction> output;
+
+            StubParser(boolean matches, List<ImportedTransaction> output) {
+                this.matches = matches;
+                this.output = output;
+            }
+
+            @Override public String getBankName() {
+                return "StubBank";
+            }
+
+            @Override public boolean canParse(String[] headers) {
+                return matches;
+            }
+
+            @Override public List<ImportedTransaction> parse(Path csvFile, Charset charset) {
+                return output;
+            }
+
+            @Override public String[] getExpectedHeaders() {
+                return new String[] {"Date", "Amount"};
+            }
+        }
+
+        private Path csvWithHeader() throws IOException {
+            Path file = tempDir.resolve("statement.csv");
+            Files.writeString(file, "Date,Amount,Description\n2025-05-01,100.00,Payment\n",
+                StandardCharsets.UTF_8);
+            return file;
+        }
+
+        @Test
+        @DisplayName("returns converted rows (type from sign, absolute amount) for a recognised format")
+        void recognisedFormatReturnsRows() throws IOException {
+            List<ImportedTransaction> parsed = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 5, 1), new BigDecimal("100.00"),
+                    "Client payment", null, null),
+                new ImportedTransaction(LocalDate.of(2025, 5, 2), new BigDecimal("-20.00"),
+                    "Fuel", null, null));
+            BankFormatDetector detector = new BankFormatDetector(List.of(new StubParser(true, parsed)));
+
+            Optional<List<ImportedTransactionRow>> rows =
+                service.autoDetectTransactions(csvWithHeader(), detector);
+
+            assertThat(rows).isPresent();
+            assertThat(rows.get()).hasSize(2);
+            assertThat(rows.get().get(0).type()).isEqualTo(TransactionType.INCOME);
+            assertThat(rows.get().get(0).amount()).isEqualByComparingTo("100.00");
+            assertThat(rows.get().get(1).type()).isEqualTo(TransactionType.EXPENSE);
+            assertThat(rows.get().get(1).amount()).isEqualByComparingTo("20.00");
+        }
+
+        @Test
+        @DisplayName("returns empty for an unrecognised format so the caller uses manual mapping")
+        void unrecognisedFormatReturnsEmpty() throws IOException {
+            BankFormatDetector detector = new BankFormatDetector(List.of(new StubParser(false, List.of())));
+
+            Optional<List<ImportedTransactionRow>> rows =
+                service.autoDetectTransactions(csvWithHeader(), detector);
+
+            assertThat(rows).isEmpty();
+        }
+
+        @Test
+        @DisplayName("returns empty when a recognised parser fails, falling back to manual mapping")
+        void parseFailureReturnsEmpty() throws IOException {
+            BankCsvParser throwing = new BankCsvParser() {
+                @Override public String getBankName() {
+                    return "Throwing";
+                }
+
+                @Override public boolean canParse(String[] headers) {
+                    return true;
+                }
+
+                @Override public List<ImportedTransaction> parse(Path csvFile, Charset charset)
+                        throws CsvParseException {
+                    throw new CsvParseException("bad row", "statement.csv", 2, null);
+                }
+
+                @Override public String[] getExpectedHeaders() {
+                    return new String[] {"Date", "Amount"};
+                }
+            };
+
+            Optional<List<ImportedTransactionRow>> rows =
+                service.autoDetectTransactions(csvWithHeader(), new BankFormatDetector(List.of(throwing)));
+
+            assertThat(rows).isEmpty();
         }
     }
 }

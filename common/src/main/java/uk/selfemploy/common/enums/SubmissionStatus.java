@@ -3,13 +3,17 @@ package uk.selfemploy.common.enums;
 /**
  * Status of an HMRC submission.
  *
- * <p>Submissions can be in one of four states:</p>
+ * <p>The four HMRC-response states map 1:1 to what HMRC actually returns:</p>
  * <ul>
  *   <li>PENDING - Awaiting HMRC response</li>
  *   <li>SUBMITTED - Successfully sent to HMRC, awaiting processing</li>
  *   <li>ACCEPTED - HMRC has accepted the submission</li>
  *   <li>REJECTED - HMRC has rejected the submission (validation error)</li>
  * </ul>
+ *
+ * <p>{@link #NOT_SUBMITTED} is orthogonal to the HMRC states: it marks a record
+ * that was never sent to HMRC (a local estimate or a legacy test record), so it
+ * must never be presented as an HMRC filing.</p>
  */
 public enum SubmissionStatus {
 
@@ -31,7 +35,13 @@ public enum SubmissionStatus {
     /**
      * HMRC has rejected the submission due to validation errors.
      */
-    REJECTED("Rejected", "x");
+    REJECTED("Rejected", "x"),
+
+    /**
+     * The record was never sent to HMRC - a local estimate or a legacy test
+     * record. It carries no HMRC reference and is not an HMRC filing.
+     */
+    NOT_SUBMITTED("Not submitted", "info");
 
     private final String displayName;
     private final String icon;
@@ -64,9 +74,29 @@ public enum SubmissionStatus {
 
     /**
      * Checks if this status is a terminal state (no further changes expected).
+     * A record that was never submitted is terminal - HMRC will never process it.
      */
     public boolean isTerminal() {
-        return this == ACCEPTED || this == REJECTED;
+        return this == ACCEPTED || this == REJECTED || this == NOT_SUBMITTED;
+    }
+
+    /**
+     * Checks whether this status reflects a record that was actually sent to HMRC.
+     * Only the four HMRC-response states qualify; {@link #NOT_SUBMITTED} does not.
+     */
+    public boolean isSentToHmrc() {
+        return this != NOT_SUBMITTED;
+    }
+
+    /**
+     * Checks whether figures transmitted to HMRC under this status still stand, so
+     * a period carrying it should warn before its records are edited or deleted.
+     * PENDING (awaiting HMRC), SUBMITTED and ACCEPTED all lock the period; a
+     * REJECTED submission was not accepted (and will be resubmitted), and
+     * {@link #NOT_SUBMITTED} never reached HMRC.
+     */
+    public boolean locksSubmittedPeriod() {
+        return this == PENDING || this == SUBMITTED || this == ACCEPTED;
     }
 
     /**

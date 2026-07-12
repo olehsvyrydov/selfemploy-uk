@@ -182,6 +182,15 @@
     -fx-text-fill: #721c24;
 }
 
+.status-not_submitted {
+    -fx-background-color: #e2e3e5;
+}
+
+.status-not_submitted .status-icon,
+.status-not_submitted .status-text {
+    -fx-text-fill: #41464b;
+}
+
 .status-icon {
     -fx-font-size: 12px;
     -fx-font-weight: bold;
@@ -353,6 +362,10 @@
 
 .detail-status-card.status-rejected {
     -fx-background-color: #f8d7da;
+}
+
+.detail-status-card.status-not_submitted {
+    -fx-background-color: #e2e3e5;
 }
 
 .detail-status-icon {

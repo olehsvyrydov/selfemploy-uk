@@ -70,7 +70,7 @@ class TaxSummaryControllerTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
             Income income2 = new Income(
                 UUID.randomUUID(),
@@ -83,7 +83,7 @@ class TaxSummaryControllerTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             Expense expense1 = new Expense(
@@ -131,7 +131,7 @@ class TaxSummaryControllerTest {
                 null,
                 null,
                 null,
-                null
+                null, null, null
             );
 
             when(incomeService.findByTaxYear(businessId, taxYear))

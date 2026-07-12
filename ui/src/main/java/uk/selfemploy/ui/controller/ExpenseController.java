@@ -1,4 +1,6 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.ToastNotification;
+import uk.selfemploy.ui.component.AppDialog;
 
 import jakarta.inject.Inject;
 import javafx.animation.PauseTransition;
@@ -34,6 +36,8 @@ import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.SubmissionRecord;
+import uk.selfemploy.ui.service.SubmittedPeriodIndex;
 import uk.selfemploy.ui.viewmodel.ExpenseListViewModel;
 import uk.selfemploy.ui.viewmodel.ExpenseTableRow;
 
@@ -45,6 +49,7 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
@@ -600,10 +605,38 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     private void handleEditExpense(ExpenseTableRow row) {
         if (expenseService == null) return;
 
+        Optional<SubmissionRecord> covering = submittedPeriodCovering(row.date());
+        if (covering.isPresent() && !confirmSubmittedPeriodChange(covering.get(), "editing")) {
+            return;
+        }
+
         // Load full expense from service
         expenseService.findById(row.id()).ifPresent(expense -> {
             openExpenseDialog(expense);
         });
+    }
+
+    /**
+     * Returns the submitted HMRC period that covers the given date, if any.
+     */
+    private Optional<SubmissionRecord> submittedPeriodCovering(LocalDate date) {
+        return SubmittedPeriodIndex.forBusiness(businessId).coveringSubmission(date);
+    }
+
+    /**
+     * Warns that a record belongs to a period already sent to HMRC. Returns true
+     * if the user chose to proceed.
+     */
+    private boolean confirmSubmittedPeriodChange(SubmissionRecord covering, String action) {
+        String capitalisedAction = action.isEmpty()
+            ? action
+            : Character.toUpperCase(action.charAt(0)) + action.substring(1);
+        return AppDialog.confirm("This entry was submitted to HMRC",
+            "This entry falls in your " + covering.getPeriodLabel()
+                + " submission, which has already been sent to HMRC.\n\n"
+                + capitalisedAction + " it means your submitted figures will no longer match — "
+                + "you will need to resubmit or correct that period.\n\nContinue?",
+            "Continue", "Cancel");
     }
 
     private void handleViewReceipts(ExpenseTableRow row) {
@@ -658,35 +691,32 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                 }
             } catch (java.io.IOException e) {
                 // Show error on JavaFX thread
-                javafx.application.Platform.runLater(() -> {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Error");
-                    alert.setHeaderText("Could not open receipt");
-                    alert.setContentText(e.getMessage());
-                    alert.showAndWait();
-                });
+                javafx.application.Platform.runLater(() ->
+                    AppDialog.error("Error", "Could not open receipt\n\n" + e.getMessage()));
             }
         }).start();
     }
 
     private void handleDeleteExpense(ExpenseTableRow row) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Delete Expense?");
-        confirm.setHeaderText("Are you sure you want to delete this expense entry?");
-        confirm.setContentText(
-            "Description: " + row.description() + "\n" +
-            "Amount: " + row.getFormattedAmount() + "\n" +
-            "Category: " + row.getCategoryDisplayName() + "\n\n" +
-            "This action cannot be undone."
-        );
+        Optional<SubmissionRecord> covering = submittedPeriodCovering(row.date());
+        String submittedWarning = covering
+            .map(s -> "\n\n⚠ This entry is included in your " + s.getPeriodLabel()
+                + " submission to HMRC. Deleting it means you must resubmit or correct that period.")
+            .orElse("");
 
-        confirm.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK && expenseService != null) {
-                expenseService.delete(row.id());
-                showToast("Expense deleted successfully");
-                refreshData();
-            }
-        });
+        boolean confirmed = AppDialog.confirm("Delete Expense?",
+            "Are you sure you want to delete this expense entry?\n\n"
+            + "Description: " + row.description() + "\n"
+            + "Amount: " + row.getFormattedAmount() + "\n"
+            + "Category: " + row.getCategoryDisplayName() + "\n\n"
+            + "This action cannot be undone." + submittedWarning,
+            "Delete", "Cancel");
+
+        if (confirmed && expenseService != null) {
+            expenseService.delete(row.id());
+            showToast("Expense deleted successfully");
+            refreshData();
+        }
     }
 
     private void openExpenseDialog(Expense expense) {
@@ -715,25 +745,11 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     }
 
     private void showToast(String message) {
-        // Simple toast notification using JavaFX PauseTransition
-        Alert toast = new Alert(Alert.AlertType.INFORMATION);
-        toast.setTitle(null);
-        toast.setHeaderText(null);
-        toast.setContentText(message);
-        toast.show();
-
-        // Auto-dismiss after 2 seconds using JavaFX animation (no raw threads)
-        PauseTransition delay = new PauseTransition(Duration.seconds(2));
-        delay.setOnFinished(event -> toast.close());
-        delay.play();
+        ToastNotification.showSuccess(message);
     }
 
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e.getMessage());
-        alert.showAndWait();
+        AppDialog.error("Error", message + (e != null && e.getMessage() != null ? "\n\n" + e.getMessage() : ""));
     }
 
     /**

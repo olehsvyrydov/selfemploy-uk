@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -257,8 +258,17 @@ public class IncomeDialogController implements Initializable {
 
     @FXML
     void handleSave(ActionEvent event) {
-        if (viewModel != null && viewModel.save()) {
-            closeDialog();
+        if (viewModel == null) {
+            return;
+        }
+        try {
+            if (viewModel.save()) {
+                closeDialog();
+            }
+        } catch (RuntimeException e) {
+            String reason = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            AppDialog.error("Save Failed",
+                "This income entry could not be saved and your changes were not stored:\n\n" + reason);
         }
     }
 
@@ -290,40 +300,19 @@ public class IncomeDialogController implements Initializable {
     }
 
     private boolean showUnsavedChangesDialog() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Unsaved Changes");
-        alert.setHeaderText("You have unsaved changes");
-        alert.setContentText("Are you sure you want to close without saving?");
-
-        ButtonType discardButton = new ButtonType("Discard", ButtonBar.ButtonData.OK_DONE);
-        ButtonType keepEditingButton = new ButtonType("Keep Editing", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        alert.getButtonTypes().setAll(discardButton, keepEditingButton);
-
-        return alert.showAndWait()
-            .map(button -> button == discardButton)
-            .orElse(false);
+        return AppDialog.confirm("Unsaved Changes",
+            "You have unsaved changes\n\nAre you sure you want to close without saving?",
+            "Discard", "Keep Editing");
     }
 
     private boolean showDeleteConfirmation() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Income?");
-        alert.setHeaderText("Are you sure you want to delete this income entry?");
-        alert.setContentText(String.format(
-            "Client: %s%nAmount: £%s%nDate: %s%n%nThis action cannot be undone.",
-            viewModel.getClientName(),
-            viewModel.getAmount(),
-            viewModel.getDate()
-        ));
-
-        ButtonType deleteButton = new ButtonType("Delete", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        alert.getButtonTypes().setAll(deleteButton, cancelButton);
-
-        return alert.showAndWait()
-            .map(button -> button == deleteButton)
-            .orElse(false);
+        return AppDialog.confirm("Delete Income?",
+            "Are you sure you want to delete this income entry?\n\n" + String.format(
+                "Client: %s%nAmount: £%s%nDate: %s%n%nThis action cannot be undone.",
+                viewModel.getClientName(),
+                viewModel.getAmount(),
+                viewModel.getDate()),
+            "Delete", "Cancel");
     }
 
     private void closeDialog() {

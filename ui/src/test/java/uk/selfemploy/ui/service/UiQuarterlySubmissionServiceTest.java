@@ -878,30 +878,29 @@ class UiQuarterlySubmissionServiceTest {
         }
 
         @Test
-        @DisplayName("should use version 7.0 for tax year 2025 (cumulative endpoint)")
-        void shouldUseVersion7ForTaxYear2025() {
-            // Tax year 2025-26 onwards: v7.0 for cumulative endpoint
+        @DisplayName("should use version 5.0 for tax year 2025 (cumulative endpoint is still v5.0)")
+        void shouldUseVersion5ForTaxYear2025() {
+            // The Self Employment Business (MTD) API is v5.0; the cumulative endpoint
+            // for 2025-26 onwards is an endpoint choice within v5.0, not a version bump.
             TaxYear taxYear2025 = TaxYear.of(2025);
             String acceptHeader = service.getAcceptHeader(taxYear2025);
-            assertThat(acceptHeader).isEqualTo("application/vnd.hmrc.7.0+json");
+            assertThat(acceptHeader).isEqualTo("application/vnd.hmrc.5.0+json");
         }
 
         @Test
-        @DisplayName("should use version 7.0 for tax year 2026 (cumulative endpoint)")
-        void shouldUseVersion7ForTaxYear2026() {
-            // Tax year 2026-27 onwards: v7.0 for cumulative endpoint
+        @DisplayName("should use version 5.0 for tax year 2026 (cumulative endpoint is still v5.0)")
+        void shouldUseVersion5ForTaxYear2026() {
             TaxYear taxYear2026 = TaxYear.of(2026);
             String acceptHeader = service.getAcceptHeader(taxYear2026);
-            assertThat(acceptHeader).isEqualTo("application/vnd.hmrc.7.0+json");
+            assertThat(acceptHeader).isEqualTo("application/vnd.hmrc.5.0+json");
         }
 
         @Test
-        @DisplayName("should use version 7.0 for far future tax year")
-        void shouldUseVersion7ForFutureTaxYear() {
-            // Far future tax years: v7.0
+        @DisplayName("should use version 5.0 for far future tax year")
+        void shouldUseVersion5ForFutureTaxYear() {
             TaxYear taxYear2030 = TaxYear.of(2030);
             String acceptHeader = service.getAcceptHeader(taxYear2030);
-            assertThat(acceptHeader).isEqualTo("application/vnd.hmrc.7.0+json");
+            assertThat(acceptHeader).isEqualTo("application/vnd.hmrc.5.0+json");
         }
 
         @Test

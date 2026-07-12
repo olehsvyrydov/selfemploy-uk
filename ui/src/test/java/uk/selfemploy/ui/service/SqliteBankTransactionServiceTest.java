@@ -23,6 +23,7 @@ class SqliteBankTransactionServiceTest {
 
     private static UUID businessId;
     private SqliteBankTransactionService service;
+    private SqliteBankTransactionRepository logRepository;
 
     @BeforeAll
     static void setUpClass() {
@@ -41,6 +42,7 @@ class SqliteBankTransactionServiceTest {
         SqliteTestSupport.resetTestData();
         SqliteDataStore.getInstance().ensureBusinessExists(businessId);
         service = new SqliteBankTransactionService(businessId);
+        logRepository = new SqliteBankTransactionRepository(businessId);
     }
 
     // === Constructor Tests ===
@@ -340,8 +342,7 @@ class SqliteBankTransactionServiceTest {
             UUID expenseId = UUID.randomUUID();
             service.categorizeAsExpense(tx.id(), expenseId, Instant.now());
 
-            List<Map<String, String>> logs = SqliteDataStore.getInstance()
-                    .findModificationLogs(tx.id());
+            List<Map<String, String>> logs = logRepository.findModificationLogs(tx.id());
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).get("modification_type")).isEqualTo("CATEGORIZED");
             assertThat(logs.get(0).get("field_name")).isEqualTo("review_status");
@@ -359,8 +360,7 @@ class SqliteBankTransactionServiceTest {
             UUID incomeId = UUID.randomUUID();
             service.categorizeAsIncome(tx.id(), incomeId, Instant.now());
 
-            List<Map<String, String>> logs = SqliteDataStore.getInstance()
-                    .findModificationLogs(tx.id());
+            List<Map<String, String>> logs = logRepository.findModificationLogs(tx.id());
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).get("modification_type")).isEqualTo("CATEGORIZED");
         }
@@ -373,8 +373,7 @@ class SqliteBankTransactionServiceTest {
 
             service.exclude(tx.id(), "Personal transaction", Instant.now());
 
-            List<Map<String, String>> logs = SqliteDataStore.getInstance()
-                    .findModificationLogs(tx.id());
+            List<Map<String, String>> logs = logRepository.findModificationLogs(tx.id());
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).get("modification_type")).isEqualTo("EXCLUDED");
             assertThat(logs.get(0).get("previous_value")).isEqualTo("PENDING");
@@ -389,8 +388,7 @@ class SqliteBankTransactionServiceTest {
 
             service.setBusinessFlag(tx.id(), true, Instant.now());
 
-            List<Map<String, String>> logs = SqliteDataStore.getInstance()
-                    .findModificationLogs(tx.id());
+            List<Map<String, String>> logs = logRepository.findModificationLogs(tx.id());
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).get("modification_type")).isEqualTo("BUSINESS_PERSONAL_CHANGED");
             assertThat(logs.get(0).get("field_name")).isEqualTo("is_business");
@@ -405,8 +403,7 @@ class SqliteBankTransactionServiceTest {
 
             service.skip(tx.id(), Instant.now());
 
-            List<Map<String, String>> logs = SqliteDataStore.getInstance()
-                    .findModificationLogs(tx.id());
+            List<Map<String, String>> logs = logRepository.findModificationLogs(tx.id());
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).get("modification_type")).isEqualTo("EXCLUDED");
             assertThat(logs.get(0).get("new_value")).isEqualTo("SKIPPED");
@@ -420,8 +417,7 @@ class SqliteBankTransactionServiceTest {
 
             service.delete(tx.id());
 
-            List<Map<String, String>> logs = SqliteDataStore.getInstance()
-                    .findModificationLogs(tx.id());
+            List<Map<String, String>> logs = logRepository.findModificationLogs(tx.id());
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).get("modification_type")).isEqualTo("EXCLUDED");
             assertThat(logs.get(0).get("field_name")).isEqualTo("deleted_at");
@@ -436,8 +432,7 @@ class SqliteBankTransactionServiceTest {
             service.setBusinessFlag(tx.id(), true, Instant.now());
             service.setBusinessFlag(tx.id(), false, Instant.now());
 
-            List<Map<String, String>> logs = SqliteDataStore.getInstance()
-                    .findModificationLogs(tx.id());
+            List<Map<String, String>> logs = logRepository.findModificationLogs(tx.id());
             assertThat(logs).hasSize(2);
         }
     }

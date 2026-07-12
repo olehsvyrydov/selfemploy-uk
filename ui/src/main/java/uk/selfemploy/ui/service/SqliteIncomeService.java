@@ -4,6 +4,7 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.exception.ValidationException;
 import uk.selfemploy.core.service.IncomeService;
 
@@ -35,14 +36,16 @@ public class SqliteIncomeService extends IncomeService {
 
     @Override
     public Income create(UUID businessId, LocalDate date, BigDecimal amount,
-                         String description, IncomeCategory category, String reference) {
+                         String description, IncomeCategory category, String reference,
+                         String clientName, IncomeStatus status) {
         validateBusinessId(businessId);
         validateDate(date);
         validateAmount(amount);
         validateDescription(description);
         validateCategory(category);
 
-        Income income = Income.create(businessId, date, amount, description, category, reference);
+        Income income = Income.create(businessId, date, amount, description, category, reference,
+                clientName, status);
         return repository.save(income);
     }
 
@@ -56,7 +59,8 @@ public class SqliteIncomeService extends IncomeService {
 
     @Override
     public Income update(UUID id, LocalDate date, BigDecimal amount,
-                         String description, IncomeCategory category, String reference) {
+                         String description, IncomeCategory category, String reference,
+                         String clientName, IncomeStatus status) {
         if (id == null) {
             throw new ValidationException("id", "Income id cannot be null");
         }
@@ -80,7 +84,9 @@ public class SqliteIncomeService extends IncomeService {
                 existingIncome.bankTransactionRef(),
                 existingIncome.invoiceNumber(),
                 existingIncome.receiptPath(),
-                existingIncome.bankTransactionId()
+                existingIncome.bankTransactionId(),
+                clientName != null ? clientName : existingIncome.clientName(),
+                status != null ? status : existingIncome.status()
         );
 
         return repository.save(updatedIncome);

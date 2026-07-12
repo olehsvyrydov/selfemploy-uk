@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -28,7 +29,6 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -650,19 +650,11 @@ public class TransactionReviewController implements Initializable, MainControlle
     }
 
     private void showInfo(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Success");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        AppDialog.info("Success", message);
     }
 
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e != null ? e.getMessage() : "Unknown error");
-        alert.showAndWait();
+        AppDialog.error("Error", message + "\n\n" + (e != null ? e.getMessage() : "Unknown error"));
     }
 
     // === TaxYearAware ===

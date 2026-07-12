@@ -1,7 +1,6 @@
 package uk.selfemploy.ui.controller;
 
 import jakarta.inject.Inject;
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -15,7 +14,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -25,10 +23,14 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.component.AppDialog;
+import uk.selfemploy.ui.component.ToastNotification;
 import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.SubmissionRecord;
+import uk.selfemploy.ui.service.SubmittedPeriodIndex;
 import uk.selfemploy.ui.viewmodel.IncomeListViewModel;
 import uk.selfemploy.ui.viewmodel.IncomeTableRow;
 
@@ -39,7 +41,9 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.net.URL;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
@@ -431,34 +435,64 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     }
 
     private void handleEditIncome(IncomeTableRow row) {
+        if (row != null) {
+            Optional<SubmissionRecord> covering = submittedPeriodCovering(row.date());
+            if (covering.isPresent() && !confirmSubmittedPeriodChange(covering.get(), "editing")) {
+                return;
+            }
+        }
         openIncomeDialog(row);
+    }
+
+    /**
+     * Returns the submitted HMRC period that covers the given date, if any.
+     */
+    private Optional<SubmissionRecord> submittedPeriodCovering(LocalDate date) {
+        return SubmittedPeriodIndex.forBusiness(businessId).coveringSubmission(date);
+    }
+
+    /**
+     * Warns that a record belongs to a period already sent to HMRC. Returns true
+     * if the user chose to proceed.
+     */
+    private boolean confirmSubmittedPeriodChange(SubmissionRecord covering, String action) {
+        return AppDialog.confirm("This entry was submitted to HMRC",
+            "This entry falls in your " + covering.getPeriodLabel()
+                + " submission, which has already been sent to HMRC.\n\n"
+                + capitalise(action) + " it means your submitted figures will no longer match — "
+                + "you will need to resubmit or correct that period.\n\nContinue?",
+            "Continue", "Cancel");
+    }
+
+    private static String capitalise(String word) {
+        return word.isEmpty() ? word : Character.toUpperCase(word.charAt(0)) + word.substring(1);
     }
 
     private void handleDeleteIncome(IncomeTableRow row) {
         if (row == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Income?");
-        alert.setHeaderText("Are you sure you want to delete this income entry?");
-        alert.setContentText(String.format(
-            "Client: %s%nAmount: %s%nDate: %s%n%nThis action cannot be undone.",
-            row.clientName(),
-            row.getFormattedAmount(),
-            row.getFormattedDate()
-        ));
+        Optional<SubmissionRecord> covering = submittedPeriodCovering(row.date());
+        String submittedWarning = covering
+            .map(s -> "\n\n⚠ This entry is included in your " + s.getPeriodLabel()
+                + " submission to HMRC. Deleting it means you must resubmit or correct that period.")
+            .orElse("");
 
-        alert.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.OK) {
-                if (incomeService != null) {
-                    boolean deleted = incomeService.delete(row.id());
-                    if (deleted) {
-                        viewModel.refresh();
-                        updateTable();
-                        showSuccessToast("Income deleted");
-                    }
-                }
+        boolean confirmed = AppDialog.confirm("Delete Income?",
+            "Are you sure you want to delete this income entry?\n\n" + String.format(
+                "Client: %s%nAmount: %s%nDate: %s%n%nThis action cannot be undone.",
+                row.clientName(),
+                row.getFormattedAmount(),
+                row.getFormattedDate()) + submittedWarning,
+            "Delete", "Cancel");
+
+        if (confirmed && incomeService != null) {
+            boolean deleted = incomeService.delete(row.id());
+            if (deleted) {
+                viewModel.refresh();
+                updateTable();
+                showSuccessToast("Income deleted");
             }
-        });
+        }
     }
 
     private void openIncomeDialog(IncomeTableRow editRow) {
@@ -596,26 +630,11 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
 
     private void showSuccessToast(String message) {
         LOG.info("Income operation: {}", message);
-
-        // Toast notification using JavaFX PauseTransition
-        Alert toast = new Alert(Alert.AlertType.INFORMATION);
-        toast.setTitle(null);
-        toast.setHeaderText(null);
-        toast.setContentText(message);
-        toast.show();
-
-        // Auto-dismiss after 2 seconds using JavaFX animation (no raw threads)
-        PauseTransition delay = new PauseTransition(Duration.seconds(2));
-        delay.setOnFinished(event -> toast.close());
-        delay.play();
+        ToastNotification.showSuccess(message);
     }
 
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e.getMessage());
-        alert.showAndWait();
+        AppDialog.error("Error", message + (e.getMessage() != null ? "\n\n" + e.getMessage() : ""));
     }
 
     // === TaxYearAware Implementation ===

@@ -112,6 +112,21 @@ class SubmissionHistoryViewModelTest {
         }
 
         @Test
+        @DisplayName("total submissions excludes local NOT_SUBMITTED rows so it reconciles with the breakdown")
+        void totalExcludesNotSubmitted() {
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.QUARTERLY_Q1, "2025/26", SubmissionStatus.ACCEPTED
+            ));
+            viewModel.addSubmission(createSubmission(
+                SubmissionType.ANNUAL, "2025/26", SubmissionStatus.NOT_SUBMITTED
+            ));
+
+            // Two rows exist, but only one is a real submission.
+            assertThat(viewModel.getTotalCount()).isEqualTo(1);
+            assertThat(viewModel.getAcceptedCount()).isEqualTo(1);
+        }
+
+        @Test
         @DisplayName("should update accepted count")
         void shouldUpdateAcceptedCount() {
             // Given & When
@@ -408,9 +423,15 @@ class SubmissionHistoryViewModelTest {
             // Then
             assertThat(viewModel.getTotalCount()).isEqualTo(5);
             assertThat(viewModel.getAcceptedCount()).isEqualTo(2);
-            assertThat(viewModel.getPendingCount()).isEqualTo(1);
+            // SUBMITTED (sent, awaiting HMRC) is shown in the Pending bucket alongside
+            // PENDING, since there is no separate "Submitted" card.
+            assertThat(viewModel.getPendingCount()).isEqualTo(2);
             assertThat(viewModel.getRejectedCount()).isEqualTo(1);
-            // SUBMITTED counts separately (not in accepted/pending/rejected)
+            // The header total must reconcile with the visible breakdown.
+            assertThat(viewModel.getTotalCount())
+                .isEqualTo(viewModel.getAcceptedCount()
+                    + viewModel.getPendingCount()
+                    + viewModel.getRejectedCount());
         }
 
         @Test

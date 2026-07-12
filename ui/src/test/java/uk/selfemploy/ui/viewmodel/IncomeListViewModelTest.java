@@ -642,7 +642,7 @@ class IncomeListViewModelTest {
             null,
             null,
             null,
-            null
+            null, null, null
         );
     }
 

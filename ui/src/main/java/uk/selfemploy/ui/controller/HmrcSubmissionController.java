@@ -1,11 +1,11 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -17,6 +17,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.SubmissionEnvironment;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -45,6 +46,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     @FXML private Label annualDeadlineLabel;
     @FXML private Label quarterlyStatusLabel;
     @FXML private Label historyCountLabel;
+    @FXML private Label submissionChannelInfoLabel;
 
     // Feature cards for keyboard accessibility
     @FXML private VBox annualCard;
@@ -66,6 +68,25 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     public void initialize(URL location, ResourceBundle resources) {
         initializeServices();
         updateDeadlines();
+        updateSubmissionChannelInfo();
+    }
+
+    /**
+     * States honestly which HMRC environment submissions go to, so the taxpayer is
+     * never told annual figures are merely a local estimate once they are actually sent.
+     */
+    private void updateSubmissionChannelInfo() {
+        if (submissionChannelInfoLabel == null) {
+            return;
+        }
+        SubmissionEnvironment environment = SubmissionEnvironment.current();
+        String text = environment.isSandbox()
+            ? "• Quarterly updates and annual declarations use the HMRC Making Tax Digital APIs. "
+              + "This build submits to the " + environment.badgeLabel()
+              + ", so filings are for testing and are not your official return."
+            : "• Quarterly updates and annual declarations use the HMRC Making Tax Digital APIs "
+              + "and are submitted to HMRC.";
+        submissionChannelInfoLabel.setText(text);
     }
 
     /**
@@ -305,11 +326,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
 
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to load Quarterly Updates view", e);
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to open Quarterly Updates");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            AppDialog.error("Error", "Failed to open Quarterly Updates\n\n" + e.getMessage());
         }
     }
 
@@ -375,11 +392,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
 
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to load view: " + fxmlPath, e);
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to open " + title);
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            AppDialog.error("Error", "Failed to open " + title + "\n\n" + e.getMessage());
         }
     }
 

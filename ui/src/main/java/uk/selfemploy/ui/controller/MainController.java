@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -102,6 +103,7 @@ public class MainController implements Initializable {
             if (newVal != null) {
                 navigationViewModel.setSelectedTaxYear(newVal);
                 updateStatusBar();
+                rescopeAllViewsToTaxYear(newVal);
                 refreshCurrentView();
                 // Restart notification scheduler for new tax year
                 notificationService.startScheduler(newVal);
@@ -233,12 +235,28 @@ public class MainController implements Initializable {
         loadView(currentView);
     }
 
+    /**
+     * Re-scopes every already-loaded screen to the newly selected tax year.
+     *
+     * <p>Screens are cached after first load, so without this only the visible screen
+     * (refreshed separately) would pick up the new year; other cached screens would keep
+     * showing the previous year's data the next time they are shown. The currently visible
+     * view is skipped here because {@link #refreshCurrentView()} rebuilds it fresh.</p>
+     */
+    private void rescopeAllViewsToTaxYear(TaxYear taxYear) {
+        View currentView = navigationViewModel.getCurrentView();
+        for (Map.Entry<View, Object> entry : controllerCache.entrySet()) {
+            if (entry.getKey() == currentView) {
+                continue;
+            }
+            if (entry.getValue() instanceof TaxYearAware taxYearAware) {
+                taxYearAware.setTaxYear(taxYear);
+            }
+        }
+    }
+
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e.getMessage());
-        alert.showAndWait();
+        AppDialog.error("Error", message + (e != null && e.getMessage() != null ? "\n\n" + e.getMessage() : ""));
     }
 
     // === Navigation Handlers ===

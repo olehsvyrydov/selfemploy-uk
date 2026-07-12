@@ -1,4 +1,5 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -511,19 +512,14 @@ public class OnboardingController implements Initializable {
 
     @FXML
     void handleSkipSetup(ActionEvent event) {
-        // Show confirmation dialog
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Skip Setup");
-        confirm.setHeaderText("Are you sure you want to skip?");
-        confirm.setContentText("You can add your details later in Settings, " +
-                "but some features may require them.");
-
-        confirm.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                viewModel.skipSetup();
-                notifyCompletion();
-            }
-        });
+        boolean confirmed = AppDialog.confirm("Skip Setup",
+            "Are you sure you want to skip?\n\n"
+            + "You can add your details later in Settings, but some features may require them.",
+            "Skip", "Cancel");
+        if (confirmed) {
+            viewModel.skipSetup();
+            notifyCompletion();
+        }
     }
 
     @FXML

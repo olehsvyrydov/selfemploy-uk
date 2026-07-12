@@ -1,4 +1,6 @@
 package uk.selfemploy.ui.controller;
+import uk.selfemploy.ui.component.ToastNotification;
+import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
@@ -30,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -977,10 +980,26 @@ public class BankImportWizardController implements Initializable {
 
         ImportOrchestrationService orchestrationService =
             CoreServiceFactory.getImportOrchestrationService();
+
+        // Recognised bank formats are read by their dedicated parser; unknown formats fall back
+        // to the manual column mapping the user configured.
+        Optional<List<ImportedTransactionRow>> autoDetected =
+            orchestrationService.autoDetectTransactions(file.toPath());
+        if (autoDetected.isPresent()) {
+            List<ImportedTransactionRow> transactions =
+                orchestrationService.markDuplicates(autoDetected.get());
+            viewModel.setTransactions(transactions);
+            LOG.info("Auto-detected {} transactions via bank-format parser", transactions.size());
+            return;
+        }
+
         CsvTransactionParser.ParseResult result =
             orchestrationService.parseTransactions(file.toPath(), viewModel.getColumnMapping());
 
-        viewModel.setTransactions(result.transactions());
+        // Flag rows that already exist so the wizard can skip them by default.
+        List<ImportedTransactionRow> transactions =
+            orchestrationService.markDuplicates(result.transactions());
+        viewModel.setTransactions(transactions);
 
         if (!result.warnings().isEmpty()) {
             LOG.warn("CSV parse warnings: {}", result.warnings());
@@ -988,19 +1007,17 @@ public class BankImportWizardController implements Initializable {
             showParseWarning(warningMessage, result.warnings());
         }
 
-        LOG.info("Parsed {} transactions ({} warnings)",
-                result.transactions().size(), result.warnings().size());
+        LOG.info("Parsed {} transactions ({} warnings, {} duplicates)",
+                transactions.size(), result.warnings().size(),
+                transactions.stream().filter(ImportedTransactionRow::isDuplicate).count());
     }
 
     private void showParseWarning(String summary, List<String> details) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Parse Warnings");
-        alert.setHeaderText(summary);
-        alert.setContentText(String.join("\n", details.subList(0, Math.min(details.size(), 10))));
+        String body = summary + "\n\n" + String.join("\n", details.subList(0, Math.min(details.size(), 10)));
         if (details.size() > 10) {
-            alert.setContentText(alert.getContentText() + "\n... and " + (details.size() - 10) + " more");
+            body += "\n... and " + (details.size() - 10) + " more";
         }
-        alert.showAndWait();
+        AppDialog.warning("Parse Warnings", body);
     }
 
     private void refreshConfirmSummary() {
@@ -1079,25 +1096,11 @@ public class BankImportWizardController implements Initializable {
 
     private void showSuccessToast(String message) {
         LOG.info("Import success: {}", message);
-
-        Alert toast = new Alert(Alert.AlertType.INFORMATION);
-        toast.setTitle(null);
-        toast.setHeaderText(null);
-        toast.setContentText(message);
-        toast.show();
-
-        PauseTransition delay = new PauseTransition(Duration.seconds(2));
-        delay.setOnFinished(event -> toast.close());
-        delay.play();
+        ToastNotification.showSuccess(message);
     }
 
     private void showError(String message, Exception e) {
         LOG.error(message, e);
-
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(message);
-        alert.setContentText(e.getMessage());
-        alert.showAndWait();
+        AppDialog.error("Error", message + (e != null && e.getMessage() != null ? "\n\n" + e.getMessage() : ""));
     }
 }
