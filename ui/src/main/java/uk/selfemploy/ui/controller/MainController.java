@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.controller;
 import uk.selfemploy.ui.component.AppDialog;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,6 +13,8 @@ import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.component.NotificationDialog;
+import uk.selfemploy.ui.component.TourOverlay;
+import uk.selfemploy.ui.viewmodel.TourViewModel;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
@@ -23,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
@@ -33,6 +37,7 @@ public class MainController implements Initializable {
 
     private static final Logger LOG = Logger.getLogger(MainController.class.getName());
 
+    @FXML private StackPane rootStack;
     @FXML private StackPane contentPane;
     @FXML private ToggleGroup navGroup;
     @FXML private ToggleButton navDashboard;
@@ -195,6 +200,11 @@ public class MainController implements Initializable {
                     reviewController.setNavigateToImport(() -> loadView(View.INCOME));
                 }
 
+                // Wire "Replay tour" on the Help screen
+                if (controller instanceof HelpController helpController) {
+                    helpController.setOnReplayTour(this::startTour);
+                }
+
                 // Wire post-import navigation callback for Income and Expense controllers
                 if (controller instanceof IncomeController incomeController) {
                     incomeController.setNavigateToTransactionReview(
@@ -312,6 +322,28 @@ public class MainController implements Initializable {
     @FXML
     void handleHelp(ActionEvent event) {
         loadView(View.HELP);
+    }
+
+    /**
+     * Runs the guided product tour over the sidebar navigation. Safe to call repeatedly (from
+     * first-run onboarding and from the Help screen's "Replay tour"); a running tour is replaced.
+     */
+    public void startTour() {
+        if (rootStack == null) {
+            return;
+        }
+        // Remove any overlay already showing so a replay starts cleanly.
+        rootStack.getChildren().removeIf(node -> node instanceof TourOverlay);
+
+        TourViewModel viewModel = TourViewModel.defaultTour();
+        viewModel.start();
+
+        AtomicReference<TourOverlay> ref = new AtomicReference<>();
+        TourOverlay overlay = new TourOverlay(viewModel, rootStack,
+            () -> rootStack.getChildren().remove(ref.get()));
+        ref.set(overlay);
+        rootStack.getChildren().add(overlay);
+        Platform.runLater(overlay::requestFocus);
     }
 
     @FXML

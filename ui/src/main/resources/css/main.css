@@ -2272,3 +2272,32 @@
         -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.8), 8, 0, 0, 0);
     }
 }
+
+/* ===== Guided tour overlay ===== */
+.tour-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-padding: 20 24 20 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 24, 0, 0, 8);
+}
+
+.tour-card-progress {
+    -fx-text-fill: #16a34a;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.tour-card-title {
+    -fx-text-fill: #111827;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.tour-card-body {
+    -fx-text-fill: #4b5563;
+    -fx-font-size: 14px;
+}
+
+.tour-card-button {
+    -fx-min-width: 72;
+}

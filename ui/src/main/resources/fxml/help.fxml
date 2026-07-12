@@ -34,6 +34,7 @@
             <HBox alignment="CENTER_LEFT" spacing="16">
                 <Label text="User Guide" styleClass="section-title"/>
                 <Button styleClass="user-guide-btn" onAction="#handleUserGuideClick" text="Open Full User Guide"/>
+                <Button fx:id="replayTourBtn" styleClass="user-guide-btn" onAction="#handleReplayTour" text="Replay tour"/>
             </HBox>
 
             <!-- Getting Started -->

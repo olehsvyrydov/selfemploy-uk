@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import uk.selfemploy.common.util.EnvLoader;
+import uk.selfemploy.ui.controller.MainController;
 import uk.selfemploy.ui.controller.OnboardingController;
 import uk.selfemploy.ui.controller.SettingsController;
 import uk.selfemploy.ui.controller.TermsOfServiceController;
@@ -40,6 +41,7 @@ public class Launcher extends Application {
         // Load the main FXML layout
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
         Parent root = loader.load();
+        MainController mainController = loader.getController();
 
         // Create the scene
         Scene scene = new Scene(root, DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -75,7 +77,11 @@ public class Launcher extends Application {
         if (!requireTermsAcceptance(primaryStage, scene.getStylesheets())) {
             return; // terms declined — the app is exiting
         }
-        maybeRunFirstRunOnboarding(primaryStage, scene.getStylesheets());
+        boolean firstRun = maybeRunFirstRunOnboarding(primaryStage, scene.getStylesheets());
+        if (firstRun && mainController != null) {
+            // Introduce the app with the guided tour, once the main window is laid out.
+            Platform.runLater(mainController::startTour);
+        }
     }
 
     /**
@@ -124,10 +130,10 @@ public class Launcher extends Application {
      * result (via {@link OnboardingSetupService}) so it never appears again. Any failure to show it
      * is swallowed and onboarding is marked complete, so a wizard problem never blocks the app.
      */
-    private void maybeRunFirstRunOnboarding(Stage owner, List<String> stylesheets) {
+    private boolean maybeRunFirstRunOnboarding(Stage owner, List<String> stylesheets) {
         OnboardingSetupService setup = new OnboardingSetupService();
         if (!setup.isRequired()) {
-            return;
+            return false;
         }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/onboarding-wizard.fxml"));
@@ -149,6 +155,7 @@ public class Launcher extends Application {
             LOG.log(Level.SEVERE, "Failed to show first-run onboarding; continuing to the app", e);
             setup.complete(null);
         }
+        return true;
     }
 
     @Override
