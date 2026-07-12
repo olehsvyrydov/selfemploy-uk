@@ -420,9 +420,8 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
             • No cloud servers store your information
 
             Encryption:
-            • Database encrypted with AES-256-GCM
-            • HMRC tokens stored in your OS keychain
-            • All data at rest is encrypted
+            • Your HMRC API credentials and National Insurance number are encrypted (AES-256-GCM)
+            • Your financial data is stored in a local database on your device (not yet encrypted at rest)
 
             What's sent to HMRC when you submit:
             • Your tax figures (income, expenses, profit)

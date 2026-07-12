@@ -67,7 +67,7 @@
 | **Tax Calculation Preview** | Real-time estimated tax liability |
 | **HMRC Authentication** | OAuth2 connection to HMRC Gateway |
 | **Annual Return Submission** | One-click Self Assessment submission |
-| **Local Data Storage** | Encrypted H2 database |
+| **Local Data Storage** | Local SQLite database |
 | **Backup/Restore** | Export and import data files |
 
 ### Should Have (P1)

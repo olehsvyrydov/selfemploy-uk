@@ -233,6 +233,21 @@ class HelpServiceTest {
         }
 
         @Test
+        @DisplayName("Security & Privacy help must describe encryption honestly (no false at-rest claims)")
+        void securityHelpMustNotOverstateEncryption() {
+            String body = helpService.getHelp(HelpTopic.SECURITY_PRIVACY).orElseThrow().body();
+
+            // The data file is plaintext SQLite; only HMRC credentials + the NINO are encrypted.
+            assertThat(body)
+                .doesNotContain("Database encrypted")
+                .doesNotContain("All data at rest is encrypted")
+                .doesNotContain("OS keychain");
+            assertThat(body).contains("AES-256-GCM");
+            assertThat(body).contains("National Insurance number");
+            assertThat(body).contains("not yet encrypted at rest");
+        }
+
+        @Test
         @DisplayName("should provide FAQ help")
         void shouldProvideFaqHelp() {
             Optional<HelpContent> help = helpService.getHelp(HelpTopic.FAQ);

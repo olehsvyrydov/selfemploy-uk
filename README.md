@@ -14,7 +14,7 @@ A free, open-source desktop application for UK self-employed individuals to mana
 - **Expense Management**: Categorize expenses aligned with SA103 form categories
 - **Tax Calculator**: Real-time estimates for Income Tax and National Insurance Class 4
 - **HMRC Integration**: One-click annual report submission via MTD APIs
-- **Privacy-First**: All data stored locally with AES-256 encryption
+- **Privacy-First**: All data stored locally on your device; HMRC credentials and your National Insurance number are encrypted (AES-256-GCM)
 - **Cross-Platform**: Windows, macOS, and Linux support
 
 ## Why This Project?

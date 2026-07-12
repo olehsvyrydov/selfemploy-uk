@@ -24,7 +24,7 @@ A **free, privacy-first desktop application** for UK self-employed individuals t
 - **Track income and expenses** throughout the year
 - **Calculate tax estimates** (Income Tax + National Insurance Class 4)
 - **Submit annual Self Assessment** to HMRC via Making Tax Digital (MTD) APIs
-- **Store data locally** with AES-256 encryption
+- **Store data locally** on your device (HMRC credentials and National Insurance number encrypted with AES-256-GCM)
 
 ### Why This Project?
 
@@ -61,7 +61,7 @@ A **free, privacy-first desktop application** for UK self-employed individuals t
 |-----------|------------|
 | Backend | Quarkus 3.x |
 | UI | JavaFX 25+ |
-| Database | H2 (AES-256 encrypted) |
+| Database | SQLite (local file; data not encrypted at rest) |
 | Build | Maven + jpackage |
 | Platforms | Windows, macOS, Linux |
 
