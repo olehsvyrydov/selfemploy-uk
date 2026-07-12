@@ -79,6 +79,7 @@ public class TransactionReviewViewModel {
     private final BooleanProperty canUndo = new SimpleBooleanProperty(false);
 
     private TransactionReviewCommitService commitService;
+    private UUID batchScope;
 
     public TransactionReviewViewModel(SqliteBankTransactionService service) {
         this.service = service;
@@ -100,13 +101,23 @@ public class TransactionReviewViewModel {
         this.commitService = commitService;
     }
 
+    /**
+     * Scopes the screen to a single import batch, so a just-completed import shows only its own
+     * transactions. Pass null to clear the scope and show all of the business's transactions.
+     */
+    public void scopeToBatch(UUID importAuditId) {
+        this.batchScope = importAuditId;
+    }
+
     // === Data Loading ===
 
     /**
-     * Loads all bank transactions from the service.
+     * Loads bank transactions from the service — scoped to the current import batch if one is set,
+     * otherwise all of the business's transactions.
      */
     public void loadTransactions() {
-        List<BankTransaction> transactions = service.findAll();
+        List<BankTransaction> transactions =
+            batchScope != null ? service.findByBatch(batchScope) : service.findAll();
 
         allItems.clear();
         for (BankTransaction tx : transactions) {

@@ -131,6 +131,7 @@ public class BankImportWizardController implements Initializable {
     private Stage dialogStage;
     private Consumer<List<ImportedTransactionRow>> onImportCallback;
     private String importResultMessage;
+    private java.util.UUID importResultBatchId;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -172,6 +173,11 @@ public class BankImportWizardController implements Initializable {
      */
     public String getImportResultMessage() {
         return importResultMessage;
+    }
+
+    /** The import batch id of the last import, so the review screen can scope to it. */
+    public java.util.UUID getImportResultBatchId() {
+        return importResultBatchId;
     }
 
     // =====================================================
@@ -936,6 +942,7 @@ public class BankImportWizardController implements Initializable {
                         message.append(String.format(" %d failed.", result.errorCount()));
                     }
                     importResultMessage = message.toString();
+                    importResultBatchId = result.batchId();
 
                     showSuccessToast(importResultMessage);
 

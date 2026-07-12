@@ -705,7 +705,27 @@ public class TransactionReviewController implements Initializable, MainControlle
      *
      * @param message the success message to display
      */
-    public void showImportSuccessBanner(String message) {
+    /**
+     * Clears any import-batch scope so the screen shows all of the business's transactions.
+     */
+    public void showAllTransactions() {
+        if (viewModel != null) {
+            viewModel.scopeToBatch(null);
+            viewModel.loadTransactions();
+            updateTable();
+        }
+    }
+
+    /**
+     * Scopes the screen to the just-imported batch (so only its transactions show) and shows the
+     * success banner.
+     */
+    public void showImportSuccessBanner(String message, java.util.UUID batchId) {
+        if (viewModel != null && batchId != null) {
+            viewModel.scopeToBatch(batchId);
+            viewModel.loadTransactions();
+            updateTable();
+        }
         if (importSuccessBanner == null || importSuccessLabel == null) {
             LOG.info("Import success (banner unavailable): " + message);
             return;

@@ -116,6 +116,23 @@ public class SqliteBankTransactionRepository implements BankTransactionRepositor
     }
 
     @Override
+    public List<BankTransaction> findByImportAuditId(UUID importAuditId) {
+        List<BankTransaction> transactions = new ArrayList<>();
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("findBankTransactionsByBusinessAndBatch"))) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setString(2, importAuditId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                transactions.add(mapBankTransaction(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find bank transactions for batch: " + importAuditId, e);
+        }
+        return transactions;
+    }
+
+    @Override
     public long countByStatus(String status) {
         try (PreparedStatement pstmt =
                  dataStore.connection().prepareStatement(SQL.get("countBankTransactionsByBusinessAndStatus"))) {

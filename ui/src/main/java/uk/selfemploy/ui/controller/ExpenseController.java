@@ -118,7 +118,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     private boolean cisBusiness = false;
 
     // Navigation callback for post-import redirect to Transaction Review
-    private java.util.function.Consumer<String> navigateToTransactionReview;
+    private java.util.function.BiConsumer<String, java.util.UUID> navigateToTransactionReview;
 
     /**
      * Sets the callback to navigate to the Transaction Review page with a success message.
@@ -126,7 +126,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
      *
      * @param callback accepts a success message string to display on the Transaction Review page
      */
-    public void setNavigateToTransactionReview(java.util.function.Consumer<String> callback) {
+    public void setNavigateToTransactionReview(java.util.function.BiConsumer<String, java.util.UUID> callback) {
         this.navigateToTransactionReview = callback;
     }
 
@@ -516,7 +516,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
             // After wizard closes, redirect to Transaction Review if import was successful
             String resultMessage = controller.getImportResultMessage();
             if (resultMessage != null && navigateToTransactionReview != null) {
-                navigateToTransactionReview.accept(resultMessage);
+                navigateToTransactionReview.accept(resultMessage, controller.getImportResultBatchId());
             }
         } catch (Exception e) {
             LOG.error("Failed to open Bank Import Wizard", e);

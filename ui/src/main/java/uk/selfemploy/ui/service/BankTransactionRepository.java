@@ -23,6 +23,8 @@ public interface BankTransactionRepository {
 
     List<BankTransaction> findAll();
 
+    List<BankTransaction> findByImportAuditId(UUID importAuditId);
+
     long countByStatus(String status);
 
     long count();

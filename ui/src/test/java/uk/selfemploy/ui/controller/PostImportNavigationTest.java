@@ -4,8 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -29,6 +29,13 @@ class PostImportNavigationTest {
             BankImportWizardController controller = new BankImportWizardController();
             assertThat(controller.getImportResultMessage()).isNull();
         }
+
+        @Test
+        @DisplayName("should return a null batch id before any import has occurred")
+        void shouldReturnNullBatchIdBeforeImport() {
+            BankImportWizardController controller = new BankImportWizardController();
+            assertThat(controller.getImportResultBatchId()).isNull();
+        }
     }
 
     @Nested
@@ -36,20 +43,27 @@ class PostImportNavigationTest {
     class ImportSuccessBannerTests {
 
         @Test
-        @DisplayName("should handle null FXML fields without throwing NPE")
+        @DisplayName("should handle null FXML fields and a batch id without throwing NPE")
         void shouldHandleNullFxmlFieldsWithoutNpe() {
             TransactionReviewController controller = new TransactionReviewController();
-            // FXML fields are null since we did not load FXML
-            assertThatCode(() -> controller.showImportSuccessBanner("Test message"))
+            // FXML fields and view model are null since we did not load FXML
+            assertThatCode(() -> controller.showImportSuccessBanner("Test message", UUID.randomUUID()))
                     .doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("should handle null message without throwing NPE")
+        @DisplayName("should handle a null message and null batch id without throwing NPE")
         void shouldHandleNullMessageWithoutNpe() {
             TransactionReviewController controller = new TransactionReviewController();
-            assertThatCode(() -> controller.showImportSuccessBanner(null))
+            assertThatCode(() -> controller.showImportSuccessBanner(null, null))
                     .doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("showAllTransactions handles a null view model without throwing NPE")
+        void showAllTransactionsHandlesNullViewModel() {
+            TransactionReviewController controller = new TransactionReviewController();
+            assertThatCode(controller::showAllTransactions).doesNotThrowAnyException();
         }
     }
 
@@ -61,7 +75,7 @@ class PostImportNavigationTest {
         @DisplayName("should accept navigation callback without error")
         void shouldAcceptNavigationCallback() {
             IncomeController controller = new IncomeController();
-            Consumer<String> callback = msg -> {};
+            BiConsumer<String, UUID> callback = (msg, batchId) -> {};
 
             assertThatCode(() -> controller.setNavigateToTransactionReview(callback))
                     .doesNotThrowAnyException();
@@ -85,7 +99,7 @@ class PostImportNavigationTest {
         @DisplayName("should accept navigation callback without error")
         void shouldAcceptNavigationCallback() {
             ExpenseController controller = new ExpenseController();
-            Consumer<String> callback = msg -> {};
+            BiConsumer<String, UUID> callback = (msg, batchId) -> {};
 
             assertThatCode(() -> controller.setNavigateToTransactionReview(callback))
                     .doesNotThrowAnyException();

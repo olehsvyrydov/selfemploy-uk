@@ -372,6 +372,36 @@ class TransactionReviewViewModelTest {
     }
 
     @Nested
+    class BatchScoping {
+
+        @Test
+        void scopeToBatch_loadsOnlyThatImportBatch() {
+            BankTransaction batchA = saveTestTransaction("A", new BigDecimal("10"));
+            saveTestTransaction("B", new BigDecimal("20")); // a different batch
+
+            viewModel.scopeToBatch(batchA.importAuditId());
+            viewModel.loadTransactions();
+
+            assertThat(viewModel.getAllItems()).hasSize(1);
+            assertThat(viewModel.getAllItems().get(0).id()).isEqualTo(batchA.id());
+        }
+
+        @Test
+        void clearingScope_loadsAllTransactions() {
+            saveTestTransaction("A", new BigDecimal("10"));
+            saveTestTransaction("B", new BigDecimal("20"));
+
+            viewModel.scopeToBatch(UUID.randomUUID()); // scope to a non-existent batch
+            viewModel.loadTransactions();
+            assertThat(viewModel.getAllItems()).isEmpty();
+
+            viewModel.scopeToBatch(null);
+            viewModel.loadTransactions();
+            assertThat(viewModel.getAllItems()).hasSize(2);
+        }
+    }
+
+    @Nested
     class Undo {
 
         @Test

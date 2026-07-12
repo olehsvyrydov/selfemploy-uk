@@ -185,11 +185,11 @@ public class MainController implements Initializable {
                 // Wire post-import navigation callback for Income and Expense controllers
                 if (controller instanceof IncomeController incomeController) {
                     incomeController.setNavigateToTransactionReview(
-                        message -> navigateToTransactionReviewWithMessage(message));
+                        this::navigateToTransactionReviewWithMessage);
                 }
                 if (controller instanceof ExpenseController expenseController) {
                     expenseController.setNavigateToTransactionReview(
-                        message -> navigateToTransactionReviewWithMessage(message));
+                        this::navigateToTransactionReviewWithMessage);
                 }
 
                 viewCache.put(view, viewNode);
@@ -214,17 +214,17 @@ public class MainController implements Initializable {
      *
      * @param message the success message to display on the Transaction Review page
      */
-    private void navigateToTransactionReviewWithMessage(String message) {
+    private void navigateToTransactionReviewWithMessage(String message, java.util.UUID batchId) {
         // Clear the cached Transaction Review view so it reloads with fresh data
         viewCache.remove(View.TRANSACTION_REVIEW);
         controllerCache.remove(View.TRANSACTION_REVIEW);
 
         loadView(View.TRANSACTION_REVIEW);
 
-        // Show the success banner on the newly loaded Transaction Review controller
+        // Scope the newly loaded screen to the just-imported batch and show the success banner.
         Object controller = controllerCache.get(View.TRANSACTION_REVIEW);
         if (controller instanceof TransactionReviewController reviewController) {
-            reviewController.showImportSuccessBanner(message);
+            reviewController.showImportSuccessBanner(message, batchId);
         }
     }
 
@@ -278,6 +278,12 @@ public class MainController implements Initializable {
 
     @FXML
     void navigateToTransactionReview(ActionEvent event) {
+        // Navigating here directly (not from an import) shows all transactions, clearing any
+        // batch scope a prior import left on the cached screen.
+        Object controller = controllerCache.get(View.TRANSACTION_REVIEW);
+        if (controller instanceof TransactionReviewController reviewController) {
+            reviewController.showAllTransactions();
+        }
         loadView(View.TRANSACTION_REVIEW);
     }
 
