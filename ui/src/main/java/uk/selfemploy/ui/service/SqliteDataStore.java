@@ -70,6 +70,9 @@ public final class SqliteDataStore {
      * against a temporary database file.
      */
     SqliteDataStore(Path databasePath) {
+        if (databasePath == null) {
+            throw new IllegalArgumentException("databasePath cannot be null");
+        }
         this.inMemory = false;
         this.databasePath = databasePath;
         ensureDirectoryExists();

@@ -105,12 +105,16 @@ class SqliteDataStoreConcurrencyTest {
                 }
             }, "reader");
 
+            writer.setDaemon(true);
+            reader.setDaemon(true);
             writer.start();
             reader.start();
             start.countDown();
             writer.join(30_000);
             reader.join(30_000);
 
+            assertThat(writer.isAlive()).as("writer thread finished within the timeout").isFalse();
+            assertThat(reader.isAlive()).as("reader thread finished within the timeout").isFalse();
             assertThat(failures).isEmpty();
             // Writer's inserts committed (autocommit) and are visible: at least the seed business plus the inserts.
             try (Statement st = store.connection().createStatement();

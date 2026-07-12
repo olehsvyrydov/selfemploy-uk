@@ -666,6 +666,7 @@ public class TransactionReviewController implements Initializable, MainControlle
             if (viewModel != null) {
                 viewModel.loadTransactions();
             }
+            updateTable(); // refresh the visible rows so they match what actually persisted
             showError("The change could not be saved because the database is currently unavailable. "
                 + "Please try again.", e);
         }
