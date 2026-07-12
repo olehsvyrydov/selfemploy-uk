@@ -65,6 +65,18 @@ public final class SqliteDataStore {
     }
 
     /**
+     * Test seam: a file-mode store backed by an explicit path (bypasses the OS-specific
+     * {@link #resolveDatabasePath()}), so tests can exercise the real per-thread-connection path
+     * against a temporary database file.
+     */
+    SqliteDataStore(Path databasePath) {
+        this.inMemory = false;
+        this.databasePath = databasePath;
+        ensureDirectoryExists();
+        initializeDatabase();
+    }
+
+    /**
      * Gets the singleton instance.
      * Uses file-based SQLite for production.
      */
