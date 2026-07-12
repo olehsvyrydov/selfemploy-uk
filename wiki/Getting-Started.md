@@ -85,9 +85,9 @@ Configuration is stored in:
 
 ### Database Location
 
-Your encrypted database is stored at:
+Your local database is stored at:
 ```
-{config-dir}/data/tax.mv.db
+{app-data-dir}/selfemploy.db
 ```
 
 ---

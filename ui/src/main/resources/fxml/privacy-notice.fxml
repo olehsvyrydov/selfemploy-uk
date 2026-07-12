@@ -79,7 +79,7 @@
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-storage" wrapText="true"
-                           text="Where stored: Encrypted database on your local device only"/>
+                           text="Where stored: A local database on your device only"/>
                     <Label styleClass="privacy-section-text privacy-retention" wrapText="true"
                            text="Retention: You control retention; HMRC requires 6 years minimum"/>
 
@@ -147,9 +147,9 @@
                     <Label styleClass="privacy-section-text" wrapText="true"
                            text="We implement the following security measures:"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- AES-256-GCM encryption for the local database"
+                        <Label text="- AES-256-GCM encryption for your HMRC credentials and National Insurance number"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Operating system credential storage for authentication tokens"
+                        <Label text="- Your financial data file is stored locally but is not yet encrypted at rest"
                                styleClass="privacy-list-item" wrapText="true"/>
                         <Label text="- TLS 1.2+ encryption for all communications with HMRC"
                                styleClass="privacy-list-item" wrapText="true"/>

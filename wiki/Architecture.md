@@ -6,6 +6,12 @@
 
 ---
 
+> **As-built vs. as-designed:** This document describes the **target** architecture
+> (Quarkus + encrypted H2 + OS keychain). The **shipping desktop app** currently runs on
+> plain-Java + SQLite with the data file **not** encrypted at rest; only the HMRC credentials and the
+> National Insurance number are encrypted (AES-256-GCM). Consolidation onto a single as-built
+> architecture is in progress.
+
 ## Overview
 
 The UK Self-Employment Manager is a desktop application built with **Quarkus + JavaFX**, designed for privacy-first local data storage with optional cloud backup.
@@ -142,6 +148,12 @@ public class TaxCalculationService {
 ---
 
 ## Security Architecture
+
+> **As-built status (current release):** the shipping desktop app runs on plain-Java + SQLite, and
+> the SQLite data file is **not** encrypted at rest. Only the HMRC API credentials and the stored
+> National Insurance number are encrypted (AES-256-GCM); OAuth tokens are stored locally without
+> encryption and there is no OS keychain integration yet. The encrypted-H2 and OS-keychain designs
+> below describe the target/server architecture and are not yet in the shipping build.
 
 ### Database Encryption
 
