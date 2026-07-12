@@ -1,6 +1,7 @@
 package uk.selfemploy.app;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -9,6 +10,8 @@ import javafx.stage.Stage;
 import uk.selfemploy.common.util.EnvLoader;
 import uk.selfemploy.ui.controller.OnboardingController;
 import uk.selfemploy.ui.controller.SettingsController;
+import uk.selfemploy.ui.controller.TermsOfServiceController;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.OnboardingSetupService;
 
 import java.util.List;
@@ -68,8 +71,52 @@ public class Launcher extends Application {
         primaryStage.setMinHeight(600);
         primaryStage.show();
 
-        // First launch: gather the user's details before they use the app.
+        // First launch: require terms acceptance, then gather the user's details, before use.
+        if (!requireTermsAcceptance(primaryStage, scene.getStylesheets())) {
+            return; // terms declined — the app is exiting
+        }
         maybeRunFirstRunOnboarding(primaryStage, scene.getStylesheets());
+    }
+
+    /**
+     * Shows the Terms of Service modally on first launch (or after a version change) and blocks the
+     * app until the user accepts. Declining exits the app (handled inside the dialog). Returns true
+     * if the terms are satisfied (accepted or not required), false if they must still be accepted
+     * (i.e. the user declined and the app is shutting down).
+     */
+    private boolean requireTermsAcceptance(Stage owner, List<String> stylesheets) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/terms-of-service.fxml"));
+            Parent root = loader.load();
+            TermsOfServiceController controller = loader.getController();
+            // The controller builds its view model only when given the acceptance service; without
+            // this, requiresAcceptance() is always false and the gate would never fire.
+            controller.initializeWithDependencies(CoreServiceFactory.getTermsAcceptanceService());
+            controller.setSettingsMode(false); // first-launch mode: Accept/Decline shown
+
+            if (!controller.requiresAcceptance()) {
+                return true; // current version already accepted
+            }
+
+            Stage dialog = new Stage();
+            dialog.initOwner(owner);
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Terms of Service");
+            Scene dialogScene = new Scene(root);
+            dialogScene.getStylesheets().addAll(stylesheets);
+            dialog.setScene(dialogScene);
+            controller.setDialogStage(dialog);
+            dialog.showAndWait();
+
+            // Accepted → requiresAcceptance() is now false; declined → Platform.exit() already called.
+            return !controller.requiresAcceptance();
+        } catch (Exception e) {
+            // A compliance gate must fail closed: if it cannot verify acceptance, do not let the user
+            // into the app. Exit rather than continuing unprotected.
+            LOG.log(Level.SEVERE, "Failed to show the terms-of-service gate; exiting to avoid bypassing it", e);
+            Platform.exit();
+            return false;
+        }
     }
 
     /**
