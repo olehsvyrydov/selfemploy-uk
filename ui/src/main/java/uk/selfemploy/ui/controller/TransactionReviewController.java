@@ -699,13 +699,6 @@ public class TransactionReviewController implements Initializable, MainControlle
     }
 
     /**
-     * Shows a success banner at the top of the Transaction Review page.
-     * The banner auto-dismisses after 5 seconds.
-     * Used after completing a bank statement import to confirm the result.
-     *
-     * @param message the success message to display
-     */
-    /**
      * Clears any import-batch scope so the screen shows all of the business's transactions.
      */
     public void showAllTransactions() {
@@ -717,8 +710,11 @@ public class TransactionReviewController implements Initializable, MainControlle
     }
 
     /**
-     * Scopes the screen to the just-imported batch (so only its transactions show) and shows the
-     * success banner.
+     * Scopes the screen to the just-imported batch (so only its transactions show) and shows a
+     * success banner that auto-dismisses after 5 seconds.
+     *
+     * @param message the success message to display
+     * @param batchId the import batch to scope the screen to, or null to leave the scope unchanged
      */
     public void showImportSuccessBanner(String message, java.util.UUID batchId) {
         if (viewModel != null && batchId != null) {
