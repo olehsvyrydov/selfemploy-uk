@@ -70,7 +70,7 @@
                         <Label text="Your Data Stays Local" styleClass="privacy-assurance-title"/>
                     </HBox>
                     <Label styleClass="privacy-assurance-text" wrapText="true"
-                           text="All your financial data is stored securely on YOUR device, encrypted with AES-256. We never see or store your information."/>
+                           text="All your financial data is stored locally on YOUR device. Your HMRC credentials and National Insurance number are encrypted (AES-256-GCM). We never see or store your information."/>
                 </VBox>
 
                 <!-- Get Started Button -->

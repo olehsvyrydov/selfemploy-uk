@@ -437,9 +437,8 @@ public class HelpService {
                         "• We have NO access to your data\n" +
                         "• No cloud servers store your information\n\n" +
                         "Encryption:\n" +
-                        "• Database encrypted with AES-256-GCM\n" +
-                        "• HMRC tokens stored in OS keychain\n" +
-                        "• All data at rest is encrypted\n\n" +
+                        "• Your HMRC API credentials and National Insurance number are encrypted (AES-256-GCM)\n" +
+                        "• Your financial data is stored in a local database on your device (not yet encrypted at rest)\n\n" +
                         "What's Sent to HMRC:\n" +
                         "• Your tax figures (income, expenses, profit)\n" +
                         "• Fraud prevention headers (required by law)\n" +

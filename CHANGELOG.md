@@ -36,7 +36,7 @@ Initial release.
 - Real-time tax calculations (Income Tax, NI Class 2, NI Class 4)
 - Bank statement import (CSV parser with SPI for custom formats)
 - HMRC MTD API integration for Self Assessment submission
-- Local H2 database with AES-256 encryption
+- Local SQLite database; HMRC credentials and National Insurance number encrypted (AES-256-GCM)
 - JavaFX desktop UI with responsive layouts
 - Plugin system with 9 extension points
 - Cross-platform install scripts (bash + PowerShell)
