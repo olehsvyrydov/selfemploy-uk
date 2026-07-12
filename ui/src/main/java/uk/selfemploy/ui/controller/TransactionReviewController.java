@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.controller;
 import uk.selfemploy.ui.component.AppDialog;
+import uk.selfemploy.ui.service.DataStoreException;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -289,13 +290,13 @@ public class TransactionReviewController implements Initializable, MainControlle
                 busBtn.setOnAction(e -> {
                     TransactionReviewTableRow row = getTableView().getItems().get(getIndex());
                     if (viewModel != null) {
-                        viewModel.toggleBusinessFlag(row.id(), true);
+                        runGuarded(() -> viewModel.toggleBusinessFlag(row.id(), true));
                     }
                 });
                 persBtn.setOnAction(e -> {
                     TransactionReviewTableRow row = getTableView().getItems().get(getIndex());
                     if (viewModel != null) {
-                        viewModel.toggleBusinessFlag(row.id(), false);
+                        runGuarded(() -> viewModel.toggleBusinessFlag(row.id(), false));
                     }
                 });
             }
@@ -349,7 +350,7 @@ public class TransactionReviewController implements Initializable, MainControlle
                 skipBtn.setOnAction(e -> {
                     TransactionReviewTableRow row = getTableView().getItems().get(getIndex());
                     if (viewModel != null) {
-                        viewModel.skipTransaction(row.id());
+                        runGuarded(() -> viewModel.skipTransaction(row.id()));
                         updateTable();
                     }
                 });
@@ -585,14 +586,14 @@ public class TransactionReviewController implements Initializable, MainControlle
 
     private void handleBatchBusinessAction() {
         if (viewModel != null && viewModel.getSelectedCount() > 0) {
-            viewModel.batchMarkBusiness();
+            runGuarded(viewModel::batchMarkBusiness);
             updateTable();
         }
     }
 
     private void handleBatchPersonalAction() {
         if (viewModel != null && viewModel.getSelectedCount() > 0) {
-            viewModel.batchMarkPersonal();
+            runGuarded(viewModel::batchMarkPersonal);
             updateTable();
         }
     }
@@ -615,14 +616,14 @@ public class TransactionReviewController implements Initializable, MainControlle
         dialog.setContentText("Reason:");
 
         dialog.showAndWait().ifPresent(reason -> {
-            viewModel.batchExclude(reason);
+            runGuarded(() -> viewModel.batchExclude(reason));
             updateTable();
         });
     }
 
     private void handleUndoAction() {
         if (viewModel != null && viewModel.getCanUndo()) {
-            viewModel.undo();
+            runGuarded(viewModel::undo);
             updateTable();
         }
     }
@@ -644,13 +645,31 @@ public class TransactionReviewController implements Initializable, MainControlle
         dialog.setContentText("Reason:");
 
         dialog.showAndWait().ifPresent(reason -> {
-            viewModel.excludeTransaction(row.id(), reason);
+            runGuarded(() -> viewModel.excludeTransaction(row.id(), reason));
             updateTable();
         });
     }
 
     private void showInfo(String message) {
         AppDialog.info("Success", message);
+    }
+
+    /**
+     * Runs a persistence mutation, surfacing a {@link DataStoreException} as an error dialog and
+     * reloading so the table reflects what actually persisted, instead of letting the exception
+     * propagate uncaught out of the event handler.
+     */
+    private void runGuarded(Runnable mutation) {
+        try {
+            mutation.run();
+        } catch (DataStoreException e) {
+            if (viewModel != null) {
+                viewModel.loadTransactions();
+            }
+            updateTable(); // refresh the visible rows so they match what actually persisted
+            showError("The change could not be saved because the database is currently unavailable. "
+                + "Please try again.", e);
+        }
     }
 
     private void showError(String message, Exception e) {

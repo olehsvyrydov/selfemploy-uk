@@ -21,3 +21,6 @@ WHERE business_id = ? AND date >= ? AND date <= ?;
 
 -- name: deleteIncomeById
 DELETE FROM income WHERE id = ?;
+
+-- name: countIncomeByBusiness
+SELECT COUNT(*) FROM income WHERE business_id = ?;

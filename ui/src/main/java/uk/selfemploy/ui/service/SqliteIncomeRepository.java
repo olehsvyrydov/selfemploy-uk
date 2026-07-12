@@ -183,7 +183,16 @@ public class SqliteIncomeRepository implements IncomeRepository {
 
     @Override
     public long count() {
-        return findAll().size();
+        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(SQL.get("countIncomeByBusiness"))) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to count income", e);
+        }
+        return 0;
     }
 
     @Override
