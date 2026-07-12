@@ -79,7 +79,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
             Connection connection = getConnection();
             if (connection != null) {
                 try (Statement stmt = connection.createStatement()) {
-                    stmt.execute(SQL.get("createTable"));
+                    stmt.execute(SQL.get("createWizardProgressTable"));
                     LOG.fine("Ensured wizard_progress table exists");
                 }
             }
@@ -92,7 +92,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
     public Optional<WizardProgress> findByType(String wizardType) {
         validateWizardType(wizardType);
 
-        String sql = SQL.get("findByType");
+        String sql = SQL.get("findWizardProgressByType");
         try {
             Connection connection = getConnection();
             if (connection == null) {
@@ -119,7 +119,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
             throw new IllegalArgumentException("Progress cannot be null");
         }
 
-        String sql = SQL.get("upsert");
+        String sql = SQL.get("upsertWizardProgress");
 
         try {
             Connection connection = getConnection();
@@ -149,7 +149,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
     public boolean deleteByType(String wizardType) {
         validateWizardType(wizardType);
 
-        String sql = SQL.get("deleteByType");
+        String sql = SQL.get("deleteWizardProgressByType");
         try {
             Connection connection = getConnection();
             if (connection == null) {
@@ -178,7 +178,7 @@ public class SqliteWizardProgressRepository implements WizardProgressRepository 
      * @return The raw encrypted NINO value, or null if not found
      */
     String getRawNinoFromDatabase(String wizardType) {
-        String sql = SQL.get("findRawNino");
+        String sql = SQL.get("findWizardProgressRawNino");
         try {
             Connection connection = getConnection();
             if (connection == null) {
