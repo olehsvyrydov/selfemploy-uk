@@ -25,3 +25,6 @@ WHERE business_id = ? AND date >= ? AND date <= ? AND category IN (%s);
 
 -- name: deleteExpenseById
 DELETE FROM expenses WHERE id = ?;
+
+-- name: countExpensesByBusiness
+SELECT COUNT(*) FROM expenses WHERE business_id = ?;
