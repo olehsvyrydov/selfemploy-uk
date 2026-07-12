@@ -65,8 +65,6 @@ public final class HmrcCalculationService {
         this.pollDelayMillis = delayMillis;
     }
 
-    // ==================== Typed result ====================
-
     /** The outcome of a calculation request. */
     public sealed interface CalculationOutcome {
 
@@ -98,8 +96,6 @@ public final class HmrcCalculationService {
         }
     }
 
-    // ==================== Public API ====================
-
     /**
      * Triggers and retrieves a Self Assessment calculation for the given taxpayer.
      *
@@ -126,8 +122,6 @@ public final class HmrcCalculationService {
             return new CalculationOutcome.Failure(e.reason, e.getMessage(), e.httpStatus);
         }
     }
-
-    // ==================== Trigger ====================
 
     /**
      * POSTs a trigger request and returns the calculation id from a 202 response.
@@ -163,8 +157,6 @@ public final class HmrcCalculationService {
         }
         throw mapError(status, response.body());
     }
-
-    // ==================== Retrieve (with polling) ====================
 
     private CalculationResponse retrieveWithPolling(String nino, TaxYear taxYear,
                                                     String calculationId, String token) {
@@ -222,8 +214,6 @@ public final class HmrcCalculationService {
         throw mapError(status, response.body());
     }
 
-    // ==================== HTTP ====================
-
     private HttpResponse<String> send(HttpRequest.Builder builder, String token,
                                       String method, String body) {
         builder.header("Authorization", "Bearer " + token)
@@ -248,8 +238,6 @@ public final class HmrcCalculationService {
         }
     }
 
-    // ==================== URLs ====================
-
     static String baseUrl() {
         return System.getProperty("HMRC_API_BASE_URL", DEFAULT_BASE_URL);
     }
@@ -261,8 +249,6 @@ public final class HmrcCalculationService {
     static String buildRetrieveUrl(String baseUrl, String nino, TaxYear taxYear, String calculationId) {
         return buildTriggerUrl(baseUrl, nino, taxYear) + "/" + calculationId;
     }
-
-    // ==================== Token ====================
 
     private String bearerToken(boolean forceRefresh) {
         if (!oauthService.isConnected()) {
@@ -289,13 +275,9 @@ public final class HmrcCalculationService {
         return tokens.accessToken();
     }
 
-    // ==================== Fraud prevention headers ====================
-
     private void addFraudPreventionHeaders(HttpRequest.Builder builder) {
         HmrcFraudHeaders.apply(builder);
     }
-
-    // ==================== JSON ====================
 
     private String serialize(TriggerCalculationRequest request) {
         try {

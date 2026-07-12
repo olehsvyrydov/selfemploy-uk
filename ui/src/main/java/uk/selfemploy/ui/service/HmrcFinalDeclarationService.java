@@ -54,8 +54,6 @@ public final class HmrcFinalDeclarationService {
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
-    // ==================== Confirmation + typed result ====================
-
     /**
      * The taxpayer's explicit confirmation that the reviewed figures are correct.
      * Without one carrying {@code confirmedByUser == true}, no declaration is sent.
@@ -89,8 +87,6 @@ public final class HmrcFinalDeclarationService {
             UNEXPECTED
         }
     }
-
-    // ==================== Public API ====================
 
     /**
      * Submits the final declaration for a calculation the user has confirmed.
@@ -155,8 +151,6 @@ public final class HmrcFinalDeclarationService {
         throw mapError(status, response.body());
     }
 
-    // ==================== HTTP ====================
-
     private HttpResponse<String> send(String url, String token, String body) {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
             .uri(URI.create(url))
@@ -180,8 +174,6 @@ public final class HmrcFinalDeclarationService {
         }
     }
 
-    // ==================== URL ====================
-
     static String baseUrl() {
         return System.getProperty("HMRC_API_BASE_URL", DEFAULT_BASE_URL);
     }
@@ -189,8 +181,6 @@ public final class HmrcFinalDeclarationService {
     static String buildDeclarationUrl(String baseUrl, String nino, TaxYear taxYear) {
         return baseUrl + "/individuals/declarations/self-assessment/" + nino + "/" + taxYear.hmrcFormat();
     }
-
-    // ==================== Token ====================
 
     private String bearerToken(boolean forceRefresh) {
         if (!oauthService.isConnected()) {
@@ -217,13 +207,9 @@ public final class HmrcFinalDeclarationService {
         return tokens.accessToken();
     }
 
-    // ==================== Fraud prevention headers ====================
-
     private void addFraudPreventionHeaders(HttpRequest.Builder builder) {
         HmrcFraudHeaders.apply(builder);
     }
-
-    // ==================== JSON ====================
 
     private String serialize(FinalDeclarationRequest request) {
         try {

@@ -470,13 +470,13 @@ public class AnnualSubmissionController {
      * taxpayer has seen HMRC's own figures and explicitly confirmed them
      * (see {@link #onCalculationReady}). The taxpayer never declares figures they have
      * not been shown.
+     *
+     * <p>The wizard stays on the review step throughout the calculation; the Submit step
+     * is not marked active until {@link #declareToHmrc} actually sends the declaration.
      */
     private void submitToHmrc(String nino) {
         TaxYear taxYear = viewModel.getTaxYear();
 
-        // Lock the form and block Escape while a live HMRC round-trip is in flight, but
-        // stay on the review step: nothing is declared until the taxpayer confirms
-        // HMRC's figures, so the step indicator must not jump to the Submit step yet.
         viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
         viewModel.setLoading(true);
 
@@ -521,8 +521,6 @@ public class AnnualSubmissionController {
             buildHmrcFiguresMessage(comparison),
             "Declare these figures to HMRC", "Cancel");
         if (!confirmed) {
-            // Nothing has been declared; return to the review step and re-enable the
-            // declaration controls the in-flight lock disabled.
             viewModel.setCurrentState(AnnualSubmissionState.CALCULATED);
             unlockDeclarationControls();
             updateStepIndicator(3);
@@ -538,7 +536,6 @@ public class AnnualSubmissionController {
      */
     private void declareToHmrc(String nino, TaxYear taxYear, String calculationId) {
         DeclarationConfirmation confirmation = new DeclarationConfirmation(true, Instant.now());
-        // The declaration is now actually being sent, so advance to the Submit step.
         viewModel.setCurrentState(AnnualSubmissionState.DECLARING);
         viewModel.setLoading(true);
         updateStepIndicator(4);
@@ -558,7 +555,6 @@ public class AnnualSubmissionController {
                 return;
             }
             String reference = ((DeclarationOutcome.Success) declOutcome).hmrcReference();
-            // Persist on this virtual thread; the FX thread only renders the outcome.
             boolean persisted = persistSubmission(taxYear, reference);
             javafx.application.Platform.runLater(() -> onDeclarationComplete(reference, persisted));
         });
@@ -570,8 +566,6 @@ public class AnnualSubmissionController {
         viewModel.setCurrentState(AnnualSubmissionState.COMPLETED);
 
         if (!persisted) {
-            // HMRC accepted the declaration but the local record could not be saved.
-            // Say so plainly rather than leaving the history looking empty.
             AppDialog.warning("Declared to HMRC, but not saved locally",
                 "HMRC accepted your declaration (reference " + reference + "), but it could not "
                 + "be saved to your local submission history. Please keep a note of this reference.");
@@ -612,7 +606,6 @@ public class AnnualSubmissionController {
             viewModel.setLoading(false);
             viewModel.setErrorMessage(message);
             viewModel.setCurrentState(AnnualSubmissionState.FAILED);
-            // Return the indicator to the review step so the taxpayer can retry.
             updateStepIndicator(3);
         });
     }
@@ -852,7 +845,6 @@ public class AnnualSubmissionController {
                 reviewButton.setDisable(false);
             }
             case DECLARING -> {
-                // Keep calculation visible, disable all buttons while HMRC I/O is in flight.
                 calculateButton.setDisable(true);
                 reviewButton.setDisable(true);
                 lockDeclarationControls();
