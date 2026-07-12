@@ -50,6 +50,15 @@ public class TransactionReviewCommitService {
      * @return the id of the created income/expense record
      */
     public UUID commitAsBusiness(BankTransaction tx, Instant now) {
+        // Idempotent guard: a transaction already linked to a record must not be committed again
+        // (that would create a duplicate and orphan the previous link, and would break undo, which
+        // assumes a commit takes a link from null to non-null).
+        if (tx.incomeId() != null) {
+            return tx.incomeId();
+        }
+        if (tx.expenseId() != null) {
+            return tx.expenseId();
+        }
         if (tx.isIncome()) {
             Income created = incomeService.create(
                 businessId, tx.date(), tx.absoluteAmount(), tx.description(), IncomeCategory.SALES, null);

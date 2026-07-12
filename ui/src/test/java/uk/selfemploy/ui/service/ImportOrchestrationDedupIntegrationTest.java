@@ -98,6 +98,22 @@ class ImportOrchestrationDedupIntegrationTest {
     }
 
     @Test
+    @DisplayName("an income and an expense with the same date/amount/description both stage")
+    void incomeAndExpenseDoNotCollide() {
+        List<ImportedTransactionRow> rows = List.of(
+            ImportedTransactionRow.create(DATE, "Widget", new BigDecimal("100.00"),
+                TransactionType.INCOME, null, false, 0),
+            ImportedTransactionRow.create(DATE, "Widget", new BigDecimal("100.00"),
+                TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 0));
+
+        ImportOrchestrationService.ImportResult result = service.importTransactions(rows, null);
+
+        assertThat(result.importedCount()).isEqualTo(2);
+        assertThat(result.skippedCount()).isZero();
+        assertThat(bankTransactionService.count()).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("markDuplicates flags a row matching an already-committed income record")
     void shouldFlagRowMatchingCommittedIncome() {
         // A committed income record (as if a prior review committed it).

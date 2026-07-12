@@ -263,7 +263,10 @@ public class ImportOrchestrationService {
             ImportedTransactionRow row = transactions.get(i);
 
             try {
-                String hash = MatchingUtils.createExactKey(row.date(), row.amount(), row.description());
+                // Include direction so a credit and a debit with the same date/amount/description
+                // do not collide and wrongly skip one another as a duplicate.
+                String hash = MatchingUtils.createExactKey(row.date(), row.amount(), row.description())
+                    + "|" + row.type();
                 if (bankTransactionService.existsByHash(hash)) {
                     skipped++;
                 } else {

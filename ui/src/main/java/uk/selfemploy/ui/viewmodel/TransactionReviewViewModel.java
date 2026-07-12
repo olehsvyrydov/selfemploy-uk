@@ -217,11 +217,13 @@ public class TransactionReviewViewModel {
      * marks each CATEGORIZED).
      */
     public void batchMarkBusiness() {
-        if (selectedIds.isEmpty()) return;
+        if (selectedIds.isEmpty() || commitService == null) return;
         saveUndoSnapshot();
         Instant now = Instant.now();
         for (UUID id : selectedIds) {
-            service.findById(id).ifPresent(tx -> commitService.commitAsBusiness(tx, now));
+            service.findById(id)
+                .filter(tx -> tx.reviewStatus() == ReviewStatus.PENDING)
+                .ifPresent(tx -> commitService.commitAsBusiness(tx, now));
         }
         clearSelection();
         loadTransactions();
@@ -298,9 +300,12 @@ public class TransactionReviewViewModel {
      * marks it CATEGORIZED).
      */
     public void commitAsBusiness(UUID txId) {
+        if (commitService == null) return;
         saveUndoSnapshot();
         Instant now = Instant.now();
-        service.findById(txId).ifPresent(tx -> commitService.commitAsBusiness(tx, now));
+        service.findById(txId)
+            .filter(tx -> tx.reviewStatus() == ReviewStatus.PENDING)
+            .ifPresent(tx -> commitService.commitAsBusiness(tx, now));
         loadTransactions();
     }
 
@@ -334,8 +339,14 @@ public class TransactionReviewViewModel {
         }
         for (BankTransaction current : service.findAll()) {
             BankTransaction prev = before.get(current.id());
-            boolean gainedIncome = current.incomeId() != null && (prev == null || prev.incomeId() == null);
-            boolean gainedExpense = current.expenseId() != null && (prev == null || prev.expenseId() == null);
+            // Only revert transactions that were in the snapshot and gained a link since — i.e. that
+            // this action committed. Transactions absent from the snapshot were created by something
+            // else (another import/window) and must not be touched.
+            if (prev == null) {
+                continue;
+            }
+            boolean gainedIncome = current.incomeId() != null && prev.incomeId() == null;
+            boolean gainedExpense = current.expenseId() != null && prev.expenseId() == null;
             if ((gainedIncome || gainedExpense) && commitService != null) {
                 commitService.revertCommit(current);
             }
