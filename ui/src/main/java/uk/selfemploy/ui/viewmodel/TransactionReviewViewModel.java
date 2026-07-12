@@ -6,6 +6,7 @@ import javafx.collections.ObservableList;
 import uk.selfemploy.common.domain.BankTransaction;
 import uk.selfemploy.common.enums.ReviewStatus;
 import uk.selfemploy.ui.service.SqliteBankTransactionService;
+import uk.selfemploy.ui.service.TransactionReviewCommitService;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -16,8 +17,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -32,6 +35,7 @@ public class TransactionReviewViewModel {
 
     private static final Logger LOG = Logger.getLogger(TransactionReviewViewModel.class.getName());
     private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final String PERSONAL_REASON = "Personal";
 
     private final SqliteBankTransactionService service;
 
@@ -74,6 +78,8 @@ public class TransactionReviewViewModel {
     private List<BankTransaction> undoSnapshot;
     private final BooleanProperty canUndo = new SimpleBooleanProperty(false);
 
+    private TransactionReviewCommitService commitService;
+
     public TransactionReviewViewModel(SqliteBankTransactionService service) {
         this.service = service;
 
@@ -84,6 +90,14 @@ public class TransactionReviewViewModel {
         dateTo.addListener((obs, o, n) -> applyFilters());
         amountMin.addListener((obs, o, n) -> applyFilters());
         amountMax.addListener((obs, o, n) -> applyFilters());
+    }
+
+    /**
+     * Sets the service that commits a reviewed transaction into an income/expense record. Required
+     * before any "Business" (commit) or undo-of-a-commit action is used.
+     */
+    public void setCommitService(TransactionReviewCommitService commitService) {
+        this.commitService = commitService;
     }
 
     // === Data Loading ===
@@ -199,28 +213,29 @@ public class TransactionReviewViewModel {
     // === Batch Operations ===
 
     /**
-     * Marks all selected transactions as business.
+     * Commits all selected transactions as business records (creates the income/expense record and
+     * marks each CATEGORIZED).
      */
     public void batchMarkBusiness() {
         if (selectedIds.isEmpty()) return;
         saveUndoSnapshot();
         Instant now = Instant.now();
         for (UUID id : selectedIds) {
-            service.setBusinessFlag(id, true, now);
+            service.findById(id).ifPresent(tx -> commitService.commitAsBusiness(tx, now));
         }
         clearSelection();
         loadTransactions();
     }
 
     /**
-     * Marks all selected transactions as personal.
+     * Marks all selected transactions as personal (excluded from the accounts; no record created).
      */
     public void batchMarkPersonal() {
         if (selectedIds.isEmpty()) return;
         saveUndoSnapshot();
         Instant now = Instant.now();
         for (UUID id : selectedIds) {
-            service.setBusinessFlag(id, false, now);
+            service.exclude(id, PERSONAL_REASON, now);
         }
         clearSelection();
         loadTransactions();
@@ -279,11 +294,22 @@ public class TransactionReviewViewModel {
     }
 
     /**
-     * Toggles the business/personal flag.
+     * Commits a single transaction as a business record (creates the income/expense record and
+     * marks it CATEGORIZED).
      */
-    public void toggleBusinessFlag(UUID txId, Boolean isBusiness) {
+    public void commitAsBusiness(UUID txId) {
         saveUndoSnapshot();
-        service.setBusinessFlag(txId, isBusiness, Instant.now());
+        Instant now = Instant.now();
+        service.findById(txId).ifPresent(tx -> commitService.commitAsBusiness(tx, now));
+        loadTransactions();
+    }
+
+    /**
+     * Marks a single transaction as personal (excluded from the accounts; no record created).
+     */
+    public void markPersonal(UUID txId) {
+        saveUndoSnapshot();
+        service.exclude(txId, PERSONAL_REASON, Instant.now());
         loadTransactions();
     }
 
@@ -295,18 +321,32 @@ public class TransactionReviewViewModel {
     }
 
     /**
-     * Undoes the last operation by restoring the snapshot.
+     * Undoes the last operation. Any income/expense record created by a commit since the snapshot is
+     * deleted first (so undo leaves no orphaned records), then every transaction is restored to its
+     * pre-action state.
      */
     public void undo() {
         if (undoSnapshot == null) return;
-        // Restore all transactions from snapshot
+
+        Map<UUID, BankTransaction> before = new HashMap<>();
+        for (BankTransaction tx : undoSnapshot) {
+            before.put(tx.id(), tx);
+        }
+        for (BankTransaction current : service.findAll()) {
+            BankTransaction prev = before.get(current.id());
+            boolean gainedIncome = current.incomeId() != null && (prev == null || prev.incomeId() == null);
+            boolean gainedExpense = current.expenseId() != null && (prev == null || prev.expenseId() == null);
+            if ((gainedIncome || gainedExpense) && commitService != null) {
+                commitService.revertCommit(current);
+            }
+        }
         for (BankTransaction tx : undoSnapshot) {
             service.save(tx);
         }
         undoSnapshot = null;
         canUndo.set(false);
         loadTransactions();
-        LOG.info("Undo completed - restored previous transaction state");
+        LOG.info("Undo completed - reverted committed records and restored previous transaction state");
     }
 
     // === Export ===

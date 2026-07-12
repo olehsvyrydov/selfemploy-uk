@@ -5,7 +5,10 @@ import uk.selfemploy.common.domain.BankTransaction;
 import uk.selfemploy.common.enums.ReviewStatus;
 import uk.selfemploy.ui.service.SqliteBankTransactionService;
 import uk.selfemploy.ui.service.SqliteDataStore;
+import uk.selfemploy.ui.service.SqliteExpenseService;
+import uk.selfemploy.ui.service.SqliteIncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
+import uk.selfemploy.ui.service.TransactionReviewCommitService;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -26,6 +29,8 @@ class TransactionReviewViewModelTest {
 
     private static UUID businessId;
     private SqliteBankTransactionService service;
+    private SqliteIncomeService incomeService;
+    private SqliteExpenseService expenseService;
     private TransactionReviewViewModel viewModel;
 
     @BeforeAll
@@ -45,7 +50,11 @@ class TransactionReviewViewModelTest {
         SqliteTestSupport.resetTestData();
         SqliteDataStore.getInstance().ensureBusinessExists(businessId);
         service = new SqliteBankTransactionService(businessId);
+        incomeService = new SqliteIncomeService(businessId);
+        expenseService = new SqliteExpenseService(businessId);
         viewModel = new TransactionReviewViewModel(service);
+        viewModel.setCommitService(
+            new TransactionReviewCommitService(service, incomeService, expenseService, businessId));
     }
 
     @Nested
@@ -253,7 +262,7 @@ class TransactionReviewViewModelTest {
     class BatchOperations {
 
         @Test
-        void batchMarkBusiness_shouldFlagAllSelected() {
+        void batchMarkBusiness_shouldCommitAllSelected() {
             BankTransaction tx1 = saveTestTransaction("A", new BigDecimal("10"));
             BankTransaction tx2 = saveTestTransaction("B", new BigDecimal("20"));
             viewModel.loadTransactions();
@@ -261,20 +270,26 @@ class TransactionReviewViewModelTest {
 
             viewModel.batchMarkBusiness();
 
-            assertThat(service.findById(tx1.id()).orElseThrow().isBusiness()).isTrue();
-            assertThat(service.findById(tx2.id()).orElseThrow().isBusiness()).isTrue();
+            assertThat(service.findById(tx1.id()).orElseThrow().reviewStatus()).isEqualTo(ReviewStatus.CATEGORIZED);
+            assertThat(service.findById(tx1.id()).orElseThrow().incomeId()).isNotNull();
+            assertThat(service.findById(tx2.id()).orElseThrow().reviewStatus()).isEqualTo(ReviewStatus.CATEGORIZED);
+            assertThat(incomeService.count()).isEqualTo(2); // both committed as income records
             assertThat(viewModel.getSelectedCount()).isZero(); // Selection cleared
         }
 
         @Test
-        void batchMarkPersonal_shouldFlagAllSelected() {
+        void batchMarkPersonal_shouldExcludeAllSelected() {
             BankTransaction tx1 = saveTestTransaction("A", new BigDecimal("10"));
             viewModel.loadTransactions();
             viewModel.selectAll();
 
             viewModel.batchMarkPersonal();
 
-            assertThat(service.findById(tx1.id()).orElseThrow().isBusiness()).isFalse();
+            BankTransaction updated = service.findById(tx1.id()).orElseThrow();
+            assertThat(updated.reviewStatus()).isEqualTo(ReviewStatus.EXCLUDED);
+            assertThat(updated.exclusionReason()).isEqualTo("Personal");
+            assertThat(updated.incomeId()).isNull(); // no record created
+            assertThat(incomeService.count()).isZero();
         }
 
         @Test
@@ -330,13 +345,29 @@ class TransactionReviewViewModelTest {
         }
 
         @Test
-        void toggleBusinessFlag_shouldSetFlag() {
-            BankTransaction tx = saveTestTransaction("Flag me", new BigDecimal("10"));
+        void commitAsBusiness_shouldCreateRecordAndCategorize() {
+            BankTransaction tx = saveTestTransaction("Commit me", new BigDecimal("10"));
             viewModel.loadTransactions();
 
-            viewModel.toggleBusinessFlag(tx.id(), true);
+            viewModel.commitAsBusiness(tx.id());
 
-            assertThat(service.findById(tx.id()).orElseThrow().isBusiness()).isTrue();
+            BankTransaction updated = service.findById(tx.id()).orElseThrow();
+            assertThat(updated.reviewStatus()).isEqualTo(ReviewStatus.CATEGORIZED);
+            assertThat(updated.incomeId()).isNotNull();
+            assertThat(incomeService.findById(updated.incomeId())).isPresent();
+        }
+
+        @Test
+        void markPersonal_shouldExcludeWithoutCreatingRecord() {
+            BankTransaction tx = saveTestTransaction("Personal", new BigDecimal("10"));
+            viewModel.loadTransactions();
+
+            viewModel.markPersonal(tx.id());
+
+            BankTransaction updated = service.findById(tx.id()).orElseThrow();
+            assertThat(updated.reviewStatus()).isEqualTo(ReviewStatus.EXCLUDED);
+            assertThat(updated.exclusionReason()).isEqualTo("Personal");
+            assertThat(incomeService.count()).isZero();
         }
     }
 
@@ -367,6 +398,23 @@ class TransactionReviewViewModelTest {
             viewModel.loadTransactions();
             viewModel.undo(); // Should not throw
             assertThat(viewModel.getCanUndo()).isFalse();
+        }
+
+        @Test
+        void undo_afterCommit_shouldDeleteCreatedRecordAndRestorePending() {
+            BankTransaction tx = saveTestTransaction("Commit then undo", new BigDecimal("10"));
+            viewModel.loadTransactions();
+
+            viewModel.commitAsBusiness(tx.id());
+            UUID incomeId = service.findById(tx.id()).orElseThrow().incomeId();
+            assertThat(incomeService.findById(incomeId)).isPresent();
+
+            viewModel.undo();
+
+            BankTransaction restored = service.findById(tx.id()).orElseThrow();
+            assertThat(restored.reviewStatus()).isEqualTo(ReviewStatus.PENDING);
+            assertThat(restored.incomeId()).isNull();
+            assertThat(incomeService.findById(incomeId)).isEmpty(); // created record removed
         }
     }
 

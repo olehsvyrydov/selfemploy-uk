@@ -2,10 +2,10 @@ package uk.selfemploy.ui.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.common.domain.BankTransaction;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
-import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.core.bankimport.BankFormatDetector;
 import uk.selfemploy.core.bankimport.CsvStatementSource;
 import uk.selfemploy.core.bankimport.ImportedTransaction;
@@ -21,9 +21,11 @@ import uk.selfemploy.ui.viewmodel.TransactionType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -48,16 +50,19 @@ public class ImportOrchestrationService {
     private final CsvTransactionParser csvParser;
     private final IncomeService incomeService;
     private final ExpenseService expenseService;
+    private final SqliteBankTransactionService bankTransactionService;
     private final UUID businessId;
 
     public ImportOrchestrationService(
             CsvTransactionParser csvParser,
             IncomeService incomeService,
             ExpenseService expenseService,
+            SqliteBankTransactionService bankTransactionService,
             UUID businessId) {
         this.csvParser = csvParser;
         this.incomeService = incomeService;
         this.expenseService = expenseService;
+        this.bankTransactionService = bankTransactionService;
         this.businessId = businessId;
     }
 
@@ -71,9 +76,11 @@ public class ImportOrchestrationService {
     }
 
     /**
-     * Result of an import operation.
+     * Result of an import operation. {@code importedCount} is the number of transactions staged for
+     * review; {@code skippedCount} is the number skipped as already-staged duplicates; {@code batchId}
+     * tags the staged rows so the review screen can scope to this import.
      */
-    public record ImportResult(int importedCount, int errorCount) {
+    public record ImportResult(int importedCount, int errorCount, int skippedCount, UUID batchId) {
         public boolean hasErrors() {
             return errorCount > 0;
         }
@@ -229,17 +236,26 @@ public class ImportOrchestrationService {
     }
 
     /**
-     * Imports parsed transactions by saving them as Income or Expense records.
+     * Stages parsed transactions into the bank-transaction review queue.
      *
-     * @param transactions the transactions to import
+     * <p>Rows are written to {@code bank_transactions} with review status PENDING under a single
+     * import batch id, rather than committed straight to income/expense. The Bank Review screen is
+     * where a reviewer turns them into income/expense records. A row whose deterministic hash already
+     * exists in {@code bank_transactions} is skipped, so re-importing the same statement stages
+     * nothing new.</p>
+     *
+     * @param transactions the transactions to stage
      * @param progressCallback callback for progress updates (0.0 to 1.0)
-     * @return import result with counts
+     * @return import result with counts and the batch id for the staged rows
      */
     public ImportResult importTransactions(
             List<ImportedTransactionRow> transactions,
             Consumer<Double> progressCallback) {
 
-        int imported = 0;
+        UUID batchId = UUID.randomUUID();
+        Instant now = Instant.now();
+        int staged = 0;
+        int skipped = 0;
         int errors = 0;
         int total = transactions.size();
 
@@ -247,29 +263,25 @@ public class ImportOrchestrationService {
             ImportedTransactionRow row = transactions.get(i);
 
             try {
-                if (row.type() == TransactionType.INCOME) {
-                    incomeService.create(
-                        businessId,
-                        row.date(),
-                        row.amount(),
-                        row.description(),
-                        IncomeCategory.SALES,
-                        null  // reference
-                    );
+                String hash = MatchingUtils.createExactKey(row.date(), row.amount(), row.description());
+                if (bankTransactionService.existsByHash(hash)) {
+                    skipped++;
                 } else {
-                    expenseService.create(
-                        businessId,
-                        row.date(),
-                        row.amount(),
-                        row.description(),
-                        row.category(),
-                        null,  // receiptPath
-                        null   // notes
-                    );
+                    // Direction-based sign: income positive, expense negative.
+                    BigDecimal signedAmount = row.type() == TransactionType.INCOME
+                        ? row.amount()
+                        : row.amount().negate();
+                    BankTransaction tx = BankTransaction.create(
+                        businessId, batchId, null, row.date(), signedAmount, row.description(),
+                        null, null, hash, now);
+                    if (row.type() == TransactionType.EXPENSE && row.category() != null) {
+                        tx = tx.withSuggestion(row.category(), null, now);
+                    }
+                    bankTransactionService.save(tx);
+                    staged++;
                 }
-                imported++;
             } catch (Exception e) {
-                LOG.warn("Failed to import transaction: {}", row.description(), e);
+                LOG.warn("Failed to stage transaction: {}", row.description(), e);
                 errors++;
             }
 
@@ -279,8 +291,8 @@ public class ImportOrchestrationService {
             }
         }
 
-        LOG.info("Import complete: {} imported, {} errors out of {} total",
-                imported, errors, total);
-        return new ImportResult(imported, errors);
+        LOG.info("Import staged: {} new, {} duplicate(s) skipped, {} error(s) out of {} total",
+                staged, skipped, errors, total);
+        return new ImportResult(staged, errors, skipped, batchId);
     }
 }

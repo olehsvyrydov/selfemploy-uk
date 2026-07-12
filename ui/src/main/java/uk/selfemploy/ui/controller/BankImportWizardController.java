@@ -928,11 +928,15 @@ public class BankImportWizardController implements Initializable {
 
                     if (result.hasErrors()) {
                         importResultMessage = String.format(
-                            "Imported %d transaction(s). %d failed.",
+                            "%d transaction(s) ready for review. %d failed.",
                             result.importedCount(), result.errorCount());
+                    } else if (result.skippedCount() > 0) {
+                        importResultMessage = String.format(
+                            "%d transaction(s) ready for review. %d already-imported duplicate(s) skipped.",
+                            result.importedCount(), result.skippedCount());
                     } else {
                         importResultMessage = String.format(
-                            "Successfully imported %d transaction(s).",
+                            "%d transaction(s) ready for review.",
                             result.importedCount());
                     }
 

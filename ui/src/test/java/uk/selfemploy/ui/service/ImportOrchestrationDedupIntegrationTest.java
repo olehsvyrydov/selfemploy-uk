@@ -31,6 +31,9 @@ class ImportOrchestrationDedupIntegrationTest {
     private static final LocalDate DATE = LocalDate.of(2025, 6, 15);
 
     private UUID businessId;
+    private SqliteIncomeService incomeService;
+    private SqliteExpenseService expenseService;
+    private SqliteBankTransactionService bankTransactionService;
     private ImportOrchestrationService service;
 
     @BeforeAll
@@ -48,10 +51,14 @@ class ImportOrchestrationDedupIntegrationTest {
         SqliteTestSupport.resetInstance();
         businessId = UUID.randomUUID();
         SqliteDataStore.getInstance().ensureBusinessExists(businessId);
+        incomeService = new SqliteIncomeService(businessId);
+        expenseService = new SqliteExpenseService(businessId);
+        bankTransactionService = new SqliteBankTransactionService(businessId);
         service = new ImportOrchestrationService(
             null, // CSV parser not needed: rows are supplied directly
-            new SqliteIncomeService(businessId),
-            new SqliteExpenseService(businessId),
+            incomeService,
+            expenseService,
+            bankTransactionService,
             businessId);
     }
 
@@ -74,28 +81,43 @@ class ImportOrchestrationDedupIntegrationTest {
     }
 
     @Test
-    @DisplayName("re-importing an identical batch flags all 10 rows as duplicates")
-    void shouldFlagIdenticalReimport() {
+    @DisplayName("re-importing an identical batch stages nothing new (already-staged rows are skipped)")
+    void shouldSkipStagedRowsOnReimport() {
         List<ImportedTransactionRow> batch = sampleBatch();
 
-        // First import: nothing exists yet, so nothing is a duplicate.
-        assertThat(service.markDuplicates(batch)).noneMatch(ImportedTransactionRow::isDuplicate);
-        ImportOrchestrationService.ImportResult result = service.importTransactions(batch, null);
-        assertThat(result.importedCount()).isEqualTo(10);
-        assertThat(result.errorCount()).isZero();
+        ImportOrchestrationService.ImportResult first = service.importTransactions(batch, null);
+        assertThat(first.importedCount()).isEqualTo(10);
+        assertThat(first.errorCount()).isZero();
+        assertThat(bankTransactionService.count()).isEqualTo(10);
 
-        // Second import of the same file: every row now already exists.
-        List<ImportedTransactionRow> marked = service.markDuplicates(sampleBatch());
-        assertThat(marked.stream().filter(ImportedTransactionRow::isDuplicate).count()).isEqualTo(10);
-        assertThat(marked).allMatch(ImportedTransactionRow::isDuplicate);
+        // Second import of the same file: every row's hash already exists in bank_transactions.
+        ImportOrchestrationService.ImportResult second = service.importTransactions(sampleBatch(), null);
+        assertThat(second.importedCount()).isZero();
+        assertThat(second.skippedCount()).isEqualTo(10);
+        assertThat(bankTransactionService.count()).isEqualTo(10);
     }
 
     @Test
-    @DisplayName("a near-duplicate with a different description is not auto-flagged")
-    void shouldNotFlagNearDuplicate() {
-        service.importTransactions(sampleBatch(), null);
+    @DisplayName("markDuplicates flags a row matching an already-committed income record")
+    void shouldFlagRowMatchingCommittedIncome() {
+        // A committed income record (as if a prior review committed it).
+        incomeService.create(businessId, DATE, new BigDecimal("100.00"), "Invoice 1",
+            uk.selfemploy.common.enums.IncomeCategory.SALES, null);
 
-        // Same date and amount as "Invoice 1" (100.00) but a different description.
+        List<ImportedTransactionRow> match = List.of(
+            ImportedTransactionRow.create(DATE, "Invoice 1",
+                new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0));
+
+        assertThat(service.markDuplicates(match)).allMatch(ImportedTransactionRow::isDuplicate);
+    }
+
+    @Test
+    @DisplayName("markDuplicates does not flag a near-duplicate with a different description")
+    void shouldNotFlagNearDuplicate() {
+        incomeService.create(businessId, DATE, new BigDecimal("100.00"), "Invoice 1",
+            uk.selfemploy.common.enums.IncomeCategory.SALES, null);
+
+        // Same date and amount but a different description.
         List<ImportedTransactionRow> near = List.of(
             ImportedTransactionRow.create(DATE, "Invoice 1 - deposit",
                 new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0));
