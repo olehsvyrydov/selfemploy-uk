@@ -8,6 +8,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.core.bankimport.BankCsvParser;
+import uk.selfemploy.core.bankimport.BankFormatDetector;
+import uk.selfemploy.core.bankimport.CsvParseException;
+import uk.selfemploy.core.bankimport.ImportedTransaction;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.viewmodel.ColumnMapping;
@@ -16,11 +20,14 @@ import uk.selfemploy.ui.viewmodel.TransactionType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -600,6 +607,104 @@ class ImportOrchestrationServiceTest {
             assertThat(marked).hasSize(2);
             assertThat(marked.get(0).isDuplicate()).isFalse();
             assertThat(marked.get(1).isDuplicate()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("autoDetectTransactions()")
+    class AutoDetect {
+
+        private final class StubParser implements BankCsvParser {
+            private final boolean matches;
+            private final List<ImportedTransaction> output;
+
+            StubParser(boolean matches, List<ImportedTransaction> output) {
+                this.matches = matches;
+                this.output = output;
+            }
+
+            @Override public String getBankName() {
+                return "StubBank";
+            }
+
+            @Override public boolean canParse(String[] headers) {
+                return matches;
+            }
+
+            @Override public List<ImportedTransaction> parse(Path csvFile, Charset charset) {
+                return output;
+            }
+
+            @Override public String[] getExpectedHeaders() {
+                return new String[] {"Date", "Amount"};
+            }
+        }
+
+        private Path csvWithHeader() throws IOException {
+            Path file = tempDir.resolve("statement.csv");
+            Files.writeString(file, "Date,Amount,Description\n2025-05-01,100.00,Payment\n",
+                StandardCharsets.UTF_8);
+            return file;
+        }
+
+        @Test
+        @DisplayName("returns converted rows (type from sign, absolute amount) for a recognised format")
+        void recognisedFormatReturnsRows() throws IOException {
+            List<ImportedTransaction> parsed = List.of(
+                new ImportedTransaction(LocalDate.of(2025, 5, 1), new BigDecimal("100.00"),
+                    "Client payment", null, null),
+                new ImportedTransaction(LocalDate.of(2025, 5, 2), new BigDecimal("-20.00"),
+                    "Fuel", null, null));
+            BankFormatDetector detector = new BankFormatDetector(List.of(new StubParser(true, parsed)));
+
+            Optional<List<ImportedTransactionRow>> rows =
+                service.autoDetectTransactions(csvWithHeader(), detector);
+
+            assertThat(rows).isPresent();
+            assertThat(rows.get()).hasSize(2);
+            assertThat(rows.get().get(0).type()).isEqualTo(TransactionType.INCOME);
+            assertThat(rows.get().get(0).amount()).isEqualByComparingTo("100.00");
+            assertThat(rows.get().get(1).type()).isEqualTo(TransactionType.EXPENSE);
+            assertThat(rows.get().get(1).amount()).isEqualByComparingTo("20.00");
+        }
+
+        @Test
+        @DisplayName("returns empty for an unrecognised format so the caller uses manual mapping")
+        void unrecognisedFormatReturnsEmpty() throws IOException {
+            BankFormatDetector detector = new BankFormatDetector(List.of(new StubParser(false, List.of())));
+
+            Optional<List<ImportedTransactionRow>> rows =
+                service.autoDetectTransactions(csvWithHeader(), detector);
+
+            assertThat(rows).isEmpty();
+        }
+
+        @Test
+        @DisplayName("returns empty when a recognised parser fails, falling back to manual mapping")
+        void parseFailureReturnsEmpty() throws IOException {
+            BankCsvParser throwing = new BankCsvParser() {
+                @Override public String getBankName() {
+                    return "Throwing";
+                }
+
+                @Override public boolean canParse(String[] headers) {
+                    return true;
+                }
+
+                @Override public List<ImportedTransaction> parse(Path csvFile, Charset charset)
+                        throws CsvParseException {
+                    throw new CsvParseException("bad row", "statement.csv", 2, null);
+                }
+
+                @Override public String[] getExpectedHeaders() {
+                    return new String[] {"Date", "Amount"};
+                }
+            };
+
+            Optional<List<ImportedTransactionRow>> rows =
+                service.autoDetectTransactions(csvWithHeader(), new BankFormatDetector(List.of(throwing)));
+
+            assertThat(rows).isEmpty();
         }
     }
 }

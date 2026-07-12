@@ -6,6 +6,12 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.core.bankimport.BankFormatDetector;
+import uk.selfemploy.core.bankimport.CsvStatementSource;
+import uk.selfemploy.core.bankimport.ImportedTransaction;
+import uk.selfemploy.core.bankimport.StandardBankParsers;
+import uk.selfemploy.core.bankimport.StatementBatch;
+import uk.selfemploy.core.bankimport.StatementSourceException;
 import uk.selfemploy.core.reconciliation.MatchingUtils;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
@@ -22,6 +28,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -109,6 +116,36 @@ public class ImportOrchestrationService {
      */
     public CsvTransactionParser.ParseResult parseTransactions(Path csvFile, ColumnMapping mapping) {
         return csvParser.parse(csvFile, mapping);
+    }
+
+    /**
+     * Parses a CSV using the built-in per-bank parsers when its format is recognised, so a known
+     * bank statement is read by its dedicated parser rather than generic column mapping.
+     *
+     * @param csvFile the CSV file
+     * @return the parsed rows if a bank format was recognised and read, or empty to signal the
+     *         caller should fall back to manual column mapping
+     */
+    public Optional<List<ImportedTransactionRow>> autoDetectTransactions(Path csvFile) {
+        return autoDetectTransactions(csvFile, new BankFormatDetector(StandardBankParsers.all()));
+    }
+
+    Optional<List<ImportedTransactionRow>> autoDetectTransactions(Path csvFile, BankFormatDetector detector) {
+        CsvStatementSource source = new CsvStatementSource(csvFile, StandardCharsets.UTF_8, detector);
+        try {
+            StatementBatch batch = source.fetch();
+            List<ImportedTransactionRow> rows = new ArrayList<>(batch.size());
+            for (ImportedTransaction t : batch.transactions()) {
+                TransactionType type = t.isIncome() ? TransactionType.INCOME : TransactionType.EXPENSE;
+                rows.add(ImportedTransactionRow.create(
+                    t.date(), t.description(), t.amount(), type, null, false, 0));
+            }
+            return Optional.of(rows);
+        } catch (StatementSourceException e) {
+            LOG.info("No bank auto-detect for {} ({}); using manual mapping",
+                csvFile.getFileName(), e.getMessage());
+            return Optional.empty();
+        }
     }
 
     /**

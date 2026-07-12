@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -979,6 +980,19 @@ public class BankImportWizardController implements Initializable {
 
         ImportOrchestrationService orchestrationService =
             CoreServiceFactory.getImportOrchestrationService();
+
+        // Recognised bank formats are read by their dedicated parser; unknown formats fall back
+        // to the manual column mapping the user configured.
+        Optional<List<ImportedTransactionRow>> autoDetected =
+            orchestrationService.autoDetectTransactions(file.toPath());
+        if (autoDetected.isPresent()) {
+            List<ImportedTransactionRow> transactions =
+                orchestrationService.markDuplicates(autoDetected.get());
+            viewModel.setTransactions(transactions);
+            LOG.info("Auto-detected {} transactions via bank-format parser", transactions.size());
+            return;
+        }
+
         CsvTransactionParser.ParseResult result =
             orchestrationService.parseTransactions(file.toPath(), viewModel.getColumnMapping());
 
