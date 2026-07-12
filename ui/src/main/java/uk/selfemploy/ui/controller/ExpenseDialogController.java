@@ -27,6 +27,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.ReceiptMetadata;
 import uk.selfemploy.core.service.ReceiptStorageService;
+import uk.selfemploy.ui.service.DataStoreException;
 import uk.selfemploy.ui.viewmodel.ExpenseDialogViewModel;
 
 import java.awt.Desktop;
@@ -643,7 +644,13 @@ public class ExpenseDialogController implements Initializable {
     @FXML
     void handleSave(ActionEvent event) {
         if (viewModel != null) {
-            viewModel.save();
+            try {
+                viewModel.save();
+            } catch (DataStoreException e) {
+                AppDialog.error("Could not save expense",
+                    "The expense could not be saved because the database is currently unavailable. "
+                        + "Please try again.");
+            }
         }
     }
 

@@ -1,15 +1,13 @@
 package uk.selfemploy.ui.service;
 
-
-
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.time.Instant;
-import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,7 +33,23 @@ public final class SqliteDataStore {
 
     private final Path databasePath;
     private final boolean inMemory;
+
+    /**
+     * The primary connection: used for schema init/migration, and the sole connection in in-memory
+     * (test) mode. In file mode it also serves the thread that constructed the store.
+     */
     private Connection connection;
+
+    /**
+     * File mode only: each thread gets its own connection so concurrent threads (e.g. a background
+     * CSV-import thread writing while the JavaFX thread reads) never share one non-thread-safe
+     * {@link Connection}. In-memory mode keeps the single shared {@link #connection}, since a
+     * {@code :memory:} database is private to its connection.
+     */
+    private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
+
+    /** Every connection handed out, tracked so {@link #close()} can release them all. */
+    private final List<Connection> openConnections = new CopyOnWriteArrayList<>();
 
     private SqliteDataStore() {
         this(false);
@@ -113,6 +127,12 @@ public final class SqliteDataStore {
             configureSqlite();
             createTables();
             migrateSchema();
+
+            if (!inMemory) {
+                // The constructing thread reuses the primary connection; other threads open their own.
+                openConnections.add(connection);
+                threadConnection.set(connection);
+            }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to initialize SQLite database", e);
         }
@@ -500,7 +520,7 @@ public final class SqliteDataStore {
         if (value == null) {
             // Delete the setting if value is null (to clear it)
             String sql = "DELETE FROM settings WHERE key = ?";
-            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
                 pstmt.setString(1, key);
                 pstmt.executeUpdate();
             } catch (SQLException e) {
@@ -508,7 +528,7 @@ public final class SqliteDataStore {
             }
         } else {
             String sql = "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)";
-            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
                 pstmt.setString(1, key);
                 pstmt.setString(2, value);
                 pstmt.executeUpdate();
@@ -520,7 +540,7 @@ public final class SqliteDataStore {
 
     private String loadSetting(String key) {
         String sql = "SELECT value FROM settings WHERE key = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
             pstmt.setString(1, key);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -864,7 +884,7 @@ public final class SqliteDataStore {
      */
     public synchronized void ensureBusinessExists(UUID businessId) {
         String sql = "INSERT OR IGNORE INTO business (id) VALUES (?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = connection().prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -879,22 +899,23 @@ public final class SqliteDataStore {
      * Rolls back on any exception.
      */
     public synchronized boolean executeInTransaction(Runnable action) {
+        Connection conn = connection();
         try {
-            connection.setAutoCommit(false);
+            conn.setAutoCommit(false);
             action.run();
-            connection.commit();
+            conn.commit();
             return true;
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Transaction failed, rolling back", e);
             try {
-                connection.rollback();
+                conn.rollback();
             } catch (SQLException rollbackEx) {
                 LOG.log(Level.SEVERE, "Rollback failed", rollbackEx);
             }
             return false;
         } finally {
             try {
-                connection.setAutoCommit(true);
+                conn.setAutoCommit(true);
             } catch (SQLException e) {
                 LOG.log(Level.WARNING, "Failed to restore auto-commit", e);
             }
@@ -914,7 +935,7 @@ public final class SqliteDataStore {
      * Returns the current journal mode.
      */
     public synchronized String getJournalMode() {
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = connection().createStatement();
              ResultSet rs = stmt.executeQuery("PRAGMA journal_mode")) {
             if (rs.next()) {
                 return rs.getString(1);
@@ -929,7 +950,7 @@ public final class SqliteDataStore {
      * Returns true if foreign keys are enabled.
      */
     public synchronized boolean areForeignKeysEnabled() {
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = connection().createStatement();
              ResultSet rs = stmt.executeQuery("PRAGMA foreign_keys")) {
             if (rs.next()) {
                 return rs.getInt(1) == 1;
@@ -950,13 +971,24 @@ public final class SqliteDataStore {
     }
 
     /**
-     * Closes the database connection.
+     * Closes every database connection (the primary and every per-thread connection in file mode).
      */
     public synchronized void close() {
+        if (inMemory) {
+            closeQuietly(connection);
+        } else {
+            for (Connection conn : openConnections) {
+                closeQuietly(conn);
+            }
+            openConnections.clear();
+        }
+        LOG.info("SQLite connection(s) closed");
+    }
+
+    private void closeQuietly(Connection conn) {
         try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-                LOG.info("SQLite connection closed");
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
             }
         } catch (SQLException e) {
             LOG.log(Level.WARNING, "Error closing SQLite connection", e);
@@ -964,14 +996,55 @@ public final class SqliteDataStore {
     }
 
     /**
-     * Returns the shared SQLite connection for repositories in this package that persist
-     * their own tables against the same database. Package-private so collaborating
-     * repositories no longer need reflection to reach it.
+     * Returns the SQLite connection the calling thread should use. In file mode each thread gets
+     * its own connection (opened lazily) so concurrent threads never issue statements on a shared,
+     * non-thread-safe {@link Connection}; WAL mode plus {@code busy_timeout} (set on every
+     * connection) handle reader/writer concurrency across those connections. In-memory mode returns
+     * the single shared connection, because a {@code :memory:} database is private per connection.
      *
-     * @return the live connection, or null if not yet initialised
+     * <p>Package-private so collaborating repositories in this package can reach it.</p>
+     *
+     * @return the connection for this thread, or null if the store failed to initialise
      */
     synchronized Connection connection() {
-        return connection;
+        if (inMemory || connection == null) {
+            return connection;
+        }
+        Connection conn = threadConnection.get();
+        if (conn == null || isClosedQuietly(conn)) {
+            conn = openThreadConnection();
+            threadConnection.set(conn);
+            openConnections.add(conn);
+        }
+        return conn;
+    }
+
+    /**
+     * Opens a fresh file-mode connection for the calling thread and applies the per-connection
+     * pragmas. WAL is a persistent database-level setting established on the primary connection, so
+     * it is not re-issued here. Falls back to the shared primary connection if opening fails.
+     */
+    private Connection openThreadConnection() {
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + databasePath.toAbsolutePath());
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+                stmt.execute("PRAGMA synchronous = NORMAL");
+                stmt.execute("PRAGMA busy_timeout = 5000");
+            }
+            return conn;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to open per-thread SQLite connection; using shared connection", e);
+            return connection;
+        }
+    }
+
+    private static boolean isClosedQuietly(Connection conn) {
+        try {
+            return conn.isClosed();
+        } catch (SQLException e) {
+            return true;
+        }
     }
 
 }

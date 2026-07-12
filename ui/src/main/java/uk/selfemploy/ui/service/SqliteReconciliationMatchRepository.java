@@ -57,6 +57,7 @@ public class SqliteReconciliationMatchRepository implements ReconciliationMatchR
             LOG.fine("Saved reconciliation match: " + match.id());
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to save reconciliation match: " + match.id(), e);
+            throw new DataStoreException("Failed to save reconciliation match", e);
         }
     }
 

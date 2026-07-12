@@ -82,6 +82,7 @@ public class SqliteBankTransactionRepository implements BankTransactionRepositor
             LOG.fine("Saved bank transaction: " + tx.id());
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to save bank transaction: " + tx.id(), e);
+            throw new DataStoreException("Failed to save bank transaction", e);
         }
     }
 
