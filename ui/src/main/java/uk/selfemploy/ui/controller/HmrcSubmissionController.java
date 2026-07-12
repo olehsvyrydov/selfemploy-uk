@@ -82,7 +82,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
         SubmissionEnvironment environment = SubmissionEnvironment.current();
         String text = environment.isSandbox()
             ? "• Quarterly updates and annual declarations use the HMRC Making Tax Digital APIs. "
-              + "This build submits to the HMRC " + environment.badgeLabel()
+              + "This build submits to the " + environment.badgeLabel()
               + ", so filings are for testing and are not your official return."
             : "• Quarterly updates and annual declarations use the HMRC Making Tax Digital APIs "
               + "and are submitted to HMRC.";

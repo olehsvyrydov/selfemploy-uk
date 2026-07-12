@@ -152,7 +152,7 @@
             <VBox fx:id="q4Card" styleClass="quarter-card" spacing="12"
                   GridPane.columnIndex="1" GridPane.rowIndex="1"
                   focusTraversable="true"
-                  accessibleText="Quarter 4, future quarter">
+                  accessibleText="Quarter 4">
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label fx:id="q4Label" text="Q4" styleClass="quarter-title"/>
                     <Label fx:id="q4CurrentBadge" text="(Current)" styleClass="quarter-current-badge" visible="false" managed="false"/>
