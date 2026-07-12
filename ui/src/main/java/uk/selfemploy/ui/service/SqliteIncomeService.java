@@ -26,7 +26,7 @@ public class SqliteIncomeService extends IncomeService {
     private final UUID businessId;
 
     public SqliteIncomeService(UUID businessId) {
-        super(null); // No Panache repository in standalone mode
+        super();
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
@@ -197,19 +197,19 @@ public class SqliteIncomeService extends IncomeService {
 
     // === Validation Methods ===
 
-    private void validateBusinessId(UUID businessId) {
+    protected void validateBusinessId(UUID businessId) {
         if (businessId == null) {
             throw new ValidationException("businessId", "Business ID cannot be null");
         }
     }
 
-    private void validateDate(LocalDate date) {
+    protected void validateDate(LocalDate date) {
         if (date == null) {
             throw new ValidationException("date", "Income date cannot be null");
         }
     }
 
-    private void validateAmount(BigDecimal amount) {
+    protected void validateAmount(BigDecimal amount) {
         if (amount == null) {
             throw new ValidationException("amount", "Income amount cannot be null");
         }
@@ -218,7 +218,7 @@ public class SqliteIncomeService extends IncomeService {
         }
     }
 
-    private void validateDescription(String description) {
+    protected void validateDescription(String description) {
         if (description == null || description.isBlank()) {
             throw new ValidationException("description", "Income description cannot be null or empty");
         }
@@ -228,7 +228,7 @@ public class SqliteIncomeService extends IncomeService {
         }
     }
 
-    private void validateCategory(IncomeCategory category) {
+    protected void validateCategory(IncomeCategory category) {
         if (category == null) {
             throw new ValidationException("category", "Income category cannot be null");
         }

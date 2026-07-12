@@ -16,7 +16,8 @@ import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.ValidationException;
-import uk.selfemploy.persistence.repository.ExpenseRepository;
+import uk.selfemploy.core.service.ExpenseServiceTestSupport.ExpenseStore;
+import uk.selfemploy.core.service.ExpenseServiceTestSupport.StoreBackedExpenseService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -43,7 +44,7 @@ import static org.mockito.Mockito.*;
 class ExpenseServiceTest {
 
     @Mock
-    private ExpenseRepository expenseRepository;
+    private ExpenseStore expenseRepository;
 
     private ExpenseService expenseService;
 
@@ -56,7 +57,7 @@ class ExpenseServiceTest {
 
     @BeforeEach
     void setUp() {
-        expenseService = new ExpenseService(expenseRepository);
+        expenseService = new StoreBackedExpenseService(expenseRepository);
     }
 
     @Nested

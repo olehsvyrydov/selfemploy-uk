@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.service;
 
 import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.ValidationException;
@@ -23,7 +24,7 @@ public class InMemoryExpenseService extends ExpenseService {
     private final InMemoryExpenseRepository repository;
 
     public InMemoryExpenseService() {
-        super(null); // No Panache repository in standalone mode
+        super();
         this.repository = new InMemoryExpenseRepository();
     }
 
@@ -125,6 +126,45 @@ public class InMemoryExpenseService extends ExpenseService {
         return repository.calculateAllowableTotalForDateRange(businessId, taxYear.startDate(), taxYear.endDate());
     }
 
+    @Override
+    public BigDecimal getDeductibleTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        return repository.calculateAllowableTotalForDateRange(
+                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    @Override
+    public List<Expense> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        return repository.findByDateRange(
+                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
+    @Override
+    public Map<ExpenseCategory, BigDecimal> getTotalsByCategoryByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+        return repository.calculateTotalsByCategoryForDateRange(
+                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
+    }
+
     /**
      * Gets totals grouped by category for SA103 form.
      */
@@ -152,20 +192,20 @@ public class InMemoryExpenseService extends ExpenseService {
 
     // === Validation Methods ===
 
-    private void validateBusinessId(UUID businessId) {
+    protected void validateBusinessId(UUID businessId) {
         if (businessId == null) {
             throw new ValidationException("businessId", "Business ID cannot be null");
         }
     }
 
-    private void validateDate(LocalDate date) {
+    protected void validateDate(LocalDate date) {
         if (date == null) {
             throw new ValidationException("date", "Expense date cannot be null");
         }
         // Allow dates in any tax year for flexibility
     }
 
-    private void validateAmount(BigDecimal amount) {
+    protected void validateAmount(BigDecimal amount) {
         if (amount == null) {
             throw new ValidationException("amount", "Expense amount cannot be null");
         }
@@ -174,7 +214,7 @@ public class InMemoryExpenseService extends ExpenseService {
         }
     }
 
-    private void validateDescription(String description) {
+    protected void validateDescription(String description) {
         if (description == null || description.isBlank()) {
             throw new ValidationException("description", "Expense description cannot be null or empty");
         }
@@ -184,7 +224,7 @@ public class InMemoryExpenseService extends ExpenseService {
         }
     }
 
-    private void validateCategory(ExpenseCategory category) {
+    protected void validateCategory(ExpenseCategory category) {
         if (category == null) {
             throw new ValidationException("category", "Expense category cannot be null");
         }

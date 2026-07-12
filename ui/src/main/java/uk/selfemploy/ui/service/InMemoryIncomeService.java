@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.service;
 
 import uk.selfemploy.common.domain.Income;
+import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.common.enums.IncomeStatus;
@@ -23,7 +24,7 @@ public class InMemoryIncomeService extends IncomeService {
     private final Map<UUID, Income> storage = new ConcurrentHashMap<>();
 
     public InMemoryIncomeService() {
-        super(null); // No Panache repository in standalone mode
+        super();
     }
 
     @Override
@@ -132,6 +133,32 @@ public class InMemoryIncomeService extends IncomeService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    @Override
+    public List<Income> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        validateBusinessId(businessId);
+        if (taxYear == null) {
+            throw new ValidationException("taxYear", "Tax year cannot be null");
+        }
+        if (quarter == null) {
+            throw new ValidationException("quarter", "Quarter cannot be null");
+        }
+
+        LocalDate start = quarter.getStartDate(taxYear);
+        LocalDate end = quarter.getEndDate(taxYear);
+        return storage.values().stream()
+            .filter(i -> i.businessId().equals(businessId))
+            .filter(i -> !i.date().isBefore(start) && !i.date().isAfter(end))
+            .sorted(Comparator.comparing(Income::date).reversed())
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public BigDecimal getTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
+        return findByQuarter(businessId, taxYear, quarter).stream()
+            .map(Income::amount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     /**
      * Clears all data (useful for testing).
      */
@@ -148,19 +175,19 @@ public class InMemoryIncomeService extends IncomeService {
 
     // === Validation Methods ===
 
-    private void validateBusinessId(UUID businessId) {
+    protected void validateBusinessId(UUID businessId) {
         if (businessId == null) {
             throw new ValidationException("businessId", "Business ID cannot be null");
         }
     }
 
-    private void validateDate(LocalDate date) {
+    protected void validateDate(LocalDate date) {
         if (date == null) {
             throw new ValidationException("date", "Income date cannot be null");
         }
     }
 
-    private void validateAmount(BigDecimal amount) {
+    protected void validateAmount(BigDecimal amount) {
         if (amount == null) {
             throw new ValidationException("amount", "Income amount cannot be null");
         }
@@ -169,7 +196,7 @@ public class InMemoryIncomeService extends IncomeService {
         }
     }
 
-    private void validateDescription(String description) {
+    protected void validateDescription(String description) {
         if (description == null || description.isBlank()) {
             throw new ValidationException("description", "Income description cannot be null or empty");
         }
@@ -179,7 +206,7 @@ public class InMemoryIncomeService extends IncomeService {
         }
     }
 
-    private void validateCategory(IncomeCategory category) {
+    protected void validateCategory(IncomeCategory category) {
         if (category == null) {
             throw new ValidationException("category", "Income category cannot be null");
         }

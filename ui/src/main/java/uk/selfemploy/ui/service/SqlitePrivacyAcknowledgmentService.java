@@ -21,7 +21,7 @@ public class SqlitePrivacyAcknowledgmentService extends PrivacyAcknowledgmentSer
     private final PrivacyAcknowledgmentRepository sqliteRepository;
 
     public SqlitePrivacyAcknowledgmentService() {
-        super(null); // Parent won't be used - we override all methods
+        super();
         this.sqliteRepository = new SqlitePrivacyAcknowledgmentRepository();
     }
 
@@ -29,7 +29,7 @@ public class SqlitePrivacyAcknowledgmentService extends PrivacyAcknowledgmentSer
      * Constructor for testing with custom repository.
      */
     SqlitePrivacyAcknowledgmentService(PrivacyAcknowledgmentRepository repository) {
-        super(null);
+        super();
         this.sqliteRepository = repository;
     }
 
