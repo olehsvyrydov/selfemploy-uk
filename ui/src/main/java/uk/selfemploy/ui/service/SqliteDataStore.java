@@ -149,8 +149,12 @@ public final class SqliteDataStore {
                 openConnections.add(connection);
                 threadConnection.set(connection);
             }
-        } catch (SQLException e) {
+        } catch (SQLException | RuntimeException e) {
+            // Includes migration failures (e.g. a missing/unreadable migration resource surfaces as a
+            // RuntimeException). Fail fast rather than leaving a silently broken schema that would
+            // otherwise surface later as confusing "no such table" errors.
             LOG.log(Level.SEVERE, "Failed to initialize SQLite database", e);
+            throw new IllegalStateException("Failed to initialize SQLite database", e);
         }
     }
 
@@ -163,8 +167,8 @@ public final class SqliteDataStore {
     private List<SqliteMigrationRunner.Migration> migrations() {
         return List.of(
             SqliteMigrationRunner.script(1, "baseline schema", "/db/migration-sqlite/V1__baseline.sql"),
-            SqliteMigrationRunner.java(2, "legacy nullable columns", conn -> addLegacyColumns()),
-            SqliteMigrationRunner.java(3, "honest submission history", conn -> migrateSubmissionHonesty())
+            SqliteMigrationRunner.java(2, "legacy nullable columns", this::addLegacyColumns),
+            SqliteMigrationRunner.java(3, "honest submission history", this::migrateSubmissionHonesty)
         );
     }
 
@@ -173,12 +177,12 @@ public final class SqliteDataStore {
      * baseline included them. {@code ALTER TABLE ADD COLUMN} is safe to call when the column already
      * exists (caught and ignored), so this is idempotent.
      */
-    private void addLegacyColumns() {
-        addColumnIfMissing("bank_transactions", "deleted_at", "TEXT");
-        addColumnIfMissing("bank_transactions", "deleted_by", "TEXT");
-        addColumnIfMissing("bank_transactions", "deletion_reason", "TEXT");
-        addColumnIfMissing("income", "client_name", "TEXT");
-        addColumnIfMissing("income", "status", "TEXT NOT NULL DEFAULT 'PAID'");
+    private void addLegacyColumns(Connection conn) throws SQLException {
+        addColumnIfMissing(conn, "bank_transactions", "deleted_at", "TEXT");
+        addColumnIfMissing(conn, "bank_transactions", "deleted_by", "TEXT");
+        addColumnIfMissing(conn, "bank_transactions", "deletion_reason", "TEXT");
+        addColumnIfMissing(conn, "income", "client_name", "TEXT");
+        addColumnIfMissing(conn, "income", "status", "TEXT NOT NULL DEFAULT 'PAID'");
     }
 
     /**
@@ -195,9 +199,13 @@ public final class SqliteDataStore {
      * exactly the fabricated rows. Both steps are idempotent.</p>
      */
     void migrateSubmissionHonesty() {
+        migrateSubmissionHonesty(connection);
+    }
+
+    void migrateSubmissionHonesty(Connection conn) {
         try {
             String ddl = null;
-            try (Statement stmt = connection.createStatement();
+            try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(
                      "SELECT sql FROM sqlite_master WHERE type='table' AND name='submissions'")) {
                 if (rs.next()) {
@@ -208,9 +216,9 @@ public final class SqliteDataStore {
                 return; // no submissions table yet
             }
             if (!ddl.contains("NOT_SUBMITTED")) {
-                rebuildSubmissionsTableWithHonestCheck();
+                rebuildSubmissionsTableWithHonestCheck(conn);
             }
-            try (Statement stmt = connection.createStatement()) {
+            try (Statement stmt = conn.createStatement()) {
                 int relabelled = stmt.executeUpdate(
                     "UPDATE submissions SET status = 'NOT_SUBMITTED', hmrc_reference = NULL "
                     + "WHERE hmrc_reference LIKE 'SA-%'");
@@ -230,11 +238,11 @@ public final class SqliteDataStore {
      * NOT_SUBMITTED. SQLite cannot alter a CHECK constraint in place, so the table
      * is recreated and its data copied across.
      */
-    private void rebuildSubmissionsTableWithHonestCheck() throws SQLException {
-        boolean autoCommit = connection.getAutoCommit();
-        try (Statement stmt = connection.createStatement()) {
+    private void rebuildSubmissionsTableWithHonestCheck(Connection conn) throws SQLException {
+        boolean autoCommit = conn.getAutoCommit();
+        try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF");
-            connection.setAutoCommit(false);
+            conn.setAutoCommit(false);
             stmt.execute("""
                 CREATE TABLE submissions_new (
                     id TEXT PRIMARY KEY,
@@ -271,14 +279,14 @@ public final class SqliteDataStore {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_tax_year ON submissions(tax_year_start)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status)");
-            connection.commit();
+            conn.commit();
             LOG.info("Rebuilt submissions table to allow NOT_SUBMITTED status");
         } catch (SQLException e) {
-            connection.rollback();
+            conn.rollback();
             throw e;
         } finally {
-            connection.setAutoCommit(autoCommit);
-            try (Statement stmt = connection.createStatement()) {
+            conn.setAutoCommit(autoCommit);
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute("PRAGMA foreign_keys = ON");
             }
         }
@@ -294,8 +302,8 @@ public final class SqliteDataStore {
         }
     }
 
-    private void addColumnIfMissing(String table, String column, String type) {
-        try (Statement stmt = connection.createStatement()) {
+    private void addColumnIfMissing(Connection conn, String table, String column, String type) {
+        try (Statement stmt = conn.createStatement()) {
             stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
             LOG.info("Added missing column " + table + "." + column);
         } catch (SQLException e) {
