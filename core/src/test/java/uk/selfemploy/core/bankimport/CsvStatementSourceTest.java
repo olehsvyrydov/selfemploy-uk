@@ -108,4 +108,33 @@ class CsvStatementSourceTest {
             .hasMessageContaining("Failed to parse")
             .hasCauseInstanceOf(CsvParseException.class);
     }
+
+    @Test
+    @DisplayName("wraps an unchecked parser exception (e.g. a bad amount) as a StatementSourceException")
+    void wrapsUncheckedParserException() throws Exception {
+        BankCsvParser throwingParser = new BankCsvParser() {
+            @Override public String getBankName() {
+                return "ThrowingBank";
+            }
+
+            @Override public boolean canParse(String[] headers) {
+                return true;
+            }
+
+            @Override public List<ImportedTransaction> parse(Path csvFile, Charset charset) {
+                throw new NumberFormatException("Character N is neither a decimal digit");
+            }
+
+            @Override public String[] getExpectedHeaders() {
+                return new String[] {"Date", "Amount", "Description"};
+            }
+        };
+        BankFormatDetector detector = new BankFormatDetector(List.of(throwingParser));
+        CsvStatementSource source = new CsvStatementSource(csvWithHeader(), StandardCharsets.UTF_8, detector);
+
+        assertThatThrownBy(source::fetch)
+            .isInstanceOf(StatementSourceException.class)
+            .hasMessageContaining("Unexpected error reading")
+            .hasCauseInstanceOf(NumberFormatException.class);
+    }
 }

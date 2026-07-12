@@ -94,7 +94,12 @@ public final class NamedSql {
             throw new IllegalArgumentException(
                 "Duplicate SQL statement name '" + name + "' in " + resourcePath);
         }
-        parsed.put(name, finish(body));
+        String sql = finish(body);
+        if (sql.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Empty SQL body for statement '" + name + "' in " + resourcePath);
+        }
+        parsed.put(name, sql);
     }
 
     private static String finish(StringBuilder sb) {

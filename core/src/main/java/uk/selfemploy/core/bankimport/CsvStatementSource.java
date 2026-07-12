@@ -50,6 +50,10 @@ public final class CsvStatementSource implements StatementSource {
             return new StatementBatch(SOURCE_TYPE, fileName, parser.getBankName(), transactions);
         } catch (CsvParseException e) {
             throw new StatementSourceException("Failed to parse " + fileName, e);
+        } catch (RuntimeException e) {
+            // Parsers may throw unchecked (e.g. a malformed amount raising NumberFormatException);
+            // surface it through the port's checked contract rather than letting it escape.
+            throw new StatementSourceException("Unexpected error reading " + fileName, e);
         }
     }
 }

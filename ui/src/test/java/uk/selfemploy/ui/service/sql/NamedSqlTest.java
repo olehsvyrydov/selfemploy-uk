@@ -62,4 +62,12 @@ class NamedSqlTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Empty statement name");
     }
+
+    @Test
+    @DisplayName("fails fast on a named statement with an empty body")
+    void throwsOnEmptyBody() {
+        assertThatThrownBy(() -> NamedSql.load("/sql/empty-body.sql"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Empty SQL body for statement 'noBody'");
+    }
 }
