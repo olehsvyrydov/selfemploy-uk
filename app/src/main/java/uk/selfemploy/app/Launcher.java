@@ -1,6 +1,7 @@
 package uk.selfemploy.app;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -10,6 +11,7 @@ import uk.selfemploy.common.util.EnvLoader;
 import uk.selfemploy.ui.controller.OnboardingController;
 import uk.selfemploy.ui.controller.SettingsController;
 import uk.selfemploy.ui.controller.TermsOfServiceController;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.OnboardingSetupService;
 
 import java.util.List;
@@ -87,6 +89,9 @@ public class Launcher extends Application {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/terms-of-service.fxml"));
             Parent root = loader.load();
             TermsOfServiceController controller = loader.getController();
+            // The controller builds its view model only when given the acceptance service; without
+            // this, requiresAcceptance() is always false and the gate would never fire.
+            controller.initializeWithDependencies(CoreServiceFactory.getTermsAcceptanceService());
             controller.setSettingsMode(false); // first-launch mode: Accept/Decline shown
 
             if (!controller.requiresAcceptance()) {
@@ -106,8 +111,11 @@ public class Launcher extends Application {
             // Accepted → requiresAcceptance() is now false; declined → Platform.exit() already called.
             return !controller.requiresAcceptance();
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to show the terms-of-service gate; continuing to the app", e);
-            return true;
+            // A compliance gate must fail closed: if it cannot verify acceptance, do not let the user
+            // into the app. Exit rather than continuing unprotected.
+            LOG.log(Level.SEVERE, "Failed to show the terms-of-service gate; exiting to avoid bypassing it", e);
+            Platform.exit();
+            return false;
         }
     }
 
