@@ -3,6 +3,8 @@ package uk.selfemploy.ui.service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import uk.selfemploy.ui.service.db.SqliteMigrationRunner;
+
 import java.sql.*;
 import java.time.Instant;
 import java.util.List;
@@ -140,31 +142,47 @@ public final class SqliteDataStore {
             LOG.info("Connected to SQLite database: " + (inMemory ? ":memory:" : databasePath));
 
             configureSqlite();
-            createTables();
-            migrateSchema();
+            new SqliteMigrationRunner(connection).run(migrations());
 
             if (!inMemory) {
                 // The constructing thread reuses the primary connection; other threads open their own.
                 openConnections.add(connection);
                 threadConnection.set(connection);
             }
-        } catch (SQLException e) {
+        } catch (SQLException | RuntimeException e) {
+            // Includes migration failures (e.g. a missing/unreadable migration resource surfaces as a
+            // RuntimeException). Fail fast rather than leaving a silently broken schema that would
+            // otherwise surface later as confusing "no such table" errors.
             LOG.log(Level.SEVERE, "Failed to initialize SQLite database", e);
+            throw new IllegalStateException("Failed to initialize SQLite database", e);
         }
     }
 
     /**
-     * Applies schema migrations for existing databases that were created
-     * before new columns were added. ALTER TABLE ADD COLUMN is safe to
-     * call even if the column already exists (caught and ignored).
+     * The ordered schema migrations for the desktop store. Applied once each by
+     * {@link SqliteMigrationRunner}, which tracks them in the {@code schema_version} ledger.
+     * Every migration is idempotent so that an upgrade from a pre-migration database (which has no
+     * ledger and thus runs all of them) converges to the same schema as a fresh install.
      */
-    private void migrateSchema() {
-        addColumnIfMissing("bank_transactions", "deleted_at", "TEXT");
-        addColumnIfMissing("bank_transactions", "deleted_by", "TEXT");
-        addColumnIfMissing("bank_transactions", "deletion_reason", "TEXT");
-        addColumnIfMissing("income", "client_name", "TEXT");
-        addColumnIfMissing("income", "status", "TEXT NOT NULL DEFAULT 'PAID'");
-        migrateSubmissionHonesty();
+    private List<SqliteMigrationRunner.Migration> migrations() {
+        return List.of(
+            SqliteMigrationRunner.script(1, "baseline schema", "/db/migration-sqlite/V1__baseline.sql"),
+            SqliteMigrationRunner.java(2, "legacy nullable columns", this::addLegacyColumns),
+            SqliteMigrationRunner.java(3, "honest submission history", this::migrateSubmissionHonesty)
+        );
+    }
+
+    /**
+     * Adds columns introduced after the original tables shipped, for databases created before the
+     * baseline included them. {@code ALTER TABLE ADD COLUMN} is safe to call when the column already
+     * exists (caught and ignored), so this is idempotent.
+     */
+    private void addLegacyColumns(Connection conn) throws SQLException {
+        addColumnIfMissing(conn, "bank_transactions", "deleted_at", "TEXT");
+        addColumnIfMissing(conn, "bank_transactions", "deleted_by", "TEXT");
+        addColumnIfMissing(conn, "bank_transactions", "deletion_reason", "TEXT");
+        addColumnIfMissing(conn, "income", "client_name", "TEXT");
+        addColumnIfMissing(conn, "income", "status", "TEXT NOT NULL DEFAULT 'PAID'");
     }
 
     /**
@@ -181,9 +199,13 @@ public final class SqliteDataStore {
      * exactly the fabricated rows. Both steps are idempotent.</p>
      */
     void migrateSubmissionHonesty() {
+        migrateSubmissionHonesty(connection);
+    }
+
+    void migrateSubmissionHonesty(Connection conn) {
         try {
             String ddl = null;
-            try (Statement stmt = connection.createStatement();
+            try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(
                      "SELECT sql FROM sqlite_master WHERE type='table' AND name='submissions'")) {
                 if (rs.next()) {
@@ -194,9 +216,9 @@ public final class SqliteDataStore {
                 return; // no submissions table yet
             }
             if (!ddl.contains("NOT_SUBMITTED")) {
-                rebuildSubmissionsTableWithHonestCheck();
+                rebuildSubmissionsTableWithHonestCheck(conn);
             }
-            try (Statement stmt = connection.createStatement()) {
+            try (Statement stmt = conn.createStatement()) {
                 int relabelled = stmt.executeUpdate(
                     "UPDATE submissions SET status = 'NOT_SUBMITTED', hmrc_reference = NULL "
                     + "WHERE hmrc_reference LIKE 'SA-%'");
@@ -216,11 +238,11 @@ public final class SqliteDataStore {
      * NOT_SUBMITTED. SQLite cannot alter a CHECK constraint in place, so the table
      * is recreated and its data copied across.
      */
-    private void rebuildSubmissionsTableWithHonestCheck() throws SQLException {
-        boolean autoCommit = connection.getAutoCommit();
-        try (Statement stmt = connection.createStatement()) {
+    private void rebuildSubmissionsTableWithHonestCheck(Connection conn) throws SQLException {
+        boolean autoCommit = conn.getAutoCommit();
+        try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF");
-            connection.setAutoCommit(false);
+            conn.setAutoCommit(false);
             stmt.execute("""
                 CREATE TABLE submissions_new (
                     id TEXT PRIMARY KEY,
@@ -257,14 +279,14 @@ public final class SqliteDataStore {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_tax_year ON submissions(tax_year_start)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status)");
-            connection.commit();
+            conn.commit();
             LOG.info("Rebuilt submissions table to allow NOT_SUBMITTED status");
         } catch (SQLException e) {
-            connection.rollback();
+            conn.rollback();
             throw e;
         } finally {
-            connection.setAutoCommit(autoCommit);
-            try (Statement stmt = connection.createStatement()) {
+            conn.setAutoCommit(autoCommit);
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute("PRAGMA foreign_keys = ON");
             }
         }
@@ -280,8 +302,8 @@ public final class SqliteDataStore {
         }
     }
 
-    private void addColumnIfMissing(String table, String column, String type) {
-        try (Statement stmt = connection.createStatement()) {
+    private void addColumnIfMissing(Connection conn, String table, String column, String type) {
+        try (Statement stmt = conn.createStatement()) {
             stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
             LOG.info("Added missing column " + table + "." + column);
         } catch (SQLException e) {
@@ -311,199 +333,6 @@ public final class SqliteDataStore {
             // Wait up to 5 seconds if database is locked
             stmt.execute("PRAGMA busy_timeout = 5000");
             LOG.info("SQLite configured with WAL mode and foreign keys enabled");
-        }
-    }
-
-    /**
-     * Creates database tables if they don't exist.
-     */
-    private void createTables() throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
-            // Settings table
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
-                )
-            """);
-
-            // Business table (to track business ID)
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS business (
-                    id TEXT PRIMARY KEY,
-                    name TEXT,
-                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-                )
-            """);
-
-            // Expenses table with foreign key to business
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS expenses (
-                    id TEXT PRIMARY KEY,
-                    business_id TEXT NOT NULL,
-                    date TEXT NOT NULL,
-                    amount TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    receipt_path TEXT,
-                    notes TEXT,
-                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
-                )
-            """);
-
-            // Income table with foreign key to business
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS income (
-                    id TEXT PRIMARY KEY,
-                    business_id TEXT NOT NULL,
-                    date TEXT NOT NULL,
-                    amount TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    reference TEXT,
-                    client_name TEXT,
-                    status TEXT NOT NULL DEFAULT 'PAID',
-                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
-                )
-            """);
-
-            // Create indexes for better query performance
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_expenses_business_date ON expenses(business_id, date)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_income_business_date ON income(business_id, date)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_income_category ON income(category)");
-
-            // Terms acceptance table for SE-508
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS terms_acceptance (
-                    id TEXT PRIMARY KEY,
-                    tos_version TEXT NOT NULL,
-                    accepted_at TEXT NOT NULL,
-                    scroll_completed_at TEXT NOT NULL,
-                    application_version TEXT NOT NULL
-                )
-            """);
-
-            // Privacy acknowledgment table for SE-507
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS privacy_acknowledgment (
-                    id TEXT PRIMARY KEY,
-                    privacy_version TEXT NOT NULL,
-                    acknowledged_at TEXT NOT NULL,
-                    application_version TEXT NOT NULL
-                )
-            """);
-
-            // Submissions table for BUG-10H-001: Submission History persistence
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS submissions (
-                    id TEXT PRIMARY KEY,
-                    business_id TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    tax_year_start INTEGER NOT NULL,
-                    period_start TEXT NOT NULL,
-                    period_end TEXT NOT NULL,
-                    total_income TEXT NOT NULL,
-                    total_expenses TEXT NOT NULL,
-                    net_profit TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    hmrc_reference TEXT,
-                    error_message TEXT,
-                    submitted_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
-                    CHECK (type IN ('QUARTERLY_Q1', 'QUARTERLY_Q2', 'QUARTERLY_Q3', 'QUARTERLY_Q4', 'ANNUAL')),
-                    CHECK (status IN ('PENDING', 'SUBMITTED', 'ACCEPTED', 'REJECTED', 'NOT_SUBMITTED'))
-                )
-            """);
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_business ON submissions(business_id)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_tax_year ON submissions(tax_year_start)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_submissions_status ON submissions(status)");
-
-            // Bank transactions table for imported statement review
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS bank_transactions (
-                    id TEXT PRIMARY KEY,
-                    business_id TEXT NOT NULL,
-                    import_audit_id TEXT NOT NULL,
-                    source_format_id TEXT,
-                    date TEXT NOT NULL,
-                    amount TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    account_last_four TEXT,
-                    bank_transaction_id TEXT,
-                    transaction_hash TEXT NOT NULL,
-                    review_status TEXT NOT NULL DEFAULT 'PENDING',
-                    income_id TEXT,
-                    expense_id TEXT,
-                    exclusion_reason TEXT,
-                    is_business INTEGER,
-                    confidence_score TEXT,
-                    suggested_category TEXT,
-                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    deleted_at TEXT,
-                    deleted_by TEXT,
-                    deletion_reason TEXT,
-                    FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
-                    CHECK (review_status IN ('PENDING', 'CATEGORIZED', 'EXCLUDED', 'SKIPPED'))
-                )
-            """);
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_business_status ON bank_transactions(business_id, review_status)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_business_date ON bank_transactions(business_id, date)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_bank_tx_hash ON bank_transactions(transaction_hash)");
-
-            // Immutable audit trail for all bank transaction state changes.
-            // Required for MTD digital link compliance: every modification to
-            // a bank transaction must be traceable.
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS transaction_modification_log (
-                    id TEXT PRIMARY KEY,
-                    bank_transaction_id TEXT NOT NULL,
-                    modification_type TEXT NOT NULL,
-                    field_name TEXT,
-                    previous_value TEXT,
-                    new_value TEXT,
-                    modified_by TEXT NOT NULL,
-                    modified_at TEXT NOT NULL,
-                    FOREIGN KEY (bank_transaction_id) REFERENCES bank_transactions(id),
-                    CHECK (modification_type IN (
-                        'CATEGORIZED', 'EXCLUDED', 'RECATEGORIZED',
-                        'RESTORED', 'BUSINESS_PERSONAL_CHANGED', 'CATEGORY_CHANGED'
-                    ))
-                )
-            """);
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_mod_log_bank_tx ON transaction_modification_log(bank_transaction_id)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_mod_log_time ON transaction_modification_log(modified_at)");
-
-            // Reconciliation matches table for detecting duplicates between
-            // bank-imported and manually entered transactions.
-            // Records are statutory and must never be hard-deleted.
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS reconciliation_matches (
-                    id TEXT PRIMARY KEY,
-                    bank_transaction_id TEXT NOT NULL,
-                    manual_transaction_id TEXT NOT NULL,
-                    manual_transaction_type TEXT NOT NULL CHECK(manual_transaction_type IN ('INCOME', 'EXPENSE')),
-                    confidence REAL NOT NULL,
-                    match_tier TEXT NOT NULL CHECK(match_tier IN ('LINKED', 'EXACT', 'LIKELY', 'POSSIBLE')),
-                    status TEXT NOT NULL DEFAULT 'UNRESOLVED' CHECK(status IN ('UNRESOLVED', 'CONFIRMED', 'DISMISSED')),
-                    business_id TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                    resolved_at TEXT,
-                    resolved_by TEXT,
-                    UNIQUE(bank_transaction_id, manual_transaction_id, manual_transaction_type)
-                )
-            """);
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_recon_business ON reconciliation_matches(business_id)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_recon_status ON reconciliation_matches(business_id, status)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_recon_bank_tx ON reconciliation_matches(bank_transaction_id)");
-
-            LOG.info("Database tables initialized");
         }
     }
 
