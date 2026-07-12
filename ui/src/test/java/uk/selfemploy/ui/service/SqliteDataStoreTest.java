@@ -127,23 +127,30 @@ class SqliteDataStoreTest {
     @DisplayName("Expense CRUD Operations")
     class ExpenseCrudOperations {
 
+        private SqliteExpenseRepository expenseRepository;
+
+        @BeforeEach
+        void setUpExpenseRepository() {
+            expenseRepository = new SqliteExpenseRepository(testBusinessId);
+        }
+
         @Test
         @DisplayName("should save expense")
         void shouldSaveExpense() {
             Expense expense = createTestExpense(testBusinessId);
 
-            dataStore.saveExpense(expense);
+            expenseRepository.save(expense);
 
-            assertThat(dataStore.countExpenses()).isEqualTo(1);
+            assertThat(expenseRepository.count()).isEqualTo(1);
         }
 
         @Test
         @DisplayName("should find expense by ID")
         void shouldFindExpenseById() {
             Expense expense = createTestExpense(testBusinessId);
-            dataStore.saveExpense(expense);
+            expenseRepository.save(expense);
 
-            Optional<Expense> found = dataStore.findExpenseById(expense.id());
+            Optional<Expense> found = expenseRepository.findById(expense.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().id()).isEqualTo(expense.id());
@@ -155,7 +162,7 @@ class SqliteDataStoreTest {
         @Test
         @DisplayName("should return empty when expense not found")
         void shouldReturnEmptyWhenExpenseNotFound() {
-            Optional<Expense> found = dataStore.findExpenseById(UUID.randomUUID());
+            Optional<Expense> found = expenseRepository.findById(UUID.randomUUID());
 
             assertThat(found).isEmpty();
         }
@@ -165,10 +172,10 @@ class SqliteDataStoreTest {
         void shouldLoadAllExpenses() {
             Expense expense1 = createTestExpense(testBusinessId);
             Expense expense2 = createTestExpense(testBusinessId, "Second expense", new BigDecimal("200.00"));
-            dataStore.saveExpense(expense1);
-            dataStore.saveExpense(expense2);
+            expenseRepository.save(expense1);
+            expenseRepository.save(expense2);
 
-            List<Expense> expenses = dataStore.loadAllExpenses();
+            List<Expense> expenses = expenseRepository.findAll();
 
             assertThat(expenses).hasSize(2);
         }
@@ -177,7 +184,7 @@ class SqliteDataStoreTest {
         @DisplayName("should update expense")
         void shouldUpdateExpense() {
             Expense original = createTestExpense(testBusinessId);
-            dataStore.saveExpense(original);
+            expenseRepository.save(original);
 
             Expense updated = new Expense(
                     original.id(),
@@ -193,9 +200,9 @@ class SqliteDataStoreTest {
                     null,
                     null
             );
-            dataStore.saveExpense(updated);
+            expenseRepository.save(updated);
 
-            Optional<Expense> found = dataStore.findExpenseById(original.id());
+            Optional<Expense> found = expenseRepository.findById(original.id());
             assertThat(found).isPresent();
             assertThat(found.get().amount()).isEqualByComparingTo(new BigDecimal("999.99"));
             assertThat(found.get().description()).isEqualTo("Updated description");
@@ -205,18 +212,18 @@ class SqliteDataStoreTest {
         @DisplayName("should delete expense")
         void shouldDeleteExpense() {
             Expense expense = createTestExpense(testBusinessId);
-            dataStore.saveExpense(expense);
+            expenseRepository.save(expense);
 
-            boolean deleted = dataStore.deleteExpense(expense.id());
+            boolean deleted = expenseRepository.delete(expense.id());
 
             assertThat(deleted).isTrue();
-            assertThat(dataStore.findExpenseById(expense.id())).isEmpty();
+            assertThat(expenseRepository.findById(expense.id())).isEmpty();
         }
 
         @Test
         @DisplayName("should return false when deleting non-existent expense")
         void shouldReturnFalseWhenDeletingNonExistentExpense() {
-            boolean deleted = dataStore.deleteExpense(UUID.randomUUID());
+            boolean deleted = expenseRepository.delete(UUID.randomUUID());
 
             assertThat(deleted).isFalse();
         }
@@ -225,14 +232,13 @@ class SqliteDataStoreTest {
         @DisplayName("should find expenses by business ID")
         void shouldFindExpensesByBusinessId() {
             UUID otherBusinessId = UUID.randomUUID();
-            dataStore.ensureBusinessExists(otherBusinessId);
 
             Expense expense1 = createTestExpense(testBusinessId);
             Expense expense2 = createTestExpense(otherBusinessId);
-            dataStore.saveExpense(expense1);
-            dataStore.saveExpense(expense2);
+            expenseRepository.save(expense1);
+            new SqliteExpenseRepository(otherBusinessId).save(expense2);
 
-            List<Expense> found = dataStore.findExpensesByBusinessId(testBusinessId);
+            List<Expense> found = expenseRepository.findAll();
 
             assertThat(found).hasSize(1);
             assertThat(found.get(0).businessId()).isEqualTo(testBusinessId);
@@ -248,11 +254,11 @@ class SqliteDataStoreTest {
             Expense beforeRange = createTestExpenseWithDate(testBusinessId, LocalDate.of(2024, 3, 1));
             Expense afterRange = createTestExpenseWithDate(testBusinessId, LocalDate.of(2025, 5, 1));
 
-            dataStore.saveExpense(inRange);
-            dataStore.saveExpense(beforeRange);
-            dataStore.saveExpense(afterRange);
+            expenseRepository.save(inRange);
+            expenseRepository.save(beforeRange);
+            expenseRepository.save(afterRange);
 
-            List<Expense> found = dataStore.findExpensesByDateRange(testBusinessId, startDate, endDate);
+            List<Expense> found = expenseRepository.findByDateRange(startDate, endDate);
 
             assertThat(found).hasSize(1);
             assertThat(found.get(0).id()).isEqualTo(inRange.id());
@@ -262,9 +268,9 @@ class SqliteDataStoreTest {
         @DisplayName("should preserve BigDecimal precision")
         void shouldPreserveBigDecimalPrecision() {
             Expense expense = createTestExpense(testBusinessId, "Precision test", new BigDecimal("12345.67"));
-            dataStore.saveExpense(expense);
+            expenseRepository.save(expense);
 
-            Optional<Expense> found = dataStore.findExpenseById(expense.id());
+            Optional<Expense> found = expenseRepository.findById(expense.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().amount()).isEqualByComparingTo(new BigDecimal("12345.67"));
@@ -446,6 +452,13 @@ class SqliteDataStoreTest {
     @DisplayName("Transaction Support")
     class TransactionSupport {
 
+        private SqliteExpenseRepository expenseRepository;
+
+        @BeforeEach
+        void setUpExpenseRepository() {
+            expenseRepository = new SqliteExpenseRepository(testBusinessId);
+        }
+
         @Test
         @DisplayName("should rollback on error within transaction")
         void shouldRollbackOnErrorWithinTransaction() {
@@ -453,12 +466,12 @@ class SqliteDataStoreTest {
 
             // This should fail and rollback
             boolean success = dataStore.executeInTransaction(() -> {
-                dataStore.saveExpense(validExpense);
+                expenseRepository.save(validExpense);
                 throw new RuntimeException("Simulated error");
             });
 
             assertThat(success).isFalse();
-            assertThat(dataStore.countExpenses()).isZero();
+            assertThat(expenseRepository.count()).isZero();
         }
 
         @Test
@@ -467,11 +480,11 @@ class SqliteDataStoreTest {
             Expense expense = createTestExpense(testBusinessId);
 
             boolean success = dataStore.executeInTransaction(() -> {
-                dataStore.saveExpense(expense);
+                expenseRepository.save(expense);
             });
 
             assertThat(success).isTrue();
-            assertThat(dataStore.countExpenses()).isEqualTo(1);
+            assertThat(expenseRepository.count()).isEqualTo(1);
         }
     }
 
@@ -480,10 +493,12 @@ class SqliteDataStoreTest {
     class DataIntegrity {
 
         private SqliteIncomeRepository incomeRepository;
+        private SqliteExpenseRepository expenseRepository;
 
         @BeforeEach
-        void setUpIncomeRepository() {
+        void setUpRepositories() {
             incomeRepository = new SqliteIncomeRepository(testBusinessId);
+            expenseRepository = new SqliteExpenseRepository(testBusinessId);
         }
 
         @Test
@@ -504,9 +519,9 @@ class SqliteDataStoreTest {
                     null,
                     null
             );
-            dataStore.saveExpense(expense);
+            expenseRepository.save(expense);
 
-            Optional<Expense> found = dataStore.findExpenseById(expense.id());
+            Optional<Expense> found = expenseRepository.findById(expense.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().description()).isEqualTo(specialDesc);
@@ -554,9 +569,9 @@ class SqliteDataStoreTest {
                     null,  // invoiceNumber
                     null
             );
-            dataStore.saveExpense(expense);
+            expenseRepository.save(expense);
 
-            Optional<Expense> found = dataStore.findExpenseById(expense.id());
+            Optional<Expense> found = expenseRepository.findById(expense.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().receiptPath()).isNull();
@@ -947,10 +962,12 @@ class SqliteDataStoreTest {
     class AggregationQueries {
 
         private SqliteIncomeRepository incomeRepository;
+        private SqliteExpenseRepository expenseRepository;
 
         @BeforeEach
-        void setUpIncomeRepository() {
+        void setUpRepositories() {
             incomeRepository = new SqliteIncomeRepository(testBusinessId);
+            expenseRepository = new SqliteExpenseRepository(testBusinessId);
         }
 
         @Test
@@ -959,11 +976,11 @@ class SqliteDataStoreTest {
             LocalDate startDate = LocalDate.of(2024, 4, 6);
             LocalDate endDate = LocalDate.of(2025, 4, 5);
 
-            dataStore.saveExpense(createTestExpenseWithDate(testBusinessId, LocalDate.of(2024, 6, 1), new BigDecimal("100.00")));
-            dataStore.saveExpense(createTestExpenseWithDate(testBusinessId, LocalDate.of(2024, 7, 1), new BigDecimal("200.00")));
-            dataStore.saveExpense(createTestExpenseWithDate(testBusinessId, LocalDate.of(2023, 1, 1), new BigDecimal("500.00"))); // Out of range
+            expenseRepository.save(createTestExpenseWithDate(testBusinessId, LocalDate.of(2024, 6, 1), new BigDecimal("100.00")));
+            expenseRepository.save(createTestExpenseWithDate(testBusinessId, LocalDate.of(2024, 7, 1), new BigDecimal("200.00")));
+            expenseRepository.save(createTestExpenseWithDate(testBusinessId, LocalDate.of(2023, 1, 1), new BigDecimal("500.00"))); // Out of range
 
-            BigDecimal total = dataStore.calculateTotalExpenses(testBusinessId, startDate, endDate);
+            BigDecimal total = expenseRepository.getTotalForDateRange(startDate, endDate);
 
             assertThat(total).isEqualByComparingTo(new BigDecimal("300.00"));
         }
@@ -987,10 +1004,10 @@ class SqliteDataStoreTest {
                     null
             );
 
-            dataStore.saveExpense(allowable);
-            dataStore.saveExpense(nonAllowable);
+            expenseRepository.save(allowable);
+            expenseRepository.save(nonAllowable);
 
-            BigDecimal allowableTotal = dataStore.calculateAllowableExpenses(testBusinessId, startDate, endDate);
+            BigDecimal allowableTotal = expenseRepository.getAllowableTotalForDateRange(startDate, endDate);
 
             assertThat(allowableTotal).isEqualByComparingTo(new BigDecimal("100.00"));
         }

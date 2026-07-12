@@ -1,6 +1,5 @@
 package uk.selfemploy.ui.service;
 
-import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
@@ -20,7 +19,6 @@ import java.sql.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -872,102 +870,6 @@ public final class SqliteDataStore {
         return "sandbox".equals(loadHmrcEnvironment());
     }
 
-    // === Expense Operations ===
-
-    /**
-     * Saves an expense to the database.
-     */
-    public synchronized void saveExpense(Expense expense) {
-        String sql = """
-            INSERT OR REPLACE INTO expenses
-            (id, business_id, date, amount, description, category, receipt_path, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, expense.id().toString());
-            pstmt.setString(2, expense.businessId().toString());
-            pstmt.setString(3, expense.date().toString());
-            pstmt.setString(4, expense.amount().toPlainString());
-            pstmt.setString(5, expense.description());
-            pstmt.setString(6, expense.category().name());
-            pstmt.setString(7, expense.receiptPath());
-            pstmt.setString(8, expense.notes());
-            pstmt.executeUpdate();
-            LOG.fine("Saved expense: " + expense.id());
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save expense: " + expense.id(), e);
-        }
-    }
-
-    /**
-     * Loads all expenses from the database.
-     */
-    public synchronized List<Expense> loadAllExpenses() {
-        List<Expense> expenses = new ArrayList<>();
-        String sql = "SELECT * FROM expenses ORDER BY date DESC";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                expenses.add(mapExpense(rs));
-            }
-            LOG.info("Loaded " + expenses.size() + " expenses from database");
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to load expenses", e);
-        }
-        return expenses;
-    }
-
-    /**
-     * Finds an expense by ID.
-     */
-    public synchronized Optional<Expense> findExpenseById(UUID id) {
-        String sql = "SELECT * FROM expenses WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapExpense(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find expense: " + id, e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Deletes an expense by ID.
-     */
-    public synchronized boolean deleteExpense(UUID id) {
-        String sql = "DELETE FROM expenses WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            int affected = pstmt.executeUpdate();
-            return affected > 0;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to delete expense: " + id, e);
-            return false;
-        }
-    }
-
-    private Expense mapExpense(ResultSet rs) throws SQLException {
-        return new Expense(
-            UUID.fromString(rs.getString("id")),
-            UUID.fromString(rs.getString("business_id")),
-            LocalDate.parse(rs.getString("date")),
-            new BigDecimal(rs.getString("amount")),
-            rs.getString("description"),
-            ExpenseCategory.valueOf(rs.getString("category")),
-            rs.getString("receipt_path"),
-            rs.getString("notes"),
-            null, // bankTransactionRef - not stored in SQLite yet
-            null, // supplierRef - not stored in SQLite yet
-            null, // invoiceNumber - not stored in SQLite yet
-            null  // bankTransactionId - not stored in SQLite yet
-        );
-    }
-
-    // === Income Operations ===
-
     // === Business Operations ===
 
     /**
@@ -982,103 +884,6 @@ public final class SqliteDataStore {
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to ensure business exists: " + businessId, e);
         }
-    }
-
-    // === Query Methods ===
-
-    /**
-     * Finds expenses by business ID.
-     */
-    public synchronized List<Expense> findExpensesByBusinessId(UUID businessId) {
-        List<Expense> expenses = new ArrayList<>();
-        String sql = "SELECT * FROM expenses WHERE business_id = ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                expenses.add(mapExpense(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find expenses by business ID", e);
-        }
-        return expenses;
-    }
-
-    /**
-     * Finds expenses by date range for a business.
-     */
-    public synchronized List<Expense> findExpensesByDateRange(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        List<Expense> expenses = new ArrayList<>();
-        String sql = "SELECT * FROM expenses WHERE business_id = ? AND date >= ? AND date <= ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                expenses.add(mapExpense(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find expenses by date range", e);
-        }
-        return expenses;
-    }
-
-    // === Aggregation Methods ===
-
-    /**
-     * Calculates total expenses for a business within a date range.
-     */
-    public synchronized BigDecimal calculateTotalExpenses(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        String sql = "SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM expenses WHERE business_id = ? AND date >= ? AND date <= ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to calculate total expenses", e);
-        }
-        return BigDecimal.ZERO;
-    }
-
-    /**
-     * Calculates allowable expenses for a business within a date range.
-     */
-    public synchronized BigDecimal calculateAllowableExpenses(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        // Get allowable categories
-        List<String> allowableCategories = Arrays.stream(ExpenseCategory.values())
-                .filter(ExpenseCategory::isAllowable)
-                .map(Enum::name)
-                .toList();
-
-        if (allowableCategories.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        String placeholders = String.join(",", allowableCategories.stream().map(c -> "?").toList());
-        String sql = "SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM expenses " +
-                "WHERE business_id = ? AND date >= ? AND date <= ? AND category IN (" + placeholders + ")";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            int idx = 4;
-            for (String category : allowableCategories) {
-                pstmt.setString(idx++, category);
-            }
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
-        }
-        return BigDecimal.ZERO;
     }
 
     // === Transaction Support ===
@@ -1182,22 +987,6 @@ public final class SqliteDataStore {
     synchronized Connection connection() {
         return connection;
     }
-
-    /**
-     * Returns the count of expenses.
-     */
-    public synchronized long countExpenses() {
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM expenses")) {
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count expenses", e);
-        }
-        return 0;
-    }
-
 
     // === Bank Transaction Operations ===
 

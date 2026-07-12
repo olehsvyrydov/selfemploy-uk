@@ -3,205 +3,261 @@ package uk.selfemploy.ui.service;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.ui.service.sql.NamedSql;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * SQLite-backed expense repository.
- * All operations directly query the database - no in-memory caching.
- * This ensures data is never lost and is always consistent.
+ * SQLite JDBC adapter for {@link ExpenseRepository}.
+ *
+ * <p>Owns its own SQL (loaded from {@code /sql/expense.sql}) and its row mapper, running against
+ * the shared connection from {@link SqliteDataStore}. The expenses table DDL is handled by
+ * {@code SqliteDataStore}'s schema initialisation.</p>
  */
-public class SqliteExpenseRepository {
+public class SqliteExpenseRepository implements ExpenseRepository {
+
+    private static final Logger LOG = Logger.getLogger(SqliteExpenseRepository.class.getName());
+
+    private static final NamedSql SQL = NamedSql.load("/sql/expense.sql");
 
     private final SqliteDataStore dataStore;
     private final UUID businessId;
 
-    /**
-     * Creates a new repository for the given business.
-     *
-     * @param businessId The business ID for all operations
-     */
     public SqliteExpenseRepository(UUID businessId) {
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
         this.businessId = businessId;
         this.dataStore = SqliteDataStore.getInstance();
-        // Ensure business exists for FK constraints
         dataStore.ensureBusinessExists(businessId);
     }
 
-    /**
-     * Saves an expense to the database.
-     *
-     * @param expense The expense to save
-     * @return The saved expense
-     */
+    @Override
     public Expense save(Expense expense) {
         if (expense == null) {
             throw new IllegalArgumentException("Expense cannot be null");
         }
-        dataStore.saveExpense(expense);
+        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(SQL.get("insertExpense"))) {
+            pstmt.setString(1, expense.id().toString());
+            pstmt.setString(2, expense.businessId().toString());
+            pstmt.setString(3, expense.date().toString());
+            pstmt.setString(4, expense.amount().toPlainString());
+            pstmt.setString(5, expense.description());
+            pstmt.setString(6, expense.category().name());
+            pstmt.setString(7, expense.receiptPath());
+            pstmt.setString(8, expense.notes());
+            pstmt.executeUpdate();
+            LOG.fine("Saved expense: " + expense.id());
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to save expense: " + expense.id(), e);
+            throw new DataStoreException("Failed to save expense", e);
+        }
         return expense;
     }
 
-    /**
-     * Finds an expense by ID.
-     *
-     * @param id The expense ID
-     * @return The expense if found
-     */
+    @Override
     public Optional<Expense> findById(UUID id) {
         if (id == null) {
             throw new IllegalArgumentException("Expense ID cannot be null");
         }
-        return dataStore.findExpenseById(id);
+        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(SQL.get("findExpenseById"))) {
+            pstmt.setString(1, id.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapExpense(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to find expense: " + id, e);
+        }
+        return Optional.empty();
     }
 
-    /**
-     * Finds all expenses for this business.
-     *
-     * @return All expenses sorted by date descending
-     */
+    @Override
     public List<Expense> findAll() {
-        return dataStore.findExpensesByBusinessId(businessId);
+        List<Expense> expenses = new ArrayList<>();
+        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(SQL.get("findExpensesByBusiness"))) {
+            pstmt.setString(1, businessId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                expenses.add(mapExpense(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find expenses by business ID", e);
+        }
+        return expenses;
     }
 
-    /**
-     * Finds expenses by tax year.
-     *
-     * @param taxYear The tax year to filter by
-     * @return Expenses within the tax year
-     */
+    @Override
     public List<Expense> findByTaxYear(TaxYear taxYear) {
         if (taxYear == null) {
             throw new IllegalArgumentException("Tax year cannot be null");
         }
-        return dataStore.findExpensesByDateRange(businessId, taxYear.startDate(), taxYear.endDate());
+        return findByDateRange(taxYear.startDate(), taxYear.endDate());
     }
 
-    /**
-     * Finds expenses by date range.
-     * SE-10G-003: Used by findByQuarter() and getTotalsByCategoryByQuarter().
-     *
-     * @param startDate The start date (inclusive)
-     * @param endDate   The end date (inclusive)
-     * @return Expenses within the date range
-     */
+    @Override
     public List<Expense> findByDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }
-        return dataStore.findExpensesByDateRange(businessId, startDate, endDate);
+        List<Expense> expenses = new ArrayList<>();
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("findExpensesByBusinessAndDateRange"))) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setString(2, startDate.toString());
+            pstmt.setString(3, endDate.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                expenses.add(mapExpense(rs));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to find expenses by date range", e);
+        }
+        return expenses;
     }
 
-    /**
-     * Finds expenses by category.
-     *
-     * @param category The category to filter by
-     * @return Expenses with the given category
-     */
+    @Override
     public List<Expense> findByCategory(ExpenseCategory category) {
         if (category == null) {
             throw new IllegalArgumentException("Category cannot be null");
         }
-        return dataStore.findExpensesByBusinessId(businessId).stream()
-                .filter(e -> e.category() == category)
-                .collect(Collectors.toList());
+        return findAll().stream()
+            .filter(e -> e.category() == category)
+            .collect(Collectors.toList());
     }
 
-    /**
-     * Gets the total expenses for a tax year.
-     *
-     * @param taxYear The tax year
-     * @return Total expenses amount
-     */
+    @Override
     public BigDecimal getTotalByTaxYear(TaxYear taxYear) {
         if (taxYear == null) {
             throw new IllegalArgumentException("Tax year cannot be null");
         }
-        return dataStore.calculateTotalExpenses(businessId, taxYear.startDate(), taxYear.endDate());
+        return getTotalForDateRange(taxYear.startDate(), taxYear.endDate());
     }
 
-    /**
-     * Gets the allowable (deductible) expenses for a tax year.
-     *
-     * @param taxYear The tax year
-     * @return Total allowable expenses amount
-     */
+    @Override
+    public BigDecimal getTotalForDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date cannot be null");
+        }
+        try (PreparedStatement pstmt =
+                 dataStore.connection().prepareStatement(SQL.get("sumExpensesByBusinessAndDateRange"))) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setString(2, startDate.toString());
+            pstmt.setString(3, endDate.toString());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return new BigDecimal(rs.getString(1));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to calculate total expenses", e);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    @Override
     public BigDecimal getAllowableTotalByTaxYear(TaxYear taxYear) {
         if (taxYear == null) {
             throw new IllegalArgumentException("Tax year cannot be null");
         }
-        return dataStore.calculateAllowableExpenses(businessId, taxYear.startDate(), taxYear.endDate());
+        return getAllowableTotalForDateRange(taxYear.startDate(), taxYear.endDate());
     }
 
-    /**
-     * Gets the allowable (deductible) expenses for a specific date range.
-     * Sprint 10D: SE-10D-003 - Cumulative Totals Display
-     *
-     * @param startDate The start date (inclusive)
-     * @param endDate   The end date (inclusive)
-     * @return Total allowable expenses amount for the date range
-     */
+    @Override
     public BigDecimal getAllowableTotalForDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }
-        return dataStore.calculateAllowableExpenses(businessId, startDate, endDate);
+        List<String> allowableCategories = Arrays.stream(ExpenseCategory.values())
+            .filter(ExpenseCategory::isAllowable)
+            .map(Enum::name)
+            .toList();
+        if (allowableCategories.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        String placeholders = allowableCategories.stream().map(c -> "?").collect(Collectors.joining(","));
+        String sql = String.format(SQL.get("sumAllowableExpensesByBusinessAndDateRange"), placeholders);
+        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(sql)) {
+            pstmt.setString(1, businessId.toString());
+            pstmt.setString(2, startDate.toString());
+            pstmt.setString(3, endDate.toString());
+            int idx = 4;
+            for (String category : allowableCategories) {
+                pstmt.setString(idx++, category);
+            }
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return new BigDecimal(rs.getString(1));
+            }
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
+        }
+        return BigDecimal.ZERO;
     }
 
-    /**
-     * Gets expense totals grouped by category for a tax year.
-     *
-     * @param taxYear The tax year
-     * @return Map of category to total amount
-     */
+    @Override
     public Map<ExpenseCategory, BigDecimal> getTotalsByCategoryForTaxYear(TaxYear taxYear) {
         if (taxYear == null) {
             throw new IllegalArgumentException("Tax year cannot be null");
         }
         return findByTaxYear(taxYear).stream()
-                .collect(Collectors.groupingBy(
-                        Expense::category,
-                        Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
-                ));
+            .collect(Collectors.groupingBy(
+                Expense::category,
+                Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
+            ));
     }
 
-    /**
-     * Deletes an expense by ID.
-     *
-     * @param id The expense ID
-     * @return true if deleted, false if not found
-     */
+    @Override
     public boolean delete(UUID id) {
         if (id == null) {
             throw new IllegalArgumentException("Expense ID cannot be null");
         }
-        return dataStore.deleteExpense(id);
+        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(SQL.get("deleteExpenseById"))) {
+            pstmt.setString(1, id.toString());
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Failed to delete expense: " + id, e);
+            return false;
+        }
     }
 
-    /**
-     * Returns the count of all expenses for this business.
-     *
-     * @return The expense count
-     */
+    @Override
     public long count() {
-        return dataStore.findExpensesByBusinessId(businessId).size();
+        return findAll().size();
     }
 
-    /**
-     * Returns the business ID for this repository.
-     *
-     * @return The business ID
-     */
+    @Override
     public UUID getBusinessId() {
         return businessId;
+    }
+
+    private Expense mapExpense(ResultSet rs) throws SQLException {
+        return new Expense(
+            UUID.fromString(rs.getString("id")),
+            UUID.fromString(rs.getString("business_id")),
+            LocalDate.parse(rs.getString("date")),
+            new BigDecimal(rs.getString("amount")),
+            rs.getString("description"),
+            ExpenseCategory.valueOf(rs.getString("category")),
+            rs.getString("receipt_path"),
+            rs.getString("notes"),
+            null, // bankTransactionRef - not stored in SQLite yet
+            null, // supplierRef - not stored in SQLite yet
+            null, // invoiceNumber - not stored in SQLite yet
+            null  // bankTransactionId - not stored in SQLite yet
+        );
     }
 }
