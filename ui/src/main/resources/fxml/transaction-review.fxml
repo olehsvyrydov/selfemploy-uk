@@ -135,7 +135,7 @@
               alignment="CENTER" spacing="16" managed="false" visible="false">
             <padding><Insets topRightBottomLeft="60"/></padding>
             <Label text="No Imported Transactions" styleClass="empty-state-title"/>
-            <Label text="Import a bank statement CSV from the Income page to start reviewing transactions."
+            <Label text="Import a bank statement CSV from the Income or Expenses page to start reviewing transactions."
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
         </VBox>
 

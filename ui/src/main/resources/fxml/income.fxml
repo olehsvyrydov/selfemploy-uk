@@ -108,6 +108,10 @@
             <Label text="No Income Recorded" styleClass="empty-state-title"/>
             <Label text="Start tracking your earnings by adding your first income entry."
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
+            <HBox alignment="CENTER" spacing="12">
+                <Button text="+ Add Income" styleClass="button-success" onAction="#handleAddIncome"/>
+                <Button text="Import CSV" styleClass="button-secondary" onAction="#handleImportBankStatement"/>
+            </HBox>
         </VBox>
 
     </VBox>
