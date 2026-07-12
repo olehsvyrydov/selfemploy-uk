@@ -926,15 +926,16 @@ public class BankImportWizardController implements Initializable {
                 javafx.application.Platform.runLater(() -> {
                     viewModel.setImporting(false);
 
-                    if (result.hasErrors()) {
-                        importResultMessage = String.format(
-                            "Imported %d transaction(s). %d failed.",
-                            result.importedCount(), result.errorCount());
-                    } else {
-                        importResultMessage = String.format(
-                            "Successfully imported %d transaction(s).",
-                            result.importedCount());
+                    StringBuilder message = new StringBuilder(String.format(
+                        "%d transaction(s) ready for review.", result.importedCount()));
+                    if (result.skippedCount() > 0) {
+                        message.append(String.format(
+                            " %d already-imported duplicate(s) skipped.", result.skippedCount()));
                     }
+                    if (result.hasErrors()) {
+                        message.append(String.format(" %d failed.", result.errorCount()));
+                    }
+                    importResultMessage = message.toString();
 
                     showSuccessToast(importResultMessage);
 

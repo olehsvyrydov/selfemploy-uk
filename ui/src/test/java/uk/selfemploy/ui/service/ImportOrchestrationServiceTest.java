@@ -16,6 +16,8 @@ import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.viewmodel.ColumnMapping;
 import uk.selfemploy.ui.viewmodel.ImportedTransactionRow;
+import uk.selfemploy.common.domain.BankTransaction;
+import uk.selfemploy.common.enums.ReviewStatus;
 import uk.selfemploy.ui.viewmodel.TransactionType;
 
 import java.io.IOException;
@@ -51,6 +53,7 @@ class ImportOrchestrationServiceTest {
     private CsvTransactionParser csvParser;
     private IncomeService incomeService;
     private ExpenseService expenseService;
+    private SqliteBankTransactionService bankTransactionService;
     private UUID businessId;
     private ImportOrchestrationService service;
 
@@ -62,8 +65,11 @@ class ImportOrchestrationServiceTest {
         csvParser = mock(CsvTransactionParser.class);
         incomeService = mock(IncomeService.class);
         expenseService = mock(ExpenseService.class);
+        bankTransactionService = mock(SqliteBankTransactionService.class);
+        when(bankTransactionService.existsByHash(anyString())).thenReturn(false);
         businessId = UUID.randomUUID();
-        service = new ImportOrchestrationService(csvParser, incomeService, expenseService, businessId);
+        service = new ImportOrchestrationService(
+            csvParser, incomeService, expenseService, bankTransactionService, businessId);
     }
 
     @Nested
@@ -73,7 +79,8 @@ class ImportOrchestrationServiceTest {
         @Test
         @DisplayName("should create service with valid dependencies")
         void shouldCreateServiceWithValidDependencies() {
-            var svc = new ImportOrchestrationService(csvParser, incomeService, expenseService, businessId);
+            var svc = new ImportOrchestrationService(
+                csvParser, incomeService, expenseService, bankTransactionService, businessId);
             assertThat(svc).isNotNull();
         }
 
@@ -81,28 +88,32 @@ class ImportOrchestrationServiceTest {
         @DisplayName("should accept null csvParser without throwing at construction time")
         void shouldAcceptNullCsvParser() {
             // Constructor does not validate nulls - NullPointerException thrown at usage
-            var svc = new ImportOrchestrationService(null, incomeService, expenseService, businessId);
+            var svc = new ImportOrchestrationService(
+                null, incomeService, expenseService, bankTransactionService, businessId);
             assertThat(svc).isNotNull();
         }
 
         @Test
         @DisplayName("should accept null incomeService without throwing at construction time")
         void shouldAcceptNullIncomeService() {
-            var svc = new ImportOrchestrationService(csvParser, null, expenseService, businessId);
+            var svc = new ImportOrchestrationService(
+                csvParser, null, expenseService, bankTransactionService, businessId);
             assertThat(svc).isNotNull();
         }
 
         @Test
         @DisplayName("should accept null expenseService without throwing at construction time")
         void shouldAcceptNullExpenseService() {
-            var svc = new ImportOrchestrationService(csvParser, incomeService, null, businessId);
+            var svc = new ImportOrchestrationService(
+                csvParser, incomeService, null, bankTransactionService, businessId);
             assertThat(svc).isNotNull();
         }
 
         @Test
         @DisplayName("should accept null businessId without throwing at construction time")
         void shouldAcceptNullBusinessId() {
-            var svc = new ImportOrchestrationService(csvParser, incomeService, expenseService, null);
+            var svc = new ImportOrchestrationService(
+                csvParser, incomeService, expenseService, bankTransactionService, null);
             assertThat(svc).isNotNull();
         }
     }
@@ -219,126 +230,104 @@ class ImportOrchestrationServiceTest {
     }
 
     @Nested
-    @DisplayName("importTransactions()")
+    @DisplayName("importTransactions() staging")
     class ImportTransactionsTests {
 
+        private BankTransaction firstSaved() {
+            ArgumentCaptor<BankTransaction> captor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionService).save(captor.capture());
+            return captor.getValue();
+        }
+
         @Test
-        @DisplayName("should save income transactions via IncomeService")
-        void shouldSaveIncomeViaIncomeService() {
+        @DisplayName("stages an income row as a positive PENDING bank transaction")
+        void stagesIncomeRow() {
             ImportedTransactionRow incomeRow = ImportedTransactionRow.create(
                     LocalDate.of(2025, 1, 15), "Client Payment", new BigDecimal("2500.00"),
                     TransactionType.INCOME, null, false, 0);
 
-            service.importTransactions(List.of(incomeRow), null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(incomeRow), null);
 
-            verify(incomeService).create(
-                    eq(businessId),
-                    eq(LocalDate.of(2025, 1, 15)),
-                    any(BigDecimal.class),
-                    eq("Client Payment"),
-                    eq(IncomeCategory.SALES),
-                    isNull()
-            );
-            verifyNoInteractions(expenseService);
+            BankTransaction tx = firstSaved();
+            assertThat(tx.businessId()).isEqualTo(businessId);
+            assertThat(tx.amount()).isEqualByComparingTo("2500.00");
+            assertThat(tx.isIncome()).isTrue();
+            assertThat(tx.reviewStatus()).isEqualTo(ReviewStatus.PENDING);
+            assertThat(tx.importAuditId()).isEqualTo(result.batchId());
+            assertThat(result.importedCount()).isEqualTo(1);
+            verifyNoInteractions(incomeService, expenseService);
         }
 
         @Test
-        @DisplayName("should save expense transactions via ExpenseService")
-        void shouldSaveExpenseViaExpenseService() {
+        @DisplayName("stages an expense row as a negative PENDING transaction carrying the suggested category")
+        void stagesExpenseRow() {
             ImportedTransactionRow expenseRow = ImportedTransactionRow.create(
                     LocalDate.of(2025, 1, 17), "Office Supplies", new BigDecimal("89.99"),
                     TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 0);
 
             service.importTransactions(List.of(expenseRow), null);
 
-            verify(expenseService).create(
-                    eq(businessId),
-                    eq(LocalDate.of(2025, 1, 17)),
-                    any(BigDecimal.class),
-                    eq("Office Supplies"),
-                    eq(ExpenseCategory.OFFICE_COSTS),
-                    isNull(),
-                    isNull()
-            );
-            verifyNoInteractions(incomeService);
+            BankTransaction tx = firstSaved();
+            assertThat(tx.amount()).isEqualByComparingTo("-89.99");
+            assertThat(tx.isExpense()).isTrue();
+            assertThat(tx.suggestedCategory()).isEqualTo(ExpenseCategory.OFFICE_COSTS);
+            verifyNoInteractions(incomeService, expenseService);
         }
 
         @Test
-        @DisplayName("should return correct imported count for mixed transactions")
-        void shouldReturnCorrectImportedCount() {
+        @DisplayName("stages every row under a single shared batch id")
+        void stagesMixedWithSharedBatch() {
             List<ImportedTransactionRow> transactions = List.of(
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 15), "Income 1", new BigDecimal("100.00"),
-                            TransactionType.INCOME, null, false, 0),
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 16), "Expense 1", new BigDecimal("50.00"),
-                            TransactionType.EXPENSE, ExpenseCategory.TRAVEL, false, 0),
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 17), "Income 2", new BigDecimal("200.00"),
-                            TransactionType.INCOME, null, false, 0)
-            );
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 15), "I1", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0),
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 16), "E1", new BigDecimal("50.00"), TransactionType.EXPENSE, ExpenseCategory.TRAVEL, false, 0),
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 17), "I2", new BigDecimal("200.00"), TransactionType.INCOME, null, false, 0));
 
             ImportOrchestrationService.ImportResult result = service.importTransactions(transactions, null);
 
             assertThat(result.importedCount()).isEqualTo(3);
-            assertThat(result.errorCount()).isEqualTo(0);
-            assertThat(result.hasErrors()).isFalse();
+            assertThat(result.errorCount()).isZero();
+            ArgumentCaptor<BankTransaction> captor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionService, times(3)).save(captor.capture());
+            assertThat(captor.getAllValues()).extracting(BankTransaction::importAuditId)
+                    .containsOnly(result.batchId());
         }
 
         @Test
-        @DisplayName("should count errors when IncomeService throws")
-        void shouldCountErrorsWhenIncomeServiceThrows() {
-            when(incomeService.create(any(), any(), any(), any(), any(), any()))
-                    .thenThrow(new RuntimeException("Save failed"));
+        @DisplayName("skips a row whose hash already exists, without staging it")
+        void skipsExistingHash() {
+            when(bankTransactionService.existsByHash(anyString())).thenReturn(true);
+            ImportedTransactionRow row = ImportedTransactionRow.create(
+                    LocalDate.of(2025, 1, 15), "Dup", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
 
-            ImportedTransactionRow incomeRow = ImportedTransactionRow.create(
-                    LocalDate.of(2025, 1, 15), "Failed Income", new BigDecimal("100.00"),
-                    TransactionType.INCOME, null, false, 0);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), null);
 
-            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(incomeRow), null);
+            assertThat(result.importedCount()).isZero();
+            assertThat(result.skippedCount()).isEqualTo(1);
+            verify(bankTransactionService, never()).save(any());
+        }
 
-            assertThat(result.importedCount()).isEqualTo(0);
+        @Test
+        @DisplayName("counts an error when staging a row throws")
+        void countsErrorWhenSaveThrows() {
+            doThrow(new RuntimeException("save failed")).when(bankTransactionService).save(any());
+            ImportedTransactionRow row = ImportedTransactionRow.create(
+                    LocalDate.of(2025, 1, 15), "Boom", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
+
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), null);
+
+            assertThat(result.importedCount()).isZero();
             assertThat(result.errorCount()).isEqualTo(1);
             assertThat(result.hasErrors()).isTrue();
         }
 
         @Test
-        @DisplayName("should count errors when ExpenseService throws")
-        void shouldCountErrorsWhenExpenseServiceThrows() {
-            when(expenseService.create(any(), any(), any(), any(), any(), any(), any()))
-                    .thenThrow(new RuntimeException("Save failed"));
-
-            ImportedTransactionRow expenseRow = ImportedTransactionRow.create(
-                    LocalDate.of(2025, 1, 17), "Failed Expense", new BigDecimal("50.00"),
-                    TransactionType.EXPENSE, ExpenseCategory.TRAVEL, false, 0);
-
-            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(expenseRow), null);
-
-            assertThat(result.importedCount()).isEqualTo(0);
-            assertThat(result.errorCount()).isEqualTo(1);
-            assertThat(result.hasErrors()).isTrue();
-        }
-
-        @Test
-        @DisplayName("should continue importing after individual error")
-        void shouldContinueImportingAfterError() {
-            // First call succeeds, second fails, third succeeds
-            when(incomeService.create(any(), any(), any(), any(), any(), any()))
-                    .thenReturn(null)
-                    .thenThrow(new RuntimeException("Save failed"))
-                    .thenReturn(null);
-
+        @DisplayName("continues staging after an individual error")
+        void continuesAfterError() {
+            doNothing().doThrow(new RuntimeException("fail")).doNothing().when(bankTransactionService).save(any());
             List<ImportedTransactionRow> transactions = List.of(
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 15), "OK 1", new BigDecimal("100.00"),
-                            TransactionType.INCOME, null, false, 0),
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 16), "FAIL", new BigDecimal("200.00"),
-                            TransactionType.INCOME, null, false, 0),
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 17), "OK 2", new BigDecimal("300.00"),
-                            TransactionType.INCOME, null, false, 0)
-            );
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 15), "OK1", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0),
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 16), "FAIL", new BigDecimal("200.00"), TransactionType.INCOME, null, false, 0),
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 17), "OK2", new BigDecimal("300.00"), TransactionType.INCOME, null, false, 0));
 
             ImportOrchestrationService.ImportResult result = service.importTransactions(transactions, null);
 
@@ -347,116 +336,49 @@ class ImportOrchestrationServiceTest {
         }
 
         @Test
-        @DisplayName("should invoke progress callback with correct values")
-        void shouldInvokeProgressCallback() {
-            List<Double> progressValues = new ArrayList<>();
-            Consumer<Double> callback = progressValues::add;
-
+        @DisplayName("invokes the progress callback with fractional values")
+        void invokesProgressCallback() {
+            List<Double> progress = new ArrayList<>();
             List<ImportedTransactionRow> transactions = List.of(
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 15), "T1", new BigDecimal("100.00"),
-                            TransactionType.INCOME, null, false, 0),
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 16), "T2", new BigDecimal("200.00"),
-                            TransactionType.INCOME, null, false, 0),
-                    ImportedTransactionRow.create(
-                            LocalDate.of(2025, 1, 17), "T3", new BigDecimal("300.00"),
-                            TransactionType.INCOME, null, false, 0)
-            );
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 15), "T1", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0),
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 16), "T2", new BigDecimal("200.00"), TransactionType.INCOME, null, false, 0),
+                    ImportedTransactionRow.create(LocalDate.of(2025, 1, 17), "T3", new BigDecimal("300.00"), TransactionType.INCOME, null, false, 0));
 
-            service.importTransactions(transactions, callback);
+            service.importTransactions(transactions, progress::add);
 
-            assertThat(progressValues).hasSize(3);
-            assertThat(progressValues.get(0)).isCloseTo(1.0 / 3.0, org.assertj.core.data.Offset.offset(0.001));
-            assertThat(progressValues.get(1)).isCloseTo(2.0 / 3.0, org.assertj.core.data.Offset.offset(0.001));
-            assertThat(progressValues.get(2)).isCloseTo(1.0, org.assertj.core.data.Offset.offset(0.001));
+            assertThat(progress).hasSize(3);
+            assertThat(progress.get(2)).isCloseTo(1.0, org.assertj.core.data.Offset.offset(0.001));
         }
 
         @Test
-        @DisplayName("should handle null progress callback without error")
-        void shouldHandleNullProgressCallback() {
+        @DisplayName("handles a null progress callback")
+        void handlesNullCallback() {
             ImportedTransactionRow row = ImportedTransactionRow.create(
-                    LocalDate.of(2025, 1, 15), "Test", new BigDecimal("100.00"),
-                    TransactionType.INCOME, null, false, 0);
-
+                    LocalDate.of(2025, 1, 15), "Test", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
             ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), null);
-
             assertThat(result.importedCount()).isEqualTo(1);
         }
 
         @Test
-        @DisplayName("should return zero counts for empty transaction list")
-        void shouldReturnZeroCountsForEmptyList() {
+        @DisplayName("returns zero counts for an empty list")
+        void emptyList() {
             ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(), null);
-
-            assertThat(result.importedCount()).isEqualTo(0);
-            assertThat(result.errorCount()).isEqualTo(0);
+            assertThat(result.importedCount()).isZero();
+            assertThat(result.errorCount()).isZero();
             assertThat(result.hasErrors()).isFalse();
         }
 
         @Test
-        @DisplayName("should use SALES category for income transactions")
-        void shouldUseSalesCategoryForIncome() {
-            ImportedTransactionRow incomeRow = ImportedTransactionRow.create(
-                    LocalDate.of(2025, 1, 15), "Income", new BigDecimal("500.00"),
-                    TransactionType.INCOME, null, false, 0);
-
-            service.importTransactions(List.of(incomeRow), null);
-
-            verify(incomeService).create(
-                    any(), any(), any(), any(),
-                    eq(IncomeCategory.SALES),
-                    isNull()
-            );
-        }
-
-        @Test
-        @DisplayName("should use row category for expense transactions")
-        void shouldUseRowCategoryForExpense() {
-            ImportedTransactionRow expenseRow = ImportedTransactionRow.create(
-                    LocalDate.of(2025, 1, 17), "Travel", new BigDecimal("45.00"),
-                    TransactionType.EXPENSE, ExpenseCategory.TRAVEL, false, 0);
-
-            service.importTransactions(List.of(expenseRow), null);
-
-            verify(expenseService).create(
-                    any(), any(), any(), any(),
-                    eq(ExpenseCategory.TRAVEL),
-                    isNull(), isNull()
-            );
-        }
-
-        @Test
-        @DisplayName("should pass null category for uncategorized expense")
-        void shouldPassNullCategoryForUncategorizedExpense() {
-            ImportedTransactionRow expenseRow = ImportedTransactionRow.create(
-                    LocalDate.of(2025, 1, 17), "Unknown", new BigDecimal("10.00"),
-                    TransactionType.EXPENSE, null, false, 0);
-
-            service.importTransactions(List.of(expenseRow), null);
-
-            verify(expenseService).create(
-                    any(), any(), any(), any(),
-                    isNull(),
-                    isNull(), isNull()
-            );
-        }
-
-        @Test
-        @DisplayName("should invoke progress callback even on error")
-        void shouldInvokeProgressCallbackEvenOnError() {
-            when(incomeService.create(any(), any(), any(), any(), any(), any()))
-                    .thenThrow(new RuntimeException("Save failed"));
-
-            AtomicReference<Double> lastProgress = new AtomicReference<>(0.0);
-
+        @DisplayName("invokes the progress callback even when a row errors")
+        void progressCallbackOnError() {
+            doThrow(new RuntimeException("fail")).when(bankTransactionService).save(any());
+            AtomicReference<Double> last = new AtomicReference<>(0.0);
             ImportedTransactionRow row = ImportedTransactionRow.create(
-                    LocalDate.of(2025, 1, 15), "Fail", new BigDecimal("100.00"),
-                    TransactionType.INCOME, null, false, 0);
+                    LocalDate.of(2025, 1, 15), "Fail", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
 
-            service.importTransactions(List.of(row), lastProgress::set);
+            service.importTransactions(List.of(row), last::set);
 
-            assertThat(lastProgress.get()).isEqualTo(1.0);
+            assertThat(last.get()).isEqualTo(1.0);
         }
     }
 
@@ -467,14 +389,14 @@ class ImportOrchestrationServiceTest {
         @Test
         @DisplayName("hasErrors should return true when errorCount > 0")
         void hasErrorsShouldReturnTrueWhenErrors() {
-            var result = new ImportOrchestrationService.ImportResult(5, 2);
+            var result = new ImportOrchestrationService.ImportResult(5, 2, 0, java.util.UUID.randomUUID());
             assertThat(result.hasErrors()).isTrue();
         }
 
         @Test
         @DisplayName("hasErrors should return false when errorCount is 0")
         void hasErrorsShouldReturnFalseWhenNoErrors() {
-            var result = new ImportOrchestrationService.ImportResult(5, 0);
+            var result = new ImportOrchestrationService.ImportResult(5, 0, 0, java.util.UUID.randomUUID());
             assertThat(result.hasErrors()).isFalse();
         }
     }

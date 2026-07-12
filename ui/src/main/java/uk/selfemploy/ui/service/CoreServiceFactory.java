@@ -35,6 +35,7 @@ public final class CoreServiceFactory {
     private static UiQuarterlySubmissionService quarterlySubmissionService;
     private static SqliteBankTransactionService bankTransactionService;
     private static ImportOrchestrationService importOrchestrationService;
+    private static TransactionReviewCommitService transactionReviewCommitService;
     private static UUID defaultBusinessId;
 
     private CoreServiceFactory() {
@@ -191,10 +192,30 @@ public final class CoreServiceFactory {
                 new CsvTransactionParser(),
                 getIncomeService(),
                 getExpenseService(),
+                getBankTransactionService(),
                 getDefaultBusinessId()
             );
         }
         return importOrchestrationService;
+    }
+
+    /**
+     * Gets or creates the singleton TransactionReviewCommitService instance, which turns reviewed
+     * bank transactions into committed income/expense records.
+     *
+     * @return The TransactionReviewCommitService instance
+     */
+    public static synchronized TransactionReviewCommitService getTransactionReviewCommitService() {
+        if (transactionReviewCommitService == null) {
+            LOG.info("Creating TransactionReviewCommitService");
+            transactionReviewCommitService = new TransactionReviewCommitService(
+                getBankTransactionService(),
+                getIncomeService(),
+                getExpenseService(),
+                getDefaultBusinessId()
+            );
+        }
+        return transactionReviewCommitService;
     }
 
     /**

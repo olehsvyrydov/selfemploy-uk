@@ -290,13 +290,13 @@ public class TransactionReviewController implements Initializable, MainControlle
                 busBtn.setOnAction(e -> {
                     TransactionReviewTableRow row = getTableView().getItems().get(getIndex());
                     if (viewModel != null) {
-                        runGuarded(() -> viewModel.toggleBusinessFlag(row.id(), true));
+                        runGuarded(() -> viewModel.commitAsBusiness(row.id()));
                     }
                 });
                 persBtn.setOnAction(e -> {
                     TransactionReviewTableRow row = getTableView().getItems().get(getIndex());
                     if (viewModel != null) {
-                        runGuarded(() -> viewModel.toggleBusinessFlag(row.id(), false));
+                        runGuarded(() -> viewModel.markPersonal(row.id()));
                     }
                 });
             }
@@ -684,6 +684,7 @@ public class TransactionReviewController implements Initializable, MainControlle
 
         SqliteBankTransactionService service = CoreServiceFactory.getBankTransactionService();
         viewModel = new TransactionReviewViewModel(service);
+        viewModel.setCommitService(CoreServiceFactory.getTransactionReviewCommitService());
         setupBindings();
         viewModel.loadTransactions();
         updateTable();
