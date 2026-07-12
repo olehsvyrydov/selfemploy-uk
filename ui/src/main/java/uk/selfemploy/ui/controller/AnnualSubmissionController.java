@@ -22,6 +22,7 @@ import uk.selfemploy.ui.service.HmrcFinalDeclarationService.DeclarationConfirmat
 import uk.selfemploy.ui.service.HmrcFinalDeclarationService.DeclarationOutcome;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
 import uk.selfemploy.ui.service.SqliteDataStore;
+import uk.selfemploy.ui.service.SqliteSubmissionRepository;
 import uk.selfemploy.ui.service.SubmissionCredentialGate;
 import uk.selfemploy.ui.service.SubmissionEnvironment;
 import uk.selfemploy.ui.service.SubmissionRecord;
@@ -633,11 +634,12 @@ public class AnnualSubmissionController {
                 hmrcReference,
                 null,
                 Instant.now());
-            SqliteDataStore store = SqliteDataStore.getInstance();
-            store.saveSubmission(record);
-            // saveSubmission logs and swallows SQL errors, so confirm the row is
-            // actually there before telling the caller the save succeeded.
-            return store.findSubmissionById(id).isPresent();
+            SqliteSubmissionRepository repository =
+                new SqliteSubmissionRepository(CoreServiceFactory.getDefaultBusinessId());
+            repository.save(record);
+            // save logs and swallows SQL errors, so confirm the row is actually there
+            // before telling the caller the save succeeded.
+            return repository.findById(id).isPresent();
         } catch (RuntimeException e) {
             LOG.log(Level.WARNING, "Failed to persist submission record", e);
             return false;

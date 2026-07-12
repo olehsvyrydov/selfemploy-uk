@@ -45,7 +45,7 @@ public final class SubmittedPeriodIndex {
             return new SubmittedPeriodIndex(List.of());
         }
         return new SubmittedPeriodIndex(
-            SqliteDataStore.getInstance().findSubmissionsByBusinessId(businessId));
+            new SqliteSubmissionRepository(businessId).findAll());
     }
 
     /**

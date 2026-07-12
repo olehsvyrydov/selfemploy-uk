@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SubmissionHonestyMigrationTest {
 
     private SqliteDataStore dataStore;
+    private SqliteSubmissionRepository repository;
     private UUID businessId;
 
     @BeforeAll
@@ -37,6 +38,7 @@ class SubmissionHonestyMigrationTest {
         dataStore = SqliteDataStore.getInstance();
         businessId = UUID.randomUUID();
         dataStore.ensureBusinessExists(businessId);
+        repository = new SqliteSubmissionRepository(businessId);
     }
 
     @AfterEach
@@ -66,11 +68,11 @@ class SubmissionHonestyMigrationTest {
     @DisplayName("relabels a fabricated SA- ACCEPTED row as NOT_SUBMITTED and clears the fake reference")
     void relabelsFabricatedRow() {
         String id = UUID.randomUUID().toString();
-        dataStore.saveSubmission(record(id, "ACCEPTED", "SA-12345678"));
+        repository.save(record(id, "ACCEPTED", "SA-12345678"));
 
         dataStore.migrateSubmissionHonesty();
 
-        Optional<SubmissionRecord> after = dataStore.findSubmissionById(id);
+        Optional<SubmissionRecord> after = repository.findById(id);
         assertThat(after).isPresent();
         assertThat(after.get().status()).isEqualTo("NOT_SUBMITTED");
         assertThat(after.get().hmrcReference()).isNull();
@@ -80,11 +82,11 @@ class SubmissionHonestyMigrationTest {
     @DisplayName("leaves a genuine HMRC reference untouched")
     void leavesGenuineRowUntouched() {
         String id = UUID.randomUUID().toString();
-        dataStore.saveSubmission(record(id, "ACCEPTED", "X9ABCD1234567"));
+        repository.save(record(id, "ACCEPTED", "X9ABCD1234567"));
 
         dataStore.migrateSubmissionHonesty();
 
-        Optional<SubmissionRecord> after = dataStore.findSubmissionById(id);
+        Optional<SubmissionRecord> after = repository.findById(id);
         assertThat(after).isPresent();
         assertThat(after.get().status()).isEqualTo("ACCEPTED");
         assertThat(after.get().hmrcReference()).isEqualTo("X9ABCD1234567");
@@ -94,12 +96,12 @@ class SubmissionHonestyMigrationTest {
     @DisplayName("is idempotent - a second run changes nothing")
     void isIdempotent() {
         String id = UUID.randomUUID().toString();
-        dataStore.saveSubmission(record(id, "ACCEPTED", "SA-PERIOD-TEST"));
+        repository.save(record(id, "ACCEPTED", "SA-PERIOD-TEST"));
 
         dataStore.migrateSubmissionHonesty();
         dataStore.migrateSubmissionHonesty();
 
-        Optional<SubmissionRecord> after = dataStore.findSubmissionById(id);
+        Optional<SubmissionRecord> after = repository.findById(id);
         assertThat(after).isPresent();
         assertThat(after.get().status()).isEqualTo("NOT_SUBMITTED");
         assertThat(after.get().hmrcReference()).isNull();
@@ -140,7 +142,7 @@ class SubmissionHonestyMigrationTest {
 
         dataStore.migrateSubmissionHonesty();
 
-        Optional<SubmissionRecord> after = dataStore.findSubmissionById("legacy-1");
+        Optional<SubmissionRecord> after = repository.findById("legacy-1");
         assertThat(after).isPresent();
         assertThat(after.get().status()).isEqualTo("NOT_SUBMITTED");
         assertThat(after.get().hmrcReference()).isNull();
@@ -148,8 +150,8 @@ class SubmissionHonestyMigrationTest {
         // The widened constraint must now accept a NOT_SUBMITTED insert; if the
         // CHECK still rejected it the row would never persist.
         String freshId = UUID.randomUUID().toString();
-        dataStore.saveSubmission(record(freshId, "NOT_SUBMITTED", null));
-        Optional<SubmissionRecord> fresh = dataStore.findSubmissionById(freshId);
+        repository.save(record(freshId, "NOT_SUBMITTED", null));
+        Optional<SubmissionRecord> fresh = repository.findById(freshId);
         assertThat(fresh).isPresent();
         assertThat(fresh.get().status()).isEqualTo("NOT_SUBMITTED");
     }
