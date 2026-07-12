@@ -15,7 +15,8 @@ import java.util.List;
  *                        a file name or account id; may be null
  * @param detectedFormat  the format/provider recognised for the source, such as the
  *                        bank name for a CSV; may be null
- * @param transactions    the normalized transactions; never null (copied defensively)
+ * @param transactions    the normalized transactions; a null value is treated as an
+ *                        empty list, and the list is copied defensively
  */
 public record StatementBatch(
     String sourceType,

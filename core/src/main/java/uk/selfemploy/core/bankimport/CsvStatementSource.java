@@ -42,10 +42,10 @@ public final class CsvStatementSource implements StatementSource {
     @Override
     public StatementBatch fetch() throws StatementSourceException {
         String fileName = String.valueOf(csvFile.getFileName());
-        BankCsvParser parser = formatDetector.detectFormat(csvFile, charset)
-            .orElseThrow(() -> new StatementSourceException(
-                "No bank CSV format matched " + fileName));
         try {
+            BankCsvParser parser = formatDetector.detectFormat(csvFile, charset)
+                .orElseThrow(() -> new StatementSourceException(
+                    "No bank CSV format matched " + fileName));
             List<ImportedTransaction> transactions = parser.parse(csvFile, charset);
             return new StatementBatch(SOURCE_TYPE, fileName, parser.getBankName(), transactions);
         } catch (CsvParseException e) {

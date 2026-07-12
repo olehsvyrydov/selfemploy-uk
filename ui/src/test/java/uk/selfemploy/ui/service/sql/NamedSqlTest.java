@@ -46,4 +46,20 @@ class NamedSqlTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("SQL resource not found");
     }
+
+    @Test
+    @DisplayName("fails fast on a duplicate statement name")
+    void throwsOnDuplicateName() {
+        assertThatThrownBy(() -> NamedSql.load("/sql/duplicate-names.sql"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Duplicate SQL statement name 'dup'");
+    }
+
+    @Test
+    @DisplayName("fails fast on an empty statement name")
+    void throwsOnEmptyName() {
+        assertThatThrownBy(() -> NamedSql.load("/sql/empty-name.sql"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Empty statement name");
+    }
 }

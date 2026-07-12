@@ -53,16 +53,20 @@ public final class NamedSql {
                     String trimmed = line.trim();
                     if (trimmed.startsWith(NAME_MARKER)) {
                         if (currentName != null) {
-                            parsed.put(currentName, finish(current));
+                            put(parsed, currentName, current, resourcePath);
                         }
                         currentName = trimmed.substring(NAME_MARKER.length()).trim();
+                        if (currentName.isEmpty()) {
+                            throw new IllegalArgumentException(
+                                "Empty statement name (bare '" + NAME_MARKER + "') in " + resourcePath);
+                        }
                         current.setLength(0);
                     } else if (currentName != null) {
                         current.append(line).append('\n');
                     }
                 }
                 if (currentName != null) {
-                    parsed.put(currentName, finish(current));
+                    put(parsed, currentName, current, resourcePath);
                 }
             }
         } catch (IOException e) {
@@ -82,6 +86,15 @@ public final class NamedSql {
             throw new IllegalArgumentException("No SQL statement named '" + name + "'");
         }
         return sql;
+    }
+
+    private static void put(Map<String, String> parsed, String name, StringBuilder body,
+                            String resourcePath) {
+        if (parsed.containsKey(name)) {
+            throw new IllegalArgumentException(
+                "Duplicate SQL statement name '" + name + "' in " + resourcePath);
+        }
+        parsed.put(name, finish(body));
     }
 
     private static String finish(StringBuilder sb) {

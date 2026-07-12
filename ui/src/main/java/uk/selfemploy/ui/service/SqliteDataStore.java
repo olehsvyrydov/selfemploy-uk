@@ -1342,7 +1342,7 @@ public final class SqliteDataStore {
      *
      * @return the live connection, or null if not yet initialised
      */
-    Connection connection() {
+    synchronized Connection connection() {
         return connection;
     }
 
