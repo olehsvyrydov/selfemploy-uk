@@ -14,7 +14,7 @@ class NamedSqlTest {
     @Test
     @DisplayName("returns the statement registered under a name, without its trailing semicolon")
     void returnsNamedStatement() {
-        String findByType = sql.get("findByType");
+        String findByType = sql.get("findWizardProgressByType");
 
         assertThat(findByType)
             .isEqualTo("SELECT * FROM wizard_progress WHERE wizard_type = ?");
@@ -23,7 +23,7 @@ class NamedSqlTest {
     @Test
     @DisplayName("parses a multi-line statement into a single block")
     void parsesMultiLineStatement() {
-        String upsert = sql.get("upsert");
+        String upsert = sql.get("upsertWizardProgress");
 
         assertThat(upsert)
             .startsWith("INSERT INTO wizard_progress")

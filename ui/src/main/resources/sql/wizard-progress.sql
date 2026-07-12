@@ -2,7 +2,7 @@
 -- readable and maintainable in one place. Loaded by NamedSql; each block is delimited by
 -- a "-- name: <key>" marker.
 
--- name: createTable
+-- name: createWizardProgressTable
 CREATE TABLE IF NOT EXISTS wizard_progress (
     id INTEGER PRIMARY KEY,
     wizard_type TEXT NOT NULL,
@@ -14,10 +14,10 @@ CREATE TABLE IF NOT EXISTS wizard_progress (
     UNIQUE(wizard_type)
 );
 
--- name: findByType
+-- name: findWizardProgressByType
 SELECT * FROM wizard_progress WHERE wizard_type = ?;
 
--- name: upsert
+-- name: upsertWizardProgress
 INSERT INTO wizard_progress
     (wizard_type, current_step, checklist_state, nino_entered, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -27,8 +27,8 @@ ON CONFLICT(wizard_type) DO UPDATE SET
     nino_entered = excluded.nino_entered,
     updated_at = excluded.updated_at;
 
--- name: deleteByType
+-- name: deleteWizardProgressByType
 DELETE FROM wizard_progress WHERE wizard_type = ?;
 
--- name: findRawNino
+-- name: findWizardProgressRawNino
 SELECT nino_entered FROM wizard_progress WHERE wizard_type = ?;
