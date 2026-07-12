@@ -18,7 +18,7 @@ public class SqlitePrivacyAcknowledgmentService extends PrivacyAcknowledgmentSer
 
     private static final Logger LOG = Logger.getLogger(SqlitePrivacyAcknowledgmentService.class.getName());
 
-    private final SqlitePrivacyAcknowledgmentRepository sqliteRepository;
+    private final PrivacyAcknowledgmentRepository sqliteRepository;
 
     public SqlitePrivacyAcknowledgmentService() {
         super(null); // Parent won't be used - we override all methods
@@ -28,7 +28,7 @@ public class SqlitePrivacyAcknowledgmentService extends PrivacyAcknowledgmentSer
     /**
      * Constructor for testing with custom repository.
      */
-    SqlitePrivacyAcknowledgmentService(SqlitePrivacyAcknowledgmentRepository repository) {
+    SqlitePrivacyAcknowledgmentService(PrivacyAcknowledgmentRepository repository) {
         super(null);
         this.sqliteRepository = repository;
     }
