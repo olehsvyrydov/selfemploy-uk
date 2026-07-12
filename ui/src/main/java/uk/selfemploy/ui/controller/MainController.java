@@ -182,6 +182,14 @@ public class MainController implements Initializable {
                     hmrcController.setNavigateToSettings(() -> loadView(View.SETTINGS));
                 }
 
+                // Wire empty-state calls to action for the Tax Summary screen
+                if (controller instanceof TaxSummaryController taxSummaryController) {
+                    taxSummaryController.setNavigationCallbacks(
+                        () -> loadView(View.INCOME),
+                        () -> loadView(View.EXPENSES)
+                    );
+                }
+
                 // Wire post-import navigation callback for Income and Expense controllers
                 if (controller instanceof IncomeController incomeController) {
                     incomeController.setNavigateToTransactionReview(

@@ -35,6 +35,22 @@
                    style="-fx-text-fill: #6b7280; -fx-font-size: 13px;" wrapText="true"/>
         </HBox>
 
+        <!-- No-data empty state (shown when no income or expenses exist for the year) -->
+        <VBox fx:id="emptyState" styleClass="empty-state-container"
+              alignment="CENTER" spacing="16" managed="false" visible="false">
+            <padding><Insets topRightBottomLeft="60"/></padding>
+            <Label text="No figures to summarise yet" styleClass="empty-state-title"/>
+            <Label styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="420"
+                   text="Add income to see your estimated tax, National Insurance and payments on account for this tax year."/>
+            <HBox alignment="CENTER" spacing="12">
+                <Button text="+ Add Income" styleClass="button-success" onAction="#handleGoToIncome"/>
+                <Button text="Add Expense" styleClass="button-secondary" onAction="#handleGoToExpenses"/>
+            </HBox>
+        </VBox>
+
+        <!-- Tax calculation content (hidden when there is no data) -->
+        <VBox fx:id="dataContent" spacing="20">
+
         <!-- Tax At A Glance -->
         <VBox styleClass="tax-glance-card" spacing="20">
             <Label text="YOUR TAX AT A GLANCE" styleClass="tax-glance-title"/>
@@ -268,6 +284,9 @@
                 </tooltip>
             </Button>
         </HBox>
+
+        </VBox>
+        <!-- /dataContent -->
 
     </VBox>
 </ScrollPane>
