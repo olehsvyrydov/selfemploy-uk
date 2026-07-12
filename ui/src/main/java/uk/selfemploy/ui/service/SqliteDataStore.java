@@ -968,112 +968,6 @@ public final class SqliteDataStore {
 
     // === Income Operations ===
 
-    /**
-     * Saves an income entry to the database.
-     */
-    public synchronized void saveIncome(Income income) {
-        String sql = """
-            INSERT OR REPLACE INTO income
-            (id, business_id, date, amount, description, category, reference, client_name, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, income.id().toString());
-            pstmt.setString(2, income.businessId().toString());
-            pstmt.setString(3, income.date().toString());
-            pstmt.setString(4, income.amount().toPlainString());
-            pstmt.setString(5, income.description());
-            pstmt.setString(6, income.category().name());
-            pstmt.setString(7, income.reference());
-            pstmt.setString(8, income.clientName());
-            pstmt.setString(9, income.status() != null ? income.status().name() : IncomeStatus.PAID.name());
-            pstmt.executeUpdate();
-            LOG.fine("Saved income: " + income.id());
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to save income: " + income.id(), e);
-            throw new DataStoreException("Failed to save income", e);
-        }
-    }
-
-    /**
-     * Loads all income entries from the database.
-     */
-    public synchronized List<Income> loadAllIncome() {
-        List<Income> incomeList = new ArrayList<>();
-        String sql = "SELECT * FROM income ORDER BY date DESC";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                incomeList.add(mapIncome(rs));
-            }
-            LOG.info("Loaded " + incomeList.size() + " income entries from database");
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to load income", e);
-        }
-        return incomeList;
-    }
-
-    /**
-     * Finds an income entry by ID.
-     */
-    public synchronized Optional<Income> findIncomeById(UUID id) {
-        String sql = "SELECT * FROM income WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapIncome(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to find income: " + id, e);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Deletes an income entry by ID.
-     */
-    public synchronized boolean deleteIncome(UUID id) {
-        String sql = "DELETE FROM income WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            int affected = pstmt.executeUpdate();
-            return affected > 0;
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to delete income: " + id, e);
-            return false;
-        }
-    }
-
-    private Income mapIncome(ResultSet rs) throws SQLException {
-        return new Income(
-            UUID.fromString(rs.getString("id")),
-            UUID.fromString(rs.getString("business_id")),
-            LocalDate.parse(rs.getString("date")),
-            new BigDecimal(rs.getString("amount")),
-            rs.getString("description"),
-            IncomeCategory.valueOf(rs.getString("category")),
-            rs.getString("reference"),
-            null, // bankTransactionRef - not stored in SQLite yet
-            null, // invoiceNumber - not stored in SQLite yet
-            null, // receiptPath - not stored in SQLite yet
-            null, // bankTransactionId - not stored in SQLite yet
-            rs.getString("client_name"),
-            parseIncomeStatus(rs.getString("status"))
-        );
-    }
-
-    private static IncomeStatus parseIncomeStatus(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return IncomeStatus.PAID;
-        }
-        try {
-            return IncomeStatus.valueOf(raw);
-        } catch (IllegalArgumentException e) {
-            return IncomeStatus.PAID;
-        }
-    }
-
     // === Business Operations ===
 
     /**
@@ -1130,44 +1024,6 @@ public final class SqliteDataStore {
         return expenses;
     }
 
-    /**
-     * Finds income by business ID.
-     */
-    public synchronized List<Income> findIncomeByBusinessId(UUID businessId) {
-        List<Income> incomeList = new ArrayList<>();
-        String sql = "SELECT * FROM income WHERE business_id = ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                incomeList.add(mapIncome(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find income by business ID", e);
-        }
-        return incomeList;
-    }
-
-    /**
-     * Finds income by date range for a business.
-     */
-    public synchronized List<Income> findIncomeByDateRange(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        List<Income> incomeList = new ArrayList<>();
-        String sql = "SELECT * FROM income WHERE business_id = ? AND date >= ? AND date <= ? ORDER BY date DESC";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                incomeList.add(mapIncome(rs));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to find income by date range", e);
-        }
-        return incomeList;
-    }
-
     // === Aggregation Methods ===
 
     /**
@@ -1221,25 +1077,6 @@ public final class SqliteDataStore {
             }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
-        }
-        return BigDecimal.ZERO;
-    }
-
-    /**
-     * Calculates total income for a business within a date range.
-     */
-    public synchronized BigDecimal calculateTotalIncome(UUID businessId, LocalDate startDate, LocalDate endDate) {
-        String sql = "SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM income WHERE business_id = ? AND date >= ? AND date <= ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, businessId.toString());
-            pstmt.setString(2, startDate.toString());
-            pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Failed to calculate total income", e);
         }
         return BigDecimal.ZERO;
     }
@@ -1361,20 +1198,6 @@ public final class SqliteDataStore {
         return 0;
     }
 
-    /**
-     * Returns the count of income entries.
-     */
-    public synchronized long countIncome() {
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM income")) {
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to count income", e);
-        }
-        return 0;
-    }
 
     // === Bank Transaction Operations ===
 

@@ -275,23 +275,30 @@ class SqliteDataStoreTest {
     @DisplayName("Income CRUD Operations")
     class IncomeCrudOperations {
 
+        private SqliteIncomeRepository incomeRepository;
+
+        @BeforeEach
+        void setUpIncomeRepository() {
+            incomeRepository = new SqliteIncomeRepository(testBusinessId);
+        }
+
         @Test
         @DisplayName("should save income")
         void shouldSaveIncome() {
             Income income = createTestIncome(testBusinessId);
 
-            dataStore.saveIncome(income);
+            incomeRepository.save(income);
 
-            assertThat(dataStore.countIncome()).isEqualTo(1);
+            assertThat(incomeRepository.count()).isEqualTo(1);
         }
 
         @Test
         @DisplayName("should find income by ID")
         void shouldFindIncomeById() {
             Income income = createTestIncome(testBusinessId);
-            dataStore.saveIncome(income);
+            incomeRepository.save(income);
 
-            Optional<Income> found = dataStore.findIncomeById(income.id());
+            Optional<Income> found = incomeRepository.findById(income.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().id()).isEqualTo(income.id());
@@ -316,8 +323,8 @@ class SqliteDataStoreTest {
                     "Acme Corporation",
                     IncomeStatus.UNPAID);
 
-            dataStore.saveIncome(income);
-            Optional<Income> found = dataStore.findIncomeById(income.id());
+            incomeRepository.save(income);
+            Optional<Income> found = incomeRepository.findById(income.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().clientName()).isEqualTo("Acme Corporation");
@@ -330,9 +337,9 @@ class SqliteDataStoreTest {
         @DisplayName("should default status to PAID and allow a null client name")
         void shouldDefaultStatusAndAllowNullClientName() {
             Income income = createTestIncome(testBusinessId); // built with null client name / status
-            dataStore.saveIncome(income);
+            incomeRepository.save(income);
 
-            Optional<Income> found = dataStore.findIncomeById(income.id());
+            Optional<Income> found = incomeRepository.findById(income.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().clientName()).isNull();
@@ -342,7 +349,7 @@ class SqliteDataStoreTest {
         @Test
         @DisplayName("should return empty when income not found")
         void shouldReturnEmptyWhenIncomeNotFound() {
-            Optional<Income> found = dataStore.findIncomeById(UUID.randomUUID());
+            Optional<Income> found = incomeRepository.findById(UUID.randomUUID());
 
             assertThat(found).isEmpty();
         }
@@ -352,10 +359,10 @@ class SqliteDataStoreTest {
         void shouldLoadAllIncome() {
             Income income1 = createTestIncome(testBusinessId);
             Income income2 = createTestIncome(testBusinessId, "Second income", new BigDecimal("2000.00"));
-            dataStore.saveIncome(income1);
-            dataStore.saveIncome(income2);
+            incomeRepository.save(income1);
+            incomeRepository.save(income2);
 
-            List<Income> incomeList = dataStore.loadAllIncome();
+            List<Income> incomeList = incomeRepository.findAll();
 
             assertThat(incomeList).hasSize(2);
         }
@@ -364,7 +371,7 @@ class SqliteDataStoreTest {
         @DisplayName("should update income")
         void shouldUpdateIncome() {
             Income original = createTestIncome(testBusinessId);
-            dataStore.saveIncome(original);
+            incomeRepository.save(original);
 
             Income updated = new Income(
                     original.id(),
@@ -379,9 +386,9 @@ class SqliteDataStoreTest {
                     null,
                     null, null, null
             );
-            dataStore.saveIncome(updated);
+            incomeRepository.save(updated);
 
-            Optional<Income> found = dataStore.findIncomeById(original.id());
+            Optional<Income> found = incomeRepository.findById(original.id());
             assertThat(found).isPresent();
             assertThat(found.get().amount()).isEqualByComparingTo(new BigDecimal("5000.00"));
             assertThat(found.get().description()).isEqualTo("Updated invoice");
@@ -391,12 +398,12 @@ class SqliteDataStoreTest {
         @DisplayName("should delete income")
         void shouldDeleteIncome() {
             Income income = createTestIncome(testBusinessId);
-            dataStore.saveIncome(income);
+            incomeRepository.save(income);
 
-            boolean deleted = dataStore.deleteIncome(income.id());
+            boolean deleted = incomeRepository.delete(income.id());
 
             assertThat(deleted).isTrue();
-            assertThat(dataStore.findIncomeById(income.id())).isEmpty();
+            assertThat(incomeRepository.findById(income.id())).isEmpty();
         }
 
         @Test
@@ -407,10 +414,10 @@ class SqliteDataStoreTest {
 
             Income income1 = createTestIncome(testBusinessId);
             Income income2 = createTestIncome(otherBusinessId);
-            dataStore.saveIncome(income1);
-            dataStore.saveIncome(income2);
+            incomeRepository.save(income1);
+            incomeRepository.save(income2);
 
-            List<Income> found = dataStore.findIncomeByBusinessId(testBusinessId);
+            List<Income> found = incomeRepository.findAll();
 
             assertThat(found).hasSize(1);
             assertThat(found.get(0).businessId()).isEqualTo(testBusinessId);
@@ -425,10 +432,10 @@ class SqliteDataStoreTest {
             Income inRange = createTestIncomeWithDate(testBusinessId, LocalDate.of(2024, 8, 20));
             Income beforeRange = createTestIncomeWithDate(testBusinessId, LocalDate.of(2024, 2, 1));
 
-            dataStore.saveIncome(inRange);
-            dataStore.saveIncome(beforeRange);
+            incomeRepository.save(inRange);
+            incomeRepository.save(beforeRange);
 
-            List<Income> found = dataStore.findIncomeByDateRange(testBusinessId, startDate, endDate);
+            List<Income> found = incomeRepository.findByDateRange(startDate, endDate);
 
             assertThat(found).hasSize(1);
             assertThat(found.get(0).id()).isEqualTo(inRange.id());
@@ -471,6 +478,13 @@ class SqliteDataStoreTest {
     @Nested
     @DisplayName("Data Integrity")
     class DataIntegrity {
+
+        private SqliteIncomeRepository incomeRepository;
+
+        @BeforeEach
+        void setUpIncomeRepository() {
+            incomeRepository = new SqliteIncomeRepository(testBusinessId);
+        }
 
         @Test
         @DisplayName("should handle special characters in description")
@@ -515,9 +529,9 @@ class SqliteDataStoreTest {
                     null,
                     null, null, null
             );
-            dataStore.saveIncome(income);
+            incomeRepository.save(income);
 
-            Optional<Income> found = dataStore.findIncomeById(income.id());
+            Optional<Income> found = incomeRepository.findById(income.id());
 
             assertThat(found).isPresent();
             assertThat(found.get().description()).isEqualTo(unicodeDesc);
@@ -932,6 +946,13 @@ class SqliteDataStoreTest {
     @DisplayName("Aggregation Queries")
     class AggregationQueries {
 
+        private SqliteIncomeRepository incomeRepository;
+
+        @BeforeEach
+        void setUpIncomeRepository() {
+            incomeRepository = new SqliteIncomeRepository(testBusinessId);
+        }
+
         @Test
         @DisplayName("should calculate total expenses for date range")
         void shouldCalculateTotalExpensesForDateRange() {
@@ -980,11 +1001,11 @@ class SqliteDataStoreTest {
             LocalDate startDate = LocalDate.of(2024, 4, 6);
             LocalDate endDate = LocalDate.of(2025, 4, 5);
 
-            dataStore.saveIncome(createTestIncomeWithDate(testBusinessId, LocalDate.of(2024, 5, 1), new BigDecimal("1000.00")));
-            dataStore.saveIncome(createTestIncomeWithDate(testBusinessId, LocalDate.of(2024, 6, 1), new BigDecimal("2000.00")));
-            dataStore.saveIncome(createTestIncomeWithDate(testBusinessId, LocalDate.of(2023, 1, 1), new BigDecimal("9999.00"))); // Out of range
+            incomeRepository.save(createTestIncomeWithDate(testBusinessId, LocalDate.of(2024, 5, 1), new BigDecimal("1000.00")));
+            incomeRepository.save(createTestIncomeWithDate(testBusinessId, LocalDate.of(2024, 6, 1), new BigDecimal("2000.00")));
+            incomeRepository.save(createTestIncomeWithDate(testBusinessId, LocalDate.of(2023, 1, 1), new BigDecimal("9999.00"))); // Out of range
 
-            BigDecimal total = dataStore.calculateTotalIncome(testBusinessId, startDate, endDate);
+            BigDecimal total = incomeRepository.getTotalForDateRange(startDate, endDate);
 
             assertThat(total).isEqualByComparingTo(new BigDecimal("3000.00"));
         }
