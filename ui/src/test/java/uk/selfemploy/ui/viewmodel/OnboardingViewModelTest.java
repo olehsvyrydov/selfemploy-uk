@@ -636,4 +636,23 @@ class OnboardingViewModelTest {
             assertThat(viewModel.getUtr()).isEqualTo("12");
         }
     }
+
+    @Nested
+    @DisplayName("Skip")
+    class Skip {
+
+        @Test
+        @DisplayName("skipSetup fills default tax year and business type into the summary")
+        void skipFillsDefaultsIntoSummary() {
+            // The controller must therefore pass null (not this summary) to the completion callback
+            // on skip, so a skipped setup does not persist a tax year / business type the user never
+            // chose. See OnboardingController.handleSkipSetup.
+            viewModel.goToNextStep(); // step 1 -> 2 so skip is allowed
+            viewModel.skipSetup();
+
+            var summary = viewModel.getCompletionSummary();
+            assertThat(summary.taxYear()).isNotNull();
+            assertThat(summary.businessType()).isEqualTo(BusinessType.SOLE_TRADER);
+        }
+    }
 }

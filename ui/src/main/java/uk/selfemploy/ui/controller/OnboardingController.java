@@ -504,7 +504,7 @@ public class OnboardingController implements Initializable {
     void handleContinue(ActionEvent event) {
         if (viewModel.getCurrentStep() == 4) {
             viewModel.complete();
-            notifyCompletion();
+            notifyCompletion(viewModel.getCompletionSummary());
         } else {
             viewModel.goToNextStep();
         }
@@ -518,7 +518,11 @@ public class OnboardingController implements Initializable {
             "Skip", "Cancel");
         if (confirmed) {
             viewModel.skipSetup();
-            closeAndNavigate("dashboard");
+            // Skip records completion only — it must not persist the defaults skipSetup() fills in.
+            notifyCompletion(null);
+            if (dialogStage != null) {
+                dialogStage.close();
+            }
         }
     }
 
@@ -546,14 +550,14 @@ public class OnboardingController implements Initializable {
         closeAndNavigate("dashboard");
     }
 
-    private void notifyCompletion() {
+    private void notifyCompletion(OnboardingViewModel.OnboardingCompletionSummary summary) {
         if (onCompleteCallback != null) {
-            onCompleteCallback.accept(viewModel.getCompletionSummary());
+            onCompleteCallback.accept(summary);
         }
     }
 
     private void closeAndNavigate(String destination) {
-        notifyCompletion();
+        notifyCompletion(viewModel.getCompletionSummary());
         if (dialogStage != null) {
             dialogStage.close();
         }
