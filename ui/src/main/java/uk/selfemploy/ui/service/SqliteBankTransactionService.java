@@ -13,16 +13,15 @@ import java.util.logging.Logger;
 
 /**
  * SQLite-backed service for managing bank transactions in the review workflow.
- * Thin wrapper over SqliteDataStore following the SqliteIncomeService pattern.
  *
- * <p>All operations go directly to SQLite - no in-memory caching.
- * This ensures transaction data is never lost.</p>
+ * <p>Owns the review-workflow business logic (status transitions and their audit-log entries)
+ * and delegates persistence to {@link BankTransactionRepository}.</p>
  */
 public class SqliteBankTransactionService {
 
     private static final Logger LOG = Logger.getLogger(SqliteBankTransactionService.class.getName());
 
-    private final SqliteDataStore dataStore;
+    private final BankTransactionRepository repository;
     private final UUID businessId;
 
     public SqliteBankTransactionService(UUID businessId) {
@@ -30,14 +29,14 @@ public class SqliteBankTransactionService {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
         this.businessId = businessId;
-        this.dataStore = SqliteDataStore.getInstance();
+        this.repository = new SqliteBankTransactionRepository(businessId);
     }
 
     /**
      * Finds all bank transactions for this business.
      */
     public List<BankTransaction> findAll() {
-        return dataStore.findBankTransactions(businessId);
+        return repository.findAll();
     }
 
     /**
@@ -47,7 +46,7 @@ public class SqliteBankTransactionService {
         if (id == null) {
             throw new IllegalArgumentException("Transaction ID cannot be null");
         }
-        return dataStore.findBankTransactionById(id);
+        return repository.findById(id);
     }
 
     /**
@@ -57,7 +56,7 @@ public class SqliteBankTransactionService {
         if (tx == null) {
             throw new IllegalArgumentException("Transaction cannot be null");
         }
-        dataStore.saveBankTransaction(tx);
+        repository.save(tx);
     }
 
     /**
@@ -142,7 +141,7 @@ public class SqliteBankTransactionService {
     public Map<ReviewStatus, Long> getStatusCounts() {
         Map<ReviewStatus, Long> counts = new EnumMap<>(ReviewStatus.class);
         for (ReviewStatus status : ReviewStatus.values()) {
-            counts.put(status, dataStore.countBankTransactionsByStatus(businessId, status.name()));
+            counts.put(status, repository.countByStatus(status.name()));
         }
         return counts;
     }
@@ -151,7 +150,7 @@ public class SqliteBankTransactionService {
      * Returns total count of all bank transactions for this business.
      */
     public long count() {
-        return dataStore.countBankTransactions(businessId);
+        return repository.count();
     }
 
     /**
@@ -161,7 +160,7 @@ public class SqliteBankTransactionService {
         if (hash == null || hash.isBlank()) {
             throw new IllegalArgumentException("Transaction hash cannot be null or empty");
         }
-        return dataStore.existsByTransactionHash(businessId, hash);
+        return repository.existsByHash(hash);
     }
 
     /**
@@ -171,7 +170,7 @@ public class SqliteBankTransactionService {
         if (id == null) {
             throw new IllegalArgumentException("Transaction ID cannot be null");
         }
-        boolean deleted = dataStore.deleteBankTransaction(id);
+        boolean deleted = repository.softDelete(id);
         if (deleted) {
             logModification(id, "EXCLUDED", "deleted_at", null, "soft-deleted");
         }
@@ -190,7 +189,7 @@ public class SqliteBankTransactionService {
      */
     private void logModification(UUID txId, String type, String field,
             String previousValue, String newValue) {
-        dataStore.logTransactionModification(txId, type, field,
+        repository.logModification(txId, type, field,
                 previousValue, newValue, "local-user");
     }
 }
