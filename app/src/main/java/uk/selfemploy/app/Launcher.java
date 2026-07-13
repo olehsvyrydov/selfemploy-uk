@@ -6,6 +6,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import uk.selfemploy.common.util.EnvLoader;
 import uk.selfemploy.ui.controller.MainController;
@@ -111,6 +113,7 @@ public class Launcher extends Application {
             Scene dialogScene = new Scene(root);
             dialogScene.getStylesheets().addAll(stylesheets);
             dialog.setScene(dialogScene);
+            fitDialogToScreen(dialog);
             controller.setDialogStage(dialog);
             dialog.showAndWait();
 
@@ -147,6 +150,7 @@ public class Launcher extends Application {
             Scene dialogScene = new Scene(root);
             dialogScene.getStylesheets().addAll(stylesheets);
             dialog.setScene(dialogScene);
+            fitDialogToScreen(dialog);
 
             controller.setDialogStage(dialog);
             controller.setOnCompleteCallback(setup::complete);
@@ -156,6 +160,18 @@ public class Launcher extends Application {
             setup.complete(null);
         }
         return true;
+    }
+
+    /**
+     * Bounds a modal dialog to the visible screen and centres it, so a tall dialog (such as the
+     * Terms of Service) never pushes its footer buttons off the bottom edge on smaller displays.
+     */
+    private static void fitDialogToScreen(Stage dialog) {
+        Rectangle2D visual = Screen.getPrimary().getVisualBounds();
+        dialog.setResizable(true);
+        dialog.setWidth(Math.min(1000, visual.getWidth() - 40));
+        dialog.setHeight(Math.min(920, visual.getHeight() - 60));
+        dialog.centerOnScreen();
     }
 
     @Override
