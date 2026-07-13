@@ -64,6 +64,9 @@ public final class SqliteDataStore {
             ensureDirectoryExists();
         }
         initializeDatabase();
+        if (!inMemory) {
+            restrictDatabaseFiles();
+        }
     }
 
     /**
@@ -79,6 +82,7 @@ public final class SqliteDataStore {
         this.databasePath = databasePath;
         ensureDirectoryExists();
         initializeDatabase();
+        restrictDatabaseFiles();
     }
 
     /**
@@ -96,40 +100,27 @@ public final class SqliteDataStore {
      * Resolves the database path based on the operating system.
      */
     private Path resolveDatabasePath() {
-        String os = System.getProperty("os.name").toLowerCase();
-        String userHome = System.getProperty("user.home");
-
-        Path basePath;
-        if (os.contains("win")) {
-            String appData = System.getenv("APPDATA");
-            basePath = appData != null
-                ? Paths.get(appData, "SelfEmployment")
-                : Paths.get(userHome, "AppData", "Roaming", "SelfEmployment");
-        } else if (os.contains("mac")) {
-            basePath = Paths.get(userHome, "Library", "Application Support", "SelfEmployment");
-        } else {
-            String xdgData = System.getenv("XDG_DATA_HOME");
-            basePath = xdgData != null
-                ? Paths.get(xdgData, "selfemployment")
-                : Paths.get(userHome, ".local", "share", "selfemployment");
-        }
-
-        return basePath.resolve(DB_FILE);
+        return AppDataDirectory.resolve().resolve(DB_FILE);
     }
 
     /**
-     * Ensures the parent directory exists.
+     * Ensures the data directory exists and that neither it nor the database is readable by other
+     * users of the machine. The database holds OAuth tokens and taxpayer identifiers, so the
+     * permissions are re-applied on every start rather than only at creation — directories created
+     * by earlier versions were left at the default umask.
      */
     private void ensureDirectoryExists() {
-        try {
-            Path parent = databasePath.getParent();
-            if (parent != null && !Files.exists(parent)) {
-                Files.createDirectories(parent);
-                LOG.info("Created data directory: " + parent);
-            }
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create data directory", e);
+        Path parent = databasePath.getParent();
+        if (parent != null) {
+            AppDataDirectory.createRestricted(parent);
         }
+        restrictDatabaseFiles();
+    }
+
+    private void restrictDatabaseFiles() {
+        AppDataDirectory.restrictFile(databasePath);
+        AppDataDirectory.restrictFile(databasePath.resolveSibling(DB_FILE + "-wal"));
+        AppDataDirectory.restrictFile(databasePath.resolveSibling(DB_FILE + "-shm"));
     }
 
     /**
@@ -504,8 +495,9 @@ public final class SqliteDataStore {
     // === OAuth Token Operations (Sprint 12) ===
 
     /**
-     * Saves OAuth tokens to persistent storage.
-     * Note: Tokens should be encrypted in production (TD-XXX).
+     * Saves OAuth tokens to persistent storage. The access and refresh tokens are encrypted at
+     * rest; the refresh token in particular is a long-lived credential for the taxpayer's HMRC
+     * account. The remaining fields are not secret and are stored as-is.
      *
      * @param accessToken the OAuth access token
      * @param refreshToken the OAuth refresh token
@@ -517,13 +509,40 @@ public final class SqliteDataStore {
     public synchronized void saveOAuthTokens(String accessToken, String refreshToken,
                                              long expiresIn, String tokenType,
                                              String scope, Instant issuedAt) {
-        saveSetting("oauth_access_token", accessToken);
-        saveSetting("oauth_refresh_token", refreshToken);
+        saveEncrypted("oauth_access_token", accessToken);
+        saveEncrypted("oauth_refresh_token", refreshToken);
         saveSetting("oauth_expires_in", String.valueOf(expiresIn));
         saveSetting("oauth_token_type", tokenType);
         saveSetting("oauth_scope", scope);
         saveSetting("oauth_issued_at", issuedAt != null ? issuedAt.toString() : null);
         LOG.info("OAuth tokens saved to persistent storage");
+    }
+
+    private void saveEncrypted(String key, String value) {
+        saveSetting(key, value == null ? null : credentialEncryption.encrypt(value));
+    }
+
+    /**
+     * Reads a token that is encrypted at rest. Tokens written by earlier versions are stored in
+     * the clear; such a value is rewritten encrypted as soon as it is read, so the plaintext does
+     * not survive the upgrade.
+     */
+    private String loadEncryptedToken(String key) {
+        String stored = loadSetting(key);
+        if (stored == null) {
+            return null;
+        }
+        if (credentialEncryption.isLegacy(stored)) {
+            saveSetting(key, credentialEncryption.encrypt(stored));
+            return stored;
+        }
+        try {
+            return credentialEncryption.decrypt(stored);
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Failed to decrypt " + key + " - clearing stored value", e);
+            saveSetting(key, null);
+            return null;
+        }
     }
 
     /**
@@ -533,13 +552,13 @@ public final class SqliteDataStore {
      *         or null if not stored
      */
     public synchronized String[] loadOAuthTokens() {
-        String accessToken = loadSetting("oauth_access_token");
+        String accessToken = loadEncryptedToken("oauth_access_token");
         if (accessToken == null) {
             return null;
         }
         return new String[] {
             accessToken,
-            loadSetting("oauth_refresh_token"),
+            loadEncryptedToken("oauth_refresh_token"),
             loadSetting("oauth_expires_in"),
             loadSetting("oauth_token_type"),
             loadSetting("oauth_scope"),
@@ -673,15 +692,27 @@ public final class SqliteDataStore {
      * @return the decrypted client ID, or null if not set
      */
     public synchronized String loadHmrcClientId() {
-        String encrypted = loadSetting("hmrc_client_id_enc");
+        return loadEncryptedCredential("hmrc_client_id_enc", "HMRC client ID");
+    }
+
+    /**
+     * Reads a credential, rewriting it under the current master key if it was stored under the
+     * superseded machine-derived key, so upgrading does not discard the user's credentials.
+     */
+    private String loadEncryptedCredential(String key, String description) {
+        String encrypted = loadSetting(key);
         if (encrypted == null) {
             return null;
         }
         try {
-            return credentialEncryption.decrypt(encrypted);
+            String plaintext = credentialEncryption.decrypt(encrypted);
+            if (credentialEncryption.isLegacy(encrypted)) {
+                saveSetting(key, credentialEncryption.encrypt(plaintext));
+            }
+            return plaintext;
         } catch (CredentialEncryptionException e) {
-            LOG.log(Level.WARNING, "Failed to decrypt HMRC client ID - clearing corrupted value", e);
-            saveSetting("hmrc_client_id_enc", null);
+            LOG.log(Level.WARNING, "Failed to decrypt " + description + " - clearing corrupted value", e);
+            saveSetting(key, null);
             return null;
         }
     }
@@ -705,17 +736,7 @@ public final class SqliteDataStore {
      * @return the decrypted client secret, or null if not set
      */
     public synchronized String loadHmrcClientSecret() {
-        String encrypted = loadSetting("hmrc_client_secret_enc");
-        if (encrypted == null) {
-            return null;
-        }
-        try {
-            return credentialEncryption.decrypt(encrypted);
-        } catch (CredentialEncryptionException e) {
-            LOG.log(Level.WARNING, "Failed to decrypt HMRC client secret - clearing corrupted value", e);
-            saveSetting("hmrc_client_secret_enc", null);
-            return null;
-        }
+        return loadEncryptedCredential("hmrc_client_secret_enc", "HMRC client secret");
     }
 
     /**
