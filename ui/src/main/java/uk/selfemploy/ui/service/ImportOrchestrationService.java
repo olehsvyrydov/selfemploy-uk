@@ -6,8 +6,12 @@ import uk.selfemploy.common.domain.BankTransaction;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.bankimport.BankFormatDetector;
+import uk.selfemploy.core.bankimport.CategorySuggestion;
+import uk.selfemploy.core.bankimport.Confidence;
 import uk.selfemploy.core.bankimport.CsvStatementSource;
+import uk.selfemploy.core.bankimport.DescriptionCategorizer;
 import uk.selfemploy.core.bankimport.ImportedTransaction;
 import uk.selfemploy.core.bankimport.StandardBankParsers;
 import uk.selfemploy.core.bankimport.StatementBatch;
@@ -47,10 +51,15 @@ public class ImportOrchestrationService {
 
     private static final Logger LOG = LoggerFactory.getLogger(ImportOrchestrationService.class);
 
+    private static final BigDecimal CONFIDENCE_HIGH = new BigDecimal("0.9");
+    private static final BigDecimal CONFIDENCE_MEDIUM = new BigDecimal("0.6");
+    private static final BigDecimal CONFIDENCE_LOW = new BigDecimal("0.3");
+
     private final CsvTransactionParser csvParser;
     private final IncomeService incomeService;
     private final ExpenseService expenseService;
     private final SqliteBankTransactionService bankTransactionService;
+    private final DescriptionCategorizer categorizer = new DescriptionCategorizer();
     private final UUID businessId;
 
     public ImportOrchestrationService(
@@ -277,8 +286,8 @@ public class ImportOrchestrationService {
                     BankTransaction tx = BankTransaction.create(
                         businessId, batchId, null, row.date(), signedAmount, row.description(),
                         null, null, hash, now);
-                    if (row.type() == TransactionType.EXPENSE && row.category() != null) {
-                        tx = tx.withSuggestion(row.category(), null, now);
+                    if (row.type() == TransactionType.EXPENSE) {
+                        tx = applyExpenseSuggestion(tx, row, now);
                     }
                     bankTransactionService.save(tx);
                     staged++;
@@ -297,5 +306,32 @@ public class ImportOrchestrationService {
         LOG.info("Import staged: {} new, {} duplicate(s) skipped, {} error(s) out of {} total",
                 staged, skipped, errors, total);
         return new ImportResult(staged, errors, skipped, batchId);
+    }
+
+    /**
+     * Populates an expense transaction's suggested category and confidence for Bank Review.
+     *
+     * <p>A category the user chose in the wizard is kept as a high-confidence suggestion. Otherwise
+     * the keyword categorizer runs: a keyword match yields its category and confidence, while no
+     * match leaves the category unset (shown as needing review) and records low confidence rather
+     * than asserting a fallback category the user did not choose.</p>
+     */
+    private BankTransaction applyExpenseSuggestion(BankTransaction tx, ImportedTransactionRow row, Instant now) {
+        if (row.category() != null) {
+            return tx.withSuggestion(row.category(), CONFIDENCE_HIGH, now);
+        }
+        CategorySuggestion<ExpenseCategory> suggestion = categorizer.suggestExpenseCategory(row.description());
+        if (suggestion.confidence() == Confidence.LOW) {
+            return tx.withSuggestion(null, CONFIDENCE_LOW, now);
+        }
+        return tx.withSuggestion(suggestion.category(), scoreFor(suggestion.confidence()), now);
+    }
+
+    private static BigDecimal scoreFor(Confidence confidence) {
+        return switch (confidence) {
+            case HIGH -> CONFIDENCE_HIGH;
+            case MEDIUM -> CONFIDENCE_MEDIUM;
+            case LOW -> CONFIDENCE_LOW;
+        };
     }
 }

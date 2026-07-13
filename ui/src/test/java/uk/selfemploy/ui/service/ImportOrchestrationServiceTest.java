@@ -275,6 +275,36 @@ class ImportOrchestrationServiceTest {
         }
 
         @Test
+        @DisplayName("auto-suggests a category and high confidence for an uncategorised expense whose description matches a keyword")
+        void autoSuggestsCategoryForUncategorisedExpense() {
+            ImportedTransactionRow expenseRow = ImportedTransactionRow.create(
+                    LocalDate.of(2025, 1, 17), "AMAZON MARKETPLACE", new BigDecimal("42.00"),
+                    TransactionType.EXPENSE, null, false, 0);
+
+            service.importTransactions(List.of(expenseRow), null);
+
+            BankTransaction tx = firstSaved();
+            assertThat(tx.suggestedCategory()).isEqualTo(ExpenseCategory.OFFICE_COSTS);
+            assertThat(tx.confidenceScore()).isNotNull();
+            assertThat(tx.confidenceScore()).isGreaterThanOrEqualTo(new BigDecimal("0.9"));
+        }
+
+        @Test
+        @DisplayName("leaves an unrecognised expense uncategorised with low confidence rather than guessing")
+        void leavesUnrecognisedExpenseUncategorised() {
+            ImportedTransactionRow expenseRow = ImportedTransactionRow.create(
+                    LocalDate.of(2025, 1, 17), "Zzq unknown payee", new BigDecimal("42.00"),
+                    TransactionType.EXPENSE, null, false, 0);
+
+            service.importTransactions(List.of(expenseRow), null);
+
+            BankTransaction tx = firstSaved();
+            assertThat(tx.suggestedCategory()).isNull();
+            assertThat(tx.confidenceScore()).isNotNull();
+            assertThat(tx.confidenceScore()).isLessThan(new BigDecimal("0.6"));
+        }
+
+        @Test
         @DisplayName("stages every row under a single shared batch id")
         void stagesMixedWithSharedBatch() {
             List<ImportedTransactionRow> transactions = List.of(
