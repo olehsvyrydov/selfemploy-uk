@@ -112,6 +112,29 @@ class CsvTransactionParserTest {
         }
 
         @Test
+        @DisplayName("parses ISO date columns that carry a timezone suffix")
+        void parsesDateTimeDatesWithTimezone() throws IOException {
+            Path csv = createCsvFile(
+                "Date,Description,Amount\n" +
+                "2025-06-15T16:46:45Z,Client Payment,1500.00\n" +
+                "2025-06-16T09:12:03+01:00,Office Supplies,-45.99\n"
+            );
+
+            ColumnMapping mapping = new ColumnMapping();
+            mapping.setDateColumn("Date");
+            mapping.setDescriptionColumn("Description");
+            mapping.setAmountColumn("Amount");
+            mapping.setDateFormat("yyyy-MM-dd");
+
+            CsvTransactionParser.ParseResult result = parser.parse(csv, mapping);
+
+            assertThat(result.transactions()).hasSize(2);
+            assertThat(result.warnings()).isEmpty();
+            assertThat(result.transactions().get(0).date()).isEqualTo(LocalDate.of(2025, 6, 15));
+            assertThat(result.transactions().get(1).date()).isEqualTo(LocalDate.of(2025, 6, 16));
+        }
+
+        @Test
         @DisplayName("parses multiple rows")
         void parsesMultipleRows() throws IOException {
             Path csv = createCsvFile(

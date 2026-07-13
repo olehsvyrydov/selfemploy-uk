@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
  */
 public class InMemoryIncomeService extends IncomeService {
 
-    private static final int MAX_DESCRIPTION_LENGTH = 100;
     private final Map<UUID, Income> storage = new ConcurrentHashMap<>();
 
     public InMemoryIncomeService() {
@@ -173,36 +172,4 @@ public class InMemoryIncomeService extends IncomeService {
         return storage.size();
     }
 
-    // === Validation Methods ===
-
-    protected void validateBusinessId(UUID businessId) {
-        if (businessId == null) {
-            throw new ValidationException("businessId", "Business ID cannot be null");
-        }
-    }
-
-    protected void validateAmount(BigDecimal amount) {
-        if (amount == null) {
-            throw new ValidationException("amount", "Income amount cannot be null");
-        }
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("amount", "Income amount must be positive");
-        }
-    }
-
-    protected void validateDescription(String description) {
-        if (description == null || description.isBlank()) {
-            throw new ValidationException("description", "Income description cannot be null or empty");
-        }
-        if (description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new ValidationException("description",
-                String.format("Income description cannot exceed %d characters", MAX_DESCRIPTION_LENGTH));
-        }
-    }
-
-    protected void validateCategory(IncomeCategory category) {
-        if (category == null) {
-            throw new ValidationException("category", "Income category cannot be null");
-        }
-    }
 }

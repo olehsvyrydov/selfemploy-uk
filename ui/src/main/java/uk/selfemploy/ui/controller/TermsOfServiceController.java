@@ -6,7 +6,10 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -178,17 +181,33 @@ public class TermsOfServiceController implements Initializable {
      */
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
-        // Escape closes the dialog in read-only (settings) mode only. handleClose() self-guards:
-        // it does nothing in first-launch mode, where acceptance is mandatory.
-        stage.sceneProperty().addListener((obs, oldScene, scene) -> {
-            if (scene != null) {
-                scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-                    if (event.getCode() == KeyCode.ESCAPE && viewModel != null
-                            && viewModel.isCloseButtonVisible()) {
-                        viewModel.handleClose();
-                        event.consume();
+        Scene scene = stage.getScene();
+        if (scene != null) {
+            installEscapeToClose(scene);
+        } else {
+            stage.sceneProperty().addListener(new ChangeListener<>() {
+                @Override
+                public void changed(ObservableValue<? extends Scene> obs, Scene oldScene, Scene newScene) {
+                    if (newScene != null) {
+                        installEscapeToClose(newScene);
+                        stage.sceneProperty().removeListener(this);
                     }
-                });
+                }
+            });
+        }
+    }
+
+    /**
+     * Installs a scene-level Escape filter that closes the dialog in read-only (settings) mode only.
+     * {@link TermsOfServiceViewModel#handleClose()} self-guards: it does nothing in first-launch mode,
+     * where acceptance is mandatory.
+     */
+    private void installEscapeToClose(Scene scene) {
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE && viewModel != null
+                    && viewModel.isCloseButtonVisible()) {
+                viewModel.handleClose();
+                event.consume();
             }
         });
     }

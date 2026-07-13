@@ -422,9 +422,10 @@ public class CsvTransactionParser implements BankStatementParser {
      * Parses a date cell with the configured formatter.
      *
      * <p>The formatter is date-only ({@link #buildDateFormatter} drops any time pattern), so a value
-     * that carries a trailing time (for example {@code "2025-06-15 16:46:45"}) is retried against
-     * just its date portion. Only a trailing {@code HH:mm[:ss]} (optionally with AM/PM) is removed,
-     * leaving space-separated date formats such as {@code "d MMM yyyy"} untouched.
+     * that carries a trailing time (for example {@code "2025-06-15 16:46:45"} or an ISO timestamp
+     * with a zone such as {@code "2025-06-15T16:46:45Z"} / {@code "...+01:00"}) is retried against
+     * just its date portion. Everything from the time separator onward is dropped; since dates never
+     * contain a colon, space-separated date formats such as {@code "d MMM yyyy"} are left untouched.
      *
      * @throws IllegalArgumentException if the value is empty or cannot be parsed as a date
      */
@@ -436,8 +437,7 @@ public class CsvTransactionParser implements BankStatementParser {
         try {
             return LocalDate.parse(dateStr, formatter);
         } catch (DateTimeParseException e) {
-            String dateOnly = dateStr.replaceFirst(
-                "[ T]\\d{1,2}:\\d{2}(:\\d{2})?(\\.\\d+)?\\s*([AaPp][Mm])?$", "");
+            String dateOnly = dateStr.replaceFirst("[ T]\\d{1,2}:.*$", "");
             if (!dateOnly.equals(dateStr)) {
                 try {
                     return LocalDate.parse(dateOnly, formatter);
