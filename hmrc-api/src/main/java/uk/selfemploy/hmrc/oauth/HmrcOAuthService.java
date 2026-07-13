@@ -55,55 +55,30 @@ public class HmrcOAuthService {
      * @throws HmrcOAuthException if authentication fails
      */
     public CompletableFuture<OAuthTokens> authenticate() {
-        LOG.info("Starting authenticate()");
-
-        // Validate configuration
-        LOG.info("Validating configuration...");
         validateConfiguration();
-        LOG.info("Configuration valid");
 
-        // Generate secure state for CSRF protection
-        LOG.info("Generating state...");
         String state = generateSecureState();
-        LOG.info("State generated");
+        PkceChallenge pkce = PkceChallenge.generate(secureRandom);
 
-        // Build authorization URL
-        LOG.info("Building auth URL...");
-        String authUrl = buildAuthorizationUrl(state);
+        String authUrl = buildAuthorizationUrl(state, pkce.challenge());
         currentAuthUrl.set(authUrl);
-        LOG.info("Auth URL built (length=" + authUrl.length() + ")");
 
         LOG.info("Starting OAuth2 authentication flow");
 
-        // Start callback server and await callback
-        LOG.info("Starting callback server on port " + config.callbackPort() + "...");
         CompletableFuture<String> callbackFuture = callbackServer.startAndAwaitCallback(state);
-        LOG.info("Callback server started");
 
-        // Open browser with authorization URL
-        LOG.info("Opening browser...");
-        try {
-            browserLauncher.openUrl(authUrl);
-            LOG.info("Browser opened successfully");
-        } catch (HmrcOAuthException e) {
-            LOG.severe("Browser failed: " + e.getMessage());
-            callbackServer.stop();
-            return CompletableFuture.failedFuture(e);
-        }
-
-        // Process the callback and exchange code for tokens
-        return callbackFuture
-            .thenCompose(authCode -> {
-                LOG.fine("Received authorization code, exchanging for tokens");
-                return tokenExchangeClient.exchangeCodeForTokens(authCode);
+        return callbackServer.listening()
+            .thenCompose(listening -> {
+                browserLauncher.openUrl(authUrl);
+                return callbackFuture;
             })
+            .thenCompose(authCode -> tokenExchangeClient.exchangeCodeForTokens(authCode, pkce.verifier()))
             .thenApply(tokens -> {
                 LOG.info("OAuth2 authentication completed successfully");
                 currentTokens.set(tokens);
                 return tokens;
             })
             .whenComplete((result, error) -> {
-                // Always stop the callback server
                 callbackServer.stop();
                 if (error != null) {
                     LOG.severe("OAuth2 authentication failed: " + error.getMessage());
@@ -128,10 +103,11 @@ public class HmrcOAuthService {
     /**
      * Builds the HMRC authorization URL with required parameters.
      *
-     * @param state The state parameter for CSRF protection
+     * @param state         The state parameter for CSRF protection
+     * @param codeChallenge The PKCE S256 challenge (RFC 7636)
      * @return The complete authorization URL
      */
-    public String buildAuthorizationUrl(String state) {
+    public String buildAuthorizationUrl(String state, String codeChallenge) {
         StringBuilder url = new StringBuilder(config.authorizeUrl());
         url.append("?");
         url.append("client_id=").append(encode(config.clientId().orElse("")));
@@ -139,6 +115,8 @@ public class HmrcOAuthService {
         url.append("&redirect_uri=").append(encode(config.getRedirectUri()));
         url.append("&scope=").append(encode(String.join(" ", config.scopes())));
         url.append("&state=").append(encode(state));
+        url.append("&code_challenge=").append(encode(codeChallenge));
+        url.append("&code_challenge_method=").append(PkceChallenge.METHOD);
 
         return url.toString();
     }
