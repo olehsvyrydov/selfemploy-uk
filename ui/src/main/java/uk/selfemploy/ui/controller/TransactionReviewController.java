@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -707,6 +708,17 @@ public class TransactionReviewController implements Initializable, MainControlle
     }
 
     /**
+     * Clears any import-batch scope so the screen shows all of the business's transactions.
+     */
+    public void showAllTransactions() {
+        if (viewModel != null) {
+            viewModel.scopeToBatch(null);
+            viewModel.loadTransactions();
+            updateTable();
+        }
+    }
+
+    /**
      * Opens the bank-statement import wizard directly from the Bank Review screen (its empty-state
      * call to action). Imports stage into this same review list, so on success the list is reloaded
      * and a confirmation banner is shown — no navigation away from the page.
@@ -743,7 +755,7 @@ public class TransactionReviewController implements Initializable, MainControlle
             String resultMessage = wizard.getImportResultMessage();
             if (resultMessage != null) {
                 refreshData();
-                showImportSuccessBanner(resultMessage);
+                showImportSuccessBanner(resultMessage, wizard.getImportResultBatchId());
             }
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to open the Bank Import Wizard", e);
@@ -752,13 +764,19 @@ public class TransactionReviewController implements Initializable, MainControlle
     }
 
     /**
-     * Shows a success banner at the top of the Transaction Review page.
-     * The banner auto-dismisses after 5 seconds.
-     * Used after completing a bank statement import to confirm the result.
+     * Scopes the screen to the just-imported batch (so only its transactions show) and shows a
+     * success banner that auto-dismisses after 5 seconds. Used after completing a bank statement
+     * import to confirm the result.
      *
      * @param message the success message to display
+     * @param batchId the import batch to scope the screen to, or null to leave the scope unchanged
      */
-    public void showImportSuccessBanner(String message) {
+    public void showImportSuccessBanner(String message, UUID batchId) {
+        if (viewModel != null && batchId != null) {
+            viewModel.scopeToBatch(batchId);
+            viewModel.loadTransactions();
+            updateTable();
+        }
         if (importSuccessBanner == null || importSuccessLabel == null) {
             LOG.info("Import success (banner unavailable): " + message);
             return;

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.UUID;
 
 /**
  * Main controller for the application's root layout.
@@ -203,11 +204,11 @@ public class MainController implements Initializable {
                 // Wire post-import navigation callback for Income and Expense controllers
                 if (controller instanceof IncomeController incomeController) {
                     incomeController.setNavigateToTransactionReview(
-                        message -> navigateToTransactionReviewWithMessage(message));
+                        this::navigateToTransactionReviewWithMessage);
                 }
                 if (controller instanceof ExpenseController expenseController) {
                     expenseController.setNavigateToTransactionReview(
-                        message -> navigateToTransactionReviewWithMessage(message));
+                        this::navigateToTransactionReviewWithMessage);
                 }
 
                 viewCache.put(view, viewNode);
@@ -232,17 +233,17 @@ public class MainController implements Initializable {
      *
      * @param message the success message to display on the Transaction Review page
      */
-    private void navigateToTransactionReviewWithMessage(String message) {
+    private void navigateToTransactionReviewWithMessage(String message, UUID batchId) {
         // Clear the cached Transaction Review view so it reloads with fresh data
         viewCache.remove(View.TRANSACTION_REVIEW);
         controllerCache.remove(View.TRANSACTION_REVIEW);
 
         loadView(View.TRANSACTION_REVIEW);
 
-        // Show the success banner on the newly loaded Transaction Review controller
+        // Scope the newly loaded screen to the just-imported batch and show the success banner.
         Object controller = controllerCache.get(View.TRANSACTION_REVIEW);
         if (controller instanceof TransactionReviewController reviewController) {
-            reviewController.showImportSuccessBanner(message);
+            reviewController.showImportSuccessBanner(message, batchId);
         }
     }
 
@@ -294,8 +295,18 @@ public class MainController implements Initializable {
         loadView(View.EXPENSES);
     }
 
+    /**
+     * Opens the Bank Review screen from the sidebar. Reached this way (rather than from an import),
+     * it shows all transactions, clearing any batch scope a prior import left on the cached screen.
+     *
+     * @param event the navigation action event
+     */
     @FXML
     void navigateToTransactionReview(ActionEvent event) {
+        Object controller = controllerCache.get(View.TRANSACTION_REVIEW);
+        if (controller instanceof TransactionReviewController reviewController) {
+            reviewController.showAllTransactions();
+        }
         loadView(View.TRANSACTION_REVIEW);
     }
 

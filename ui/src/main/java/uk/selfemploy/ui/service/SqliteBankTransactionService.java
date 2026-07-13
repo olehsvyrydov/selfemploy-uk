@@ -40,6 +40,13 @@ public class SqliteBankTransactionService {
     }
 
     /**
+     * Finds the bank transactions staged under a single import batch.
+     */
+    public List<BankTransaction> findByBatch(UUID importAuditId) {
+        return repository.findByImportAuditId(importAuditId);
+    }
+
+    /**
      * Finds a bank transaction by ID.
      */
     public Optional<BankTransaction> findById(UUID id) {

@@ -14,6 +14,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 -- name: findBankTransactionsByBusiness
 SELECT * FROM bank_transactions WHERE business_id = ? AND deleted_at IS NULL ORDER BY date DESC;
 
+-- name: findBankTransactionsByBusinessAndBatch
+SELECT * FROM bank_transactions
+WHERE business_id = ? AND import_audit_id = ? AND deleted_at IS NULL ORDER BY date DESC;
+
 -- name: findBankTransactionById
 SELECT * FROM bank_transactions WHERE id = ? AND deleted_at IS NULL;
 

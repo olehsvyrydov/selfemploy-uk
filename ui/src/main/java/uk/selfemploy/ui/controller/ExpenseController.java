@@ -52,6 +52,12 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.io.File;
+import java.io.IOException;
+import java.awt.Desktop;
+import uk.selfemploy.core.service.ReceiptMetadata;
+import uk.selfemploy.ui.util.ExpenseDialogHelper;
 
 /**
  * Controller for the Expense List view.
@@ -118,7 +124,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     private boolean cisBusiness = false;
 
     // Navigation callback for post-import redirect to Transaction Review
-    private java.util.function.Consumer<String> navigateToTransactionReview;
+    private BiConsumer<String, UUID> navigateToTransactionReview;
 
     /**
      * Sets the callback to navigate to the Transaction Review page with a success message.
@@ -126,7 +132,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
      *
      * @param callback accepts a success message string to display on the Transaction Review page
      */
-    public void setNavigateToTransactionReview(java.util.function.Consumer<String> callback) {
+    public void setNavigateToTransactionReview(BiConsumer<String, UUID> callback) {
         this.navigateToTransactionReview = callback;
     }
 
@@ -516,7 +522,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
             // After wizard closes, redirect to Transaction Review if import was successful
             String resultMessage = controller.getImportResultMessage();
             if (resultMessage != null && navigateToTransactionReview != null) {
-                navigateToTransactionReview.accept(resultMessage);
+                navigateToTransactionReview.accept(resultMessage, controller.getImportResultBatchId());
             }
         } catch (Exception e) {
             LOG.error("Failed to open Bank Import Wizard", e);
@@ -669,10 +675,10 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
         }
     }
 
-    private void openReceipt(uk.selfemploy.core.service.ReceiptMetadata receipt) {
+    private void openReceipt(ReceiptMetadata receipt) {
         if (receipt == null || receipt.storagePath() == null) return;
 
-        java.io.File file = receipt.storagePath().toFile();
+        File file = receipt.storagePath().toFile();
         if (!file.exists()) return;
 
         // Run on background thread to avoid blocking JavaFX Application Thread
@@ -686,10 +692,10 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     new ProcessBuilder("open", file.getAbsolutePath()).start();
                 } else if (os.contains("win")) {
                     new ProcessBuilder("cmd", "/c", "start", "", file.getAbsolutePath()).start();
-                } else if (java.awt.Desktop.isDesktopSupported()) {
-                    java.awt.Desktop.getDesktop().open(file);
+                } else if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().open(file);
                 }
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
                 // Show error on JavaFX thread
                 javafx.application.Platform.runLater(() ->
                     AppDialog.error("Error", "Could not open receipt\n\n" + e.getMessage()));
@@ -722,7 +728,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     private void openExpenseDialog(Expense expense) {
         javafx.stage.Window owner = expenseContainer.getScene().getWindow();
 
-        boolean success = uk.selfemploy.ui.util.ExpenseDialogHelper.openDialog(
+        boolean success = ExpenseDialogHelper.openDialog(
                 owner,
                 expenseService,
                 businessId,

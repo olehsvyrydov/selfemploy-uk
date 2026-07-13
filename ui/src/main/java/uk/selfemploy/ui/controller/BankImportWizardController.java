@@ -34,7 +34,9 @@ import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.ArrayList;
 
 /**
  * Controller for the CSV Bank Import Wizard.
@@ -131,6 +133,7 @@ public class BankImportWizardController implements Initializable {
     private Stage dialogStage;
     private Consumer<List<ImportedTransactionRow>> onImportCallback;
     private String importResultMessage;
+    private UUID importResultBatchId;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -172,6 +175,11 @@ public class BankImportWizardController implements Initializable {
      */
     public String getImportResultMessage() {
         return importResultMessage;
+    }
+
+    /** The import batch id of the last import, so the review screen can scope to it. */
+    public UUID getImportResultBatchId() {
+        return importResultBatchId;
     }
 
     // =====================================================
@@ -708,7 +716,7 @@ public class BankImportWizardController implements Initializable {
             expenseColumnCombo.setItems(FXCollections.observableArrayList(headers));
         }
         if (categoryColumnCombo != null) {
-            List<String> optionalHeaders = new java.util.ArrayList<>(headers);
+            List<String> optionalHeaders = new ArrayList<>(headers);
             optionalHeaders.add(0, "None - Auto-categorize");
             categoryColumnCombo.setItems(FXCollections.observableArrayList(optionalHeaders));
         }
@@ -947,6 +955,7 @@ public class BankImportWizardController implements Initializable {
                         message.append(String.format(" %d failed.", result.errorCount()));
                     }
                     importResultMessage = message.toString();
+                    importResultBatchId = result.batchId();
 
                     showSuccessToast(importResultMessage);
 
