@@ -351,8 +351,8 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     }
 
     /**
-     * Whether the no-data empty state is shown instead of the tax calculation for the current
-     * tax year. True until income or expense data has been loaded for the selected year.
+     * Whether the no-data empty state is shown instead of the tax calculation. True when the
+     * selected tax year has no income or expense records (and before any data has been loaded).
      */
     boolean isEmptyStateShown() {
         return !hasData;

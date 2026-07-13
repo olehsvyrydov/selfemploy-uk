@@ -57,6 +57,8 @@ public class TourOverlay extends StackPane {
 
         getStyleClass().add("tour-overlay");
         setPickOnBounds(true);
+        // Focus-traversable so requestFocus() succeeds and the Escape handler receives key events.
+        setFocusTraversable(true);
         setAlignment(Pos.CENTER);
 
         backdrop.setMouseTransparent(false);

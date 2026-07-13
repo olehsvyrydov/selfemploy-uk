@@ -203,12 +203,6 @@ public class SqliteIncomeService extends IncomeService {
         }
     }
 
-    protected void validateDate(LocalDate date) {
-        if (date == null) {
-            throw new ValidationException("date", "Income date cannot be null");
-        }
-    }
-
     protected void validateAmount(BigDecimal amount) {
         if (amount == null) {
             throw new ValidationException("amount", "Income amount cannot be null");

@@ -234,12 +234,6 @@ public class SqliteExpenseService extends ExpenseService {
         }
     }
 
-    protected void validateDate(LocalDate date) {
-        if (date == null) {
-            throw new ValidationException("date", "Expense date cannot be null");
-        }
-    }
-
     protected void validateAmount(BigDecimal amount) {
         if (amount == null) {
             throw new ValidationException("amount", "Expense amount cannot be null");
