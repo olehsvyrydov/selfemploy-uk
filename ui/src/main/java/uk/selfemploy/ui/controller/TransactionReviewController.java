@@ -18,8 +18,10 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.geometry.Rectangle2D;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ReviewStatus;
@@ -719,10 +721,14 @@ public class TransactionReviewController implements Initializable, MainControlle
             wizardStage.setTitle("Import Bank Statement");
             wizardStage.initModality(Modality.WINDOW_MODAL);
             wizardStage.initOwner(reviewContainer.getScene().getWindow());
-            wizardStage.setWidth(1000);
-            wizardStage.setHeight(700);
+            wizardStage.setResizable(true);
             wizardStage.setMinWidth(800);
-            wizardStage.setMinHeight(600);
+            wizardStage.setMinHeight(500);
+            Rectangle2D visual = Screen.getPrimary().getVisualBounds();
+            wizardStage.setX(visual.getMinX());
+            wizardStage.setY(visual.getMinY());
+            wizardStage.setWidth(visual.getWidth());
+            wizardStage.setHeight(visual.getHeight());
 
             Scene scene = new Scene(root);
             scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());

@@ -91,6 +91,23 @@ class BankImportWizardViewModelTest {
         void shouldInitializeWithUnknownBankFormat() {
             assertThat(viewModel.getDetectedBankFormat()).isEqualTo(BankFormat.UNKNOWN);
         }
+
+        @Test
+        @DisplayName("enables the confirm-step action only when transactions were parsed")
+        void shouldEnableImportOnConfirmStepOnlyWithTransactions() {
+            viewModel.setSelectedFile(new File("statement.csv"));
+            viewModel.setCsvHeaders(List.of("Type", "Product", "Started Date", "Completed Date",
+                    "Description", "Amount", "Fee", "Currency", "State", "Balance"));
+            viewModel.goToNextStep();
+            viewModel.goToNextStep();
+            viewModel.goToNextStep();
+            assertThat(viewModel.getCurrentStep()).isEqualTo(4);
+
+            assertThat(viewModel.canGoNext()).isFalse();
+            viewModel.addTransaction(createTransaction(LocalDate.of(2026, 1, 1), "Payment",
+                    new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0));
+            assertThat(viewModel.canGoNext()).isTrue();
+        }
     }
 
     @Nested
