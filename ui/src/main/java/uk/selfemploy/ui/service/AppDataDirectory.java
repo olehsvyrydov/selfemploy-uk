@@ -1,9 +1,11 @@
 package uk.selfemploy.ui.service;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -77,6 +79,40 @@ public final class AppDataDirectory {
     public static void restrictFile(Path file) {
         if (Files.exists(file)) {
             restrict(file, OWNER_ONLY_FILE);
+        }
+    }
+
+    /**
+     * Writes {@code content} to {@code file} so it is owner-only from the moment it exists,
+     * replacing any current file atomically where the platform supports it.
+     *
+     * <p>The bytes are first written to a sibling temporary file — which the JDK creates with
+     * owner-only permissions on POSIX — and then moved into place, so a secret such as the master
+     * key is never briefly visible under the process umask the way a plain {@code Files.write}
+     * followed by a permission change would leave it.</p>
+     *
+     * @param file    the destination path
+     * @param content the bytes to write
+     * @throws IOException if the temporary file cannot be written or moved into place
+     */
+    public static void writeRestricted(Path file, byte[] content) throws IOException {
+        Path parent = file.getParent();
+        Path temp = parent != null
+            ? Files.createTempFile(parent, ".tmp-", null)
+            : Files.createTempFile(".tmp-", null);
+        try {
+            restrictFile(temp);
+            Files.write(temp, content);
+            restrictFile(temp);
+            try {
+                Files.move(temp, file,
+                    StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+            }
+            restrictFile(file);
+        } finally {
+            Files.deleteIfExists(temp);
         }
     }
 

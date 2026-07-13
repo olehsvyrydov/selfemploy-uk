@@ -35,6 +35,7 @@ public final class SqliteDataStore {
 
     private final Path databasePath;
     private final boolean inMemory;
+    private final CredentialEncryption credentialEncryption;
 
     /**
      * The primary connection: used for schema init/migration, and the sole connection in in-memory
@@ -58,6 +59,7 @@ public final class SqliteDataStore {
     }
 
     SqliteDataStore(boolean inMemory) {
+        this.credentialEncryption = new CredentialEncryption();
         this.inMemory = inMemory;
         this.databasePath = inMemory ? null : resolveDatabasePath();
         if (!inMemory) {
@@ -75,9 +77,18 @@ public final class SqliteDataStore {
      * against a temporary database file.
      */
     SqliteDataStore(Path databasePath) {
+        this(databasePath, new CredentialEncryption());
+    }
+
+    /**
+     * Test seam: a file-mode store with an explicit {@link CredentialEncryption}, so tests can bind
+     * the at-rest encryption to a temporary master key instead of the real per-user key file.
+     */
+    SqliteDataStore(Path databasePath, CredentialEncryption credentialEncryption) {
         if (databasePath == null) {
             throw new IllegalArgumentException("databasePath cannot be null");
         }
+        this.credentialEncryption = credentialEncryption;
         this.inMemory = false;
         this.databasePath = databasePath;
         ensureDirectoryExists();
@@ -118,9 +129,10 @@ public final class SqliteDataStore {
     }
 
     private void restrictDatabaseFiles() {
+        String name = databasePath.getFileName().toString();
         AppDataDirectory.restrictFile(databasePath);
-        AppDataDirectory.restrictFile(databasePath.resolveSibling(DB_FILE + "-wal"));
-        AppDataDirectory.restrictFile(databasePath.resolveSibling(DB_FILE + "-shm"));
+        AppDataDirectory.restrictFile(databasePath.resolveSibling(name + "-wal"));
+        AppDataDirectory.restrictFile(databasePath.resolveSibling(name + "-shm"));
     }
 
     /**
@@ -533,7 +545,7 @@ public final class SqliteDataStore {
             return null;
         }
         if (credentialEncryption.isLegacy(stored)) {
-            saveSetting(key, credentialEncryption.encrypt(stored));
+            reEncryptInPlace(key, stored, key);
             return stored;
         }
         try {
@@ -542,6 +554,21 @@ public final class SqliteDataStore {
             LOG.log(Level.WARNING, "Failed to decrypt " + key + " - clearing stored value", e);
             saveSetting(key, null);
             return null;
+        }
+    }
+
+    /**
+     * Rewrites a plaintext or legacy-scheme value under the current master key. A failure is logged
+     * and swallowed rather than propagated or treated as corruption: the value was read correctly,
+     * so it must not be cleared just because it could not be rewritten (e.g. the key file is
+     * momentarily unwritable); the next load simply retries the rewrite.
+     */
+    private void reEncryptInPlace(String key, String plaintext, String description) {
+        try {
+            saveSetting(key, credentialEncryption.encrypt(plaintext));
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING,
+                "Could not re-encrypt " + description + " under the current key; left as stored", e);
         }
     }
 
@@ -671,8 +698,6 @@ public final class SqliteDataStore {
 
     // === HMRC API Credential Operations ===
 
-    private static final CredentialEncryption credentialEncryption = new CredentialEncryption();
-
     /**
      * Saves the HMRC API client ID, encrypted at rest.
      *
@@ -704,17 +729,18 @@ public final class SqliteDataStore {
         if (encrypted == null) {
             return null;
         }
+        String plaintext;
         try {
-            String plaintext = credentialEncryption.decrypt(encrypted);
-            if (credentialEncryption.isLegacy(encrypted)) {
-                saveSetting(key, credentialEncryption.encrypt(plaintext));
-            }
-            return plaintext;
+            plaintext = credentialEncryption.decrypt(encrypted);
         } catch (CredentialEncryptionException e) {
             LOG.log(Level.WARNING, "Failed to decrypt " + description + " - clearing corrupted value", e);
             saveSetting(key, null);
             return null;
         }
+        if (credentialEncryption.isLegacy(encrypted)) {
+            reEncryptInPlace(key, plaintext, description);
+        }
+        return plaintext;
     }
 
     /**

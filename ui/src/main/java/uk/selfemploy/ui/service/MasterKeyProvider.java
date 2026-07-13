@@ -80,7 +80,13 @@ public final class MasterKeyProvider {
                 if (existing.length == KEY_LENGTH) {
                     return existing;
                 }
-                LOG.warning("Master key file has unexpected length; regenerating");
+                // A key file of the wrong length is a damaged or foreign key, not a signal to mint
+                // a new one. Every credential and token already at rest was encrypted under the
+                // real key; regenerating here would orphan all of them beyond recovery. Fail loudly
+                // so the file can be restored from a backup or removed as a deliberate reset.
+                throw new CredentialEncryptionException(
+                    "Master key file " + keyPath + " has an unexpected length (" + existing.length
+                        + " bytes); refusing to regenerate and discard existing encrypted data");
             }
 
             byte[] secret = new byte[KEY_LENGTH];
@@ -90,8 +96,7 @@ public final class MasterKeyProvider {
             if (parent != null) {
                 AppDataDirectory.createRestricted(parent);
             }
-            Files.write(keyPath, secret);
-            AppDataDirectory.restrictFile(keyPath);
+            AppDataDirectory.writeRestricted(keyPath, secret);
             LOG.info("Generated a new master key");
             return secret;
         } catch (IOException e) {

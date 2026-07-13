@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -34,6 +35,7 @@ public class HmrcOAuthService {
 
     private final AtomicReference<OAuthTokens> currentTokens = new AtomicReference<>();
     private final AtomicReference<String> currentAuthUrl = new AtomicReference<>();
+    private final AtomicBoolean authenticationInProgress = new AtomicBoolean(false);
 
     public HmrcOAuthService(HmrcConfig config,
                            OAuthCallbackServer callbackServer,
@@ -57,33 +59,47 @@ public class HmrcOAuthService {
     public CompletableFuture<OAuthTokens> authenticate() {
         validateConfiguration();
 
-        String state = generateSecureState();
-        PkceChallenge pkce = PkceChallenge.generate(secureRandom);
+        // A single service instance owns one flow at a time. Without this guard a second call
+        // (e.g. a double-clicked "Connect") would open a second browser and then tear down the
+        // first, still-listening callback server, aborting the login already in progress.
+        if (!authenticationInProgress.compareAndSet(false, true)) {
+            return CompletableFuture.failedFuture(new HmrcOAuthException(
+                OAuthError.SERVER_ERROR, "An authentication flow is already in progress"));
+        }
 
-        String authUrl = buildAuthorizationUrl(state, pkce.challenge());
-        currentAuthUrl.set(authUrl);
+        try {
+            String state = generateSecureState();
+            PkceChallenge pkce = PkceChallenge.generate(secureRandom);
 
-        LOG.info("Starting OAuth2 authentication flow");
+            String authUrl = buildAuthorizationUrl(state, pkce.challenge());
+            currentAuthUrl.set(authUrl);
 
-        CompletableFuture<String> callbackFuture = callbackServer.startAndAwaitCallback(state);
+            LOG.info("Starting OAuth2 authentication flow");
 
-        return callbackServer.listening()
-            .thenCompose(listening -> {
-                browserLauncher.openUrl(authUrl);
-                return callbackFuture;
-            })
-            .thenCompose(authCode -> tokenExchangeClient.exchangeCodeForTokens(authCode, pkce.verifier()))
-            .thenApply(tokens -> {
-                LOG.info("OAuth2 authentication completed successfully");
-                currentTokens.set(tokens);
-                return tokens;
-            })
-            .whenComplete((result, error) -> {
-                callbackServer.stop();
-                if (error != null) {
-                    LOG.severe("OAuth2 authentication failed: " + error.getMessage());
-                }
-            });
+            CompletableFuture<String> callbackFuture = callbackServer.startAndAwaitCallback(state);
+
+            return callbackServer.listening()
+                .thenCompose(listening -> {
+                    browserLauncher.openUrl(authUrl);
+                    return callbackFuture;
+                })
+                .thenCompose(authCode -> tokenExchangeClient.exchangeCodeForTokens(authCode, pkce.verifier()))
+                .thenApply(tokens -> {
+                    LOG.info("OAuth2 authentication completed successfully");
+                    currentTokens.set(tokens);
+                    return tokens;
+                })
+                .whenComplete((result, error) -> {
+                    callbackServer.stop();
+                    authenticationInProgress.set(false);
+                    if (error != null) {
+                        LOG.severe("OAuth2 authentication failed: " + error.getMessage());
+                    }
+                });
+        } catch (RuntimeException e) {
+            authenticationInProgress.set(false);
+            throw e;
+        }
     }
 
     /**

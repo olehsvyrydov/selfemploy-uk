@@ -28,10 +28,22 @@ class TokenEncryptionAtRestTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * Binds encryption to a master key inside the test's temp directory, so the test neither reads
+     * nor writes the real per-user {@code master.key} and passes on a locked-down CI home.
+     */
+    private CredentialEncryption tempKeyEncryption() {
+        return new CredentialEncryption(new MasterKeyProvider(tempDir.resolve("master.key")));
+    }
+
+    private SqliteDataStore store(Path dbPath) {
+        return new SqliteDataStore(dbPath, tempKeyEncryption());
+    }
+
     @Test
     @DisplayName("round-trips the tokens through storage")
     void roundTripsTokens() {
-        SqliteDataStore store = new SqliteDataStore(tempDir.resolve("tokens.db"));
+        SqliteDataStore store = store(tempDir.resolve("tokens.db"));
 
         store.saveOAuthTokens(ACCESS_TOKEN, REFRESH_TOKEN, 3600, "bearer", "read:self-assessment",
             Instant.parse("2026-01-01T00:00:00Z"));
@@ -45,7 +57,7 @@ class TokenEncryptionAtRestTest {
     @DisplayName("does not leave the tokens readable in the database file")
     void doesNotStoreTokensInClear() throws Exception {
         Path dbPath = tempDir.resolve("tokens.db");
-        SqliteDataStore store = new SqliteDataStore(dbPath);
+        SqliteDataStore store = store(dbPath);
 
         store.saveOAuthTokens(ACCESS_TOKEN, REFRESH_TOKEN, 3600, "bearer", "read:self-assessment",
             Instant.parse("2026-01-01T00:00:00Z"));
@@ -62,7 +74,7 @@ class TokenEncryptionAtRestTest {
     @DisplayName("rewrites a token left in the clear by an earlier version")
     void reEncryptsPlaintextTokenFromEarlierVersion() throws Exception {
         Path dbPath = tempDir.resolve("tokens.db");
-        SqliteDataStore store = new SqliteDataStore(dbPath);
+        SqliteDataStore store = store(dbPath);
         store.saveOAuthTokens(ACCESS_TOKEN, REFRESH_TOKEN, 3600, "bearer", "read", Instant.now());
 
         writeSettingDirectly(dbPath, "oauth_access_token", ACCESS_TOKEN);
@@ -73,6 +85,28 @@ class TokenEncryptionAtRestTest {
         assertThat(tokens[0]).isEqualTo(ACCESS_TOKEN);
         assertThat(tokens[1]).isEqualTo(REFRESH_TOKEN);
         assertThat(storedSetting(dbPath, "oauth_refresh_token")).doesNotContain(REFRESH_TOKEN);
+    }
+
+    @Test
+    @DisplayName("keeps a plaintext token when re-encryption fails, rather than discarding it")
+    void keepsLegacyTokenWhenReEncryptionFails() throws Exception {
+        Path dbPath = tempDir.resolve("tokens.db");
+        CredentialEncryption failingEncrypt = new CredentialEncryption(
+            new MasterKeyProvider(tempDir.resolve("master.key"))) {
+            @Override
+            public String encrypt(String plaintext) {
+                throw new CredentialEncryptionException("master key temporarily unwritable");
+            }
+        };
+        SqliteDataStore store = new SqliteDataStore(dbPath, failingEncrypt);
+        writeSettingDirectly(dbPath, "oauth_access_token", ACCESS_TOKEN);
+        writeSettingDirectly(dbPath, "oauth_refresh_token", REFRESH_TOKEN);
+
+        String[] tokens = store.loadOAuthTokens();
+
+        assertThat(tokens[0]).isEqualTo(ACCESS_TOKEN);
+        assertThat(tokens[1]).isEqualTo(REFRESH_TOKEN);
+        assertThat(storedSetting(dbPath, "oauth_access_token")).isEqualTo(ACCESS_TOKEN);
     }
 
     private String storedSetting(Path dbPath, String key) throws Exception {

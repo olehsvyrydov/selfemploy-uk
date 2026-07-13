@@ -79,11 +79,14 @@ public class OAuthCallbackServer {
     /**
      * Bind address for the callback listener. Binding to the loopback interface (rather than
      * Vert.x's {@code 0.0.0.0} default) keeps the OAuth callback endpoint unreachable from the
-     * local network. {@code localhost} is used rather than the literal {@code 127.0.0.1} so the
-     * bound address always matches whatever the browser resolves the registered redirect URI to,
-     * including hosts where loopback resolves to IPv6.
+     * local network. The literal {@code 127.0.0.1} is used rather than the hostname
+     * {@code localhost} so the bound address is deterministic (RFC 8252 §7.3): resolving
+     * {@code localhost} at bind time can pick a single family — e.g. IPv6 {@code ::1} — that the
+     * browser's redirect to {@code http://localhost} does not reach, leaving the callback to time
+     * out. IPv4 loopback is what {@code localhost} resolves to on the desktop platforms this app
+     * targets.
      */
-    private static final String LOOPBACK_HOST = "localhost";
+    private static final String LOOPBACK_HOST = "127.0.0.1";
 
     private final Vertx vertx;
     private final int port;

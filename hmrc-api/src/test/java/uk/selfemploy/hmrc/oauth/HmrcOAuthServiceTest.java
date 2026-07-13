@@ -322,6 +322,23 @@ class HmrcOAuthServiceTest {
         }
 
         @Test
+        @DisplayName("rejects a second concurrent authentication without disturbing the first")
+        void rejectsConcurrentAuthentication() {
+            when(callbackServer.startAndAwaitCallback(anyString()))
+                .thenReturn(new CompletableFuture<>()); // first flow never completes
+
+            CompletableFuture<OAuthTokens> first = oAuthService.authenticate();
+            CompletableFuture<OAuthTokens> second = oAuthService.authenticate();
+
+            assertThat(first).isNotCompleted();
+            assertThat(second).isCompletedExceptionally();
+            assertThatThrownBy(second::get).hasCauseInstanceOf(HmrcOAuthException.class);
+
+            verify(browserLauncher, times(1)).openUrl(anyString());
+            verify(callbackServer, never()).stop();
+        }
+
+        @Test
         @DisplayName("should propagate token exchange errors")
         void shouldPropagateTokenExchangeErrors() throws Exception {
             when(callbackServer.startAndAwaitCallback(anyString()))
