@@ -97,13 +97,14 @@ public final class AppDataDirectory {
      */
     public static void writeRestricted(Path file, byte[] content) throws IOException {
         Path parent = file.getParent();
+        // Files.createTempFile creates the file owner-only on POSIX, so the secret is never
+        // written to a world-readable path; the atomic move carries those permissions to the
+        // destination, and restrictFile is re-applied afterwards for non-POSIX filesystems.
         Path temp = parent != null
             ? Files.createTempFile(parent, ".tmp-", null)
             : Files.createTempFile(".tmp-", null);
         try {
-            restrictFile(temp);
             Files.write(temp, content);
-            restrictFile(temp);
             try {
                 Files.move(temp, file,
                     StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);

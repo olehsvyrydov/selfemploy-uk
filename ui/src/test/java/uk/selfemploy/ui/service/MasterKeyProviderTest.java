@@ -54,7 +54,7 @@ class MasterKeyProviderTest {
         Files.write(keyPath, new byte[]{1, 2, 3});
 
         assertThatThrownBy(() -> new MasterKeyProvider(keyPath).secret())
-            .isInstanceOf(CredentialEncryptionException.class)
+            .isInstanceOf(MasterKeyUnavailableException.class)
             .hasMessageContaining("unexpected length");
 
         assertThat(Files.readAllBytes(keyPath)).containsExactly(1, 2, 3);

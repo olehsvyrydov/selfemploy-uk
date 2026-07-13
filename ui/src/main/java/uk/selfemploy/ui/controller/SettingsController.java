@@ -40,6 +40,7 @@ import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.CredentialEncryptionException;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
 import uk.selfemploy.ui.service.SqliteDataStore;
@@ -647,8 +648,16 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
 
         SqliteDataStore store = SqliteDataStore.getInstance();
-        store.saveHmrcClientId(clientId.trim());
-        store.saveHmrcClientSecret(clientSecret.trim());
+        try {
+            store.saveHmrcClientId(clientId.trim());
+            store.saveHmrcClientSecret(clientSecret.trim());
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.SEVERE, "Failed to encrypt and save HMRC credentials", e);
+            showError("Could Not Save Credentials",
+                "Your HMRC credentials could not be secured on this device. Check that the "
+                    + "application data folder is writable, then try again.");
+            return;
+        }
 
         // Apply credentials as system properties for HmrcConfig
         applyHmrcCredentialsToSystemProperties(clientId.trim(), clientSecret.trim());

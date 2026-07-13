@@ -90,8 +90,13 @@ public class HmrcOAuthService {
                     return tokens;
                 })
                 .whenComplete((result, error) -> {
-                    callbackServer.stop();
-                    authenticationInProgress.set(false);
+                    // Release the in-progress guard even if stop() throws, so a teardown failure
+                    // cannot permanently wedge the flow into "already in progress".
+                    try {
+                        callbackServer.stop();
+                    } finally {
+                        authenticationInProgress.set(false);
+                    }
                     if (error != null) {
                         LOG.severe("OAuth2 authentication failed: " + error.getMessage());
                     }

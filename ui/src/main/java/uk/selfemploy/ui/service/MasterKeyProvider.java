@@ -84,7 +84,7 @@ public final class MasterKeyProvider {
                 // a new one. Every credential and token already at rest was encrypted under the
                 // real key; regenerating here would orphan all of them beyond recovery. Fail loudly
                 // so the file can be restored from a backup or removed as a deliberate reset.
-                throw new CredentialEncryptionException(
+                throw new MasterKeyUnavailableException(
                     "Master key file " + keyPath + " has an unexpected length (" + existing.length
                         + " bytes); refusing to regenerate and discard existing encrypted data");
             }
@@ -100,7 +100,7 @@ public final class MasterKeyProvider {
             LOG.info("Generated a new master key");
             return secret;
         } catch (IOException e) {
-            throw new CredentialEncryptionException("Could not read or create the master key", e);
+            throw new MasterKeyUnavailableException("Could not read or create the master key", e);
         }
     }
 }

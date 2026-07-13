@@ -271,8 +271,16 @@ public class HmrcConnectionService {
 
         return oauthService.refreshAccessToken()
             .thenApply(newTokens -> {
-                // Refresh succeeded - persist new tokens and mark verified
-                persistTokens(newTokens);
+                // Refresh succeeded - persist new tokens and mark verified. A failure to persist
+                // (e.g. the master key cannot be written) must not be mistaken for an expired
+                // session: the refreshed tokens are valid in memory, so keep the session verified
+                // rather than letting the exception fall through to the expired path below.
+                try {
+                    persistTokens(newTokens);
+                } catch (CredentialEncryptionException e) {
+                    LOG.log(Level.WARNING,
+                        "Refreshed tokens could not be persisted; continuing with the in-memory session", e);
+                }
                 markSessionVerified();
                 LOG.info("Session verified successfully (tokens refreshed)");
                 return VerificationResult.VERIFIED;

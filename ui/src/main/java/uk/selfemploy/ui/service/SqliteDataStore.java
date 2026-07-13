@@ -550,6 +550,11 @@ public final class SqliteDataStore {
         }
         try {
             return credentialEncryption.decrypt(stored);
+        } catch (MasterKeyUnavailableException e) {
+            // The key, not the ciphertext, is the problem, and it may come back (a restored key
+            // file, a writable home). Leave the encrypted value untouched so it decrypts later.
+            LOG.log(Level.WARNING, "Master key unavailable; leaving " + key + " encrypted at rest", e);
+            return null;
         } catch (CredentialEncryptionException e) {
             LOG.log(Level.WARNING, "Failed to decrypt " + key + " - clearing stored value", e);
             saveSetting(key, null);
@@ -732,6 +737,11 @@ public final class SqliteDataStore {
         String plaintext;
         try {
             plaintext = credentialEncryption.decrypt(encrypted);
+        } catch (MasterKeyUnavailableException e) {
+            // Recoverable: the value is intact and will decrypt once the key is available again.
+            LOG.log(Level.WARNING,
+                "Master key unavailable; leaving " + description + " encrypted at rest", e);
+            return null;
         } catch (CredentialEncryptionException e) {
             LOG.log(Level.WARNING, "Failed to decrypt " + description + " - clearing corrupted value", e);
             saveSetting(key, null);

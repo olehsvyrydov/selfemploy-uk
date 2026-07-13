@@ -88,6 +88,27 @@ class TokenEncryptionAtRestTest {
     }
 
     @Test
+    @DisplayName("keeps the encrypted tokens intact when the master key is unavailable")
+    void keepsEncryptedTokensWhenMasterKeyUnavailable() throws Exception {
+        Path dbPath = tempDir.resolve("tokens.db");
+        store(dbPath).saveOAuthTokens(ACCESS_TOKEN, REFRESH_TOKEN, 3600, "bearer", "read",
+            Instant.parse("2026-01-01T00:00:00Z"));
+        String ciphertextBefore = storedSetting(dbPath, "oauth_refresh_token");
+
+        CredentialEncryption keyGone = new CredentialEncryption(
+            new MasterKeyProvider(tempDir.resolve("master.key"))) {
+            @Override
+            public String decrypt(String encoded) {
+                throw new MasterKeyUnavailableException("master key temporarily unreadable");
+            }
+        };
+        String[] tokens = new SqliteDataStore(dbPath, keyGone).loadOAuthTokens();
+
+        assertThat(tokens).isNull();
+        assertThat(storedSetting(dbPath, "oauth_refresh_token")).isEqualTo(ciphertextBefore);
+    }
+
+    @Test
     @DisplayName("keeps a plaintext token when re-encryption fails, rather than discarding it")
     void keepsLegacyTokenWhenReEncryptionFails() throws Exception {
         Path dbPath = tempDir.resolve("tokens.db");
