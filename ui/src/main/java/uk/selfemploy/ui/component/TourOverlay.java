@@ -1,11 +1,16 @@
 package uk.selfemploy.ui.component;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -44,6 +49,9 @@ public class TourOverlay extends StackPane {
     private final Button nextButton = new Button("Next");
     private final Button skipButton = new Button("Skip");
 
+    private final EventHandler<KeyEvent> sceneKeyFilter = this::handleSceneKey;
+    private boolean finished;
+
     /**
      * @param viewModel  the tour state machine, already started
      * @param lookupRoot the node whose subtree is searched for step targets by {@code fx:id}
@@ -72,10 +80,12 @@ public class TourOverlay extends StackPane {
         widthProperty().addListener((obs, o, n) -> render());
         heightProperty().addListener((obs, o, n) -> render());
 
-        setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ESCAPE) {
-                finish();
-                e.consume();
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (oldScene != null) {
+                oldScene.removeEventFilter(KeyEvent.KEY_PRESSED, sceneKeyFilter);
+            }
+            if (newScene != null) {
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED, sceneKeyFilter);
             }
         });
 
@@ -189,7 +199,50 @@ public class TourOverlay extends StackPane {
         return sceneToLocal(inScene);
     }
 
+    /**
+     * Scene-level key filter that keeps the tour modal for keyboard users: Escape always ends the
+     * tour regardless of which node holds focus, and Tab is trapped within the card's own buttons so
+     * focus never traverses to the controls dimmed beneath the overlay.
+     */
+    private void handleSceneKey(KeyEvent e) {
+        if (e.getCode() == KeyCode.ESCAPE) {
+            finish();
+            e.consume();
+        } else if (e.getCode() == KeyCode.TAB) {
+            focusNextCardButton(e.isShiftDown());
+            e.consume();
+        }
+    }
+
+    private void focusNextCardButton(boolean backwards) {
+        List<Button> order = new ArrayList<>();
+        if (skipButton.isVisible()) {
+            order.add(skipButton);
+        }
+        if (backButton.isVisible()) {
+            order.add(backButton);
+        }
+        if (nextButton.isVisible()) {
+            order.add(nextButton);
+        }
+        if (order.isEmpty()) {
+            requestFocus();
+            return;
+        }
+        Node focused = getScene() == null ? null : getScene().getFocusOwner();
+        int current = order.indexOf(focused);
+        int size = order.size();
+        int next = current < 0
+            ? (backwards ? size - 1 : 0)
+            : (backwards ? (current - 1 + size) % size : (current + 1) % size);
+        order.get(next).requestFocus();
+    }
+
     private void finish() {
+        if (finished) {
+            return;
+        }
+        finished = true;
         if (viewModel.isActive()) {
             viewModel.skip();
         }

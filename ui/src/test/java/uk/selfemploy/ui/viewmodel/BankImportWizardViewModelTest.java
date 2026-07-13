@@ -108,6 +108,25 @@ class BankImportWizardViewModelTest {
                     new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0));
             assertThat(viewModel.canGoNext()).isTrue();
         }
+
+        @Test
+        @DisplayName("keeps the confirm-step action disabled when every parsed row is a duplicate")
+        void shouldDisableImportWhenAllTransactionsAreDuplicates() {
+            viewModel.setSelectedFile(new File("statement.csv"));
+            viewModel.setCsvHeaders(List.of("Type", "Product", "Started Date", "Completed Date",
+                    "Description", "Amount", "Fee", "Currency", "State", "Balance"));
+            viewModel.goToNextStep();
+            viewModel.goToNextStep();
+            viewModel.goToNextStep();
+            assertThat(viewModel.getCurrentStep()).isEqualTo(4);
+
+            viewModel.addTransaction(createTransaction(LocalDate.of(2026, 1, 1), "Payment",
+                    new BigDecimal("100.00"), TransactionType.INCOME, null, true, 0));
+
+            assertThat(viewModel.getTransactions()).isNotEmpty();
+            assertThat(viewModel.getTransactionsToImport()).isEmpty();
+            assertThat(viewModel.canGoNext()).isFalse();
+        }
     }
 
     @Nested

@@ -27,14 +27,6 @@
             <Label text="Submitted to HMRC" styleClass="submitted-banner-text"/>
         </HBox>
 
-        <!-- Neutral tax summary note -->
-        <HBox fx:id="taxDisclaimerBanner" alignment="CENTER_LEFT" spacing="8" managed="true" visible="true"
-              style="-fx-padding: 8 16;">
-            <Label fx:id="taxDisclaimerText"
-                   text="Based on the information you've entered. Review before submitting to HMRC."
-                   style="-fx-text-fill: #6b7280; -fx-font-size: 13px;" wrapText="true"/>
-        </HBox>
-
         <!-- No-data empty state (shown when no income or expenses exist for the year) -->
         <VBox fx:id="emptyState" styleClass="empty-state-container"
               alignment="CENTER" spacing="16" managed="false" visible="false">
@@ -50,6 +42,14 @@
 
         <!-- Tax calculation content (hidden when there is no data) -->
         <VBox fx:id="dataContent" spacing="20">
+
+        <!-- Neutral tax summary note -->
+        <HBox fx:id="taxDisclaimerBanner" alignment="CENTER_LEFT" spacing="8" managed="true" visible="true"
+              style="-fx-padding: 8 16;">
+            <Label fx:id="taxDisclaimerText"
+                   text="Based on the information you've entered. Review before submitting to HMRC."
+                   style="-fx-text-fill: #6b7280; -fx-font-size: 13px;" wrapText="true"/>
+        </HBox>
 
         <!-- Tax At A Glance -->
         <VBox styleClass="tax-glance-card" spacing="20">

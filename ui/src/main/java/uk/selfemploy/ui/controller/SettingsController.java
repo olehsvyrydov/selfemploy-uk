@@ -12,7 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
-import javafx.stage.Screen;
+import uk.selfemploy.ui.util.DialogBounds;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -1688,7 +1688,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
             // Bound the window to the visible screen so a tall document never pushes its footer
             // (and the Close button) off the bottom edge on smaller displays.
-            Rectangle2D visual = Screen.getPrimary().getVisualBounds();
+            Rectangle2D visual = DialogBounds.visualBoundsForOwner(owner);
             double boundedWidth = Math.min(width, visual.getWidth() - 40);
             double boundedHeight = Math.min(height, visual.getHeight() - 60);
             stage.setWidth(boundedWidth);
