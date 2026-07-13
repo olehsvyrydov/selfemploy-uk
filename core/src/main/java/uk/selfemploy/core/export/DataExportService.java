@@ -3,8 +3,6 @@ package uk.selfemploy.core.export;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
@@ -33,7 +31,6 @@ import java.util.stream.Collectors;
  *   <li>Combined report with summary</li>
  * </ul>
  */
-@ApplicationScoped
 public class DataExportService {
 
     private static final String APP_VERSION = "0.1.0";
@@ -43,7 +40,6 @@ public class DataExportService {
     private final ExpenseService expenseService;
     private final ObjectMapper objectMapper;
 
-    @Inject
     public DataExportService(IncomeService incomeService, ExpenseService expenseService) {
         this.incomeService = incomeService;
         this.expenseService = expenseService;

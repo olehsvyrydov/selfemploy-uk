@@ -15,7 +15,8 @@ import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.core.exception.ValidationException;
-import uk.selfemploy.persistence.repository.IncomeRepository;
+import uk.selfemploy.core.service.IncomeServiceTestSupport.IncomeStore;
+import uk.selfemploy.core.service.IncomeServiceTestSupport.StoreBackedIncomeService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.*;
 class IncomeServiceTest {
 
     @Mock
-    private IncomeRepository incomeRepository;
+    private IncomeStore incomeRepository;
 
     private IncomeService incomeService;
 
@@ -55,7 +56,7 @@ class IncomeServiceTest {
 
     @BeforeEach
     void setUp() {
-        incomeService = new IncomeService(incomeRepository);
+        incomeService = new StoreBackedIncomeService(incomeRepository);
     }
 
     @Nested

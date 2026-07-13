@@ -22,12 +22,11 @@ import java.util.stream.Collectors;
  */
 public class SqliteExpenseService extends ExpenseService {
 
-    private static final int MAX_DESCRIPTION_LENGTH = 100;
     private final SqliteExpenseRepository repository;
     private final UUID businessId;
 
     public SqliteExpenseService(UUID businessId) {
-        super(null); // No Panache repository in standalone mode
+        super();
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
@@ -226,42 +225,4 @@ public class SqliteExpenseService extends ExpenseService {
         return businessId;
     }
 
-    // === Validation Methods ===
-
-    private void validateBusinessId(UUID businessId) {
-        if (businessId == null) {
-            throw new ValidationException("businessId", "Business ID cannot be null");
-        }
-    }
-
-    private void validateDate(LocalDate date) {
-        if (date == null) {
-            throw new ValidationException("date", "Expense date cannot be null");
-        }
-    }
-
-    private void validateAmount(BigDecimal amount) {
-        if (amount == null) {
-            throw new ValidationException("amount", "Expense amount cannot be null");
-        }
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("amount", "Expense amount must be positive");
-        }
-    }
-
-    private void validateDescription(String description) {
-        if (description == null || description.isBlank()) {
-            throw new ValidationException("description", "Expense description cannot be null or empty");
-        }
-        if (description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new ValidationException("description",
-                    String.format("Expense description cannot exceed %d characters", MAX_DESCRIPTION_LENGTH));
-        }
-    }
-
-    private void validateCategory(ExpenseCategory category) {
-        if (category == null) {
-            throw new ValidationException("category", "Expense category cannot be null");
-        }
-    }
 }

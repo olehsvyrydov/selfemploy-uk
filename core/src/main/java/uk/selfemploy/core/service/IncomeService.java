@@ -1,14 +1,11 @@
 package uk.selfemploy.core.service;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.exception.ValidationException;
-import uk.selfemploy.persistence.repository.IncomeRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,21 +14,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Service layer for managing Income entities.
+ * Service contract for managing Income entities.
  *
- * Provides CRUD operations with validation and business rule enforcement.
- * Income dates are validated to be within a valid UK tax year range.
+ * <p>Defines the CRUD and reporting operations and owns the reusable validation rules
+ * (dates within a valid UK tax year, positive amounts). Persistence is supplied by concrete
+ * subclasses (the desktop app's SQLite-backed implementation), so this type carries no
+ * storage dependency.</p>
  */
-@ApplicationScoped
-public class IncomeService {
+public abstract class IncomeService {
 
-    private static final int MAX_DESCRIPTION_LENGTH = 100;
+    protected static final int MAX_DESCRIPTION_LENGTH = 100;
 
-    private final IncomeRepository incomeRepository;
-
-    @Inject
-    public IncomeService(IncomeRepository incomeRepository) {
-        this.incomeRepository = incomeRepository;
+    protected IncomeService() {
     }
 
     /**
@@ -65,19 +59,9 @@ public class IncomeService {
      * @return The created income
      * @throws ValidationException if validation fails
      */
-    public Income create(UUID businessId, LocalDate date, BigDecimal amount,
+    public abstract Income create(UUID businessId, LocalDate date, BigDecimal amount,
                          String description, IncomeCategory category, String reference,
-                         String clientName, IncomeStatus status) {
-        validateBusinessId(businessId);
-        validateDate(date);
-        validateAmount(amount);
-        validateDescription(description);
-        validateCategory(category);
-
-        Income income = Income.create(businessId, date, amount, description, category, reference,
-                clientName, status);
-        return incomeRepository.save(income);
-    }
+                         String clientName, IncomeStatus status);
 
     /**
      * Finds an income by ID.
@@ -86,12 +70,7 @@ public class IncomeService {
      * @return Optional containing the income if found
      * @throws ValidationException if id is null
      */
-    public Optional<Income> findById(UUID id) {
-        if (id == null) {
-            throw new ValidationException("id", "Income id cannot be null");
-        }
-        return incomeRepository.findByIdAsDomain(id);
-    }
+    public abstract Optional<Income> findById(UUID id);
 
     /**
      * Updates an existing income.
@@ -128,39 +107,9 @@ public class IncomeService {
      * @return The updated income
      * @throws ValidationException if income not found or validation fails
      */
-    public Income update(UUID id, LocalDate date, BigDecimal amount,
+    public abstract Income update(UUID id, LocalDate date, BigDecimal amount,
                          String description, IncomeCategory category, String reference,
-                         String clientName, IncomeStatus status) {
-        if (id == null) {
-            throw new ValidationException("id", "Income id cannot be null");
-        }
-
-        Income existingIncome = incomeRepository.findByIdAsDomain(id)
-                .orElseThrow(() -> new ValidationException("id", "Income not found: " + id));
-
-        validateDate(date);
-        validateAmount(amount);
-        validateDescription(description);
-        validateCategory(category);
-
-        Income updatedIncome = new Income(
-                existingIncome.id(),
-                existingIncome.businessId(),
-                date,
-                amount,
-                description,
-                category,
-                reference,
-                existingIncome.bankTransactionRef(),
-                existingIncome.invoiceNumber(),
-                existingIncome.receiptPath(),
-                existingIncome.bankTransactionId(),
-                clientName != null ? clientName : existingIncome.clientName(),
-                status != null ? status : existingIncome.status()
-        );
-
-        return incomeRepository.update(updatedIncome);
-    }
+                         String clientName, IncomeStatus status);
 
     /**
      * Deletes an income by ID.
@@ -169,23 +118,7 @@ public class IncomeService {
      * @return true if deleted, false if not found
      * @throws ValidationException if id is null or income is linked to HMRC submission
      */
-    public boolean delete(UUID id) {
-        if (id == null) {
-            throw new ValidationException("id", "Income id cannot be null");
-        }
-
-        Optional<Income> existingIncome = incomeRepository.findByIdAsDomain(id);
-        if (existingIncome.isEmpty()) {
-            return false;
-        }
-
-        // TODO: Check if linked to HMRC submission and throw ValidationException
-        // if (isLinkedToHmrcSubmission(id)) {
-        //     throw new ValidationException("id", "Cannot delete income linked to HMRC submission");
-        // }
-
-        return incomeRepository.deleteByIdAndReturn(id);
-    }
+    public abstract boolean delete(UUID id);
 
     /**
      * Finds all incomes for a business within a tax year.
@@ -195,14 +128,7 @@ public class IncomeService {
      * @return List of incomes within the tax year
      * @throws ValidationException if businessId or taxYear is null
      */
-    public List<Income> findByTaxYear(UUID businessId, TaxYear taxYear) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-
-        return incomeRepository.findByDateRange(businessId, taxYear.startDate(), taxYear.endDate());
-    }
+    public abstract List<Income> findByTaxYear(UUID businessId, TaxYear taxYear);
 
     /**
      * Finds all incomes for a business by category.
@@ -212,12 +138,7 @@ public class IncomeService {
      * @return List of incomes matching the category
      * @throws ValidationException if businessId or category is null
      */
-    public List<Income> findByCategory(UUID businessId, IncomeCategory category) {
-        validateBusinessId(businessId);
-        validateCategory(category);
-
-        return incomeRepository.findByCategory(businessId, category);
-    }
+    public abstract List<Income> findByCategory(UUID businessId, IncomeCategory category);
 
     /**
      * Gets the total income for a business within a tax year.
@@ -227,14 +148,7 @@ public class IncomeService {
      * @return Total income amount
      * @throws ValidationException if businessId or taxYear is null
      */
-    public BigDecimal getTotalByTaxYear(UUID businessId, TaxYear taxYear) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-
-        return incomeRepository.calculateTotalForDateRange(businessId, taxYear.startDate(), taxYear.endDate());
-    }
+    public abstract BigDecimal getTotalByTaxYear(UUID businessId, TaxYear taxYear);
 
     /**
      * Gets the total income for a business within a specific quarter.
@@ -246,18 +160,7 @@ public class IncomeService {
      * @return Total income amount for the quarter
      * @throws ValidationException if any parameter is null
      */
-    public BigDecimal getTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-        if (quarter == null) {
-            throw new ValidationException("quarter", "Quarter cannot be null");
-        }
-
-        return incomeRepository.calculateTotalForDateRange(
-                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
-    }
+    public abstract BigDecimal getTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter);
 
     /**
      * Finds all incomes for a business within a specific quarter.
@@ -268,18 +171,7 @@ public class IncomeService {
      * @return List of incomes within the quarter
      * @throws ValidationException if any parameter is null
      */
-    public List<Income> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-        if (quarter == null) {
-            throw new ValidationException("quarter", "Quarter cannot be null");
-        }
-
-        return incomeRepository.findByDateRange(
-                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
-    }
+    public abstract List<Income> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter);
 
     /**
      * Counts all incomes for a business within a specific quarter.
@@ -294,13 +186,13 @@ public class IncomeService {
         return findByQuarter(businessId, taxYear, quarter).size();
     }
 
-    private void validateBusinessId(UUID businessId) {
+    protected void validateBusinessId(UUID businessId) {
         if (businessId == null) {
             throw new ValidationException("businessId", "Business ID cannot be null");
         }
     }
 
-    private void validateDate(LocalDate date) {
+    protected void validateDate(LocalDate date) {
         if (date == null) {
             throw new ValidationException("date", "Income date cannot be null");
         }
@@ -317,7 +209,7 @@ public class IncomeService {
      * Determines the tax year that a date should belong to.
      * UK tax years run from 6 April to 5 April.
      */
-    private TaxYear determineTaxYear(LocalDate date) {
+    protected TaxYear determineTaxYear(LocalDate date) {
         int year = date.getYear();
         // If date is before April 6th, it belongs to the previous tax year
         if (date.getMonthValue() < 4 || (date.getMonthValue() == 4 && date.getDayOfMonth() < 6)) {
@@ -326,7 +218,7 @@ public class IncomeService {
         return TaxYear.of(year);
     }
 
-    private void validateAmount(BigDecimal amount) {
+    protected void validateAmount(BigDecimal amount) {
         if (amount == null) {
             throw new ValidationException("amount", "Income amount cannot be null");
         }
@@ -335,7 +227,7 @@ public class IncomeService {
         }
     }
 
-    private void validateDescription(String description) {
+    protected void validateDescription(String description) {
         if (description == null || description.isBlank()) {
             throw new ValidationException("description", "Income description cannot be null or empty");
         }
@@ -345,7 +237,7 @@ public class IncomeService {
         }
     }
 
-    private void validateCategory(IncomeCategory category) {
+    protected void validateCategory(IncomeCategory category) {
         if (category == null) {
             throw new ValidationException("category", "Income category cannot be null");
         }

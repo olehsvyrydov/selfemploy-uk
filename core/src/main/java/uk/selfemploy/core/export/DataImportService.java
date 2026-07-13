@@ -3,8 +3,6 @@ package uk.selfemploy.core.export;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.enums.ExpenseCategory;
@@ -34,7 +32,6 @@ import java.util.stream.Collectors;
  *   <li>Detailed error reporting</li>
  * </ul>
  */
-@ApplicationScoped
 public class DataImportService {
 
     private static final String[] INCOME_HEADERS = {"Date", "Amount", "Description", "Category", "Reference"};
@@ -44,7 +41,6 @@ public class DataImportService {
     private final ExpenseService expenseService;
     private final ObjectMapper objectMapper;
 
-    @Inject
     public DataImportService(IncomeService incomeService, ExpenseService expenseService) {
         this.incomeService = incomeService;
         this.expenseService = expenseService;

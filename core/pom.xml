@@ -22,10 +22,6 @@
         </dependency>
         <dependency>
             <groupId>uk.selfemploy</groupId>
-            <artifactId>self-employment-persistence</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>uk.selfemploy</groupId>
             <artifactId>self-employment-hmrc-api</artifactId>
         </dependency>
         <dependency>

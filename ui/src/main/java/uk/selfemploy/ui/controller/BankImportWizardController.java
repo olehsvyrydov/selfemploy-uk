@@ -34,6 +34,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -131,7 +132,7 @@ public class BankImportWizardController implements Initializable {
     private Stage dialogStage;
     private Consumer<List<ImportedTransactionRow>> onImportCallback;
     private String importResultMessage;
-    private java.util.UUID importResultBatchId;
+    private UUID importResultBatchId;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -176,7 +177,7 @@ public class BankImportWizardController implements Initializable {
     }
 
     /** The import batch id of the last import, so the review screen can scope to it. */
-    public java.util.UUID getImportResultBatchId() {
+    public UUID getImportResultBatchId() {
         return importResultBatchId;
     }
 
@@ -534,6 +535,14 @@ public class BankImportWizardController implements Initializable {
                 importBtn.setDisable(newVal);
             });
         }
+
+        viewModel.importingProperty().addListener((obs, oldVal, newVal) -> {
+            if (nextBtn != null && newVal) {
+                nextBtn.setDisable(true);
+            } else {
+                updateNavigationButtons();
+            }
+        });
 
         // Progress binding
         if (progressBar != null) {
@@ -901,6 +910,9 @@ public class BankImportWizardController implements Initializable {
 
     @FXML
     void handleImport(ActionEvent event) {
+        if (viewModel.isImporting()) {
+            return;
+        }
         viewModel.setImporting(true);
         performImport();
     }

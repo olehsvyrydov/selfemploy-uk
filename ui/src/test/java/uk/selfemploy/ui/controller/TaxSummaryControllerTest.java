@@ -117,6 +117,49 @@ class TaxSummaryControllerTest {
         }
 
         @Test
+        @DisplayName("should show empty state when the year has no income or expenses")
+        void shouldShowEmptyStateWhenNoData() {
+            // Given - services return nothing for the year
+            when(incomeService.findByTaxYear(businessId, taxYear)).thenReturn(List.of());
+            when(expenseService.findByTaxYear(businessId, taxYear)).thenReturn(List.of());
+
+            // When
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+            controller.setTaxYear(taxYear);
+
+            // Then - the no-data empty state replaces the calculation content
+            assertThat(controller.isEmptyStateShown()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should hide empty state once income exists for the year")
+        void shouldHideEmptyStateWhenIncomeExists() {
+            // Given - a single income record for the year
+            Income income = new Income(
+                UUID.randomUUID(),
+                businessId,
+                LocalDate.of(2025, 6, 15),
+                new BigDecimal("1000.00"),
+                "Consulting income",
+                IncomeCategory.SALES,
+                null,
+                null,
+                null,
+                null,
+                null, null, null
+            );
+            when(incomeService.findByTaxYear(businessId, taxYear)).thenReturn(List.of(income));
+            when(expenseService.findByTaxYear(businessId, taxYear)).thenReturn(List.of());
+
+            // When
+            controller.initializeWithDependencies(incomeService, expenseService, businessId);
+            controller.setTaxYear(taxYear);
+
+            // Then - the calculation content is shown, not the empty state
+            assertThat(controller.isEmptyStateShown()).isFalse();
+        }
+
+        @Test
         @DisplayName("should calculate tax after loading data")
         void shouldCalculateTaxAfterLoadingData() {
             // Given - income of £50,000

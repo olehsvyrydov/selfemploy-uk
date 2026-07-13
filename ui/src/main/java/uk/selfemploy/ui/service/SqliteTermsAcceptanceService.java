@@ -21,7 +21,7 @@ public class SqliteTermsAcceptanceService extends TermsAcceptanceService {
     private final TermsAcceptanceRepository sqliteRepository;
 
     public SqliteTermsAcceptanceService() {
-        super(null); // Parent won't be used - we override all methods
+        super();
         this.sqliteRepository = new SqliteTermsAcceptanceRepository();
     }
 
@@ -29,7 +29,7 @@ public class SqliteTermsAcceptanceService extends TermsAcceptanceService {
      * Constructor for testing with custom repository.
      */
     SqliteTermsAcceptanceService(TermsAcceptanceRepository repository) {
-        super(null);
+        super();
         this.sqliteRepository = repository;
     }
 

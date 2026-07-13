@@ -1,13 +1,10 @@
 package uk.selfemploy.core.service;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.ValidationException;
-import uk.selfemploy.persistence.repository.ExpenseRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,22 +14,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Service layer for managing Expense entities.
+ * Service contract for managing Expense entities.
  *
- * Provides CRUD operations with validation and business rule enforcement.
- * Expense categories are aligned with HMRC SA103 form categories.
- * Expense dates are validated to be within a valid UK tax year range.
+ * <p>Defines the CRUD and reporting operations and owns the reusable validation rules
+ * (dates within a valid UK tax year, positive amounts, SA103 categories). Persistence is
+ * supplied by concrete subclasses (the desktop app's SQLite-backed implementation), so this
+ * type carries no storage dependency.</p>
  */
-@ApplicationScoped
-public class ExpenseService {
+public abstract class ExpenseService {
 
-    private static final int MAX_DESCRIPTION_LENGTH = 100;
+    protected static final int MAX_DESCRIPTION_LENGTH = 100;
 
-    private final ExpenseRepository expenseRepository;
-
-    @Inject
-    public ExpenseService(ExpenseRepository expenseRepository) {
-        this.expenseRepository = expenseRepository;
+    protected ExpenseService() {
     }
 
     /**
@@ -48,18 +41,9 @@ public class ExpenseService {
      * @return The created expense
      * @throws ValidationException if validation fails
      */
-    public Expense create(UUID businessId, LocalDate date, BigDecimal amount,
+    public abstract Expense create(UUID businessId, LocalDate date, BigDecimal amount,
                           String description, ExpenseCategory category,
-                          String receiptPath, String notes) {
-        validateBusinessId(businessId);
-        validateDate(date);
-        validateAmount(amount);
-        validateDescription(description);
-        validateCategory(category);
-
-        Expense expense = Expense.create(businessId, date, amount, description, category, receiptPath, notes);
-        return expenseRepository.save(expense);
-    }
+                          String receiptPath, String notes);
 
     /**
      * Finds an expense by ID.
@@ -68,12 +52,7 @@ public class ExpenseService {
      * @return Optional containing the expense if found
      * @throws ValidationException if id is null
      */
-    public Optional<Expense> findById(UUID id) {
-        if (id == null) {
-            throw new ValidationException("id", "Expense id cannot be null");
-        }
-        return expenseRepository.findByIdAsDomain(id);
-    }
+    public abstract Optional<Expense> findById(UUID id);
 
     /**
      * Updates an existing expense.
@@ -88,38 +67,9 @@ public class ExpenseService {
      * @return The updated expense
      * @throws ValidationException if expense not found or validation fails
      */
-    public Expense update(UUID id, LocalDate date, BigDecimal amount,
+    public abstract Expense update(UUID id, LocalDate date, BigDecimal amount,
                           String description, ExpenseCategory category,
-                          String receiptPath, String notes) {
-        if (id == null) {
-            throw new ValidationException("id", "Expense id cannot be null");
-        }
-
-        Expense existingExpense = expenseRepository.findByIdAsDomain(id)
-                .orElseThrow(() -> new ValidationException("id", "Expense not found: " + id));
-
-        validateDate(date);
-        validateAmount(amount);
-        validateDescription(description);
-        validateCategory(category);
-
-        Expense updatedExpense = new Expense(
-                existingExpense.id(),
-                existingExpense.businessId(),
-                date,
-                amount,
-                description,
-                category,
-                receiptPath,
-                notes,
-                existingExpense.bankTransactionRef(),
-                existingExpense.supplierRef(),
-                existingExpense.invoiceNumber(),
-                existingExpense.bankTransactionId()
-        );
-
-        return expenseRepository.update(updatedExpense);
-    }
+                          String receiptPath, String notes);
 
     /**
      * Deletes an expense by ID.
@@ -128,23 +78,7 @@ public class ExpenseService {
      * @return true if deleted, false if not found
      * @throws ValidationException if id is null or expense is linked to HMRC submission
      */
-    public boolean delete(UUID id) {
-        if (id == null) {
-            throw new ValidationException("id", "Expense id cannot be null");
-        }
-
-        Optional<Expense> existingExpense = expenseRepository.findByIdAsDomain(id);
-        if (existingExpense.isEmpty()) {
-            return false;
-        }
-
-        // TODO: Check if linked to HMRC submission and throw ValidationException
-        // if (isLinkedToHmrcSubmission(id)) {
-        //     throw new ValidationException("id", "Cannot delete expense linked to HMRC submission");
-        // }
-
-        return expenseRepository.deleteByIdAndReturn(id);
-    }
+    public abstract boolean delete(UUID id);
 
     /**
      * Finds all expenses for a business within a tax year.
@@ -154,14 +88,7 @@ public class ExpenseService {
      * @return List of expenses within the tax year
      * @throws ValidationException if businessId or taxYear is null
      */
-    public List<Expense> findByTaxYear(UUID businessId, TaxYear taxYear) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-
-        return expenseRepository.findByDateRange(businessId, taxYear.startDate(), taxYear.endDate());
-    }
+    public abstract List<Expense> findByTaxYear(UUID businessId, TaxYear taxYear);
 
     /**
      * Finds all expenses for a business by category.
@@ -171,12 +98,7 @@ public class ExpenseService {
      * @return List of expenses matching the category
      * @throws ValidationException if businessId or category is null
      */
-    public List<Expense> findByCategory(UUID businessId, ExpenseCategory category) {
-        validateBusinessId(businessId);
-        validateCategory(category);
-
-        return expenseRepository.findByCategory(businessId, category);
-    }
+    public abstract List<Expense> findByCategory(UUID businessId, ExpenseCategory category);
 
     /**
      * Gets the total expenses for a business within a tax year.
@@ -186,14 +108,7 @@ public class ExpenseService {
      * @return Total expense amount
      * @throws ValidationException if businessId or taxYear is null
      */
-    public BigDecimal getTotalByTaxYear(UUID businessId, TaxYear taxYear) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-
-        return expenseRepository.calculateTotalForDateRange(businessId, taxYear.startDate(), taxYear.endDate());
-    }
+    public abstract BigDecimal getTotalByTaxYear(UUID businessId, TaxYear taxYear);
 
     /**
      * Gets the total deductible (allowable) expenses for a business within a tax year.
@@ -204,19 +119,10 @@ public class ExpenseService {
      * @return Total allowable expense amount
      * @throws ValidationException if businessId or taxYear is null
      */
-    public BigDecimal getDeductibleTotal(UUID businessId, TaxYear taxYear) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-
-        return expenseRepository.calculateAllowableTotalForDateRange(
-                businessId, taxYear.startDate(), taxYear.endDate());
-    }
+    public abstract BigDecimal getDeductibleTotal(UUID businessId, TaxYear taxYear);
 
     /**
      * Gets the total deductible (allowable) expenses for a business within a specific quarter.
-     * Sprint 10D: SE-10D-003 - Cumulative Totals Display
      *
      * @param businessId The business ID
      * @param taxYear    The tax year
@@ -224,18 +130,7 @@ public class ExpenseService {
      * @return Total allowable expense amount for the quarter
      * @throws ValidationException if any parameter is null
      */
-    public BigDecimal getDeductibleTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-        if (quarter == null) {
-            throw new ValidationException("quarter", "Quarter cannot be null");
-        }
-
-        return expenseRepository.calculateAllowableTotalForDateRange(
-                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
-    }
+    public abstract BigDecimal getDeductibleTotalByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter);
 
     /**
      * Finds all expenses for a business within a specific quarter.
@@ -246,18 +141,7 @@ public class ExpenseService {
      * @return List of expenses within the quarter
      * @throws ValidationException if any parameter is null
      */
-    public List<Expense> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-        if (quarter == null) {
-            throw new ValidationException("quarter", "Quarter cannot be null");
-        }
-
-        return expenseRepository.findByDateRange(
-                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
-    }
+    public abstract List<Expense> findByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter);
 
     /**
      * Gets expense totals grouped by category for a business within a specific quarter.
@@ -268,26 +152,15 @@ public class ExpenseService {
      * @return Map of expense categories to totals
      * @throws ValidationException if any parameter is null
      */
-    public Map<ExpenseCategory, BigDecimal> getTotalsByCategoryByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter) {
-        validateBusinessId(businessId);
-        if (taxYear == null) {
-            throw new ValidationException("taxYear", "Tax year cannot be null");
-        }
-        if (quarter == null) {
-            throw new ValidationException("quarter", "Quarter cannot be null");
-        }
+    public abstract Map<ExpenseCategory, BigDecimal> getTotalsByCategoryByQuarter(UUID businessId, TaxYear taxYear, Quarter quarter);
 
-        return expenseRepository.calculateTotalsByCategoryForDateRange(
-                businessId, quarter.getStartDate(taxYear), quarter.getEndDate(taxYear));
-    }
-
-    private void validateBusinessId(UUID businessId) {
+    protected void validateBusinessId(UUID businessId) {
         if (businessId == null) {
             throw new ValidationException("businessId", "Business ID cannot be null");
         }
     }
 
-    private void validateDate(LocalDate date) {
+    protected void validateDate(LocalDate date) {
         if (date == null) {
             throw new ValidationException("date", "Expense date cannot be null");
         }
@@ -304,7 +177,7 @@ public class ExpenseService {
      * Determines the tax year that a date should belong to.
      * UK tax years run from 6 April to 5 April.
      */
-    private TaxYear determineTaxYear(LocalDate date) {
+    protected TaxYear determineTaxYear(LocalDate date) {
         int year = date.getYear();
         // If date is before April 6th, it belongs to the previous tax year
         if (date.getMonthValue() < 4 || (date.getMonthValue() == 4 && date.getDayOfMonth() < 6)) {
@@ -313,7 +186,7 @@ public class ExpenseService {
         return TaxYear.of(year);
     }
 
-    private void validateAmount(BigDecimal amount) {
+    protected void validateAmount(BigDecimal amount) {
         if (amount == null) {
             throw new ValidationException("amount", "Expense amount cannot be null");
         }
@@ -322,7 +195,7 @@ public class ExpenseService {
         }
     }
 
-    private void validateDescription(String description) {
+    protected void validateDescription(String description) {
         if (description == null || description.isBlank()) {
             throw new ValidationException("description", "Expense description cannot be null or empty");
         }
@@ -332,7 +205,7 @@ public class ExpenseService {
         }
     }
 
-    private void validateCategory(ExpenseCategory category) {
+    protected void validateCategory(ExpenseCategory category) {
         if (category == null) {
             throw new ValidationException("category", "Expense category cannot be null");
         }

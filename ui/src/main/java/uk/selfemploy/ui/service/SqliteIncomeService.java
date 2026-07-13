@@ -21,12 +21,11 @@ import java.util.UUID;
  */
 public class SqliteIncomeService extends IncomeService {
 
-    private static final int MAX_DESCRIPTION_LENGTH = 100;
     private final SqliteIncomeRepository repository;
     private final UUID businessId;
 
     public SqliteIncomeService(UUID businessId) {
-        super(null); // No Panache repository in standalone mode
+        super();
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
@@ -195,42 +194,4 @@ public class SqliteIncomeService extends IncomeService {
         return businessId;
     }
 
-    // === Validation Methods ===
-
-    private void validateBusinessId(UUID businessId) {
-        if (businessId == null) {
-            throw new ValidationException("businessId", "Business ID cannot be null");
-        }
-    }
-
-    private void validateDate(LocalDate date) {
-        if (date == null) {
-            throw new ValidationException("date", "Income date cannot be null");
-        }
-    }
-
-    private void validateAmount(BigDecimal amount) {
-        if (amount == null) {
-            throw new ValidationException("amount", "Income amount cannot be null");
-        }
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("amount", "Income amount must be positive");
-        }
-    }
-
-    private void validateDescription(String description) {
-        if (description == null || description.isBlank()) {
-            throw new ValidationException("description", "Income description cannot be null or empty");
-        }
-        if (description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new ValidationException("description",
-                    String.format("Income description cannot exceed %d characters", MAX_DESCRIPTION_LENGTH));
-        }
-    }
-
-    private void validateCategory(IncomeCategory category) {
-        if (category == null) {
-            throw new ValidationException("category", "Income category cannot be null");
-        }
-    }
 }

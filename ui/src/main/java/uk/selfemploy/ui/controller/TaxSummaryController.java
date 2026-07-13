@@ -49,6 +49,10 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
     @FXML private VBox taxSummaryContainer;
 
+    // No-data empty state (toggled against dataContent)
+    @FXML private VBox emptyState;
+    @FXML private VBox dataContent;
+
     // Header
     @FXML private Label taxYearBadge;
 
@@ -142,6 +146,13 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     private IncomeService incomeService;
     private ExpenseService expenseService;
     private UUID businessId;
+
+    // True when the year has at least one income or expense record; drives the empty-state toggle
+    private boolean hasData;
+
+    // Navigation callbacks wired by MainController for the empty-state calls to action
+    private Runnable navigateToIncome;
+    private Runnable navigateToExpenses;
 
     // Section expansion state
     private boolean incomeSectionExpanded = true;
@@ -277,6 +288,29 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     }
 
     /**
+     * Sets the callbacks used by the empty-state calls to action to navigate to the
+     * Income and Expenses screens. Wired by {@code MainController}.
+     */
+    public void setNavigationCallbacks(Runnable navigateToIncome, Runnable navigateToExpenses) {
+        this.navigateToIncome = navigateToIncome;
+        this.navigateToExpenses = navigateToExpenses;
+    }
+
+    @FXML
+    private void handleGoToIncome(ActionEvent event) {
+        if (navigateToIncome != null) {
+            navigateToIncome.run();
+        }
+    }
+
+    @FXML
+    private void handleGoToExpenses(ActionEvent event) {
+        if (navigateToExpenses != null) {
+            navigateToExpenses.run();
+        }
+    }
+
+    /**
      * Loads income and expense data from services and populates the ViewModel.
      */
     private void loadTaxSummaryData() {
@@ -297,6 +331,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
         // Load expense data and group by category for SA103 breakdown
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
+        hasData = !incomes.isEmpty() || !expenses.isEmpty();
         for (Expense expense : expenses) {
             viewModel.addExpenseByCategory(expense.category(), expense.amount());
         }
@@ -313,6 +348,14 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
      */
     public void setViewModel(TaxSummaryViewModel viewModel) {
         this.viewModel = viewModel;
+    }
+
+    /**
+     * Whether the no-data empty state is shown instead of the tax calculation. True whenever the
+     * selected tax year has no income or expense records, including before any data has loaded.
+     */
+    boolean isEmptyStateShown() {
+        return !hasData;
     }
 
     // === Refreshable Implementation ===
@@ -702,6 +745,16 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     private void updateDisplay() {
         if (viewModel == null) {
             return;
+        }
+
+        // Toggle the no-data empty state against the calculation content
+        if (emptyState != null) {
+            emptyState.setVisible(!hasData);
+            emptyState.setManaged(!hasData);
+        }
+        if (dataContent != null) {
+            dataContent.setVisible(hasData);
+            dataContent.setManaged(hasData);
         }
 
         // Update header

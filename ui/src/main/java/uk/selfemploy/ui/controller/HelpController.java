@@ -191,6 +191,9 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     private final HelpService helpService;
     private HelpTopic selectedTopic;
 
+    // Wired by MainController; runs the guided tour when the user replays it from here.
+    private Runnable onReplayTour;
+
     public HelpController() {
         this.helpService = new HelpService();
     }
@@ -466,6 +469,18 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
             if (topic != null) {
                 showHelpContent(topic);
             }
+        }
+    }
+
+    /** Sets the callback that replays the guided tour. Wired by {@code MainController}. */
+    public void setOnReplayTour(Runnable onReplayTour) {
+        this.onReplayTour = onReplayTour;
+    }
+
+    @FXML
+    void handleReplayTour(ActionEvent event) {
+        if (onReplayTour != null) {
+            onReplayTour.run();
         }
     }
 
