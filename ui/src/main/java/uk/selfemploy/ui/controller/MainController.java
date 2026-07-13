@@ -195,11 +195,6 @@ public class MainController implements Initializable {
                     );
                 }
 
-                // Wire empty-state call to action for the Bank Review screen (import lives on Income)
-                if (controller instanceof TransactionReviewController reviewController) {
-                    reviewController.setNavigateToImport(() -> loadView(View.INCOME));
-                }
-
                 // Wire "Replay tour" on the Help screen
                 if (controller instanceof HelpController helpController) {
                     helpController.setOnReplayTour(this::startTour);

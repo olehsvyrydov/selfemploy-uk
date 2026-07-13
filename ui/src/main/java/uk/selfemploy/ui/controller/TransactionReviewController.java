@@ -8,7 +8,10 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -16,6 +19,8 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ReviewStatus;
 import uk.selfemploy.ui.service.CoreServiceFactory;
@@ -101,9 +106,6 @@ public class TransactionReviewController implements Initializable, MainControlle
 
     private TransactionReviewViewModel viewModel;
     private TaxYear currentTaxYear;
-
-    // Navigation callback wired by MainController for the empty-state call to action
-    private Runnable navigateToImport;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -702,17 +704,42 @@ public class TransactionReviewController implements Initializable, MainControlle
     }
 
     /**
-     * Sets the callback used by the empty-state call to action to navigate to the import
-     * flow (the Income screen, which hosts bank-statement import). Wired by {@code MainController}.
+     * Opens the bank-statement import wizard directly from the Bank Review screen (its empty-state
+     * call to action). Imports stage into this same review list, so on success the list is reloaded
+     * and a confirmation banner is shown — no navigation away from the page.
      */
-    public void setNavigateToImport(Runnable navigateToImport) {
-        this.navigateToImport = navigateToImport;
-    }
-
     @FXML
     private void handleGoToImport(ActionEvent event) {
-        if (navigateToImport != null) {
-            navigateToImport.run();
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
+            Parent root = loader.load();
+            BankImportWizardController wizard = loader.getController();
+
+            Stage wizardStage = new Stage();
+            wizardStage.setTitle("Import Bank Statement");
+            wizardStage.initModality(Modality.WINDOW_MODAL);
+            wizardStage.initOwner(reviewContainer.getScene().getWindow());
+            wizardStage.setWidth(1000);
+            wizardStage.setHeight(700);
+            wizardStage.setMinWidth(800);
+            wizardStage.setMinHeight(600);
+
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/css/bank-import.css").toExternalForm());
+
+            wizardStage.setScene(scene);
+            wizard.setDialogStage(wizardStage);
+            wizardStage.showAndWait();
+
+            String resultMessage = wizard.getImportResultMessage();
+            if (resultMessage != null) {
+                refreshData();
+                showImportSuccessBanner(resultMessage);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to open the Bank Import Wizard", e);
+            AppDialog.error("Import Error", "Failed to open the Bank Import Wizard: " + e.getMessage());
         }
     }
 
