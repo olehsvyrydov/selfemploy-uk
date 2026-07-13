@@ -90,6 +90,28 @@ class CsvTransactionParserTest {
         }
 
         @Test
+        @DisplayName("parses date columns that include a time component")
+        void parsesDateTimeDates() throws IOException {
+            Path csv = createCsvFile(
+                "Date,Description,Amount\n" +
+                "2025-06-15 16:46:45,Client Payment,1500.00\n" +
+                "2025-06-16 09:12:03,Office Supplies,-45.99\n"
+            );
+
+            ColumnMapping mapping = new ColumnMapping();
+            mapping.setDateColumn("Date");
+            mapping.setDescriptionColumn("Description");
+            mapping.setAmountColumn("Amount");
+            mapping.setDateFormat("yyyy-MM-dd HH:mm:ss");
+
+            CsvTransactionParser.ParseResult result = parser.parse(csv, mapping);
+
+            assertThat(result.transactions()).hasSize(2);
+            assertThat(result.warnings()).isEmpty();
+            assertThat(result.transactions().get(0).date()).isEqualTo(LocalDate.of(2025, 6, 15));
+        }
+
+        @Test
         @DisplayName("parses multiple rows")
         void parsesMultipleRows() throws IOException {
             Path csv = createCsvFile(
