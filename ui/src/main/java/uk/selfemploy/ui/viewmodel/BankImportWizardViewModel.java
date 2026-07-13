@@ -80,7 +80,7 @@ public class BankImportWizardViewModel {
             case 1 -> isFileSelected() && !csvHeaders.isEmpty();
             case 2 -> columnMapping.isComplete();
             case 3 -> true;
-            case 4 -> !getTransactionsToImport().isEmpty();
+            case 4 -> transactions.stream().anyMatch(t -> !t.isDuplicate());
             default -> false;
         };
     }

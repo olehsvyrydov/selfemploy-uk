@@ -279,7 +279,6 @@ public class ImportOrchestrationService {
                 if (bankTransactionService.existsByHash(hash)) {
                     skipped++;
                 } else {
-                    // Direction-based sign: income positive, expense negative.
                     BigDecimal signedAmount = row.type() == TransactionType.INCOME
                         ? row.amount()
                         : row.amount().negate();
