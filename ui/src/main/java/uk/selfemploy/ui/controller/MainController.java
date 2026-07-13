@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.UUID;
 
 /**
  * Main controller for the application's root layout.
@@ -232,7 +233,7 @@ public class MainController implements Initializable {
      *
      * @param message the success message to display on the Transaction Review page
      */
-    private void navigateToTransactionReviewWithMessage(String message, java.util.UUID batchId) {
+    private void navigateToTransactionReviewWithMessage(String message, UUID batchId) {
         // Clear the cached Transaction Review view so it reloads with fresh data
         viewCache.remove(View.TRANSACTION_REVIEW);
         controllerCache.remove(View.TRANSACTION_REVIEW);

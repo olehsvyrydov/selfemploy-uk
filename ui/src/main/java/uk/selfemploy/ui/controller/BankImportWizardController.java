@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.ArrayList;
 
 /**
  * Controller for the CSV Bank Import Wizard.
@@ -715,7 +716,7 @@ public class BankImportWizardController implements Initializable {
             expenseColumnCombo.setItems(FXCollections.observableArrayList(headers));
         }
         if (categoryColumnCombo != null) {
-            List<String> optionalHeaders = new java.util.ArrayList<>(headers);
+            List<String> optionalHeaders = new ArrayList<>(headers);
             optionalHeaders.add(0, "None - Auto-categorize");
             categoryColumnCombo.setItems(FXCollections.observableArrayList(optionalHeaders));
         }
