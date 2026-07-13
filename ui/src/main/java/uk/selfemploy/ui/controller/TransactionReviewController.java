@@ -8,14 +8,22 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.geometry.Rectangle2D;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Window;
+import uk.selfemploy.ui.util.DialogBounds;
+import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ReviewStatus;
 import uk.selfemploy.ui.service.CoreServiceFactory;
@@ -695,6 +703,51 @@ public class TransactionReviewController implements Initializable, MainControlle
         if (viewModel != null) {
             viewModel.loadTransactions();
             updateTable();
+        }
+    }
+
+    /**
+     * Opens the bank-statement import wizard directly from the Bank Review screen (its empty-state
+     * call to action). Imports stage into this same review list, so on success the list is reloaded
+     * and a confirmation banner is shown — no navigation away from the page.
+     */
+    @FXML
+    private void handleGoToImport(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
+            Parent root = loader.load();
+            BankImportWizardController wizard = loader.getController();
+
+            Stage wizardStage = new Stage();
+            wizardStage.setTitle("Import Bank Statement");
+            wizardStage.initModality(Modality.WINDOW_MODAL);
+            Window owner = reviewContainer.getScene().getWindow();
+            wizardStage.initOwner(owner);
+            wizardStage.setResizable(true);
+            wizardStage.setMinWidth(800);
+            wizardStage.setMinHeight(500);
+            Rectangle2D visual = DialogBounds.visualBoundsForOwner(owner);
+            wizardStage.setX(visual.getMinX());
+            wizardStage.setY(visual.getMinY());
+            wizardStage.setWidth(visual.getWidth());
+            wizardStage.setHeight(visual.getHeight());
+
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/css/bank-import.css").toExternalForm());
+
+            wizardStage.setScene(scene);
+            wizard.setDialogStage(wizardStage);
+            wizardStage.showAndWait();
+
+            String resultMessage = wizard.getImportResultMessage();
+            if (resultMessage != null) {
+                refreshData();
+                showImportSuccessBanner(resultMessage);
+            }
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to open the Bank Import Wizard", e);
+            AppDialog.error("Import Error", "Failed to open the Bank Import Wizard: " + e.getMessage());
         }
     }
 

@@ -1,27 +1,18 @@
 package uk.selfemploy.core.service;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import uk.selfemploy.persistence.repository.TermsAcceptanceRepository;
-
 import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Service for managing Terms of Service acceptances.
+ * Service contract for managing Terms of Service acceptances.
  *
- * SE-508: Terms of Service UI
- * Handles storage and retrieval of user ToS acceptances with version tracking.
- * Includes scroll completion timestamp for legal evidence.
+ * <p>Handles storage and retrieval of user ToS acceptances with version tracking, including a
+ * scroll completion timestamp for legal evidence. Persistence is supplied by concrete subclasses
+ * (the desktop app's SQLite-backed implementation), so this type carries no storage dependency.</p>
  */
-@ApplicationScoped
-public class TermsAcceptanceService {
+public abstract class TermsAcceptanceService {
 
-    private final TermsAcceptanceRepository repository;
-
-    @Inject
-    public TermsAcceptanceService(TermsAcceptanceRepository repository) {
-        this.repository = repository;
+    protected TermsAcceptanceService() {
     }
 
     /**
@@ -33,31 +24,14 @@ public class TermsAcceptanceService {
      * @param applicationVersion  The version of the application
      * @return true if saved successfully, false otherwise
      */
-    public boolean saveAcceptance(String tosVersion, Instant acceptedAt, Instant scrollCompletedAt, String applicationVersion) {
-        if (tosVersion == null || tosVersion.isBlank()) {
-            return false;
-        }
-        if (acceptedAt == null) {
-            return false;
-        }
-        if (scrollCompletedAt == null) {
-            return false;
-        }
-        if (applicationVersion == null || applicationVersion.isBlank()) {
-            return false;
-        }
-
-        return repository.save(tosVersion, acceptedAt, scrollCompletedAt, applicationVersion);
-    }
+    public abstract boolean saveAcceptance(String tosVersion, Instant acceptedAt, Instant scrollCompletedAt, String applicationVersion);
 
     /**
      * Gets the version of the ToS that was last accepted.
      *
      * @return Optional containing the accepted version, or empty if never accepted
      */
-    public Optional<String> getAcceptedVersion() {
-        return repository.getLatestAcceptedVersion();
-    }
+    public abstract Optional<String> getAcceptedVersion();
 
     /**
      * Checks if the user has accepted the specified ToS version.
@@ -76,16 +50,12 @@ public class TermsAcceptanceService {
      *
      * @return Optional containing the acceptance timestamp, or empty if never accepted
      */
-    public Optional<Instant> getAcceptanceTimestamp() {
-        return repository.getLatestAcceptanceTimestamp();
-    }
+    public abstract Optional<Instant> getAcceptanceTimestamp();
 
     /**
      * Gets the scroll completed timestamp of the last acceptance.
      *
      * @return Optional containing the scroll completed timestamp, or empty if never accepted
      */
-    public Optional<Instant> getScrollCompletedTimestamp() {
-        return repository.getLatestScrollCompletedTimestamp();
-    }
+    public abstract Optional<Instant> getScrollCompletedTimestamp();
 }

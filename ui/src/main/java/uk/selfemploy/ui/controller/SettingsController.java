@@ -9,8 +9,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.geometry.Rectangle2D;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import uk.selfemploy.ui.util.DialogBounds;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -1684,12 +1686,17 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
             stage.setScene(scene);
 
-            // Set minimum size to prevent dialog from becoming too small
-            stage.setMinWidth(width * 0.8);
-            stage.setMinHeight(height * 0.8);
-
-            // Allow resizing
+            // Bound the window to the visible screen so a tall document never pushes its footer
+            // (and the Close button) off the bottom edge on smaller displays.
+            Rectangle2D visual = DialogBounds.visualBoundsForOwner(owner);
+            double boundedWidth = Math.min(width, visual.getWidth() - 40);
+            double boundedHeight = Math.min(height, visual.getHeight() - 60);
+            stage.setWidth(boundedWidth);
+            stage.setHeight(boundedHeight);
+            stage.setMinWidth(Math.min(width * 0.8, boundedWidth));
+            stage.setMinHeight(Math.min(height * 0.8, boundedHeight));
             stage.setResizable(true);
+            stage.centerOnScreen();
 
             stage.showAndWait();
 

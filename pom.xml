@@ -21,9 +21,13 @@
         </license>
     </licenses>
 
+    <!--
+      Default build is the desktop application: no Panache/H2 persistence stack.
+      The server-side MTD/bank-import cluster and the persistence module it depends on are built
+      only under the "server" profile (see <profiles> below).
+    -->
     <modules>
         <module>common</module>
-        <module>persistence</module>
         <module>hmrc-api</module>
         <module>core</module>
         <module>ui</module>
@@ -250,6 +254,18 @@
     </build>
 
     <profiles>
+        <!--
+          Server-side stack: the never-run MTD submission and bank-import services plus the
+          Panache/H2 persistence module they depend on. Kept for the self-hostable server
+          direction but excluded from the desktop build. Activate with -Pserver.
+        -->
+        <profile>
+            <id>server</id>
+            <modules>
+                <module>persistence</module>
+                <module>server</module>
+            </modules>
+        </profile>
         <profile>
             <id>native</id>
             <activation>

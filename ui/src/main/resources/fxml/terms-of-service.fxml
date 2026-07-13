@@ -18,7 +18,7 @@
 <!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.TermsOfServiceController"
-      styleClass="tos-container" prefWidth="900" maxHeight="750">
+      styleClass="tos-container" prefWidth="900">
 
     <!-- Header -->
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT">
@@ -31,8 +31,9 @@
         <padding><Insets top="0" right="24" bottom="0" left="24"/></padding>
 
         <!-- ToS Header -->
-        <VBox styleClass="tos-header" alignment="CENTER" spacing="12">
-            <Label text="§" styleClass="tos-icon"/>
+        <VBox styleClass="tos-header" alignment="CENTER" spacing="4" maxHeight="110">
+            <padding><Insets top="8" right="0" bottom="8" left="0"/></padding>
+            <Label text="§" styleClass="tos-icon" style="-fx-font-size: 24px;"/>
             <Label text="Terms of Service" styleClass="tos-title"/>
             <HBox alignment="CENTER" spacing="8">
                 <Label fx:id="versionLabel" text="Version 1.0" styleClass="tos-version"/>
@@ -46,9 +47,11 @@
         <HBox styleClass="tos-main-content" spacing="16" VBox.vgrow="ALWAYS">
 
             <!-- Table of Contents Sidebar -->
-            <VBox fx:id="tocSidebar" styleClass="tos-toc" spacing="4" minWidth="200" maxWidth="200">
+            <VBox fx:id="tocSidebar" styleClass="tos-toc" spacing="4" minWidth="200" maxWidth="200" minHeight="0">
                 <Label text="TABLE OF CONTENTS" styleClass="toc-header"/>
                 <Separator/>
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" minHeight="0" VBox.vgrow="ALWAYS"
+                            styleClass="toc-scroll">
                 <VBox fx:id="tocLinks" styleClass="toc-links" spacing="2">
                     <Hyperlink text="1. Acceptance of Terms" styleClass="toc-link"
                                onAction="#scrollToSection" userData="section1"/>
@@ -83,11 +86,13 @@
                     <Hyperlink text="15. Contact" styleClass="toc-link"
                                onAction="#scrollToSection" userData="section15"/>
                 </VBox>
+                </ScrollPane>
             </VBox>
 
             <!-- Scrollable ToS Content -->
             <ScrollPane fx:id="contentScroll" styleClass="tos-content-scroll"
-                        fitToWidth="true" hbarPolicy="NEVER" HBox.hgrow="ALWAYS">
+                        fitToWidth="true" hbarPolicy="NEVER" HBox.hgrow="ALWAYS"
+                        minHeight="120">
                 <VBox fx:id="tosContent" styleClass="tos-content" spacing="24">
                     <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
 
@@ -359,5 +364,7 @@
                 onAction="#handleDecline"/>
         <Button fx:id="acceptBtn" text="I Accept" styleClass="button-success"
                 onAction="#handleAccept" disable="true"/>
+        <Button fx:id="closeBtn" text="Close" styleClass="button-success"
+                onAction="#handleClose"/>
     </HBox>
 </VBox>

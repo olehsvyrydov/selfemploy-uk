@@ -529,6 +529,14 @@ public class BankImportWizardController implements Initializable {
             });
         }
 
+        viewModel.importingProperty().addListener((obs, oldVal, newVal) -> {
+            if (nextBtn != null && newVal) {
+                nextBtn.setDisable(true);
+            } else {
+                updateNavigationButtons();
+            }
+        });
+
         // Progress binding
         if (progressBar != null) {
             progressBar.progressProperty().bind(viewModel.importProgressProperty());
@@ -895,6 +903,9 @@ public class BankImportWizardController implements Initializable {
 
     @FXML
     void handleImport(ActionEvent event) {
+        if (viewModel.isImporting()) {
+            return;
+        }
         viewModel.setImporting(true);
         performImport();
     }
