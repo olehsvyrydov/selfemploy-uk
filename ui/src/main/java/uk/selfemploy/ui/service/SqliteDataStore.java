@@ -530,14 +530,35 @@ public final class SqliteDataStore {
         LOG.info("OAuth tokens saved to persistent storage");
     }
 
+    /**
+     * Persists a value encrypted at rest on a best-effort basis. A key-storage failure is logged
+     * and the write is skipped rather than propagated: callers such as {@link #saveOAuthTokens}
+     * previously wrote plaintext that could never fail, and upstream token-lifecycle code treats a
+     * persistence exception as an expired session and responds by discarding valid tokens. Keeping
+     * this non-throwing preserves the in-memory session; the value is re-persisted on the next
+     * successful save.
+     */
     private void saveEncrypted(String key, String value) {
-        saveSetting(key, value == null ? null : credentialEncryption.encrypt(value));
+        if (value == null) {
+            saveSetting(key, null);
+            return;
+        }
+        try {
+            saveSetting(key, credentialEncryption.encrypt(value));
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Could not encrypt " + key + " for storage; left prior value", e);
+        }
     }
 
     /**
      * Reads a token that is encrypted at rest. Tokens written by earlier versions are stored in
      * the clear; such a value is rewritten encrypted as soon as it is read, so the plaintext does
      * not survive the upgrade.
+     *
+     * <p>A value that cannot be decrypted — whether the master key is unavailable or the ciphertext
+     * does not decrypt under it — is left in place and reported as absent. The stored value is never
+     * deleted on a read: a key that is missing or wrong today may be restored tomorrow, and a
+     * genuinely unusable value is harmlessly overwritten by the next save.</p>
      */
     private String loadEncryptedToken(String key) {
         String stored = loadSetting(key);
@@ -550,14 +571,8 @@ public final class SqliteDataStore {
         }
         try {
             return credentialEncryption.decrypt(stored);
-        } catch (MasterKeyUnavailableException e) {
-            // The key, not the ciphertext, is the problem, and it may come back (a restored key
-            // file, a writable home). Leave the encrypted value untouched so it decrypts later.
-            LOG.log(Level.WARNING, "Master key unavailable; leaving " + key + " encrypted at rest", e);
-            return null;
         } catch (CredentialEncryptionException e) {
-            LOG.log(Level.WARNING, "Failed to decrypt " + key + " - clearing stored value", e);
-            saveSetting(key, null);
+            LOG.log(Level.WARNING, "Could not decrypt " + key + "; leaving it encrypted at rest", e);
             return null;
         }
     }
@@ -737,14 +752,12 @@ public final class SqliteDataStore {
         String plaintext;
         try {
             plaintext = credentialEncryption.decrypt(encrypted);
-        } catch (MasterKeyUnavailableException e) {
-            // Recoverable: the value is intact and will decrypt once the key is available again.
-            LOG.log(Level.WARNING,
-                "Master key unavailable; leaving " + description + " encrypted at rest", e);
-            return null;
         } catch (CredentialEncryptionException e) {
-            LOG.log(Level.WARNING, "Failed to decrypt " + description + " - clearing corrupted value", e);
-            saveSetting(key, null);
+            // Never delete on a read: a value that will not decrypt today (key missing, wrong, or
+            // the ciphertext genuinely unusable) is left intact so a restored key can recover it,
+            // and is harmlessly overwritten if the user re-enters it.
+            LOG.log(Level.WARNING,
+                "Could not decrypt " + description + "; leaving it encrypted at rest", e);
             return null;
         }
         if (credentialEncryption.isLegacy(encrypted)) {

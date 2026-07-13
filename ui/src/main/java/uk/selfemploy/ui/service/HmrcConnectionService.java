@@ -286,10 +286,14 @@ public class HmrcConnectionService {
                 return VerificationResult.VERIFIED;
             })
             .exceptionally(ex -> {
-                // Refresh failed - session is expired/revoked
                 LOG.log(Level.WARNING, "Session verification failed: " + ex.getMessage(), ex);
-                // Clear invalid tokens
-                SqliteDataStore.getInstance().clearOAuthTokens();
+                // Only discard stored tokens on a genuine refresh rejection. If no tokens were even
+                // loaded into memory (e.g. the master key was unavailable at startup, so
+                // loadOAuthTokens returned null), the encrypted tokens on disk are still valid and
+                // must be preserved for a later attempt rather than deleted here.
+                if (oauthService.getCurrentTokens() != null) {
+                    SqliteDataStore.getInstance().clearOAuthTokens();
+                }
                 resetSessionVerification();
                 return VerificationResult.EXPIRED;
             });

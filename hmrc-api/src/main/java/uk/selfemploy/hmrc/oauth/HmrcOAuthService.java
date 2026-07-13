@@ -79,7 +79,10 @@ public class HmrcOAuthService {
             CompletableFuture<String> callbackFuture = callbackServer.startAndAwaitCallback(state);
 
             return callbackServer.listening()
-                .thenCompose(listening -> {
+                // listening() is completed on the callback server's Vert.x event loop; launching the
+                // browser there could block the single loop that must serve the OAuth callback, so
+                // the launch is offloaded off that thread.
+                .thenComposeAsync(listening -> {
                     browserLauncher.openUrl(authUrl);
                     return callbackFuture;
                 })

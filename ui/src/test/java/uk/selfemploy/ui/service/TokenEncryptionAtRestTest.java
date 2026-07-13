@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * The refresh token is a long-lived credential for the taxpayer's HMRC account. It was previously
@@ -106,6 +107,24 @@ class TokenEncryptionAtRestTest {
 
         assertThat(tokens).isNull();
         assertThat(storedSetting(dbPath, "oauth_refresh_token")).isEqualTo(ciphertextBefore);
+    }
+
+    @Test
+    @DisplayName("persists best-effort: a save does not throw when the master key cannot encrypt")
+    void saveOAuthTokensIsBestEffortWhenKeyUnavailable() {
+        Path dbPath = tempDir.resolve("tokens.db");
+        CredentialEncryption failingEncrypt = new CredentialEncryption(
+            new MasterKeyProvider(tempDir.resolve("master.key"))) {
+            @Override
+            public String encrypt(String plaintext) {
+                throw new MasterKeyUnavailableException("master key cannot be written");
+            }
+        };
+        SqliteDataStore store = new SqliteDataStore(dbPath, failingEncrypt);
+
+        assertThatCode(() -> store.saveOAuthTokens(
+            ACCESS_TOKEN, REFRESH_TOKEN, 3600, "bearer", "read", Instant.now()))
+            .doesNotThrowAnyException();
     }
 
     @Test

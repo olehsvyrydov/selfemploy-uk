@@ -49,8 +49,8 @@ class CredentialRecoveryTest {
     }
 
     @Test
-    @DisplayName("clears a genuinely corrupt client secret that fails to decrypt under a valid key")
-    void clearsCorruptClientSecret() throws Exception {
+    @DisplayName("reports an undecryptable client secret as absent but does not delete it")
+    void preservesUndecryptableClientSecret() throws Exception {
         Path dbPath = tempDir.resolve("creds.db");
         SqliteDataStore store = new SqliteDataStore(dbPath, tempKeyEncryption());
         store.saveHmrcClientSecret("developer-hub-secret");
@@ -58,7 +58,8 @@ class CredentialRecoveryTest {
         writeSettingDirectly(dbPath, "hmrc_client_secret_enc", "v2:not-valid-base64-ciphertext!!");
 
         assertThat(store.loadHmrcClientSecret()).isNull();
-        assertThat(storedSetting(dbPath, "hmrc_client_secret_enc")).isNull();
+        assertThat(storedSetting(dbPath, "hmrc_client_secret_enc"))
+            .isEqualTo("v2:not-valid-base64-ciphertext!!");
     }
 
     private String storedSetting(Path dbPath, String key) throws Exception {
