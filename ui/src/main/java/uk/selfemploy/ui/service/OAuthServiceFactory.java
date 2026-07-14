@@ -73,6 +73,7 @@ public final class OAuthServiceFactory {
             );
 
             HmrcOAuthService service = new HmrcOAuthService(config, callbackServer, tokenExchangeClient, browserLauncher);
+            service.setRefreshListener(HmrcSessionPolicy::persistRefreshedTokens);
 
             // Sprint 12: Restore tokens from persistent storage
             restoreTokensFromStorage(service);
@@ -131,7 +132,6 @@ public final class OAuthServiceFactory {
             long secondsRemaining = tokens.getSecondsUntilExpiry();
             if (secondsRemaining < halfLifetime && refreshToken != null && !refreshToken.isBlank()) {
                 LOG.info("Tokens at " + (secondsRemaining * 100 / expiresIn) + "% lifetime - proactively refreshing");
-                service.setTokens(tokens); // Set first so refresh has the refresh token
                 tryRefreshTokens(service, tokens);
                 return;
             }
@@ -145,14 +145,14 @@ public final class OAuthServiceFactory {
     }
 
     /**
-     * Attempts to refresh tokens and persists the result. A failure is handed to
-     * {@link HmrcSessionPolicy}, which alone decides whether the stored session is destroyed.
+     * Attempts to refresh the restored tokens. The rotated tokens are persisted by the refresh
+     * listener registered above, not here. A failure is handed to {@link HmrcSessionPolicy}, which
+     * alone decides whether the stored session is destroyed.
      */
     private static void tryRefreshTokens(HmrcOAuthService service, OAuthTokens oldTokens) {
         try {
-            service.setTokens(oldTokens); // Ensure refresh token is available
-            OAuthTokens newTokens = service.refreshAccessToken().get(30, java.util.concurrent.TimeUnit.SECONDS);
-            HmrcSessionPolicy.persistRefreshedTokens(newTokens);
+            service.setTokens(oldTokens);
+            service.refreshAccessToken().get(30, java.util.concurrent.TimeUnit.SECONDS);
 
         } catch (Exception e) {
             HmrcSessionPolicy.onRefreshFailure(e, service);

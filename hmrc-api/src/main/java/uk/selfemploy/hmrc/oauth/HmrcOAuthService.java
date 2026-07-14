@@ -12,6 +12,7 @@ import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Service for managing OAuth2 authentication with HMRC.
@@ -39,6 +40,9 @@ public class HmrcOAuthService {
 
     /** The refresh currently in flight, if any, shared by every caller that asks while it runs. */
     private final AtomicReference<CompletableFuture<OAuthTokens>> refreshInFlight = new AtomicReference<>();
+
+    /** Notified when a refresh rotates the session, so the rotation is recorded even if callers give up. */
+    private volatile Consumer<OAuthTokens> refreshListener = tokens -> { };
 
     public HmrcOAuthService(HmrcConfig config,
                            OAuthCallbackServer callbackServer,
@@ -92,7 +96,7 @@ public class HmrcOAuthService {
                 .thenCompose(authCode -> tokenExchangeClient.exchangeCodeForTokens(authCode, pkce.verifier()))
                 .thenApply(tokens -> {
                     LOG.info("OAuth2 authentication completed successfully");
-                    currentTokens.set(tokens);
+                    setTokens(tokens);
                     return tokens;
                 })
                 .whenComplete((result, error) -> {
@@ -217,12 +221,36 @@ public class HmrcOAuthService {
                     ? new OAuthTokens(tokens.accessToken(), current.refreshToken(), tokens.expiresIn(),
                         tokens.tokenType(), tokens.scope(), tokens.issuedAt())
                     : tokens;
+
+                // Install and record the rotation only if the session we refreshed is still the
+                // current one. If it was replaced or disconnected while this was in flight, the
+                // result belongs to a session that no longer exists: adopting it would overwrite a
+                // newer credential, and recording it would resurrect a deleted one.
+                if (!currentTokens.compareAndSet(current, refreshed)) {
+                    LOG.warning("The HMRC session was replaced while a refresh was in flight; "
+                        + "the refreshed tokens are discarded rather than overwriting it");
+                    return refreshed;
+                }
                 LOG.info("Access token refreshed successfully");
-                currentTokens.set(refreshed);
+                refreshListener.accept(refreshed);
                 return refreshed;
             });
         refreshInFlight.set(refresh);
         return refresh;
+    }
+
+    /**
+     * Registers the listener notified when a refresh rotates the session.
+     *
+     * <p>The rotation is recorded from inside the refresh rather than left to whoever asked for it.
+     * HMRC invalidates the old refresh token the moment it issues a new one, so a caller that gave up
+     * waiting — a response arriving just past its timeout is routine — would otherwise leave the spent
+     * token as the only copy on record, and the next start would be refused.
+     *
+     * @param listener receives the rotated session, or null to remove the current listener
+     */
+    public void setRefreshListener(Consumer<OAuthTokens> listener) {
+        this.refreshListener = listener != null ? listener : tokens -> { };
     }
 
     /**

@@ -17,6 +17,7 @@ import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -510,6 +511,42 @@ class HmrcOAuthServiceTest {
 
             verify(tokenExchangeClient, times(1)).refreshTokens("test_refresh_token");
             verify(tokenExchangeClient, times(1)).refreshTokens("refresh_1");
+        }
+
+        @Test
+        @DisplayName("notifies the refresh listener with the rotated tokens")
+        void notifiesTheListenerOnRotation() throws Exception {
+            // HMRC has already invalidated the old refresh token by this point, so the new one must
+            // be recorded by the refresh itself - a caller that gave up waiting cannot be relied on.
+            List<OAuthTokens> recorded = new ArrayList<>();
+            oAuthService.setRefreshListener(recorded::add);
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(
+                CompletableFuture.completedFuture(
+                    OAuthTokens.create("new_access", "rotated_refresh", 14400, "Bearer", "scope")));
+
+            oAuthService.refreshAccessToken().get();
+
+            assertThat(recorded).singleElement()
+                .satisfies(tokens -> assertThat(tokens.refreshToken()).isEqualTo("rotated_refresh"));
+        }
+
+        @Test
+        @DisplayName("neither installs nor records a refresh that lands after the session was replaced")
+        void discardsARefreshThatLandsAfterTheSessionChanged() throws Exception {
+            List<OAuthTokens> recorded = new ArrayList<>();
+            oAuthService.setRefreshListener(recorded::add);
+            oAuthService.setTokens(createTestTokens());
+            CompletableFuture<OAuthTokens> pending = new CompletableFuture<>();
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(pending);
+
+            CompletableFuture<OAuthTokens> refresh = oAuthService.refreshAccessToken();
+            oAuthService.setTokens(null);
+            pending.complete(OAuthTokens.create("late_access", "late_refresh", 14400, "Bearer", "scope"));
+            refresh.get();
+
+            assertThat(oAuthService.getCurrentTokens()).isNull();
+            assertThat(recorded).isEmpty();
         }
     }
 

@@ -218,42 +218,40 @@ public class UiQuarterlySubmissionService {
     }
 
     /**
-     * Submits the request with automatic retry on 401 (Invalid Credentials).
-     * If the first attempt returns 401, refreshes the OAuth token and retries once.
+     * Submits the request, refreshing the access token and retrying once if HMRC answers 401.
+     *
+     * <p>Only a refresh that HMRC itself rejects means the session is gone, and
+     * {@link HmrcSessionPolicy} alone makes that call. Once a refresh has succeeded, HMRC has just
+     * honoured the grant, so a further 401 is a problem with this request — not with the stored
+     * credentials. Such a failure is reported as a request error, never as an expired session:
+     * callers treat {@code SESSION_EXPIRED} as a cue to force the user back through the browser,
+     * which would be wrong for a credential HMRC never refused.</p>
      */
     private Submission submitWithRetry(String url, String jsonBody, String httpMethod, boolean isSandbox,
                                         QuarterlyReviewData reviewData, Instant declarationAcceptedAt,
                                         String declarationTextHash) {
-        // First attempt
         String bearerToken = getBearerToken();
         HttpResponse<String> response = executeRequest(url, jsonBody, httpMethod, isSandbox, bearerToken, reviewData);
 
-        // Check for 401 - token might be invalid even though it appeared valid
         if (response.statusCode() == 401) {
             LOG.info("Received 401 Unauthorized - attempting token refresh and retry");
             try {
-                // Force token refresh
                 bearerToken = getBearerToken(true);
-                // Retry the request
                 response = executeRequest(url, jsonBody, httpMethod, isSandbox, bearerToken, reviewData);
 
                 if (response.statusCode() == 401) {
-                    // The stored session is not at fault here: HMRC honoured the refresh token
-                    // moments ago. Something about this request is being refused, so report it and
-                    // leave the credentials alone rather than making the user re-authenticate.
                     LOG.warning("Still receiving 401 after a successful token refresh");
                     throw new SubmissionException(
-                            "SESSION_EXPIRED: Your HMRC session has expired. Please reconnect via the HMRC Submission page.");
+                            "HMRC refused this submission even after renewing your session. "
+                            + "You are still signed in; please try again shortly.");
                 }
             } catch (SubmissionException e) {
                 throw e;
             } catch (Exception e) {
-                // A failed refresh has already been judged by HmrcSessionPolicy, which alone decides
-                // whether the session is destroyed; anything else here is a request failure and is no
-                // reason to discard credentials.
                 LOG.warning("Retry after 401 failed: " + e.getMessage());
                 throw new SubmissionException(
-                        "SESSION_EXPIRED: Your HMRC session has expired. Please reconnect via the HMRC Submission page.", e);
+                        "The submission could not be retried after HMRC renewed your session: "
+                        + e.getMessage(), e);
             }
         }
 
@@ -622,7 +620,7 @@ public class UiQuarterlySubmissionService {
                 LOG.info("Attempting to refresh OAuth tokens (forceRefresh=" + forceRefresh +
                         ", expired=" + tokens.isExpired() +
                         ", secondsRemaining=" + tokens.getSecondsUntilExpiry() + ")");
-                tokens = refreshAndPersistTokens(oauthService);
+                tokens = refreshTokens(oauthService);
             }
 
             return tokens.accessToken();
@@ -634,18 +632,18 @@ public class UiQuarterlySubmissionService {
     }
 
     /**
-     * Refreshes OAuth tokens and persists them to storage.
+     * Renews the access token. The rotated tokens are persisted by the OAuth service itself, so a
+     * refresh that outlives this wait is still recorded. A failure is handed to
+     * {@link HmrcSessionPolicy}, which alone decides whether the stored session is destroyed; only
+     * when it was does this report an expired session.
      *
      * @param oauthService the OAuth service
-     * @return the new tokens
-     * @throws SubmissionException if refresh fails
+     * @return the renewed tokens
+     * @throws SubmissionException if the refresh fails
      */
-    private OAuthTokens refreshAndPersistTokens(HmrcOAuthService oauthService) {
+    private OAuthTokens refreshTokens(HmrcOAuthService oauthService) {
         try {
-            OAuthTokens newTokens = oauthService.refreshAccessToken()
-                    .get(30, java.util.concurrent.TimeUnit.SECONDS);
-            HmrcSessionPolicy.persistRefreshedTokens(newTokens);
-            return newTokens;
+            return oauthService.refreshAccessToken().get(30, java.util.concurrent.TimeUnit.SECONDS);
 
         } catch (Exception e) {
             if (HmrcSessionPolicy.onRefreshFailure(e, oauthService)) {
@@ -654,7 +652,7 @@ public class UiQuarterlySubmissionService {
                         "Please reconnect via the HMRC Submission page.", e);
             }
             throw new SubmissionException(
-                    "NETWORK: We couldn't reach HMRC to renew your session. Check your connection and " +
+                    "We couldn't reach HMRC to renew your session. Check your connection and " +
                     "try again — you are still signed in.", e);
         }
     }

@@ -263,7 +263,6 @@ public final class HmrcCalculationService {
         if (forceRefresh || tokens.isExpired() || tokens.getSecondsUntilExpiry() < 300) {
             try {
                 tokens = oauthService.refreshAccessToken().get(30, TimeUnit.SECONDS);
-                HmrcSessionPolicy.persistRefreshedTokens(tokens);
             } catch (Exception e) {
                 if (HmrcSessionPolicy.onRefreshFailure(e, oauthService)) {
                     throw new CalcException(CalculationOutcome.Reason.SESSION_EXPIRED,

@@ -270,7 +270,6 @@ public class HmrcConnectionService {
 
         return oauthService.refreshAccessToken()
             .thenApply(newTokens -> {
-                HmrcSessionPolicy.persistRefreshedTokens(newTokens);
                 markSessionVerified();
                 LOG.info("Session verified successfully (tokens refreshed)");
                 return VerificationResult.VERIFIED;
@@ -470,23 +469,24 @@ public class HmrcConnectionService {
     // === Connection Management ===
 
     /**
-     * Disconnects from HMRC by clearing connection-related data.
-     * Note: NINO is NOT cleared as it's profile data, not connection data.
+     * Disconnects from HMRC by clearing connection-related data: the stored OAuth tokens, the live
+     * in-memory session, and the business identity. The in-memory session must go too — the OAuth
+     * service persists a rotated token whenever a refresh succeeds, so a session left loaded here
+     * could write the tokens back after they were deleted.
+     *
+     * <p>The NINO is profile data, not connection data, and is deliberately kept.</p>
      */
     public void disconnect() {
         LOG.info("Disconnecting from HMRC");
 
-        // Clear OAuth tokens
         SqliteDataStore.getInstance().clearOAuthTokens();
+        OAuthServiceFactory.getOAuthService().setTokens(null);
 
-        // Clear connection data
         SqliteDataStore.getInstance().saveHmrcBusinessId(null);
         SqliteDataStore.getInstance().saveHmrcTradingName(null);
 
-        // Reset session verification
         sessionVerifiedThisRun = false;
 
-        // Note: NINO is NOT cleared - it's profile data that persists
         LOG.info("HMRC connection data cleared (including OAuth tokens)");
     }
 }
