@@ -267,7 +267,7 @@ public final class HmrcCalculationService {
                     tokens.accessToken(), tokens.refreshToken(), tokens.expiresIn(),
                     tokens.tokenType(), tokens.scope(), tokens.issuedAt());
             } catch (Exception e) {
-                SqliteDataStore.getInstance().clearOAuthTokens();
+                HmrcSessionPolicy.onRefreshFailure(e, oauthService);
                 throw new CalcException(CalculationOutcome.Reason.SESSION_EXPIRED,
                     "Your HMRC session has expired. Please reconnect.", 0);
             }

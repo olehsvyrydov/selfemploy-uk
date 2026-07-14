@@ -66,6 +66,13 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
             });
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>A rejected refresh token is an expected, user-recoverable outcome — the user reconnects — so
+     * it is logged as a single warning. A stack trace is reserved for failures that are unexpected and
+     * therefore need diagnosing.
+     */
     @Override
     public CompletableFuture<OAuthTokens> refreshTokens(String refreshToken) {
         log.debug("Refreshing access token");
@@ -74,12 +81,16 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
 
         return sendTokenRequest(body)
             .exceptionally(ex -> {
-                log.error("Token refresh failed: {}",
-                    HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
-                if (ex.getCause() instanceof HmrcOAuthException) {
-                    throw (HmrcOAuthException) ex.getCause();
+                HmrcOAuthException failure = ex.getCause() instanceof HmrcOAuthException cause
+                    ? cause
+                    : new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
+                if (failure.getError() == OAuthError.INVALID_GRANT) {
+                    log.warn("HMRC rejected the refresh token; the user must reconnect");
+                } else {
+                    log.error("Token refresh failed: {}",
+                        HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
                 }
-                throw new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
+                throw failure;
             });
     }
 
@@ -121,9 +132,8 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
                 throw new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, "Invalid response format");
             }
         } else if (statusCode == 400) {
-            // Parse error response
             OAuthError error = parseErrorResponse(responseBody);
-            throw new HmrcOAuthException(error, responseBody);
+            throw new HmrcOAuthException(error, HmrcPiiRedactor.redact(responseBody));
         } else if (statusCode == 401) {
             throw new HmrcOAuthException(OAuthError.INVALID_CLIENT, "Invalid client credentials");
         } else {

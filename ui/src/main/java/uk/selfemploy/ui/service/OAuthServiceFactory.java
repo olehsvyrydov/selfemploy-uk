@@ -140,8 +140,8 @@ public final class OAuthServiceFactory {
     }
 
     /**
-     * Attempts to refresh tokens. If successful, persists the new tokens. If HMRC actually rejects
-     * the refresh token, clears the stored tokens; a transient failure keeps them for a later try.
+     * Attempts to refresh tokens and persists the result. A failure is handed to
+     * {@link HmrcSessionPolicy}, which alone decides whether the stored session is destroyed.
      */
     private static void tryRefreshTokens(HmrcOAuthService service, OAuthTokens oldTokens) {
         try {
@@ -160,14 +160,7 @@ public final class OAuthServiceFactory {
             LOG.info("OAuth tokens refreshed and persisted (expires in " + newTokens.getSecondsUntilExpiry() + "s)");
 
         } catch (Exception e) {
-            if (isRefreshTokenRejected(e)) {
-                LOG.warning("Refresh token rejected by HMRC - clearing stored tokens");
-                SqliteDataStore.getInstance().clearOAuthTokens();
-                service.setTokens(null);
-            } else {
-                LOG.log(Level.WARNING,
-                    "Could not refresh OAuth tokens (transient); keeping stored tokens", e);
-            }
+            HmrcSessionPolicy.onRefreshFailure(e, service);
         }
     }
 

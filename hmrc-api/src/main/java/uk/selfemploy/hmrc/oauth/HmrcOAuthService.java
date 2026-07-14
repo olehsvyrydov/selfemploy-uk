@@ -37,6 +37,9 @@ public class HmrcOAuthService {
     private final AtomicReference<String> currentAuthUrl = new AtomicReference<>();
     private final AtomicBoolean authenticationInProgress = new AtomicBoolean(false);
 
+    /** The refresh currently in flight, if any, shared by every caller that asks while it runs. */
+    private final AtomicReference<CompletableFuture<OAuthTokens>> refreshInFlight = new AtomicReference<>();
+
     public HmrcOAuthService(HmrcConfig config,
                            OAuthCallbackServer callbackServer,
                            TokenExchangeClient tokenExchangeClient,
@@ -179,24 +182,47 @@ public class HmrcOAuthService {
     /**
      * Refreshes the current access token using the refresh token.
      *
+     * <p>Absence of a refresh token fails with {@link OAuthError#NO_REFRESH_TOKEN} rather than
+     * {@link OAuthError#INVALID_GRANT}: no request reaches HMRC, so nothing has been rejected, and a
+     * caller must not read this as a dead credential and discard the session over it.
+     *
+     * <p>HMRC usually rotates the refresh token on every refresh, but is not obliged to return a new
+     * one. When the response omits it, the existing refresh token remains valid and is carried
+     * forward, because storing the {@code null} would silently destroy the ability to refresh again.
+     *
+     * <p>Concurrent callers share a single refresh rather than racing. HMRC invalidates a refresh
+     * token the moment it is redeemed, so two refreshes in flight together would present the same
+     * token and the loser would be told {@code invalid_grant} — a rejection the app inflicted on
+     * itself, and one it cannot tell apart from a real revocation.
+     *
      * @return Future containing new tokens
-     * @throws HmrcOAuthException if no refresh token is available
+     * @throws HmrcOAuthException with {@link OAuthError#NO_REFRESH_TOKEN} if there is nothing to refresh
      */
-    public CompletableFuture<OAuthTokens> refreshAccessToken() {
+    public synchronized CompletableFuture<OAuthTokens> refreshAccessToken() {
+        CompletableFuture<OAuthTokens> inFlight = refreshInFlight.get();
+        if (inFlight != null && !inFlight.isDone()) {
+            LOG.info("A token refresh is already in flight; joining it");
+            return inFlight;
+        }
+
         OAuthTokens current = currentTokens.get();
         if (current == null || current.refreshToken() == null) {
-            return CompletableFuture.failedFuture(
-                new HmrcOAuthException(OAuthError.INVALID_GRANT, "No refresh token available")
-            );
+            return CompletableFuture.failedFuture(new HmrcOAuthException(OAuthError.NO_REFRESH_TOKEN));
         }
 
         LOG.info("Refreshing access token");
-        return tokenExchangeClient.refreshTokens(current.refreshToken())
+        CompletableFuture<OAuthTokens> refresh = tokenExchangeClient.refreshTokens(current.refreshToken())
             .thenApply(tokens -> {
+                OAuthTokens refreshed = tokens.refreshToken() != null
+                    ? tokens
+                    : new OAuthTokens(tokens.accessToken(), current.refreshToken(), tokens.expiresIn(),
+                        tokens.tokenType(), tokens.scope(), tokens.issuedAt());
                 LOG.info("Access token refreshed successfully");
-                currentTokens.set(tokens);
-                return tokens;
+                currentTokens.set(refreshed);
+                return refreshed;
             });
+        refreshInFlight.set(refresh);
+        return refresh;
     }
 
     /**

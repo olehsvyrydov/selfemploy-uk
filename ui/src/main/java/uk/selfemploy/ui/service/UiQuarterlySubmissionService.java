@@ -655,9 +655,7 @@ public class UiQuarterlySubmissionService {
             return newTokens;
 
         } catch (Exception e) {
-            LOG.warning("Token refresh failed: " + e.getMessage());
-            // Clear invalid tokens
-            SqliteDataStore.getInstance().clearOAuthTokens();
+            HmrcSessionPolicy.onRefreshFailure(e, oauthService);
             throw new SubmissionException(
                     "SESSION_EXPIRED: Your HMRC session has expired and could not be refreshed. " +
                     "Please reconnect via the HMRC Submission page.", e);

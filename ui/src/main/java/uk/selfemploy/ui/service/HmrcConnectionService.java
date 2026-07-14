@@ -4,7 +4,6 @@ import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -271,30 +270,16 @@ public class HmrcConnectionService {
 
         return oauthService.refreshAccessToken()
             .thenApply(newTokens -> {
-                // Refresh succeeded - persist new tokens and mark verified. A failure to persist
-                // (e.g. the master key cannot be written) must not be mistaken for an expired
-                // session: the refreshed tokens are valid in memory, so keep the session verified
-                // rather than letting the exception fall through to the expired path below.
-                try {
-                    persistTokens(newTokens);
-                } catch (CredentialEncryptionException e) {
-                    LOG.log(Level.WARNING,
-                        "Refreshed tokens could not be persisted; continuing with the in-memory session", e);
+                if (!persistTokens(newTokens)) {
+                    LOG.warning("The refreshed session could not be saved; continuing with the "
+                        + "in-memory session for this run");
                 }
                 markSessionVerified();
                 LOG.info("Session verified successfully (tokens refreshed)");
                 return VerificationResult.VERIFIED;
             })
             .exceptionally(ex -> {
-                LOG.log(Level.WARNING, "Session verification failed: " + ex.getMessage(), ex);
-                // Only discard stored tokens when HMRC actually rejected the refresh token. A
-                // transient failure (network, timeout, HMRC 5xx) or an unavailable master key at
-                // startup (loadOAuthTokens returned null, so no tokens are in memory) leaves the
-                // encrypted tokens on disk valid, so they must be preserved for a later attempt.
-                if (oauthService.getCurrentTokens() != null
-                        && OAuthServiceFactory.isRefreshTokenRejected(ex)) {
-                    SqliteDataStore.getInstance().clearOAuthTokens();
-                }
+                HmrcSessionPolicy.onRefreshFailure(ex, oauthService);
                 resetSessionVerification();
                 return VerificationResult.EXPIRED;
             });
@@ -302,9 +287,11 @@ public class HmrcConnectionService {
 
     /**
      * Persists OAuth tokens to storage.
+     *
+     * @return true if the tokens were written, false if the write was skipped
      */
-    private void persistTokens(OAuthTokens tokens) {
-        SqliteDataStore.getInstance().saveOAuthTokens(
+    private boolean persistTokens(OAuthTokens tokens) {
+        return SqliteDataStore.getInstance().saveOAuthTokens(
             tokens.accessToken(),
             tokens.refreshToken(),
             tokens.expiresIn(),
