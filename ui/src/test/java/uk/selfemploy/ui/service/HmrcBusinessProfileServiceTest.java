@@ -135,6 +135,23 @@ class HmrcBusinessProfileServiceTest {
         }
 
         @Test
+        @DisplayName("a 200 with an empty body is sync-pending, but a valid empty object is a genuine rejection")
+        void emptyBodyVersusEmptyObject() {
+            store().saveHmrcBusinessId("XAIS12345678901");
+            store().saveConnectedNino(NINO);
+
+            // Empty body: transient content problem, must not wipe the verified profile.
+            Result empty = service.applyResponse(200, "", NINO, false);
+            assertThat(empty.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
+            assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
+
+            // Valid empty object: a real "no business" response that clears the stale profile.
+            Result emptyObject = service.applyResponse(200, "{}", NINO, false);
+            assertThat(emptyObject.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
+            assertThat(store().loadHmrcBusinessId()).isNull();
+        }
+
+        @Test
         @DisplayName("a transient error does not overwrite a different NINO already on file")
         void transientErrorDoesNotOverwriteDifferentNino() {
             store().saveNino(OTHER_NINO);
