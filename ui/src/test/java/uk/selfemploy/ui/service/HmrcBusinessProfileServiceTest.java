@@ -140,12 +140,10 @@ class HmrcBusinessProfileServiceTest {
             store().saveHmrcBusinessId("XAIS12345678901");
             store().saveConnectedNino(NINO);
 
-            // Empty body: transient content problem, must not wipe the verified profile.
             Result empty = service.applyResponse(200, "", NINO, false);
             assertThat(empty.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
             assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
 
-            // Valid empty object: a real "no business" response that clears the stale profile.
             Result emptyObject = service.applyResponse(200, "{}", NINO, false);
             assertThat(emptyObject.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
             assertThat(store().loadHmrcBusinessId()).isNull();

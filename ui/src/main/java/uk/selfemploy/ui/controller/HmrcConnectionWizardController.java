@@ -439,13 +439,13 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Handles the Cancel button click.
+     * Handles the Cancel button click. Cancellation is ignored while the business profile is being
+     * verified: OAuth has already succeeded and the in-flight fetch persists the connection outcome,
+     * so closing at that point would leave the UI and the stored state out of step. The verifying
+     * screen always resolves to a terminal outcome the user can then dismiss.
      */
     @FXML
     void handleCancel() {
-        // Once OAuth has succeeded and the profile fetch is in flight, block cancellation: the fetch
-        // persists the connection outcome, so closing here would leave the UI and stored state out of
-        // step. The verifying screen resolves to a terminal outcome the user can then dismiss.
         if (verifying) {
             return;
         }
@@ -1059,6 +1059,9 @@ public class HmrcConnectionWizardController implements Initializable {
      * outcome. Runs on a background thread so the network call does not block the UI; the wizard
      * shows a "verifying" state in the meantime and the final screen reflects the real outcome.
      *
+     * <p>The outcome is persisted regardless of the wizard's fate, but it is only rendered when the
+     * dialog is still showing, since the window may have been closed while the fetch was in flight.
+     *
      * @param accessToken the access token obtained from HMRC
      */
     private void verifyProfileAndShowOutcome(String accessToken) {
@@ -1070,8 +1073,6 @@ public class HmrcConnectionWizardController implements Initializable {
             HmrcBusinessProfileService.Result result = profileService.fetchAndPersist(nino, accessToken);
             Platform.runLater(() -> {
                 verifying = false;
-                // The dialog may already be closed if it was dismissed before the fetch returned;
-                // persistence has still happened, so only update the UI when the wizard is showing.
                 if (dialogStage != null && dialogStage.isShowing()) {
                     showProfileOutcome(result);
                 }
@@ -1230,8 +1231,9 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Loads Step 5: Confirmation and Next Steps content.
-     * SE-12-005: Confirmation and Next Steps Screen
+     * Loads the confirmation screen. This screen is presentation only: the NINO is deliberately not
+     * persisted here, because it is saved only once HMRC has verified it during the business-profile
+     * fetch, so an unverified value can never overwrite a known-good one.
      */
     private void loadStep5Content() {
         if (contentArea == null) return;
@@ -1241,16 +1243,9 @@ public class HmrcConnectionWizardController implements Initializable {
         contentArea.setPadding(new Insets(20));
         contentArea.setAlignment(Pos.TOP_CENTER);
 
-        // The NINO is not persisted here: it is saved only after HMRC verifies it during the
-        // business-profile fetch, so an unverified value never overwrites a known-good one.
-
-        // Success card with large checkmark
         VBox successCard = createStep5SuccessCard();
-
-        // What you can do now
         VBox nextStepsBox = createStep5NextStepsBox();
 
-        // Retention reminder
         InfoCard retentionCard = new InfoCard(
             "INFO_CIRCLE",
             RETENTION_TITLE,

@@ -285,26 +285,31 @@ public class OAuthConnectionHandler {
         }
     }
 
+    /**
+     * Persists the tokens and reports success after the brief "completing" delay.
+     *
+     * <p>Cancellation is honoured only up to the point where the tokens are written. A cancel that
+     * arrives during the cosmetic delay skips persistence entirely, so there is nothing to undo. A
+     * cancel that arrives while writing is honoured only on a first connection, where clearing the
+     * tokens this flow introduced is safe; on a re-authentication the prior session has already been
+     * replaced by these freshly written valid tokens, so the connection is completed instead —
+     * reporting cancellation there would leave valid tokens stored yet the session unverified, and
+     * rolling back would clear every token, destroying a still-valid pre-existing session.
+     *
+     * <p>The storage write is best-effort and non-throwing, so its result is checked: a session that
+     * looks connected but does not survive a restart is worse than an honest failure.
+     */
     private void handleSuccess(OAuthTokens tokens) {
         LOG.info("OAuth connection successful");
         reportStatus(ConnectionStatus.COMPLETING);
 
-        // Persist and report success after the brief "completing" delay. Cancellation is honoured
-        // only up to this point: once OAuth has delivered tokens the connection has materially
-        // happened, so a cancel arriving during the cosmetic delay skips persistence entirely (no
-        // tokens are written, nothing to undo) rather than trying to roll back — a rollback would
-        // clear ALL tokens and could destroy a pre-existing, still-valid session on a re-auth.
         scheduler.schedule(() -> {
             if (cancelled.get()) {
                 handleCancellation();
                 return;
             }
-            // Remember whether a session already existed so a late cancel can be rolled back safely.
             boolean hadTokensBefore = SqliteDataStore.getInstance().hasOAuthTokens();
 
-            // The storage write is best-effort, so confirm it actually persisted (e.g. the master
-            // key may be unavailable) before claiming success — otherwise the session would look
-            // connected but not survive a restart.
             if (!persistOAuthTokens(tokens)) {
                 LOG.warning("OAuth succeeded but tokens could not be saved");
                 reportStatus(ConnectionStatus.ERROR);
@@ -313,11 +318,6 @@ public class OAuthConnectionHandler {
                 connectionInProgress.set(false);
                 return;
             }
-            // Honour a cancel that arrived while writing, but only for a first connection: clear the
-            // tokens this flow introduced and report cancellation. On a re-auth the prior session was
-            // already replaced by these freshly written valid tokens, so completing the connection is
-            // the least-surprising outcome — reporting cancellation there would leave valid tokens
-            // stored yet the session marked unverified.
             if (cancelled.get() && !hadTokensBefore) {
                 SqliteDataStore.getInstance().clearOAuthTokens();
                 handleCancellation();

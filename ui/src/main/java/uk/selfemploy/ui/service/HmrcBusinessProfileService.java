@@ -120,8 +120,6 @@ public class HmrcBusinessProfileService {
             return applyResponse(response.statusCode(), response.body(), nino, sandbox);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to fetch business profile", e);
-            // The OAuth connection succeeded; only the profile fetch failed. Keep the NINO so it is
-            // not lost, mark it unverified, and let the profile sync on the first submission.
             return persistPending(nino, sandbox);
         }
     }
@@ -129,6 +127,11 @@ public class HmrcBusinessProfileService {
     /**
      * Decides the outcome for an HMRC response and persists it per the class policy. Package-private
      * so the decision-and-persistence logic can be unit-tested without a live HMRC endpoint.
+     *
+     * <p>401 and 403 are definitive NINO rejections. A 404 is a rejection in production, but is
+     * expected in the sandbox, which holds no real NINOs and therefore resolves to the fallback
+     * business ID. Every other status — 5xx included — means OAuth worked but the profile could not
+     * be fetched, which is transient and resolves to {@link Outcome#PROFILE_SYNC_PENDING}.
      */
     Result applyResponse(int statusCode, String body, String nino, boolean sandbox) {
         if (statusCode == 200) {
@@ -142,7 +145,6 @@ public class HmrcBusinessProfileService {
 
         if (statusCode == 404) {
             if (sandbox) {
-                // Sandbox has no real NINOs, so a 404 is expected: use the fallback business ID.
                 SqliteDataStore store = SqliteDataStore.getInstance();
                 store.saveHmrcBusinessId(SANDBOX_FALLBACK_BUSINESS_ID);
 
@@ -165,16 +167,19 @@ public class HmrcBusinessProfileService {
             return rejectVerification(Outcome.NINO_NOT_FOUND, false);
         }
 
-        // 5xx and any other status: OAuth worked but the profile could not be fetched. Keep the NINO
-        // (unless a different one is already stored) and let the profile sync later.
         LOG.warning("Business profile not available - HTTP " + statusCode);
         return persistPending(nino, sandbox);
     }
 
     /**
-     * Handles a 200 response, distinguishing a genuine "no business registered" (valid body, empty
-     * result) from an unreadable body. The former is a definitive rejection; the latter is a
-     * transient content problem that must not wipe a previously-verified profile.
+     * Handles a 200 response, distinguishing a genuine "no business registered" from an unreadable
+     * body. The former is a definitive rejection; the latter is a transient content problem that must
+     * not wipe a previously-verified profile.
+     *
+     * <p>Only a JSON object or array is a real business list. An empty body parses to a missing node
+     * and an unexpected scalar (say {@code "OK"}, or a number) is not a list, so both are treated as
+     * sync-pending. A container node — even an empty one — falls through to extraction, so a genuine
+     * no-business result still clears the profile.
      */
     private Result handleOkResponse(String body, String nino, boolean sandbox) {
         JsonNode root;
@@ -185,11 +190,6 @@ public class HmrcBusinessProfileService {
             return persistPending(nino, sandbox);
         }
 
-        // Only a JSON object or array is a real business-list response. An empty/blank body parses to
-        // a missing/null node, and an unexpected scalar (e.g. "OK", a number) is not a business list;
-        // treat both as sync-pending rather than a definitive "no business" that would wipe a verified
-        // profile. A parsed object or array — including an empty one — falls through to extraction, so
-        // a genuine no-business result still clears the profile.
         if (root == null || !root.isContainerNode()) {
             LOG.warning("200 response body was empty or not a JSON object/array; treating as sync-pending");
             return persistPending(nino, sandbox);
@@ -222,14 +222,20 @@ public class HmrcBusinessProfileService {
         return new Result(outcome, null, null, sandbox);
     }
 
+    /**
+     * Records a connection whose profile could not be resolved: OAuth succeeded, so the session is
+     * kept, but the NINO is marked unverified and the profile syncs on the first submission.
+     *
+     * <p>The NINO is stored only on a first connection or when it matches the one already on file. A
+     * different NINO already stored is left in place, because a transient error cannot confirm that
+     * the user really changed it.
+     */
     private Result persistPending(String nino, boolean sandbox) {
         SqliteDataStore store = SqliteDataStore.getInstance();
         store.saveNinoVerified(false);
         String existing = store.loadNino();
         if (nino != null && !nino.isBlank()
                 && (existing == null || existing.isBlank() || existing.equalsIgnoreCase(nino))) {
-            // First connection or the same NINO: keep the user's input so it is not lost. A different
-            // NINO already on file is left in place, since a transient error cannot confirm a change.
             store.saveNino(nino);
         }
         return new Result(Outcome.PROFILE_SYNC_PENDING, null, null, sandbox);
@@ -254,13 +260,19 @@ public class HmrcBusinessProfileService {
         }
     }
 
+    /**
+     * Extracts the first valid business ID from a parsed response. The documented shape is
+     * {@code { "selfEmployments": [ { "businessId": ... } ] }}; a top-level array of businesses and a
+     * direct {@code businessId} field are also accepted.
+     *
+     * @param root the parsed response body
+     * @return the first business ID matching the expected format, or {@code null} if there is none
+     */
     private static String extractBusinessId(JsonNode root) {
-        // Documented shape: { "selfEmployments": [ { "businessId": ... } ] }.
         String id = firstBusinessIdIn(root.path("selfEmployments"));
         if (id != null) {
             return id;
         }
-        // Tolerate a top-level array of businesses, or a direct businessId field.
         id = firstBusinessIdIn(root);
         if (id != null) {
             return id;

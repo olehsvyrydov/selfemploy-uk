@@ -1121,9 +1121,7 @@ class HmrcConnectionWizardE2ETest extends ApplicationTest {
             });
             WaitForAsyncUtils.waitForFxEvents();
 
-            // Then: the wizard reached Step 5 but did not persist the NINO. Persistence happens only
-            // after HMRC verifies the NINO during the business-profile fetch, so an unverified value
-            // never overwrites a previously-correct stored one.
+            // Then: the wizard reached Step 5 but did not persist the NINO
             assertThat(viewModel.getCurrentStep()).isEqualTo(5);
             assertThat(SqliteDataStore.getInstance().loadNino()).isNull();
         }
@@ -1169,9 +1167,7 @@ class HmrcConnectionWizardE2ETest extends ApplicationTest {
             });
             WaitForAsyncUtils.waitForFxEvents();
 
-            // Then: Settings still holds the original NINO. The corrected value is only persisted
-            // after HMRC verifies it during the business-profile fetch, so the wizard reaching Step 5
-            // must not overwrite the stored NINO with an unverified one.
+            // Then: Settings still holds the original NINO
             assertThat(SqliteDataStore.getInstance().loadNino()).isEqualTo(TEST_NINO);
         }
 

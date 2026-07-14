@@ -824,9 +824,11 @@ public class SettingsController implements Initializable, MainController.TaxYear
     /**
      * Refreshes an existing session without the full wizard, then re-verifies the business profile
      * with the refreshed token so a changed NINO or a stale business ID is re-verified (the old
-     * connect always did this). Distinguishes a transient failure — stored tokens survive and are
-     * loaded, so the user can retry — from a genuine rejection or an unloadable session, which
-     * both need the full wizard.
+     * connect always did this).
+     *
+     * <p>Surviving, loadable tokens after a failed refresh mean the failure was transient rather
+     * than a rejection, so the user is offered a retry. A genuine rejection or an unloadable session
+     * has no session left to refresh and falls back to the full wizard.
      */
     private void quickReconnect(HmrcConnectionService connectionService) {
         if (hmrcSetupButton != null) {
@@ -842,7 +844,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
             if (error == null && result == HmrcConnectionService.VerificationResult.VERIFIED
                     && tokens != null) {
-                // Re-verify the business profile with the refreshed token (no browser needed).
                 String nino = SqliteDataStore.getInstance().loadNino();
                 if (nino != null && !nino.isBlank()) {
                     reverifyBusinessProfile(nino, tokens.accessToken());
@@ -850,8 +851,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 }
                 launchConnectionWizard();
             } else if (tokens != null && connectionService.canQuickReconnect()) {
-                // The tokens are loaded and still present, so this was a transient failure rather
-                // than a rejection: let the user retry instead of forcing a full re-authentication.
                 if (hmrcSetupButton != null) {
                     hmrcSetupButton.setDisable(false);
                 }
@@ -859,7 +858,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 showWarning("Couldn't Reconnect",
                     "We couldn't reach HMRC just now. Please check your connection and try again.");
             } else {
-                // Rejected, or no in-memory session to refresh: a full re-connect is required.
                 LOG.info("Session refresh was not possible; launching the full connection wizard");
                 launchConnectionWizard();
             }
