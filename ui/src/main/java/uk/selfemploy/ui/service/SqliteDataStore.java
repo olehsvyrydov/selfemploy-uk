@@ -35,6 +35,7 @@ public final class SqliteDataStore {
 
     private final Path databasePath;
     private final boolean inMemory;
+    private final CredentialEncryption credentialEncryption;
 
     /**
      * The primary connection: used for schema init/migration, and the sole connection in in-memory
@@ -58,12 +59,16 @@ public final class SqliteDataStore {
     }
 
     SqliteDataStore(boolean inMemory) {
+        this.credentialEncryption = new CredentialEncryption();
         this.inMemory = inMemory;
         this.databasePath = inMemory ? null : resolveDatabasePath();
         if (!inMemory) {
             ensureDirectoryExists();
         }
         initializeDatabase();
+        if (!inMemory) {
+            restrictDatabaseFiles();
+        }
     }
 
     /**
@@ -72,13 +77,23 @@ public final class SqliteDataStore {
      * against a temporary database file.
      */
     SqliteDataStore(Path databasePath) {
+        this(databasePath, new CredentialEncryption());
+    }
+
+    /**
+     * Test seam: a file-mode store with an explicit {@link CredentialEncryption}, so tests can bind
+     * the at-rest encryption to a temporary master key instead of the real per-user key file.
+     */
+    SqliteDataStore(Path databasePath, CredentialEncryption credentialEncryption) {
         if (databasePath == null) {
             throw new IllegalArgumentException("databasePath cannot be null");
         }
+        this.credentialEncryption = credentialEncryption;
         this.inMemory = false;
         this.databasePath = databasePath;
         ensureDirectoryExists();
         initializeDatabase();
+        restrictDatabaseFiles();
     }
 
     /**
@@ -96,40 +111,27 @@ public final class SqliteDataStore {
      * Resolves the database path based on the operating system.
      */
     private Path resolveDatabasePath() {
-        String os = System.getProperty("os.name").toLowerCase();
-        String userHome = System.getProperty("user.home");
-
-        Path basePath;
-        if (os.contains("win")) {
-            String appData = System.getenv("APPDATA");
-            basePath = appData != null
-                ? Paths.get(appData, "SelfEmployment")
-                : Paths.get(userHome, "AppData", "Roaming", "SelfEmployment");
-        } else if (os.contains("mac")) {
-            basePath = Paths.get(userHome, "Library", "Application Support", "SelfEmployment");
-        } else {
-            String xdgData = System.getenv("XDG_DATA_HOME");
-            basePath = xdgData != null
-                ? Paths.get(xdgData, "selfemployment")
-                : Paths.get(userHome, ".local", "share", "selfemployment");
-        }
-
-        return basePath.resolve(DB_FILE);
+        return AppDataDirectory.resolve().resolve(DB_FILE);
     }
 
     /**
-     * Ensures the parent directory exists.
+     * Creates the data directory (owner-only) if it does not yet exist. The database files
+     * themselves are restricted by {@link #restrictDatabaseFiles()} after
+     * {@link #initializeDatabase()} has created them; calling it here would be a no-op because the
+     * files do not exist yet.
      */
     private void ensureDirectoryExists() {
-        try {
-            Path parent = databasePath.getParent();
-            if (parent != null && !Files.exists(parent)) {
-                Files.createDirectories(parent);
-                LOG.info("Created data directory: " + parent);
-            }
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create data directory", e);
+        Path parent = databasePath.getParent();
+        if (parent != null) {
+            AppDataDirectory.createRestricted(parent);
         }
+    }
+
+    private void restrictDatabaseFiles() {
+        String name = databasePath.getFileName().toString();
+        AppDataDirectory.restrictFile(databasePath);
+        AppDataDirectory.restrictFile(databasePath.resolveSibling(name + "-wal"));
+        AppDataDirectory.restrictFile(databasePath.resolveSibling(name + "-shm"));
     }
 
     /**
@@ -504,8 +506,9 @@ public final class SqliteDataStore {
     // === OAuth Token Operations (Sprint 12) ===
 
     /**
-     * Saves OAuth tokens to persistent storage.
-     * Note: Tokens should be encrypted in production (TD-XXX).
+     * Saves OAuth tokens to persistent storage. The access and refresh tokens are encrypted at
+     * rest; the refresh token in particular is a long-lived credential for the taxpayer's HMRC
+     * account. The remaining fields are not secret and are stored as-is.
      *
      * @param accessToken the OAuth access token
      * @param refreshToken the OAuth refresh token
@@ -517,13 +520,87 @@ public final class SqliteDataStore {
     public synchronized void saveOAuthTokens(String accessToken, String refreshToken,
                                              long expiresIn, String tokenType,
                                              String scope, Instant issuedAt) {
-        saveSetting("oauth_access_token", accessToken);
-        saveSetting("oauth_refresh_token", refreshToken);
+        String encryptedAccess = encryptForStorage("oauth_access_token", accessToken);
+        String encryptedRefresh = encryptForStorage("oauth_refresh_token", refreshToken);
+
+        // All-or-nothing: if a token could not be encrypted (the master key is unavailable), skip
+        // the whole write rather than persist fresh expiry metadata against the old ciphertext,
+        // which would later be read back as a current-but-stale session. The in-memory session
+        // keeps working and the tokens are re-persisted on the next successful save. This is
+        // deliberately non-throwing because upstream token-lifecycle code treats a persistence
+        // exception as an expired session and responds by discarding valid tokens.
+        if ((accessToken != null && encryptedAccess == null)
+                || (refreshToken != null && encryptedRefresh == null)) {
+            LOG.warning("Skipping OAuth token persistence: tokens could not be encrypted at rest");
+            return;
+        }
+
+        saveSetting("oauth_access_token", encryptedAccess);
+        saveSetting("oauth_refresh_token", encryptedRefresh);
         saveSetting("oauth_expires_in", String.valueOf(expiresIn));
         saveSetting("oauth_token_type", tokenType);
         saveSetting("oauth_scope", scope);
         saveSetting("oauth_issued_at", issuedAt != null ? issuedAt.toString() : null);
         LOG.info("OAuth tokens saved to persistent storage");
+    }
+
+    /**
+     * Encrypts a value for storage, or returns null if it is null or the master key is currently
+     * unavailable. A null return for a non-null input signals the caller that encryption could not
+     * be performed, so it can skip persisting rather than fail.
+     */
+    private String encryptForStorage(String key, String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return credentialEncryption.encrypt(value);
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Could not encrypt " + key + " for storage", e);
+            return null;
+        }
+    }
+
+    /**
+     * Reads a token that is encrypted at rest. Tokens written by earlier versions are stored in
+     * the clear; such a value is rewritten encrypted as soon as it is read, so the plaintext does
+     * not survive the upgrade.
+     *
+     * <p>A value that cannot be decrypted — whether the master key is unavailable or the ciphertext
+     * does not decrypt under it — is left in place and reported as absent. The stored value is never
+     * deleted on a read: a key that is missing or wrong today may be restored tomorrow, and a
+     * genuinely unusable value is harmlessly overwritten by the next save.</p>
+     */
+    private String loadEncryptedToken(String key) {
+        String stored = loadSetting(key);
+        if (stored == null) {
+            return null;
+        }
+        if (credentialEncryption.isLegacy(stored)) {
+            reEncryptInPlace(key, stored, key);
+            return stored;
+        }
+        try {
+            return credentialEncryption.decrypt(stored);
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING, "Could not decrypt " + key + "; leaving it encrypted at rest", e);
+            return null;
+        }
+    }
+
+    /**
+     * Rewrites a plaintext or legacy-scheme value under the current master key. A failure is logged
+     * and swallowed rather than propagated or treated as corruption: the value was read correctly,
+     * so it must not be cleared just because it could not be rewritten (e.g. the key file is
+     * momentarily unwritable); the next load simply retries the rewrite.
+     */
+    private void reEncryptInPlace(String key, String plaintext, String description) {
+        try {
+            saveSetting(key, credentialEncryption.encrypt(plaintext));
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.WARNING,
+                "Could not re-encrypt " + description + " under the current key; left as stored", e);
+        }
     }
 
     /**
@@ -533,13 +610,13 @@ public final class SqliteDataStore {
      *         or null if not stored
      */
     public synchronized String[] loadOAuthTokens() {
-        String accessToken = loadSetting("oauth_access_token");
+        String accessToken = loadEncryptedToken("oauth_access_token");
         if (accessToken == null) {
             return null;
         }
         return new String[] {
             accessToken,
-            loadSetting("oauth_refresh_token"),
+            loadEncryptedToken("oauth_refresh_token"),
             loadSetting("oauth_expires_in"),
             loadSetting("oauth_token_type"),
             loadSetting("oauth_scope"),
@@ -652,8 +729,6 @@ public final class SqliteDataStore {
 
     // === HMRC API Credential Operations ===
 
-    private static final CredentialEncryption credentialEncryption = new CredentialEncryption();
-
     /**
      * Saves the HMRC API client ID, encrypted at rest.
      *
@@ -673,17 +748,33 @@ public final class SqliteDataStore {
      * @return the decrypted client ID, or null if not set
      */
     public synchronized String loadHmrcClientId() {
-        String encrypted = loadSetting("hmrc_client_id_enc");
+        return loadEncryptedCredential("hmrc_client_id_enc", "HMRC client ID");
+    }
+
+    /**
+     * Reads a credential, rewriting it under the current master key if it was stored under the
+     * superseded machine-derived key, so upgrading does not discard the user's credentials.
+     */
+    private String loadEncryptedCredential(String key, String description) {
+        String encrypted = loadSetting(key);
         if (encrypted == null) {
             return null;
         }
+        String plaintext;
         try {
-            return credentialEncryption.decrypt(encrypted);
+            plaintext = credentialEncryption.decrypt(encrypted);
         } catch (CredentialEncryptionException e) {
-            LOG.log(Level.WARNING, "Failed to decrypt HMRC client ID - clearing corrupted value", e);
-            saveSetting("hmrc_client_id_enc", null);
+            // Never delete on a read: a value that will not decrypt today (key missing, wrong, or
+            // the ciphertext genuinely unusable) is left intact so a restored key can recover it,
+            // and is harmlessly overwritten if the user re-enters it.
+            LOG.log(Level.WARNING,
+                "Could not decrypt " + description + "; leaving it encrypted at rest", e);
             return null;
         }
+        if (credentialEncryption.isLegacy(encrypted)) {
+            reEncryptInPlace(key, plaintext, description);
+        }
+        return plaintext;
     }
 
     /**
@@ -705,17 +796,7 @@ public final class SqliteDataStore {
      * @return the decrypted client secret, or null if not set
      */
     public synchronized String loadHmrcClientSecret() {
-        String encrypted = loadSetting("hmrc_client_secret_enc");
-        if (encrypted == null) {
-            return null;
-        }
-        try {
-            return credentialEncryption.decrypt(encrypted);
-        } catch (CredentialEncryptionException e) {
-            LOG.log(Level.WARNING, "Failed to decrypt HMRC client secret - clearing corrupted value", e);
-            saveSetting("hmrc_client_secret_enc", null);
-            return null;
-        }
+        return loadEncryptedCredential("hmrc_client_secret_enc", "HMRC client secret");
     }
 
     /**

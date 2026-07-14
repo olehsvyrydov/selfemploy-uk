@@ -76,6 +76,18 @@ public class OAuthCallbackServer {
         </html>
         """;
 
+    /**
+     * Bind address for the callback listener. Binding to the loopback interface (rather than
+     * Vert.x's {@code 0.0.0.0} default) keeps the OAuth callback endpoint unreachable from the
+     * local network. The literal {@code 127.0.0.1} is used rather than the hostname
+     * {@code localhost} so the bound address is deterministic (RFC 8252 §7.3): resolving
+     * {@code localhost} at bind time can pick a single family — e.g. IPv6 {@code ::1} — that the
+     * browser's redirect to {@code http://localhost} does not reach, leaving the callback to time
+     * out. IPv4 loopback is what {@code localhost} resolves to on the desktop platforms this app
+     * targets.
+     */
+    private static final String LOOPBACK_HOST = "127.0.0.1";
+
     private final Vertx vertx;
     private final int port;
     private final String callbackPath;
@@ -85,6 +97,8 @@ public class OAuthCallbackServer {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicReference<String> expectedState = new AtomicReference<>();
     private final AtomicReference<CompletableFuture<String>> callbackFuture = new AtomicReference<>();
+    private final AtomicReference<CompletableFuture<Void>> listening =
+        new AtomicReference<>(new CompletableFuture<>());
     private ScheduledExecutorService timeoutExecutor;
 
     /**
@@ -118,6 +132,7 @@ public class OAuthCallbackServer {
         }
 
         expectedState.set(state);
+        listening.set(new CompletableFuture<>());
         CompletableFuture<String> future = new CompletableFuture<>();
         callbackFuture.set(future);
 
@@ -136,9 +151,10 @@ public class OAuthCallbackServer {
 
         CompletableFuture<String> result = new CompletableFuture<>();
 
-        server.listen(port)
+        server.listen(port, LOOPBACK_HOST)
             .onSuccess(s -> {
-                log.info("OAuth callback server started on port {}", port);
+                log.info("OAuth callback server listening on {}:{}", LOOPBACK_HOST, port);
+                listening.get().complete(null);
                 // Forward the callback future's result
                 future.whenComplete((code, error) -> {
                     if (error != null) {
@@ -151,12 +167,26 @@ public class OAuthCallbackServer {
             .onFailure(error -> {
                 log.error("Failed to start OAuth callback server on port {}", port, error);
                 running.set(false);
-                result.completeExceptionally(
-                    new HmrcOAuthException(OAuthError.PORT_IN_USE, error)
-                );
+                HmrcOAuthException failure = new HmrcOAuthException(OAuthError.PORT_IN_USE, error);
+                listening.get().completeExceptionally(failure);
+                result.completeExceptionally(failure);
             });
 
         return result;
+    }
+
+    /**
+     * Completes once the callback listener is actually bound, or fails if the port could not be
+     * taken.
+     *
+     * <p>The authorization request must not be sent to the browser until this completes: if the
+     * port is already held by another process, HMRC would redirect the authorization code to that
+     * process instead of to this application.</p>
+     *
+     * @return a future signalling that the callback endpoint is ready to receive the redirect
+     */
+    public CompletableFuture<Void> listening() {
+        return listening.get();
     }
 
     /**

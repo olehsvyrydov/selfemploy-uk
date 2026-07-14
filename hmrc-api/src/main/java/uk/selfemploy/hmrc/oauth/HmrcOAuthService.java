@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -34,6 +35,7 @@ public class HmrcOAuthService {
 
     private final AtomicReference<OAuthTokens> currentTokens = new AtomicReference<>();
     private final AtomicReference<String> currentAuthUrl = new AtomicReference<>();
+    private final AtomicBoolean authenticationInProgress = new AtomicBoolean(false);
 
     public HmrcOAuthService(HmrcConfig config,
                            OAuthCallbackServer callbackServer,
@@ -55,60 +57,57 @@ public class HmrcOAuthService {
      * @throws HmrcOAuthException if authentication fails
      */
     public CompletableFuture<OAuthTokens> authenticate() {
-        LOG.info("Starting authenticate()");
-
-        // Validate configuration
-        LOG.info("Validating configuration...");
         validateConfiguration();
-        LOG.info("Configuration valid");
 
-        // Generate secure state for CSRF protection
-        LOG.info("Generating state...");
-        String state = generateSecureState();
-        LOG.info("State generated");
-
-        // Build authorization URL
-        LOG.info("Building auth URL...");
-        String authUrl = buildAuthorizationUrl(state);
-        currentAuthUrl.set(authUrl);
-        LOG.info("Auth URL built (length=" + authUrl.length() + ")");
-
-        LOG.info("Starting OAuth2 authentication flow");
-
-        // Start callback server and await callback
-        LOG.info("Starting callback server on port " + config.callbackPort() + "...");
-        CompletableFuture<String> callbackFuture = callbackServer.startAndAwaitCallback(state);
-        LOG.info("Callback server started");
-
-        // Open browser with authorization URL
-        LOG.info("Opening browser...");
-        try {
-            browserLauncher.openUrl(authUrl);
-            LOG.info("Browser opened successfully");
-        } catch (HmrcOAuthException e) {
-            LOG.severe("Browser failed: " + e.getMessage());
-            callbackServer.stop();
-            return CompletableFuture.failedFuture(e);
+        // A single service instance owns one flow at a time. Without this guard a second call
+        // (e.g. a double-clicked "Connect") would open a second browser and then tear down the
+        // first, still-listening callback server, aborting the login already in progress.
+        if (!authenticationInProgress.compareAndSet(false, true)) {
+            return CompletableFuture.failedFuture(new HmrcOAuthException(
+                OAuthError.SERVER_ERROR, "An authentication flow is already in progress"));
         }
 
-        // Process the callback and exchange code for tokens
-        return callbackFuture
-            .thenCompose(authCode -> {
-                LOG.fine("Received authorization code, exchanging for tokens");
-                return tokenExchangeClient.exchangeCodeForTokens(authCode);
-            })
-            .thenApply(tokens -> {
-                LOG.info("OAuth2 authentication completed successfully");
-                currentTokens.set(tokens);
-                return tokens;
-            })
-            .whenComplete((result, error) -> {
-                // Always stop the callback server
-                callbackServer.stop();
-                if (error != null) {
-                    LOG.severe("OAuth2 authentication failed: " + error.getMessage());
-                }
-            });
+        try {
+            String state = generateSecureState();
+            PkceChallenge pkce = PkceChallenge.generate(secureRandom);
+
+            String authUrl = buildAuthorizationUrl(state, pkce.challenge());
+            currentAuthUrl.set(authUrl);
+
+            LOG.info("Starting OAuth2 authentication flow");
+
+            CompletableFuture<String> callbackFuture = callbackServer.startAndAwaitCallback(state);
+
+            return callbackServer.listening()
+                // listening() is completed on the callback server's Vert.x event loop; launching the
+                // browser there could block the single loop that must serve the OAuth callback, so
+                // the launch is offloaded off that thread.
+                .thenComposeAsync(listening -> {
+                    browserLauncher.openUrl(authUrl);
+                    return callbackFuture;
+                })
+                .thenCompose(authCode -> tokenExchangeClient.exchangeCodeForTokens(authCode, pkce.verifier()))
+                .thenApply(tokens -> {
+                    LOG.info("OAuth2 authentication completed successfully");
+                    currentTokens.set(tokens);
+                    return tokens;
+                })
+                .whenComplete((result, error) -> {
+                    // Release the in-progress guard even if stop() throws, so a teardown failure
+                    // cannot permanently wedge the flow into "already in progress".
+                    try {
+                        callbackServer.stop();
+                    } finally {
+                        authenticationInProgress.set(false);
+                    }
+                    if (error != null) {
+                        LOG.severe("OAuth2 authentication failed: " + error.getMessage());
+                    }
+                });
+        } catch (RuntimeException e) {
+            authenticationInProgress.set(false);
+            throw e;
+        }
     }
 
     /**
@@ -128,10 +127,11 @@ public class HmrcOAuthService {
     /**
      * Builds the HMRC authorization URL with required parameters.
      *
-     * @param state The state parameter for CSRF protection
+     * @param state         The state parameter for CSRF protection
+     * @param codeChallenge The PKCE S256 challenge (RFC 7636)
      * @return The complete authorization URL
      */
-    public String buildAuthorizationUrl(String state) {
+    public String buildAuthorizationUrl(String state, String codeChallenge) {
         StringBuilder url = new StringBuilder(config.authorizeUrl());
         url.append("?");
         url.append("client_id=").append(encode(config.clientId().orElse("")));
@@ -139,6 +139,8 @@ public class HmrcOAuthService {
         url.append("&redirect_uri=").append(encode(config.getRedirectUri()));
         url.append("&scope=").append(encode(String.join(" ", config.scopes())));
         url.append("&state=").append(encode(state));
+        url.append("&code_challenge=").append(encode(codeChallenge));
+        url.append("&code_challenge_method=").append(PkceChallenge.METHOD);
 
         return url.toString();
     }

@@ -15,6 +15,8 @@ import uk.selfemploy.hmrc.exception.HmrcOAuthException;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException.OAuthError;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -94,7 +96,7 @@ class HmrcOAuthServiceTest {
         @Test
         @DisplayName("should include client_id in authorization URL")
         void shouldIncludeClientId() {
-            String url = oAuthService.buildAuthorizationUrl("state123");
+            String url = oAuthService.buildAuthorizationUrl("state123", "test-challenge");
 
             assertThat(url).contains("client_id=test-client-id");
         }
@@ -102,7 +104,7 @@ class HmrcOAuthServiceTest {
         @Test
         @DisplayName("should include response_type=code")
         void shouldIncludeResponseTypeCode() {
-            String url = oAuthService.buildAuthorizationUrl("state123");
+            String url = oAuthService.buildAuthorizationUrl("state123", "test-challenge");
 
             assertThat(url).contains("response_type=code");
         }
@@ -110,7 +112,7 @@ class HmrcOAuthServiceTest {
         @Test
         @DisplayName("should include state parameter")
         void shouldIncludeStateParameter() {
-            String url = oAuthService.buildAuthorizationUrl("my-state-param");
+            String url = oAuthService.buildAuthorizationUrl("my-state-param", "test-challenge");
 
             assertThat(url).contains("state=my-state-param");
         }
@@ -118,7 +120,7 @@ class HmrcOAuthServiceTest {
         @Test
         @DisplayName("should include redirect_uri")
         void shouldIncludeRedirectUri() {
-            String url = oAuthService.buildAuthorizationUrl("state");
+            String url = oAuthService.buildAuthorizationUrl("state", "test-challenge");
 
             assertThat(url).contains("redirect_uri=");
             assertThat(url).contains("localhost");
@@ -127,7 +129,7 @@ class HmrcOAuthServiceTest {
         @Test
         @DisplayName("should include scopes")
         void shouldIncludeScopes() {
-            String url = oAuthService.buildAuthorizationUrl("state");
+            String url = oAuthService.buildAuthorizationUrl("state", "test-challenge");
 
             assertThat(url).contains("scope=");
             assertThat(url).contains("self-assessment");
@@ -136,7 +138,7 @@ class HmrcOAuthServiceTest {
         @Test
         @DisplayName("should use configured authorize URL")
         void shouldUseConfiguredAuthorizeUrl() {
-            String url = oAuthService.buildAuthorizationUrl("state");
+            String url = oAuthService.buildAuthorizationUrl("state", "test-challenge");
 
             assertThat(url).startsWith("https://test-www.tax.service.gov.uk/oauth/authorize");
         }
@@ -179,6 +181,68 @@ class HmrcOAuthServiceTest {
             when(config.tokenUrl()).thenReturn("https://test.gov.uk/oauth/token");
             when(config.scopes()).thenReturn(List.of("read:self-assessment"));
             when(config.getRedirectUri()).thenReturn("http://localhost:8088/oauth/callback");
+            when(callbackServer.listening()).thenReturn(CompletableFuture.completedFuture(null));
+        }
+
+        @Test
+        @DisplayName("should not open the browser until the callback listener is bound")
+        void shouldNotOpenBrowserBeforeListenerIsBound() {
+            when(callbackServer.listening()).thenReturn(CompletableFuture.failedFuture(
+                new HmrcOAuthException(OAuthError.PORT_IN_USE)));
+            when(callbackServer.startAndAwaitCallback(anyString()))
+                .thenReturn(new CompletableFuture<>());
+
+            assertThatThrownBy(() -> oAuthService.authenticate().get())
+                .hasCauseInstanceOf(HmrcOAuthException.class);
+
+            verify(browserLauncher, never()).openUrl(anyString());
+            verify(callbackServer).stop();
+        }
+
+        @Test
+        @DisplayName("should send a PKCE S256 challenge on the authorization request")
+        void shouldSendPkceChallengeOnAuthorize() throws Exception {
+            when(callbackServer.startAndAwaitCallback(anyString()))
+                .thenReturn(CompletableFuture.completedFuture("auth_code"));
+            when(tokenExchangeClient.exchangeCodeForTokens(anyString(), anyString()))
+                .thenReturn(CompletableFuture.completedFuture(createTestTokens()));
+
+            oAuthService.authenticate().get();
+
+            ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+            verify(browserLauncher).openUrl(urlCaptor.capture());
+
+            assertThat(urlCaptor.getValue()).contains("code_challenge_method=S256");
+            assertThat(urlCaptor.getValue()).contains("code_challenge=");
+        }
+
+        @Test
+        @DisplayName("should redeem the code with the verifier matching the challenge that was sent")
+        void shouldRedeemCodeWithVerifierMatchingChallenge() throws Exception {
+            when(callbackServer.startAndAwaitCallback(anyString()))
+                .thenReturn(CompletableFuture.completedFuture("auth_code"));
+            when(tokenExchangeClient.exchangeCodeForTokens(anyString(), anyString()))
+                .thenReturn(CompletableFuture.completedFuture(createTestTokens()));
+
+            oAuthService.authenticate().get();
+
+            ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+            verify(browserLauncher).openUrl(urlCaptor.capture());
+            ArgumentCaptor<String> verifierCaptor = ArgumentCaptor.forClass(String.class);
+            verify(tokenExchangeClient).exchangeCodeForTokens(anyString(), verifierCaptor.capture());
+
+            String sentChallenge = extractQueryParam(urlCaptor.getValue(), "code_challenge");
+            assertThat(sentChallenge).isEqualTo(PkceChallenge.challengeFor(verifierCaptor.getValue()));
+        }
+
+        private String extractQueryParam(String url, String name) {
+            for (String pair : url.substring(url.indexOf('?') + 1).split("&")) {
+                int eq = pair.indexOf('=');
+                if (eq > 0 && pair.substring(0, eq).equals(name)) {
+                    return URLDecoder.decode(pair.substring(eq + 1), StandardCharsets.UTF_8);
+                }
+            }
+            return null;
         }
 
         @Test
@@ -186,7 +250,7 @@ class HmrcOAuthServiceTest {
         void shouldStartCallbackServerFirst() throws Exception {
             when(callbackServer.startAndAwaitCallback(anyString()))
                 .thenReturn(CompletableFuture.completedFuture("auth_code"));
-            when(tokenExchangeClient.exchangeCodeForTokens(anyString()))
+            when(tokenExchangeClient.exchangeCodeForTokens(anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(createTestTokens()));
 
             oAuthService.authenticate().get();
@@ -202,7 +266,7 @@ class HmrcOAuthServiceTest {
         void shouldOpenBrowserWithAuthUrl() throws Exception {
             when(callbackServer.startAndAwaitCallback(anyString()))
                 .thenReturn(CompletableFuture.completedFuture("auth_code"));
-            when(tokenExchangeClient.exchangeCodeForTokens(anyString()))
+            when(tokenExchangeClient.exchangeCodeForTokens(anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(createTestTokens()));
 
             oAuthService.authenticate().get();
@@ -220,12 +284,12 @@ class HmrcOAuthServiceTest {
         void shouldExchangeCodeForTokens() throws Exception {
             when(callbackServer.startAndAwaitCallback(anyString()))
                 .thenReturn(CompletableFuture.completedFuture("test_auth_code"));
-            when(tokenExchangeClient.exchangeCodeForTokens("test_auth_code"))
+            when(tokenExchangeClient.exchangeCodeForTokens(eq("test_auth_code"), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(createTestTokens()));
 
             OAuthTokens tokens = oAuthService.authenticate().get();
 
-            verify(tokenExchangeClient).exchangeCodeForTokens("test_auth_code");
+            verify(tokenExchangeClient).exchangeCodeForTokens(eq("test_auth_code"), anyString());
             assertThat(tokens.accessToken()).isEqualTo("test_access_token");
         }
 
@@ -234,7 +298,7 @@ class HmrcOAuthServiceTest {
         void shouldStopCallbackServerAfterSuccess() throws Exception {
             when(callbackServer.startAndAwaitCallback(anyString()))
                 .thenReturn(CompletableFuture.completedFuture("auth_code"));
-            when(tokenExchangeClient.exchangeCodeForTokens(anyString()))
+            when(tokenExchangeClient.exchangeCodeForTokens(anyString(), anyString()))
                 .thenReturn(CompletableFuture.completedFuture(createTestTokens()));
 
             oAuthService.authenticate().get();
@@ -258,11 +322,28 @@ class HmrcOAuthServiceTest {
         }
 
         @Test
+        @DisplayName("rejects a second concurrent authentication without disturbing the first")
+        void rejectsConcurrentAuthentication() {
+            when(callbackServer.startAndAwaitCallback(anyString()))
+                .thenReturn(new CompletableFuture<>()); // first flow never completes
+
+            CompletableFuture<OAuthTokens> first = oAuthService.authenticate();
+            CompletableFuture<OAuthTokens> second = oAuthService.authenticate();
+
+            assertThat(first).isNotCompleted();
+            assertThat(second).isCompletedExceptionally();
+            assertThatThrownBy(second::get).hasCauseInstanceOf(HmrcOAuthException.class);
+
+            verify(browserLauncher, times(1)).openUrl(anyString());
+            verify(callbackServer, never()).stop();
+        }
+
+        @Test
         @DisplayName("should propagate token exchange errors")
         void shouldPropagateTokenExchangeErrors() throws Exception {
             when(callbackServer.startAndAwaitCallback(anyString()))
                 .thenReturn(CompletableFuture.completedFuture("auth_code"));
-            when(tokenExchangeClient.exchangeCodeForTokens(anyString()))
+            when(tokenExchangeClient.exchangeCodeForTokens(anyString(), anyString()))
                 .thenReturn(CompletableFuture.failedFuture(
                     new HmrcOAuthException(OAuthError.INVALID_GRANT)));
 

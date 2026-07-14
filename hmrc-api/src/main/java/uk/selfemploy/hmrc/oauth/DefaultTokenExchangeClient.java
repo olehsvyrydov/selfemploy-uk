@@ -49,10 +49,11 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
     }
 
     @Override
-    public CompletableFuture<OAuthTokens> exchangeCodeForTokens(String authorizationCode) {
+    public CompletableFuture<OAuthTokens> exchangeCodeForTokens(String authorizationCode, String codeVerifier) {
         log.debug("Exchanging authorization code for tokens");
 
-        String body = buildTokenRequestBody("authorization_code", "code", authorizationCode);
+        String body = buildTokenRequestBody("authorization_code", "code", authorizationCode)
+            + "&code_verifier=" + encode(codeVerifier);
 
         return sendTokenRequest(body)
             .exceptionally(ex -> {

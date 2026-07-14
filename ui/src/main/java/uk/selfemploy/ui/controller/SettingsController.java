@@ -38,7 +38,9 @@ import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
+import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.service.CredentialEncryptionException;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
 import uk.selfemploy.ui.service.SqliteDataStore;
@@ -646,8 +648,16 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
 
         SqliteDataStore store = SqliteDataStore.getInstance();
-        store.saveHmrcClientId(clientId.trim());
-        store.saveHmrcClientSecret(clientSecret.trim());
+        try {
+            store.saveHmrcClientId(clientId.trim());
+            store.saveHmrcClientSecret(clientSecret.trim());
+        } catch (CredentialEncryptionException e) {
+            LOG.log(Level.SEVERE, "Failed to encrypt and save HMRC credentials", e);
+            showError("Could Not Save Credentials",
+                "Your HMRC credentials could not be secured on this device. Check that the "
+                    + "application data folder is writable, then try again.");
+            return;
+        }
 
         // Apply credentials as system properties for HmrcConfig
         applyHmrcCredentialsToSystemProperties(clientId.trim(), clientSecret.trim());
@@ -885,7 +895,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         String apiBaseUrl = System.getProperty("HMRC_API_BASE_URL", "https://test-api.service.hmrc.gov.uk");
         String url = apiBaseUrl + "/individuals/business/self-employment/" + nino;
 
-        LOG.info("Fetching business details from: " + url);
+        LOG.info("Fetching business details from: " + HmrcPiiRedactor.redact(url));
 
         Thread.startVirtualThread(() -> {
             try {
@@ -908,7 +918,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
                 if (response.statusCode() == 200) {
                     String body = response.body();
-                    LOG.info("Business details: " + body);
+                    LOG.info("Business details: " + HmrcPiiRedactor.redact(body));
 
                     // Parse business ID from response
                     // Format: {"selfEmployments":[{"businessId":"XAIS12345678901",...}]}
@@ -929,7 +939,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                         });
                     } else {
                         // Response OK but no business found - NINO may not have self-employment registered
-                        LOG.warning("No self-employment business found for NINO: " + nino);
+                        LOG.warning("No self-employment business found for the stored NINO");
                         Platform.runLater(() -> {
                             setNinoVerificationStatus(NinoVerificationStatus.FAILED);
                             SqliteDataStore.getInstance().saveNinoVerified(false);
@@ -944,7 +954,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     }
                 } else if (response.statusCode() == 403 || response.statusCode() == 401) {
                     // NINO doesn't match the authenticated user
-                    LOG.warning("NINO mismatch - HTTP " + response.statusCode() + ": " + response.body());
+                    LOG.warning("NINO mismatch - HTTP " + response.statusCode() + ": " + HmrcPiiRedactor.redact(response.body()));
                     Platform.runLater(() -> {
                         setNinoVerificationStatus(NinoVerificationStatus.FAILED);
                         SqliteDataStore.getInstance().saveNinoVerified(false);
@@ -955,7 +965,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     });
                 } else if (response.statusCode() == 404) {
                     // NINO not found - check if sandbox mode
-                    LOG.warning("NINO not found - HTTP 404: " + response.body());
+                    LOG.warning("NINO not found - HTTP 404: " + HmrcPiiRedactor.redact(response.body()));
 
                     if (isSandboxMode(apiBaseUrl)) {
                         // Sandbox mode: use fallback test business ID
@@ -974,14 +984,13 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
                         if (ninoChanged) {
                             // NINO changed - warn user that sandbox cannot verify
-                            LOG.warning("NINO changed from " + connectedNino + " to " + currentNino +
-                                    " - sandbox cannot verify correctness");
+                            LOG.warning("NINO changed since the last connection - sandbox cannot verify correctness");
                             SqliteDataStore.getInstance().saveNinoVerified(false);
 
                             // Update connected NINO to the new value so subsequent reconnects
                             // with the same NINO won't trigger the warning again
                             SqliteDataStore.getInstance().saveConnectedNino(currentNino);
-                            LOG.info("Updated connected NINO to: " + currentNino);
+                            LOG.info("Updated the connected NINO");
 
                             // Verify the save worked
                             String savedId = SqliteDataStore.getInstance().loadHmrcBusinessId();
@@ -1003,7 +1012,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             SqliteDataStore.getInstance().saveNinoVerified(true);
                             // Save the connected NINO for future change detection
                             SqliteDataStore.getInstance().saveConnectedNino(currentNino);
-                            LOG.info("Saved connected NINO for change detection: " + currentNino);
+                            LOG.info("Saved the connected NINO for change detection");
 
                             // Verify the save worked
                             String savedId = SqliteDataStore.getInstance().loadHmrcBusinessId();
@@ -1032,7 +1041,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                         });
                     }
                 } else {
-                    LOG.warning("Failed to fetch business details: " + response.statusCode() + " - " + response.body());
+                    LOG.warning("Failed to fetch business details: " + response.statusCode() + " - " + HmrcPiiRedactor.redact(response.body()));
                     int statusCode = response.statusCode();
                     Platform.runLater(() -> {
                         if (isServerError(statusCode)) {
