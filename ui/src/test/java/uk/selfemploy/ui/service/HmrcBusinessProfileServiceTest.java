@@ -117,9 +117,21 @@ class HmrcBusinessProfileServiceTest {
             Result result = service.applyResponse(503, "", NINO, false);
 
             assertThat(result.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
-            assertThat(result.connected()).isTrue();
             assertThat(store().loadNino()).isEqualTo(NINO);
             assertThat(store().isNinoVerified()).isFalse();
+        }
+
+        @Test
+        @DisplayName("a 200 with an unreadable body is treated as sync-pending and does not wipe a verified profile")
+        void malformedOkDoesNotWipeVerifiedProfile() {
+            store().saveHmrcBusinessId("XAIS12345678901");
+            store().saveConnectedNino(NINO);
+
+            Result result = service.applyResponse(200, "{ this is not valid json", NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
+            assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
+            assertThat(store().loadConnectedNino()).isEqualTo(NINO);
         }
 
         @Test

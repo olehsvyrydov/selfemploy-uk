@@ -1199,6 +1199,10 @@ public class HmrcConnectionWizardController implements Initializable {
             progressContainer4.setVisible(false);
             progressContainer4.setManaged(false);
         }
+        if (verifyingContainer != null) {
+            verifyingContainer.setVisible(false);
+            verifyingContainer.setManaged(false);
+        }
         if (successContainer != null) {
             successContainer.setVisible(false);
             successContainer.setManaged(false);

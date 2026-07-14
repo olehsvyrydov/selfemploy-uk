@@ -313,13 +313,13 @@ public class OAuthConnectionHandler {
                 connectionInProgress.set(false);
                 return;
             }
-            // Honour a cancel that arrived while writing. Clear the tokens only when this flow
-            // introduced them: on a re-auth the pre-existing session must not be wiped (and the
-            // freshly written tokens are themselves valid, so leaving them connected is safe).
-            if (cancelled.get()) {
-                if (!hadTokensBefore) {
-                    SqliteDataStore.getInstance().clearOAuthTokens();
-                }
+            // Honour a cancel that arrived while writing, but only for a first connection: clear the
+            // tokens this flow introduced and report cancellation. On a re-auth the prior session was
+            // already replaced by these freshly written valid tokens, so completing the connection is
+            // the least-surprising outcome — reporting cancellation there would leave valid tokens
+            // stored yet the session marked unverified.
+            if (cancelled.get() && !hadTokensBefore) {
+                SqliteDataStore.getInstance().clearOAuthTokens();
                 handleCancellation();
                 return;
             }

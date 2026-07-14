@@ -70,14 +70,15 @@ public class HmrcBusinessProfileService {
      * The result of {@link #fetchAndPersist(String, String)}: the outcome plus the details needed to
      * present it. Persistence has already happened per the class policy by the time this is returned.
      *
+     * <p>The user is connected to HMRC (OAuth succeeded) for every outcome; only whether the profile
+     * verified and what was stored varies.
+     *
      * @param outcome     what the response meant
-     * @param connected   whether the user is connected to HMRC (OAuth succeeded) regardless of sync
      * @param businessId  the resolved business ID, or null when none was stored
      * @param previousNino the NINO the connection was previously verified against, when it changed
      * @param sandbox     whether the connection targeted the sandbox environment
      */
-    public record Result(Outcome outcome, boolean connected, String businessId,
-                         String previousNino, boolean sandbox) {
+    public record Result(Outcome outcome, String businessId, String previousNino, boolean sandbox) {
     }
 
     private final HttpClient httpClient;
@@ -132,17 +133,7 @@ public class HmrcBusinessProfileService {
         SqliteDataStore store = SqliteDataStore.getInstance();
 
         if (statusCode == 200) {
-            String businessId = parseBusinessId(body);
-            if (businessId != null) {
-                store.saveHmrcBusinessId(businessId);
-                store.saveNinoVerified(true);
-                store.saveNino(nino);
-                store.saveConnectedNino(nino);
-                LOG.info("Stored business ID: " + businessId);
-                return new Result(Outcome.VERIFIED, true, businessId, nino, sandbox);
-            }
-            LOG.warning("No self-employment business found for the connecting NINO");
-            return rejectVerification(Outcome.NO_BUSINESS_FOUND, sandbox);
+            return handleOkResponse(body, nino, sandbox);
         }
 
         if (statusCode == 401 || statusCode == 403) {
@@ -165,10 +156,10 @@ public class HmrcBusinessProfileService {
 
                 if (ninoChanged) {
                     LOG.warning("NINO changed since the last connection - sandbox cannot verify correctness");
-                    return new Result(Outcome.NINO_CHANGED_SANDBOX, true,
+                    return new Result(Outcome.NINO_CHANGED_SANDBOX,
                             SANDBOX_FALLBACK_BUSINESS_ID, connectedNino, true);
                 }
-                return new Result(Outcome.VERIFIED, true, SANDBOX_FALLBACK_BUSINESS_ID, nino, true);
+                return new Result(Outcome.VERIFIED, SANDBOX_FALLBACK_BUSINESS_ID, nino, true);
             }
             LOG.warning("NINO not found in production - HTTP 404");
             return rejectVerification(Outcome.NINO_NOT_FOUND, false);
@@ -181,6 +172,34 @@ public class HmrcBusinessProfileService {
     }
 
     /**
+     * Handles a 200 response, distinguishing a genuine "no business registered" (valid body, empty
+     * result) from an unreadable body. The former is a definitive rejection; the latter is a
+     * transient content problem that must not wipe a previously-verified profile.
+     */
+    private Result handleOkResponse(String body, String nino, boolean sandbox) {
+        JsonNode root;
+        try {
+            root = MAPPER.readTree(body);
+        } catch (Exception e) {
+            LOG.warning("200 response body could not be parsed; treating as sync-pending");
+            return persistPending(nino, sandbox);
+        }
+
+        String businessId = extractBusinessId(root);
+        if (businessId != null) {
+            SqliteDataStore store = SqliteDataStore.getInstance();
+            store.saveHmrcBusinessId(businessId);
+            store.saveNinoVerified(true);
+            store.saveNino(nino);
+            store.saveConnectedNino(nino);
+            LOG.info("Stored business ID: " + businessId);
+            return new Result(Outcome.VERIFIED, businessId, nino, sandbox);
+        }
+        LOG.warning("No self-employment business found for the connecting NINO");
+        return rejectVerification(Outcome.NO_BUSINESS_FOUND, sandbox);
+    }
+
+    /**
      * Records a definitive verification failure: marks the NINO unverified and clears any previously
      * resolved business profile, so the app no longer treats the session as submission-ready. The
      * stored NINO is left untouched — a rejection must not overwrite a previously-correct value.
@@ -190,7 +209,7 @@ public class HmrcBusinessProfileService {
         store.saveNinoVerified(false);
         store.saveHmrcBusinessId(null);
         store.saveConnectedNino(null);
-        return new Result(outcome, true, null, null, sandbox);
+        return new Result(outcome, null, null, sandbox);
     }
 
     private Result persistPending(String nino, boolean sandbox) {
@@ -203,7 +222,7 @@ public class HmrcBusinessProfileService {
             // NINO already on file is left in place, since a transient error cannot confirm a change.
             store.saveNino(nino);
         }
-        return new Result(Outcome.PROFILE_SYNC_PENDING, true, null, null, sandbox);
+        return new Result(Outcome.PROFILE_SYNC_PENDING, null, null, sandbox);
     }
 
     /**
@@ -218,22 +237,26 @@ public class HmrcBusinessProfileService {
             return null;
         }
         try {
-            JsonNode root = MAPPER.readTree(jsonResponse);
-            JsonNode businesses = root.path("selfEmployments");
-            if (businesses.isArray()) {
-                for (JsonNode business : businesses) {
-                    String id = business.path("businessId").asText(null);
-                    if (id != null && id.matches(BUSINESS_ID_PATTERN)) {
-                        return id;
-                    }
-                }
-            }
-            String direct = root.path("businessId").asText(null);
-            if (direct != null && direct.matches(BUSINESS_ID_PATTERN)) {
-                return direct;
-            }
+            return extractBusinessId(MAPPER.readTree(jsonResponse));
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to parse business ID from response", e);
+            return null;
+        }
+    }
+
+    private static String extractBusinessId(JsonNode root) {
+        JsonNode businesses = root.path("selfEmployments");
+        if (businesses.isArray()) {
+            for (JsonNode business : businesses) {
+                String id = business.path("businessId").asText(null);
+                if (id != null && id.matches(BUSINESS_ID_PATTERN)) {
+                    return id;
+                }
+            }
+        }
+        String direct = root.path("businessId").asText(null);
+        if (direct != null && direct.matches(BUSINESS_ID_PATTERN)) {
+            return direct;
         }
         return null;
     }
