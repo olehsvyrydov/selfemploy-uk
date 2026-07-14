@@ -209,8 +209,12 @@ public class HmrcConnectionWizardController implements Initializable {
     private ProgressIndicator spinner;
     private VBox connectContainer;
     private VBox progressContainer4;
+    private VBox verifyingContainer;
     private VBox successContainer;
     private VBox errorContainer;
+
+    /** True while the business profile is being fetched, so the flow cannot be cancelled/closed. */
+    private volatile boolean verifying;
 
     // Header components (for Step 5 green theme)
     private HBox headerPane;
@@ -439,6 +443,12 @@ public class HmrcConnectionWizardController implements Initializable {
      */
     @FXML
     void handleCancel() {
+        // Once OAuth has succeeded and the profile fetch is in flight, block cancellation: the fetch
+        // persists the connection outcome, so closing here would leave the UI and stored state out of
+        // step. The verifying screen resolves to a terminal outcome the user can then dismiss.
+        if (verifying) {
+            return;
+        }
         viewModel.cancel();
         closeDialog();
     }
@@ -732,12 +742,15 @@ public class HmrcConnectionWizardController implements Initializable {
         // Create all containers
         connectContainer = createConnectContainer();
         progressContainer4 = createProgressContainer();
+        verifyingContainer = createVerifyingContainer();
         successContainer = createSuccessContainer();
         errorContainer = createErrorContainer();
 
         // Initially show connect container
         progressContainer4.setVisible(false);
         progressContainer4.setManaged(false);
+        verifyingContainer.setVisible(false);
+        verifyingContainer.setManaged(false);
         successContainer.setVisible(false);
         successContainer.setManaged(false);
         errorContainer.setVisible(false);
@@ -746,6 +759,7 @@ public class HmrcConnectionWizardController implements Initializable {
         contentArea.getChildren().addAll(
             connectContainer,
             progressContainer4,
+            verifyingContainer,
             successContainer,
             errorContainer
         );
@@ -1048,28 +1062,37 @@ public class HmrcConnectionWizardController implements Initializable {
      * @param accessToken the access token obtained from HMRC
      */
     private void verifyProfileAndShowOutcome(String accessToken) {
-        if (statusLabel != null) {
-            statusLabel.setText("Verifying your details with HMRC...");
-        }
-        showContainer(progressContainer4);
+        verifying = true;
+        showContainer(verifyingContainer);
 
         String nino = viewModel.getNino();
         Thread.startVirtualThread(() -> {
             HmrcBusinessProfileService.Result result = profileService.fetchAndPersist(nino, accessToken);
-            Platform.runLater(() -> showProfileOutcome(result));
+            Platform.runLater(() -> {
+                verifying = false;
+                // The dialog may already be closed if it was dismissed before the fetch returned;
+                // persistence has still happened, so only update the UI when the wizard is showing.
+                if (dialogStage != null && dialogStage.isShowing()) {
+                    showProfileOutcome(result);
+                }
+            });
         });
     }
 
     /**
-     * Renders the wizard's terminal screen for a resolved business-profile outcome. A connected
-     * result — verified, sandbox, or connected-but-not-yet-synced — shows the success screen; a
-     * definitive NINO rejection shows an actionable error so the user can correct it and retry.
+     * Renders the wizard's terminal screen for a resolved business-profile outcome. Only a verified
+     * connection (production or sandbox) shows the green success screen; a connection that could not
+     * fetch the profile shows an honest "connected, not yet verified" message, and a definitive NINO
+     * rejection shows an actionable error so the user can correct it and retry.
      *
      * @param result the resolved business-profile outcome
      */
     private void showProfileOutcome(HmrcBusinessProfileService.Result result) {
         switch (result.outcome()) {
-            case VERIFIED, NINO_CHANGED_SANDBOX, PROFILE_SYNC_PENDING -> showSuccess();
+            case VERIFIED, NINO_CHANGED_SANDBOX -> showSuccess();
+            case PROFILE_SYNC_PENDING -> showError("PROFILE_SYNC_PENDING",
+                "You're connected to HMRC, but we couldn't verify your details just now. "
+                    + "They'll sync automatically on your first submission, or you can try again.");
             case NINO_MISMATCH -> showError("NINO_MISMATCH",
                 "The National Insurance number you entered does not match your HMRC account. "
                     + "Please go back and check it, then try again.");
@@ -1080,6 +1103,35 @@ public class HmrcConnectionWizardController implements Initializable {
                 "No self-employment record was found for this National Insurance number. "
                     + "Make sure you have registered for Self Assessment with HMRC.");
         }
+    }
+
+    /**
+     * Creates the container shown while the business profile is being fetched after OAuth. Unlike the
+     * OAuth progress container it offers no cancel/reopen actions, because authentication has already
+     * succeeded and the fetch persists the outcome; interrupting it would leave an inconsistent state.
+     */
+    private VBox createVerifyingContainer() {
+        VBox container = new VBox(16);
+        container.setAlignment(Pos.CENTER);
+        container.getStyleClass().add("oauth-progress-container");
+        container.setPadding(new Insets(20));
+
+        ProgressIndicator verifyingSpinner = new ProgressIndicator();
+        verifyingSpinner.getStyleClass().add("oauth-spinner-small");
+        verifyingSpinner.setMaxSize(48, 48);
+
+        Label titleLabel = new Label("Verifying your details with HMRC...");
+        titleLabel.getStyleClass().add("oauth-browser-title");
+        titleLabel.setWrapText(true);
+        titleLabel.setTextAlignment(TextAlignment.CENTER);
+
+        Label descLabel = new Label("This only takes a moment.");
+        descLabel.getStyleClass().add("oauth-browser-desc");
+        descLabel.setWrapText(true);
+        descLabel.setTextAlignment(TextAlignment.CENTER);
+
+        container.getChildren().addAll(verifyingSpinner, titleLabel, descLabel);
+        return container;
     }
 
     /**

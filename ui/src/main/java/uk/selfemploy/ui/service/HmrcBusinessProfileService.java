@@ -1,5 +1,8 @@
 package uk.selfemploy.ui.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 
 import java.net.URI;
@@ -19,12 +22,17 @@ import java.util.logging.Logger;
  * (the connection wizard, or a direct reconnect from Settings) can render the outcome however it
  * likes.
  *
- * <p>Persistence policy: the entered NINO is stored as the verified, connected NINO only when HMRC
- * confirms it (a 200 with a business, or a sandbox connection that cannot reject it). A definitive
- * rejection (NINO mismatch, or no record in production) never overwrites a previously-stored NINO.
- * When the connection succeeds but the profile cannot be fetched yet (a server error or network
- * failure), the NINO is still persisted — unverified — so the user's input is not lost and the
- * profile can sync on the first submission.
+ * <p>Persistence policy:
+ * <ul>
+ *   <li>The NINO is stored as the verified, connected NINO only when HMRC confirms it (a 200 with a
+ *       business, or a sandbox connection that cannot reject it).</li>
+ *   <li>A definitive rejection (NINO mismatch, no business, or no record in production) never
+ *       overwrites a previously-stored NINO, and clears any previously-resolved business ID so the
+ *       app stops treating the user as submission-ready against a business HMRC no longer accepts.</li>
+ *   <li>When the connection succeeds but the profile cannot be fetched (a server error or network
+ *       failure), the NINO is kept — unverified — so the user's input is not lost, unless a different
+ *       NINO is already stored, which a transient error must not overwrite.</li>
+ * </ul>
  */
 public class HmrcBusinessProfileService {
 
@@ -34,6 +42,11 @@ public class HmrcBusinessProfileService {
     private static final String SANDBOX_FALLBACK_BUSINESS_ID = "XAIS12345678901";
     private static final String BUSINESS_ID_PATTERN = "^X[A-Z0-9]{1}IS[0-9]{11}$";
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(30);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /** Shared across instances so multiple controllers do not each spawn a connection pool. */
+    private static final HttpClient SHARED_CLIENT =
+            HttpClient.newBuilder().connectTimeout(HTTP_TIMEOUT).build();
 
     /**
      * The outcome of resolving the business profile, from the app's point of view.
@@ -56,25 +69,21 @@ public class HmrcBusinessProfileService {
     /**
      * The result of {@link #fetchAndPersist(String, String)}: the outcome plus the details needed to
      * present it. Persistence has already happened per the class policy by the time this is returned.
+     *
+     * @param outcome     what the response meant
+     * @param connected   whether the user is connected to HMRC (OAuth succeeded) regardless of sync
+     * @param businessId  the resolved business ID, or null when none was stored
+     * @param previousNino the NINO the connection was previously verified against, when it changed
+     * @param sandbox     whether the connection targeted the sandbox environment
      */
-    public record Result(Outcome outcome, boolean connected, boolean ninoVerified,
-                         String businessId, String previousNino, String currentNino, boolean sandbox) {
-
-        /** True when the connection is usable and the NINO was accepted (verified or sandbox). */
-        public boolean isVerifiedSuccess() {
-            return outcome == Outcome.VERIFIED || outcome == Outcome.NINO_CHANGED_SANDBOX;
-        }
-
-        /** True when the user is connected to HMRC, even if the profile has not synced yet. */
-        public boolean isConnected() {
-            return connected;
-        }
+    public record Result(Outcome outcome, boolean connected, String businessId,
+                         String previousNino, boolean sandbox) {
     }
 
     private final HttpClient httpClient;
 
     public HmrcBusinessProfileService() {
-        this(HttpClient.newBuilder().connectTimeout(HTTP_TIMEOUT).build());
+        this(SHARED_CLIENT);
     }
 
     HmrcBusinessProfileService(HttpClient httpClient) {
@@ -109,8 +118,8 @@ public class HmrcBusinessProfileService {
             return applyResponse(response.statusCode(), response.body(), nino, sandbox);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to fetch business profile", e);
-            // The OAuth connection succeeded; only the profile fetch failed. Persist the NINO so it
-            // is not lost, mark it unverified, and let the profile sync on the first submission.
+            // The OAuth connection succeeded; only the profile fetch failed. Keep the NINO so it is
+            // not lost, mark it unverified, and let the profile sync on the first submission.
             return persistPending(nino, sandbox);
         }
     }
@@ -130,24 +139,21 @@ public class HmrcBusinessProfileService {
                 store.saveNino(nino);
                 store.saveConnectedNino(nino);
                 LOG.info("Stored business ID: " + businessId);
-                return new Result(Outcome.VERIFIED, true, true, businessId, nino, nino, sandbox);
+                return new Result(Outcome.VERIFIED, true, businessId, nino, sandbox);
             }
             LOG.warning("No self-employment business found for the connecting NINO");
-            store.saveNinoVerified(false);
-            return new Result(Outcome.NO_BUSINESS_FOUND, true, false, null, null, nino, sandbox);
+            return rejectVerification(Outcome.NO_BUSINESS_FOUND, sandbox);
         }
 
         if (statusCode == 401 || statusCode == 403) {
             LOG.warning("NINO mismatch - HTTP " + statusCode);
-            store.saveNinoVerified(false);
-            return new Result(Outcome.NINO_MISMATCH, true, false, null, null, nino, sandbox);
+            return rejectVerification(Outcome.NINO_MISMATCH, sandbox);
         }
 
         if (statusCode == 404) {
             if (sandbox) {
                 // Sandbox has no real NINOs, so a 404 is expected: use the fallback business ID.
-                String fallbackBusinessId = SANDBOX_FALLBACK_BUSINESS_ID;
-                store.saveHmrcBusinessId(fallbackBusinessId);
+                store.saveHmrcBusinessId(SANDBOX_FALLBACK_BUSINESS_ID);
 
                 String connectedNino = store.loadConnectedNino();
                 boolean firstConnection = connectedNino == null || connectedNino.isBlank();
@@ -159,53 +165,72 @@ public class HmrcBusinessProfileService {
 
                 if (ninoChanged) {
                     LOG.warning("NINO changed since the last connection - sandbox cannot verify correctness");
-                    return new Result(Outcome.NINO_CHANGED_SANDBOX, true, false,
-                            fallbackBusinessId, connectedNino, nino, true);
+                    return new Result(Outcome.NINO_CHANGED_SANDBOX, true,
+                            SANDBOX_FALLBACK_BUSINESS_ID, connectedNino, true);
                 }
-                return new Result(Outcome.VERIFIED, true, true, fallbackBusinessId, nino, nino, true);
+                return new Result(Outcome.VERIFIED, true, SANDBOX_FALLBACK_BUSINESS_ID, nino, true);
             }
             LOG.warning("NINO not found in production - HTTP 404");
-            store.saveNinoVerified(false);
-            return new Result(Outcome.NINO_NOT_FOUND, true, false, null, null, nino, false);
+            return rejectVerification(Outcome.NINO_NOT_FOUND, false);
         }
 
-        // 5xx and any other status: OAuth worked but the profile could not be fetched. Persist the
-        // NINO (unverified) so it survives, and let the profile sync later.
+        // 5xx and any other status: OAuth worked but the profile could not be fetched. Keep the NINO
+        // (unless a different one is already stored) and let the profile sync later.
         LOG.warning("Business profile not available - HTTP " + statusCode);
         return persistPending(nino, sandbox);
+    }
+
+    /**
+     * Records a definitive verification failure: marks the NINO unverified and clears any previously
+     * resolved business profile, so the app no longer treats the session as submission-ready. The
+     * stored NINO is left untouched — a rejection must not overwrite a previously-correct value.
+     */
+    private Result rejectVerification(Outcome outcome, boolean sandbox) {
+        SqliteDataStore store = SqliteDataStore.getInstance();
+        store.saveNinoVerified(false);
+        store.saveHmrcBusinessId(null);
+        store.saveConnectedNino(null);
+        return new Result(outcome, true, null, null, sandbox);
     }
 
     private Result persistPending(String nino, boolean sandbox) {
         SqliteDataStore store = SqliteDataStore.getInstance();
         store.saveNinoVerified(false);
-        if (nino != null && !nino.isBlank()) {
+        String existing = store.loadNino();
+        if (nino != null && !nino.isBlank()
+                && (existing == null || existing.isBlank() || existing.equalsIgnoreCase(nino))) {
+            // First connection or the same NINO: keep the user's input so it is not lost. A different
+            // NINO already on file is left in place, since a transient error cannot confirm a change.
             store.saveNino(nino);
         }
-        return new Result(Outcome.PROFILE_SYNC_PENDING, true, false, null, null, nino, sandbox);
+        return new Result(Outcome.PROFILE_SYNC_PENDING, true, null, null, sandbox);
     }
 
     /**
-     * Parses the business ID from an HMRC self-employment response, validating its format.
+     * Parses the business ID from an HMRC self-employment response, validating its format. Reads the
+     * JSON structurally so a reordered or differently-shaped-but-valid response is not rejected.
      *
      * @param jsonResponse the response body
-     * @return the business ID, or {@code null} if absent or malformed
+     * @return the first valid business ID, or {@code null} if absent or malformed
      */
     public static String parseBusinessId(String jsonResponse) {
-        if (jsonResponse == null) {
+        if (jsonResponse == null || jsonResponse.isBlank()) {
             return null;
         }
         try {
-            int idx = jsonResponse.indexOf("\"businessId\"");
-            if (idx >= 0) {
-                int colonIdx = jsonResponse.indexOf(":", idx);
-                int quoteStart = jsonResponse.indexOf("\"", colonIdx + 1);
-                int quoteEnd = jsonResponse.indexOf("\"", quoteStart + 1);
-                if (quoteStart >= 0 && quoteEnd > quoteStart) {
-                    String businessId = jsonResponse.substring(quoteStart + 1, quoteEnd);
-                    if (businessId.matches(BUSINESS_ID_PATTERN)) {
-                        return businessId;
+            JsonNode root = MAPPER.readTree(jsonResponse);
+            JsonNode businesses = root.path("selfEmployments");
+            if (businesses.isArray()) {
+                for (JsonNode business : businesses) {
+                    String id = business.path("businessId").asText(null);
+                    if (id != null && id.matches(BUSINESS_ID_PATTERN)) {
+                        return id;
                     }
                 }
+            }
+            String direct = root.path("businessId").asText(null);
+            if (direct != null && direct.matches(BUSINESS_ID_PATTERN)) {
+                return direct;
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to parse business ID from response", e);

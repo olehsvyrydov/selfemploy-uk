@@ -99,14 +99,38 @@ class HmrcBusinessProfileServiceTest {
         }
 
         @Test
-        @DisplayName("a server error keeps the NINO so it is not lost, but leaves it unverified")
-        void serverErrorKeepsNino() {
+        @DisplayName("a definitive rejection clears a previously-stored business ID")
+        void rejectionClearsStaleBusinessId() {
+            store().saveHmrcBusinessId("XAIS99999999999");
+            store().saveConnectedNino(NINO);
+
+            Result result = service.applyResponse(403, "", NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.NINO_MISMATCH);
+            assertThat(store().loadHmrcBusinessId()).isNull();
+            assertThat(store().loadConnectedNino()).isNull();
+        }
+
+        @Test
+        @DisplayName("a server error keeps a first-connection NINO but leaves it unverified")
+        void serverErrorKeepsFirstConnectionNino() {
             Result result = service.applyResponse(503, "", NINO, false);
 
             assertThat(result.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
             assertThat(result.connected()).isTrue();
             assertThat(store().loadNino()).isEqualTo(NINO);
             assertThat(store().isNinoVerified()).isFalse();
+        }
+
+        @Test
+        @DisplayName("a transient error does not overwrite a different NINO already on file")
+        void transientErrorDoesNotOverwriteDifferentNino() {
+            store().saveNino(OTHER_NINO);
+
+            Result result = service.applyResponse(503, "", NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
+            assertThat(store().loadNino()).isEqualTo(OTHER_NINO);
         }
     }
 

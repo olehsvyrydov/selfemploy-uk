@@ -299,6 +299,9 @@ public class OAuthConnectionHandler {
                 handleCancellation();
                 return;
             }
+            // Remember whether a session already existed so a late cancel can be rolled back safely.
+            boolean hadTokensBefore = SqliteDataStore.getInstance().hasOAuthTokens();
+
             // The storage write is best-effort, so confirm it actually persisted (e.g. the master
             // key may be unavailable) before claiming success — otherwise the session would look
             // connected but not survive a restart.
@@ -308,6 +311,16 @@ public class OAuthConnectionHandler {
                 reportResult(OAuthResult.ofError("STORAGE_ERROR",
                     "Connected to HMRC, but your session could not be saved. Please try again."));
                 connectionInProgress.set(false);
+                return;
+            }
+            // Honour a cancel that arrived while writing. Clear the tokens only when this flow
+            // introduced them: on a re-auth the pre-existing session must not be wiped (and the
+            // freshly written tokens are themselves valid, so leaving them connected is safe).
+            if (cancelled.get()) {
+                if (!hadTokensBefore) {
+                    SqliteDataStore.getInstance().clearOAuthTokens();
+                }
+                handleCancellation();
                 return;
             }
             HmrcConnectionService.getInstance().markSessionVerified();
