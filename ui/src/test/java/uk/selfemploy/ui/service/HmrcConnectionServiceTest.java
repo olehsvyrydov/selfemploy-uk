@@ -801,4 +801,36 @@ class HmrcConnectionServiceTest {
             // Will add actual test once method is implemented
         }
     }
+
+    @Nested
+    @DisplayName("Quick reconnect eligibility")
+    class QuickReconnectTests {
+
+        @Test
+        @DisplayName("is eligible when stored tokens and a business ID both exist")
+        void eligibleWithTokensAndBusinessId() {
+            SqliteDataStore.getInstance().saveHmrcBusinessId("XAIS12345678901");
+            SqliteDataStore.getInstance().saveOAuthTokens(
+                "access", "refresh", 14400, "bearer", "scope", java.time.Instant.now());
+
+            assertThat(service.canQuickReconnect()).isTrue();
+        }
+
+        @Test
+        @DisplayName("is not eligible without a business ID, since the wizard must fetch it")
+        void notEligibleWithoutBusinessId() {
+            SqliteDataStore.getInstance().saveOAuthTokens(
+                "access", "refresh", 14400, "bearer", "scope", java.time.Instant.now());
+
+            assertThat(service.canQuickReconnect()).isFalse();
+        }
+
+        @Test
+        @DisplayName("is not eligible without stored tokens to refresh")
+        void notEligibleWithoutTokens() {
+            SqliteDataStore.getInstance().saveHmrcBusinessId("XAIS12345678901");
+
+            assertThat(service.canQuickReconnect()).isFalse();
+        }
+    }
 }

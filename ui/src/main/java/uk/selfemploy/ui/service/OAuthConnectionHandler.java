@@ -93,19 +93,33 @@ public class OAuthConnectionHandler {
      * @param success      true if connection succeeded
      * @param errorCode    error code if failed, null on success
      * @param errorMessage human-readable error message if failed, null on success
+     * @param accessToken  the access token on success, so the caller can fetch the business
+     *                     profile; null on failure
      */
     public record OAuthResult(
         boolean success,
         String errorCode,
-        String errorMessage
+        String errorMessage,
+        String accessToken
     ) {
         /**
-         * Creates a success result.
+         * Creates a success result carrying the access token.
+         *
+         * @param accessToken the access token obtained from HMRC
+         * @return success result
+         */
+        public static OAuthResult ofSuccess(String accessToken) {
+            return new OAuthResult(true, null, null, accessToken);
+        }
+
+        /**
+         * Creates a success result with no access token. Retained for callers and tests that only
+         * care that the connection succeeded.
          *
          * @return success result
          */
         public static OAuthResult ofSuccess() {
-            return new OAuthResult(true, null, null);
+            return ofSuccess(null);
         }
 
         /**
@@ -116,7 +130,7 @@ public class OAuthConnectionHandler {
          * @return error result
          */
         public static OAuthResult ofError(String errorCode, String errorMessage) {
-            return new OAuthResult(false, errorCode, errorMessage);
+            return new OAuthResult(false, errorCode, errorMessage, null);
         }
 
         /**
@@ -125,7 +139,7 @@ public class OAuthConnectionHandler {
          * @return timeout result
          */
         public static OAuthResult ofTimeout() {
-            return new OAuthResult(false, "TIMEOUT", "Connection timed out. HMRC may be busy.");
+            return new OAuthResult(false, "TIMEOUT", "Connection timed out. HMRC may be busy.", null);
         }
 
         /**
@@ -134,7 +148,7 @@ public class OAuthConnectionHandler {
          * @return cancelled result
          */
         public static OAuthResult ofCancelled() {
-            return new OAuthResult(false, "USER_CANCELLED", "Connection was cancelled by user.");
+            return new OAuthResult(false, "USER_CANCELLED", "Connection was cancelled by user.", null);
         }
     }
 
@@ -285,7 +299,7 @@ public class OAuthConnectionHandler {
         scheduler.schedule(() -> {
             reportStatus(ConnectionStatus.SUCCESS);
             persistProgress();
-            reportResult(OAuthResult.ofSuccess());
+            reportResult(OAuthResult.ofSuccess(tokens.accessToken()));
             connectionInProgress.set(false);
         }, STATUS_TRANSITION_DELAY_MS, TimeUnit.MILLISECONDS);
     }

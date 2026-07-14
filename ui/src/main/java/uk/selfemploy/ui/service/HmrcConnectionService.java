@@ -387,6 +387,21 @@ public class HmrcConnectionService {
         return getConnectionState() == ConnectionState.READY_TO_SUBMIT;
     }
 
+    /**
+     * Whether a lightweight reconnect (a silent token refresh via {@link #verifySession()}) is
+     * appropriate instead of the full connection wizard. This holds when the user has previously
+     * completed a connection — stored OAuth tokens to refresh and a stored business ID — so there
+     * is nothing new to collect. Without a business ID the wizard must run to fetch the business
+     * profile, and without stored tokens there is nothing to refresh.
+     *
+     * @return true if a quick reconnect can be attempted, false if the full wizard is needed
+     */
+    public boolean canQuickReconnect() {
+        String businessId = SqliteDataStore.getInstance().loadHmrcBusinessId();
+        return SqliteDataStore.getInstance().hasOAuthTokens()
+            && businessId != null && !businessId.isBlank();
+    }
+
     // === Status Text Generation (Unified Terminology) ===
 
     /**

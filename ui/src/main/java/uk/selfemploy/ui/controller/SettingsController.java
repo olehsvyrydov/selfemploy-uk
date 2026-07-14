@@ -29,8 +29,7 @@ import uk.selfemploy.core.export.ImportResult;
 import uk.selfemploy.core.export.ImportType;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
-import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
-import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
+import java.util.concurrent.atomic.AtomicReference;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
 import uk.selfemploy.ui.component.AppDialog;
@@ -834,57 +833,62 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     @FXML
     void handleHmrcSetup(ActionEvent event) {
-        LOG.info("Starting HMRC Connection Setup");
+        LOG.info("Starting HMRC connection");
 
-        // Step 1: Check if NINO is saved
-        String savedNino = SqliteDataStore.getInstance().loadNino();
-        if (savedNino == null || savedNino.isBlank()) {
-            showError("NINO Required",
-                    "Please save your National Insurance Number (NINO) first before connecting to HMRC.");
-            return;
+        HmrcConnectionService connectionService = HmrcConnectionService.getInstance();
+        if (connectionService.canQuickReconnect()) {
+            quickReconnect(connectionService);
+        } else {
+            launchConnectionWizard();
         }
-
-        // Step 2: Disable button and show progress
-        if (hmrcSetupButton != null) {
-            hmrcSetupButton.setDisable(true);
-            hmrcSetupButton.setText("Connecting...");
-        }
-        if (hmrcConnectionStatusLabel != null) {
-            hmrcConnectionStatusLabel.setText("Opening browser for HMRC login...");
-        }
-
-        // Step 3: Trigger OAuth
-        HmrcOAuthService oAuthService = OAuthServiceFactory.getOAuthService();
-        oAuthService.authenticate()
-                .thenAccept(tokens -> Platform.runLater(() -> handleOAuthSuccess(tokens)))
-                .exceptionally(error -> {
-                    Platform.runLater(() -> handleOAuthError(error));
-                    return null;
-                });
     }
 
-    private void handleOAuthSuccess(OAuthTokens tokens) {
-        LOG.info("OAuth authentication successful");
-
-        // Save tokens
-        SqliteDataStore.getInstance().saveOAuthTokens(
-                tokens.accessToken(),
-                tokens.refreshToken(),
-                tokens.expiresIn(),
-                tokens.tokenType(),
-                tokens.scope(),
-                tokens.issuedAt()
-        );
-
-        // Mark session as verified
-        HmrcConnectionService.getInstance().markSessionVerified();
-
-        // Step 4: Fetch business profile
+    /**
+     * Refreshes an existing session without the full wizard. Falls back to the wizard when the
+     * stored session can no longer be refreshed (a genuine rejection).
+     */
+    private void quickReconnect(HmrcConnectionService connectionService) {
+        if (hmrcSetupButton != null) {
+            hmrcSetupButton.setDisable(true);
+            hmrcSetupButton.setText("Reconnecting...");
+        }
         if (hmrcConnectionStatusLabel != null) {
-            hmrcConnectionStatusLabel.setText("Fetching business profile...");
+            hmrcConnectionStatusLabel.setText("Refreshing your HMRC session...");
         }
 
-        fetchBusinessProfile(tokens.accessToken());
+        connectionService.verifySession().whenComplete((result, error) -> Platform.runLater(() -> {
+            if (hmrcSetupButton != null) {
+                hmrcSetupButton.setDisable(false);
+            }
+            if (error == null && result == HmrcConnectionService.VerificationResult.VERIFIED) {
+                updateHmrcConnectionStatus();
+                showInfo("Reconnected", "Your HMRC session has been refreshed.");
+            } else {
+                LOG.info("Quick reconnect did not verify the session; launching the full wizard");
+                launchConnectionWizard();
+            }
+        }));
+    }
+
+    /**
+     * Launches the guided connection wizard. The wizard performs the OAuth flow and, on success,
+     * hands back the access token; once it closes we complete setup by fetching and storing the
+     * business profile the wizard does not, so the connection can reach a submit-ready state.
+     */
+    private void launchConnectionWizard() {
+        AtomicReference<String> accessToken = new AtomicReference<>();
+
+        Stage owner = getOwnerWindow() instanceof Stage stage ? stage : null;
+        HmrcConnectionWizardController.showWizard(owner, accessToken::set);
+
+        String token = accessToken.get();
+        if (token != null) {
+            if (hmrcConnectionStatusLabel != null) {
+                hmrcConnectionStatusLabel.setText("Fetching business profile...");
+            }
+            fetchBusinessProfile(token);
+        }
+        updateHmrcConnectionStatus();
     }
 
     /**
@@ -1103,19 +1107,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
             LOG.log(Level.WARNING, "Failed to parse business ID from response", e);
         }
         return null;
-    }
-
-    private void handleOAuthError(Throwable error) {
-        LOG.log(Level.WARNING, "OAuth authentication failed", error);
-        completeSetup(false, "Connection failed");
-
-        String message = error.getMessage();
-        if (message != null && message.contains("USER_CANCELLED")) {
-            showInfo("Connection Cancelled", "HMRC connection was cancelled. You can try again when ready.");
-        } else {
-            showError("Connection Failed",
-                    "Failed to connect to HMRC: " + (message != null ? message : "Unknown error"));
-        }
     }
 
     private void completeSetup(boolean success, String statusText) {

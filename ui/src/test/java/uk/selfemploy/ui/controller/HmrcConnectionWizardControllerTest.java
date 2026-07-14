@@ -8,6 +8,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -35,6 +37,28 @@ class HmrcConnectionWizardControllerTest {
         viewModel = new HmrcConnectionWizardViewModel();
         controller = new HmrcConnectionWizardController();
         controller.setViewModel(viewModel);
+    }
+
+    @Nested
+    @DisplayName("Completion callback")
+    class CompletionCallbackTests {
+
+        @Test
+        @DisplayName("passes the access token to onConnected so setup can be completed")
+        void notifiesConnectedWithAccessToken() {
+            AtomicReference<String> received = new AtomicReference<>();
+            controller.setOnConnected(received::set);
+
+            controller.notifyConnected("access-token-123");
+
+            assertThat(received.get()).isEqualTo("access-token-123");
+        }
+
+        @Test
+        @DisplayName("is a no-op when no callback is set")
+        void notifyConnectedWithoutCallbackDoesNotThrow() {
+            controller.notifyConnected("access-token-123");
+        }
     }
 
     @Nested

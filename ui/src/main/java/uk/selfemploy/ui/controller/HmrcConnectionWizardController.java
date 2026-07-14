@@ -214,6 +214,13 @@ public class HmrcConnectionWizardController implements Initializable {
     private Label headerTitle;
 
     /**
+     * Invoked once OAuth succeeds, with the access token, so the caller can complete setup —
+     * fetching and storing the business profile. Without this the wizard connects but never records
+     * the business ID, leaving the user unable to submit. May be null.
+     */
+    private java.util.function.Consumer<String> onConnected;
+
+    /**
      * Creates a new wizard controller with default view model.
      */
     public HmrcConnectionWizardController() {
@@ -244,6 +251,28 @@ public class HmrcConnectionWizardController implements Initializable {
      */
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
+    }
+
+    /**
+     * Sets the callback invoked with the access token once OAuth succeeds, so the caller can fetch
+     * and store the business profile that the wizard itself does not.
+     *
+     * @param onConnected the completion callback, or null for none
+     */
+    public void setOnConnected(java.util.function.Consumer<String> onConnected) {
+        this.onConnected = onConnected;
+    }
+
+    /**
+     * Notifies the completion callback that OAuth succeeded. Package-private so the wiring can be
+     * verified without driving the full JavaFX dialog.
+     *
+     * @param accessToken the access token obtained from HMRC
+     */
+    void notifyConnected(String accessToken) {
+        if (onConnected != null) {
+            onConnected.accept(accessToken);
+        }
     }
 
     /**
@@ -1009,6 +1038,7 @@ public class HmrcConnectionWizardController implements Initializable {
 
             if (result.success()) {
                 showSuccess();
+                notifyConnected(result.accessToken());
             } else {
                 showError(result.errorCode(), result.errorMessage());
             }
@@ -1264,8 +1294,22 @@ public class HmrcConnectionWizardController implements Initializable {
      * @return the view model for checking result
      */
     public static HmrcConnectionWizardViewModel showWizard(Stage ownerStage) {
+        return showWizard(ownerStage, null);
+    }
+
+    /**
+     * Creates and shows the wizard dialog, invoking {@code onConnected} with the access token once
+     * OAuth succeeds so the caller can complete setup (fetching and storing the business profile).
+     *
+     * @param ownerStage  the owner stage for the dialog
+     * @param onConnected  called with the access token on successful OAuth, or null for none
+     * @return the view model for checking result
+     */
+    public static HmrcConnectionWizardViewModel showWizard(
+            Stage ownerStage, java.util.function.Consumer<String> onConnected) {
         try {
             HmrcConnectionWizardController controller = new HmrcConnectionWizardController();
+            controller.setOnConnected(onConnected);
 
             // Initialize OAuth service from factory
             controller.setOAuthService(uk.selfemploy.ui.service.OAuthServiceFactory.getOAuthService());
