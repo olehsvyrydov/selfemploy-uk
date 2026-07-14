@@ -715,29 +715,9 @@
     /* No close button, cannot be dismissed */
 }
 
-/* ===== Responsive Adjustments ===== */
-/* For smaller screens, reduce padding and font sizes */
-@media (max-width: 500px) {
-    .privacy-header {
-        -fx-padding: 16;
-    }
-
-    .privacy-title {
-        -fx-font-size: 20px;
-    }
-
-    .privacy-section-title {
-        -fx-font-size: 14px;
-    }
-
-    .privacy-section-text {
-        -fx-font-size: 13px;
-    }
-
-    .acknowledgment-row {
-        -fx-padding: 12;
-    }
-}
+/* Width-based responsive overrides used to live here behind @media (max-width: 500px). JavaFX CSS has
+   no viewport media features, so the block never applied and only produced a parse warning. Responsive
+   sizing in JavaFX must be driven from Java (e.g. a width listener toggling a style class). */
 
 /*
  * ===== Consumer Rights Disclaimer Card (SE-513) =====

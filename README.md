@@ -75,6 +75,16 @@ mvn clean install
 mvn -pl app javafx:run
 ```
 
+While developing, use the run script instead:
+
+```bash
+scripts/run.sh
+```
+
+`mvn -pl app javafx:run` on its own resolves `common`, `core`, `hmrc-api` and `ui` from the local Maven
+repository rather than the working tree, so changes to those modules are silently ignored until they are
+reinstalled. `scripts/run.sh` installs the upstream modules first, then launches the app.
+
 ### Create Native Installer
 
 ```bash

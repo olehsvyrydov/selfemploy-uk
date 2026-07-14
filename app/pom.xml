@@ -73,6 +73,17 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>uk.selfemploy.app.Launcher</mainClass>
+                    <options>
+                        <!-- JavaFX and sqlite-jdbc load native libraries. Without this the JVM warns
+                             that restricted methods "will be blocked in a future release", at which
+                             point the app would fail to start. JavaFX is on the module path here, so
+                             it is named explicitly; sqlite-jdbc and JNA are on the class path. -->
+                        <option>--enable-native-access=javafx.graphics,ALL-UNNAMED</option>
+                        <!-- Netty (via Vert.x, used by the OAuth callback server) reaches for
+                             sun.misc.Unsafe, which is deprecated for removal. Its safe fallbacks are
+                             more than adequate for a single loopback callback. -->
+                        <option>-Dio.netty.noUnsafe=true</option>
+                    </options>
                 </configuration>
             </plugin>
         </plugins>
@@ -138,6 +149,12 @@
                             <javaOptions>
                                 <option>-Dfile.encoding=UTF-8</option>
                                 <option>--add-opens=java.base/java.lang=ALL-UNNAMED</option>
+                                <!-- The packaged app launches from the class path, so JavaFX is in the
+                                     unnamed module here: ALL-UNNAMED alone covers it. Naming
+                                     javafx.graphics (as the javafx:run config does) would instead emit
+                                     an "unknown module" warning. -->
+                                <option>--enable-native-access=ALL-UNNAMED</option>
+                                <option>-Dio.netty.noUnsafe=true</option>
                             </javaOptions>
                         </configuration>
                     </plugin>
