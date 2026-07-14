@@ -27,6 +27,7 @@ import uk.selfemploy.ui.component.InfoCard;
 import uk.selfemploy.ui.component.NinoInputField;
 import uk.selfemploy.ui.component.PrerequisiteItem;
 import uk.selfemploy.ui.component.WizardProgressIndicator;
+import uk.selfemploy.ui.service.HmrcBusinessProfileService;
 import uk.selfemploy.ui.service.OAuthConnectionHandler;
 import uk.selfemploy.ui.service.OAuthConnectionHandler.ConnectionStatus;
 import uk.selfemploy.ui.service.SqliteDataStore;
@@ -72,6 +73,9 @@ import java.util.logging.Logger;
 public class HmrcConnectionWizardController implements Initializable {
 
     private static final Logger LOG = Logger.getLogger(HmrcConnectionWizardController.class.getName());
+
+    /** OAuth error code for a user-initiated cancellation; shown neutrally rather than as a failure. */
+    private static final String CANCELLED_ERROR_CODE = "USER_CANCELLED";
 
     // === Dialog Constants ===
     public static final int DIALOG_WIDTH = 520;
@@ -205,13 +209,24 @@ public class HmrcConnectionWizardController implements Initializable {
     private ProgressIndicator spinner;
     private VBox connectContainer;
     private VBox progressContainer4;
+    private VBox verifyingContainer;
     private VBox successContainer;
     private VBox errorContainer;
+
+    /** True while the business profile is being fetched, so the flow cannot be cancelled/closed. */
+    private volatile boolean verifying;
 
     // Header components (for Step 5 green theme)
     private HBox headerPane;
     private FontIcon headerIcon;
     private Label headerTitle;
+
+    /**
+     * Resolves and persists the business profile once OAuth succeeds. The wizard owns this step so
+     * the connection it reports reflects the real outcome (NINO verified, business ID stored) rather
+     * than just that the browser handshake completed.
+     */
+    private HmrcBusinessProfileService profileService = new HmrcBusinessProfileService();
 
     /**
      * Creates a new wizard controller with default view model.
@@ -244,6 +259,15 @@ public class HmrcConnectionWizardController implements Initializable {
      */
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
+    }
+
+    /**
+     * Sets the business-profile service (for testing).
+     *
+     * @param profileService the service used to resolve and persist the business profile
+     */
+    void setProfileService(HmrcBusinessProfileService profileService) {
+        this.profileService = profileService;
     }
 
     /**
@@ -415,10 +439,16 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Handles the Cancel button click.
+     * Handles the Cancel button click. Cancellation is ignored while the business profile is being
+     * verified: OAuth has already succeeded and the in-flight fetch persists the connection outcome,
+     * so closing at that point would leave the UI and the stored state out of step. The verifying
+     * screen always resolves to a terminal outcome the user can then dismiss.
      */
     @FXML
     void handleCancel() {
+        if (verifying) {
+            return;
+        }
         viewModel.cancel();
         closeDialog();
     }
@@ -712,12 +742,15 @@ public class HmrcConnectionWizardController implements Initializable {
         // Create all containers
         connectContainer = createConnectContainer();
         progressContainer4 = createProgressContainer();
+        verifyingContainer = createVerifyingContainer();
         successContainer = createSuccessContainer();
         errorContainer = createErrorContainer();
 
         // Initially show connect container
         progressContainer4.setVisible(false);
         progressContainer4.setManaged(false);
+        verifyingContainer.setVisible(false);
+        verifyingContainer.setManaged(false);
         successContainer.setVisible(false);
         successContainer.setManaged(false);
         errorContainer.setVisible(false);
@@ -726,6 +759,7 @@ public class HmrcConnectionWizardController implements Initializable {
         contentArea.getChildren().addAll(
             connectContainer,
             progressContainer4,
+            verifyingContainer,
             successContainer,
             errorContainer
         );
@@ -1001,14 +1035,19 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Handles the final OAuth result.
+     * Handles the final OAuth result. On success the wizard does not declare victory yet: it moves
+     * on to resolve the business profile, which determines whether the connection is actually usable
+     * (NINO verified, business ID stored). A user cancellation is shown as an informational message
+     * rather than an error, since nothing went wrong.
      */
     private void handleOAuthResult(OAuthConnectionHandler.OAuthResult result) {
         Platform.runLater(() -> {
             viewModel.handleOAuthResult(result);
 
             if (result.success()) {
-                showSuccess();
+                verifyProfileAndShowOutcome(result.accessToken());
+            } else if (CANCELLED_ERROR_CODE.equals(result.errorCode())) {
+                showCancelled();
             } else {
                 showError(result.errorCode(), result.errorMessage());
             }
@@ -1016,11 +1055,112 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
+     * Resolves and persists the business profile with the freshly obtained token, then shows the
+     * outcome. Runs on a background thread so the network call does not block the UI; the wizard
+     * shows a "verifying" state in the meantime and the final screen reflects the real outcome.
+     *
+     * <p>The outcome is persisted regardless of the wizard's fate, but it is only rendered when the
+     * dialog is still showing, since the window may have been closed while the fetch was in flight.
+     *
+     * @param accessToken the access token obtained from HMRC
+     */
+    private void verifyProfileAndShowOutcome(String accessToken) {
+        verifying = true;
+        showContainer(verifyingContainer);
+
+        String nino = viewModel.getNino();
+        Thread.startVirtualThread(() -> {
+            HmrcBusinessProfileService.Result result = profileService.fetchAndPersist(nino, accessToken);
+            Platform.runLater(() -> {
+                verifying = false;
+                if (dialogStage != null && dialogStage.isShowing()) {
+                    showProfileOutcome(result);
+                }
+            });
+        });
+    }
+
+    /**
+     * Renders the wizard's terminal screen for a resolved business-profile outcome. Only a verified
+     * connection (production or sandbox) shows the green success screen; a connection that could not
+     * fetch the profile shows an honest "connected, not yet verified" message, and a definitive NINO
+     * rejection shows an actionable error so the user can correct it and retry.
+     *
+     * @param result the resolved business-profile outcome
+     */
+    private void showProfileOutcome(HmrcBusinessProfileService.Result result) {
+        switch (result.outcome()) {
+            case VERIFIED, NINO_CHANGED_SANDBOX -> showSuccess();
+            case PROFILE_SYNC_PENDING -> showProfileError("PROFILE_SYNC_PENDING",
+                "You're connected to HMRC, but we couldn't verify your details just now. "
+                    + "They'll sync automatically on your first submission, or you can try again.");
+            case NINO_MISMATCH -> showProfileError("NINO_MISMATCH",
+                "The National Insurance number you entered does not match your HMRC account. "
+                    + "Please go back and check it, then try again.");
+            case NO_BUSINESS_FOUND -> showProfileError("NO_BUSINESS_FOUND",
+                "No self-employment business is registered with this National Insurance number. "
+                    + "Make sure you have registered for Self Assessment with HMRC.");
+            case NINO_NOT_FOUND -> showProfileError("NINO_NOT_FOUND",
+                "No self-employment record was found for this National Insurance number. "
+                    + "Make sure you have registered for Self Assessment with HMRC.");
+        }
+    }
+
+    /**
+     * Shows a failed business-profile outcome. The view model was marked successful when OAuth
+     * completed, but the connection is only usable once the profile verifies, so the flag is cleared
+     * here to keep the returned view model consistent with the screen the wizard actually presents.
+     */
+    private void showProfileError(String errorCode, String errorMessage) {
+        viewModel.setConnectionSuccessful(false);
+        showError(errorCode, errorMessage);
+    }
+
+    /**
+     * Creates the container shown while the business profile is being fetched after OAuth. Unlike the
+     * OAuth progress container it offers no cancel/reopen actions, because authentication has already
+     * succeeded and the fetch persists the outcome; interrupting it would leave an inconsistent state.
+     */
+    private VBox createVerifyingContainer() {
+        VBox container = new VBox(16);
+        container.setAlignment(Pos.CENTER);
+        container.getStyleClass().add("oauth-progress-container");
+        container.setPadding(new Insets(20));
+
+        ProgressIndicator verifyingSpinner = new ProgressIndicator();
+        verifyingSpinner.getStyleClass().add("oauth-spinner-small");
+        verifyingSpinner.setMaxSize(48, 48);
+
+        Label titleLabel = new Label("Verifying your details with HMRC...");
+        titleLabel.getStyleClass().add("oauth-browser-title");
+        titleLabel.setWrapText(true);
+        titleLabel.setTextAlignment(TextAlignment.CENTER);
+
+        Label descLabel = new Label("This only takes a moment.");
+        descLabel.getStyleClass().add("oauth-browser-desc");
+        descLabel.setWrapText(true);
+        descLabel.setTextAlignment(TextAlignment.CENTER);
+
+        container.getChildren().addAll(verifyingSpinner, titleLabel, descLabel);
+        return container;
+    }
+
+    /**
      * Shows the success state.
      */
     private void showSuccess() {
-        LOG.info("OAuth connection successful");
+        LOG.info("HMRC connection verified");
+        viewModel.setConnectionSuccessful(true);
         showContainer(successContainer);
+    }
+
+    /**
+     * Shows an informational "cancelled" state for a user-initiated cancellation, so backing out of
+     * the HMRC login is not presented as an error.
+     */
+    private void showCancelled() {
+        LOG.info("HMRC connection cancelled by user");
+        showError(CANCELLED_ERROR_CODE, "HMRC connection was cancelled. You can try again when ready.");
     }
 
     /**
@@ -1070,6 +1210,10 @@ public class HmrcConnectionWizardController implements Initializable {
             progressContainer4.setVisible(false);
             progressContainer4.setManaged(false);
         }
+        if (verifyingContainer != null) {
+            verifyingContainer.setVisible(false);
+            verifyingContainer.setManaged(false);
+        }
         if (successContainer != null) {
             successContainer.setVisible(false);
             successContainer.setManaged(false);
@@ -1087,8 +1231,9 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Loads Step 5: Confirmation and Next Steps content.
-     * SE-12-005: Confirmation and Next Steps Screen
+     * Loads the confirmation screen. This screen is presentation only: the NINO is deliberately not
+     * persisted here, because it is saved only once HMRC has verified it during the business-profile
+     * fetch, so an unverified value can never overwrite a known-good one.
      */
     private void loadStep5Content() {
         if (contentArea == null) return;
@@ -1098,20 +1243,9 @@ public class HmrcConnectionWizardController implements Initializable {
         contentArea.setPadding(new Insets(20));
         contentArea.setAlignment(Pos.TOP_CENTER);
 
-        // Auto-save NINO to Settings (bidirectional sync)
-        String wizardNino = viewModel.getNino();
-        if (wizardNino != null && !wizardNino.isEmpty()) {
-            SqliteDataStore.getInstance().saveNino(wizardNino);
-            LOG.info("NINO saved to Settings from wizard");
-        }
-
-        // Success card with large checkmark
         VBox successCard = createStep5SuccessCard();
-
-        // What you can do now
         VBox nextStepsBox = createStep5NextStepsBox();
 
-        // Retention reminder (FIN-002)
         InfoCard retentionCard = new InfoCard(
             "INFO_CIRCLE",
             RETENTION_TITLE,
@@ -1262,6 +1396,14 @@ public class HmrcConnectionWizardController implements Initializable {
      *
      * @param ownerStage the owner stage for the dialog
      * @return the view model for checking result
+     */
+    /**
+     * Creates and shows the wizard dialog. The wizard owns the entire connection flow: it performs
+     * OAuth, resolves and persists the business profile, and shows the outcome. The caller reads the
+     * final persisted state after this returns rather than being called back mid-flow.
+     *
+     * @param ownerStage the owner stage for the dialog
+     * @return the view model for checking result, or null if the dialog could not be shown
      */
     public static HmrcConnectionWizardViewModel showWizard(Stage ownerStage) {
         try {

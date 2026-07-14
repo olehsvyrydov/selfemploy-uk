@@ -510,29 +510,32 @@ public final class SqliteDataStore {
      * rest; the refresh token in particular is a long-lived credential for the taxpayer's HMRC
      * account. The remaining fields are not secret and are stored as-is.
      *
+     * <p>The write is all-or-nothing: if a token cannot be encrypted because the master key is
+     * unavailable, the whole write is skipped rather than persisting fresh expiry metadata against
+     * the old ciphertext, which would later read back as a current-but-stale session. The in-memory
+     * session keeps working and the tokens are re-persisted on the next successful save. The skip is
+     * deliberately reported as {@code false} rather than thrown, because upstream token-lifecycle
+     * code treats a persistence exception as an expired session and discards valid tokens.
+     *
      * @param accessToken the OAuth access token
      * @param refreshToken the OAuth refresh token
      * @param expiresIn seconds until access token expires
      * @param tokenType the token type (usually "bearer")
      * @param scope the granted scopes
      * @param issuedAt when the tokens were issued
+     * @return true when the tokens were encrypted and written, false when the save failed; callers
+     *     must not treat a failed save as a persisted session
      */
-    public synchronized void saveOAuthTokens(String accessToken, String refreshToken,
-                                             long expiresIn, String tokenType,
-                                             String scope, Instant issuedAt) {
+    public synchronized boolean saveOAuthTokens(String accessToken, String refreshToken,
+                                                long expiresIn, String tokenType,
+                                                String scope, Instant issuedAt) {
         String encryptedAccess = encryptForStorage("oauth_access_token", accessToken);
         String encryptedRefresh = encryptForStorage("oauth_refresh_token", refreshToken);
 
-        // All-or-nothing: if a token could not be encrypted (the master key is unavailable), skip
-        // the whole write rather than persist fresh expiry metadata against the old ciphertext,
-        // which would later be read back as a current-but-stale session. The in-memory session
-        // keeps working and the tokens are re-persisted on the next successful save. This is
-        // deliberately non-throwing because upstream token-lifecycle code treats a persistence
-        // exception as an expired session and responds by discarding valid tokens.
         if ((accessToken != null && encryptedAccess == null)
                 || (refreshToken != null && encryptedRefresh == null)) {
             LOG.warning("Skipping OAuth token persistence: tokens could not be encrypted at rest");
-            return;
+            return false;
         }
 
         saveSetting("oauth_access_token", encryptedAccess);
@@ -542,6 +545,7 @@ public final class SqliteDataStore {
         saveSetting("oauth_scope", scope);
         saveSetting("oauth_issued_at", issuedAt != null ? issuedAt.toString() : null);
         LOG.info("OAuth tokens saved to persistent storage");
+        return true;
     }
 
     /**

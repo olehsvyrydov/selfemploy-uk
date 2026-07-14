@@ -387,6 +387,37 @@ public class HmrcConnectionService {
         return getConnectionState() == ConnectionState.READY_TO_SUBMIT;
     }
 
+    /**
+     * Whether a lightweight reconnect (a silent token refresh via {@link #verifySession()}) is
+     * appropriate instead of the full connection wizard. This holds when the user has previously
+     * completed a connection — stored OAuth tokens to refresh and a stored business ID — so there
+     * is nothing new to collect. Without a business ID the wizard must run to fetch the business
+     * profile, and without stored tokens there is nothing to refresh.
+     *
+     * @return true if a quick reconnect can be attempted, false if the full wizard is needed
+     */
+    public boolean canQuickReconnect() {
+        String businessId = SqliteDataStore.getInstance().loadHmrcBusinessId();
+        return SqliteDataStore.getInstance().hasOAuthTokens()
+            && businessId != null && !businessId.isBlank()
+            && !isNinoChangedSinceConnection();
+    }
+
+    /**
+     * Whether the NINO in Settings differs from the one the current connection was verified
+     * against. A changed NINO must be re-verified against HMRC via a business-profile fetch, which
+     * a silent token refresh does not do, so a quick reconnect is not sufficient.
+     *
+     * @return true if the current NINO differs from the connected one
+     */
+    public boolean isNinoChangedSinceConnection() {
+        String connectedNino = SqliteDataStore.getInstance().loadConnectedNino();
+        String currentNino = SqliteDataStore.getInstance().loadNino();
+        return connectedNino != null && !connectedNino.isBlank()
+            && currentNino != null && !currentNino.isBlank()
+            && !connectedNino.equalsIgnoreCase(currentNino);
+    }
+
     // === Status Text Generation (Unified Terminology) ===
 
     /**

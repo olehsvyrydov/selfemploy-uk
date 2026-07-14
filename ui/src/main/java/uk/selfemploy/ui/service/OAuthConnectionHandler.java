@@ -93,19 +93,33 @@ public class OAuthConnectionHandler {
      * @param success      true if connection succeeded
      * @param errorCode    error code if failed, null on success
      * @param errorMessage human-readable error message if failed, null on success
+     * @param accessToken  the access token on success, so the caller can fetch the business
+     *                     profile; null on failure
      */
     public record OAuthResult(
         boolean success,
         String errorCode,
-        String errorMessage
+        String errorMessage,
+        String accessToken
     ) {
         /**
-         * Creates a success result.
+         * Creates a success result carrying the access token.
+         *
+         * @param accessToken the access token obtained from HMRC
+         * @return success result
+         */
+        public static OAuthResult ofSuccess(String accessToken) {
+            return new OAuthResult(true, null, null, accessToken);
+        }
+
+        /**
+         * Creates a success result with no access token. Retained for callers and tests that only
+         * care that the connection succeeded.
          *
          * @return success result
          */
         public static OAuthResult ofSuccess() {
-            return new OAuthResult(true, null, null);
+            return ofSuccess(null);
         }
 
         /**
@@ -116,7 +130,7 @@ public class OAuthConnectionHandler {
          * @return error result
          */
         public static OAuthResult ofError(String errorCode, String errorMessage) {
-            return new OAuthResult(false, errorCode, errorMessage);
+            return new OAuthResult(false, errorCode, errorMessage, null);
         }
 
         /**
@@ -125,7 +139,7 @@ public class OAuthConnectionHandler {
          * @return timeout result
          */
         public static OAuthResult ofTimeout() {
-            return new OAuthResult(false, "TIMEOUT", "Connection timed out. HMRC may be busy.");
+            return new OAuthResult(false, "TIMEOUT", "Connection timed out. HMRC may be busy.", null);
         }
 
         /**
@@ -134,7 +148,7 @@ public class OAuthConnectionHandler {
          * @return cancelled result
          */
         public static OAuthResult ofCancelled() {
-            return new OAuthResult(false, "USER_CANCELLED", "Connection was cancelled by user.");
+            return new OAuthResult(false, "USER_CANCELLED", "Connection was cancelled by user.", null);
         }
     }
 
@@ -271,32 +285,61 @@ public class OAuthConnectionHandler {
         }
     }
 
+    /**
+     * Persists the tokens and reports success after the brief "completing" delay.
+     *
+     * <p>Cancellation is honoured only up to the point where the tokens are written. A cancel that
+     * arrives during the cosmetic delay skips persistence entirely, so there is nothing to undo. A
+     * cancel that arrives while writing is honoured only on a first connection, where clearing the
+     * tokens this flow introduced is safe; on a re-authentication the prior session has already been
+     * replaced by these freshly written valid tokens, so the connection is completed instead —
+     * reporting cancellation there would leave valid tokens stored yet the session unverified, and
+     * rolling back would clear every token, destroying a still-valid pre-existing session.
+     *
+     * <p>The storage write is best-effort and non-throwing, so its result is checked: a session that
+     * looks connected but does not survive a restart is worse than an honest failure.
+     */
     private void handleSuccess(OAuthTokens tokens) {
         LOG.info("OAuth connection successful");
         reportStatus(ConnectionStatus.COMPLETING);
 
-        // Persist OAuth tokens for session survival (Sprint 12)
-        persistOAuthTokens(tokens);
-
-        // Mark session as verified since we just authenticated
-        HmrcConnectionService.getInstance().markSessionVerified();
-
-        // Small delay before showing success for UX
         scheduler.schedule(() -> {
+            if (cancelled.get()) {
+                handleCancellation();
+                return;
+            }
+            boolean hadTokensBefore = SqliteDataStore.getInstance().hasOAuthTokens();
+
+            if (!persistOAuthTokens(tokens)) {
+                LOG.warning("OAuth succeeded but tokens could not be saved");
+                reportStatus(ConnectionStatus.ERROR);
+                reportResult(OAuthResult.ofError("STORAGE_ERROR",
+                    "Connected to HMRC, but your session could not be saved. Please try again."));
+                connectionInProgress.set(false);
+                return;
+            }
+            if (cancelled.get() && !hadTokensBefore) {
+                SqliteDataStore.getInstance().clearOAuthTokens();
+                handleCancellation();
+                return;
+            }
+            HmrcConnectionService.getInstance().markSessionVerified();
             reportStatus(ConnectionStatus.SUCCESS);
             persistProgress();
-            reportResult(OAuthResult.ofSuccess());
+            reportResult(OAuthResult.ofSuccess(tokens.accessToken()));
             connectionInProgress.set(false);
         }, STATUS_TRANSITION_DELAY_MS, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Persists OAuth tokens to SqliteDataStore for session survival.
-     * Sprint 12: Tokens are now persisted so they survive app restart.
+     * Persists OAuth tokens to {@link SqliteDataStore} so the session survives an app restart.
+     *
+     * @return {@code true} if the tokens were written, {@code false} if the write was skipped or
+     *         failed (e.g. the master key was unavailable)
      */
-    private void persistOAuthTokens(OAuthTokens tokens) {
+    private boolean persistOAuthTokens(OAuthTokens tokens) {
         try {
-            SqliteDataStore.getInstance().saveOAuthTokens(
+            boolean saved = SqliteDataStore.getInstance().saveOAuthTokens(
                 tokens.accessToken(),
                 tokens.refreshToken(),
                 tokens.expiresIn(),
@@ -304,9 +347,13 @@ public class OAuthConnectionHandler {
                 tokens.scope(),
                 tokens.issuedAt()
             );
-            LOG.info("OAuth tokens persisted to storage");
+            if (saved) {
+                LOG.info("OAuth tokens persisted to storage");
+            }
+            return saved;
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to persist OAuth tokens", e);
+            return false;
         }
     }
 

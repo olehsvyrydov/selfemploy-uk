@@ -29,8 +29,9 @@ import uk.selfemploy.core.export.ImportResult;
 import uk.selfemploy.core.export.ImportType;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
-import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
+import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
+
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
 import uk.selfemploy.ui.component.AppDialog;
@@ -41,6 +42,7 @@ import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.CredentialEncryptionException;
+import uk.selfemploy.ui.service.HmrcBusinessProfileService;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
 import uk.selfemploy.ui.service.SqliteDataStore;
@@ -81,12 +83,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private static final Logger LOG = Logger.getLogger(SettingsController.class.getName());
     private static final List<String> SETTINGS_CATEGORIES = Arrays.asList("Profile", "Legal", "Data");
-
-    /**
-     * Sandbox test business ID used when HMRC sandbox API returns 404.
-     * This is the standard test business ID provided by HMRC for sandbox testing.
-     */
-    static final String SANDBOX_FALLBACK_BUSINESS_ID = "XAIS12345678901";
 
     /**
      * Verification status for the user's NINO against HMRC.
@@ -186,6 +182,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
     private String utr = "";
     private String nino = "";
     private NinoVerificationStatus ninoVerificationStatus = NinoVerificationStatus.NOT_VERIFIED;
+
+    private final HmrcBusinessProfileService profileService = new HmrcBusinessProfileService();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -450,59 +448,38 @@ public class SettingsController implements Initializable, MainController.TaxYear
      *         false if they match or if no connected NINO exists (first connection)
      */
     public boolean hasNinoChangedSinceConnection() {
-        String connectedNino = SqliteDataStore.getInstance().loadConnectedNino();
-        String currentNino = SqliteDataStore.getInstance().loadNino();
-
-        // If no connected NINO exists, this is the first connection - no change
-        if (connectedNino == null || connectedNino.isBlank()) {
-            return false;
-        }
-
-        // If current NINO is not set, can't compare
-        if (currentNino == null || currentNino.isBlank()) {
-            return false;
-        }
-
-        // Compare case-insensitively
-        return !connectedNino.equalsIgnoreCase(currentNino);
+        return HmrcConnectionService.getInstance().isNinoChangedSinceConnection();
     }
 
     // === Sandbox Mode Detection ===
 
     /**
      * Checks if the given HMRC API base URL is for the sandbox environment.
-     * Sandbox URLs contain "test-api" in the hostname.
      *
      * @param apiBaseUrl the HMRC API base URL
      * @return true if sandbox mode, false for production
      */
     public boolean isSandboxMode(String apiBaseUrl) {
-        if (apiBaseUrl == null || apiBaseUrl.isEmpty()) {
-            return false; // Default to production mode (safer)
-        }
-        return apiBaseUrl.toLowerCase().contains("test-api");
+        return HmrcBusinessProfileService.isSandbox(apiBaseUrl);
     }
 
     /**
      * Checks if the given HTTP status code indicates a server error (5xx).
-     * Server errors indicate temporary issues on HMRC's side that may resolve
-     * and should be treated differently from client errors (4xx).
      *
      * @param statusCode the HTTP status code to check
      * @return true if the status code is in the 5xx range (500-599)
      */
     public boolean isServerError(int statusCode) {
-        return statusCode >= 500 && statusCode < 600;
+        return HmrcBusinessProfileService.isServerError(statusCode);
     }
 
     /**
      * Returns the fallback business ID for sandbox mode.
-     * This is the standard HMRC test business ID used when the sandbox API returns 404.
      *
      * @return the sandbox fallback business ID
      */
     public String getSandboxFallbackBusinessId() {
-        return SANDBOX_FALLBACK_BUSINESS_ID;
+        return HmrcBusinessProfileService.sandboxFallbackBusinessId();
     }
 
     // === Private Helper Methods ===
@@ -834,287 +811,152 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     @FXML
     void handleHmrcSetup(ActionEvent event) {
-        LOG.info("Starting HMRC Connection Setup");
+        LOG.info("Starting HMRC connection");
 
-        // Step 1: Check if NINO is saved
-        String savedNino = SqliteDataStore.getInstance().loadNino();
-        if (savedNino == null || savedNino.isBlank()) {
-            showError("NINO Required",
-                    "Please save your National Insurance Number (NINO) first before connecting to HMRC.");
-            return;
+        HmrcConnectionService connectionService = HmrcConnectionService.getInstance();
+        if (connectionService.canQuickReconnect()) {
+            quickReconnect(connectionService);
+        } else {
+            launchConnectionWizard();
         }
-
-        // Step 2: Disable button and show progress
-        if (hmrcSetupButton != null) {
-            hmrcSetupButton.setDisable(true);
-            hmrcSetupButton.setText("Connecting...");
-        }
-        if (hmrcConnectionStatusLabel != null) {
-            hmrcConnectionStatusLabel.setText("Opening browser for HMRC login...");
-        }
-
-        // Step 3: Trigger OAuth
-        HmrcOAuthService oAuthService = OAuthServiceFactory.getOAuthService();
-        oAuthService.authenticate()
-                .thenAccept(tokens -> Platform.runLater(() -> handleOAuthSuccess(tokens)))
-                .exceptionally(error -> {
-                    Platform.runLater(() -> handleOAuthError(error));
-                    return null;
-                });
-    }
-
-    private void handleOAuthSuccess(OAuthTokens tokens) {
-        LOG.info("OAuth authentication successful");
-
-        // Save tokens
-        SqliteDataStore.getInstance().saveOAuthTokens(
-                tokens.accessToken(),
-                tokens.refreshToken(),
-                tokens.expiresIn(),
-                tokens.tokenType(),
-                tokens.scope(),
-                tokens.issuedAt()
-        );
-
-        // Mark session as verified
-        HmrcConnectionService.getInstance().markSessionVerified();
-
-        // Step 4: Fetch business profile
-        if (hmrcConnectionStatusLabel != null) {
-            hmrcConnectionStatusLabel.setText("Fetching business profile...");
-        }
-
-        fetchBusinessProfile(tokens.accessToken());
     }
 
     /**
-     * Fetches business profile from HMRC to get the business ID.
+     * Refreshes an existing session without the full wizard, then re-verifies the business profile
+     * with the refreshed token so a changed NINO or a stale business ID is re-verified (the old
+     * connect always did this).
+     *
+     * <p>Surviving, loadable tokens after a failed refresh mean the failure was transient rather
+     * than a rejection, so the user is offered a retry. A genuine rejection or an unloadable session
+     * has no session left to refresh and falls back to the full wizard.
      */
-    private void fetchBusinessProfile(String accessToken) {
-        String nino = SqliteDataStore.getInstance().loadNino();
-        String apiBaseUrl = System.getProperty("HMRC_API_BASE_URL", "https://test-api.service.hmrc.gov.uk");
-        String url = apiBaseUrl + "/individuals/business/self-employment/" + nino;
+    private void quickReconnect(HmrcConnectionService connectionService) {
+        if (hmrcSetupButton != null) {
+            hmrcSetupButton.setDisable(true);
+            hmrcSetupButton.setText("Reconnecting...");
+        }
+        if (hmrcConnectionStatusLabel != null) {
+            hmrcConnectionStatusLabel.setText("Refreshing your HMRC session...");
+        }
 
-        LOG.info("Fetching business details from: " + HmrcPiiRedactor.redact(url));
+        connectionService.verifySession().whenComplete((result, error) -> Platform.runLater(() -> {
+            OAuthTokens tokens = OAuthServiceFactory.getOAuthService().getCurrentTokens();
 
-        Thread.startVirtualThread(() -> {
-            try {
-                java.net.http.HttpClient httpClient = java.net.http.HttpClient.newBuilder()
-                        .connectTimeout(java.time.Duration.ofSeconds(30))
-                        .build();
-
-                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .timeout(java.time.Duration.ofSeconds(30))
-                        .header("Authorization", "Bearer " + accessToken)
-                        .header("Accept", "application/vnd.hmrc.2.0+json")
-                        .GET()
-                        .build();
-
-                java.net.http.HttpResponse<String> response = httpClient.send(request,
-                        java.net.http.HttpResponse.BodyHandlers.ofString());
-
-                LOG.info("Business details response: " + response.statusCode());
-
-                if (response.statusCode() == 200) {
-                    String body = response.body();
-                    LOG.info("Business details: " + HmrcPiiRedactor.redact(body));
-
-                    // Parse business ID from response
-                    // Format: {"selfEmployments":[{"businessId":"XAIS12345678901",...}]}
-                    String businessId = parseBusinessIdFromResponse(body);
-                    boolean isSandbox = isSandboxMode(apiBaseUrl);
-                    if (businessId != null) {
-                        SqliteDataStore.getInstance().saveHmrcBusinessId(businessId);
-                        SqliteDataStore.getInstance().saveNinoVerified(true); // NINO verified by HMRC
-                        LOG.info("Stored business ID: " + businessId);
-                        Platform.runLater(() -> {
-                            setNinoVerificationStatus(NinoVerificationStatus.VERIFIED);
-                            String modeLabel = isSandbox ? "Sandbox" : "Production";
-                            completeSetup(true, "Connected and verified (" + modeLabel + ")");
-                            showInfo("HMRC Connected (" + modeLabel + ")",
-                                    "Successfully connected to HMRC " + modeLabel + "!\n\n" +
-                                    "Your NINO and business profile have been verified.\n" +
-                                    "Business ID: " + businessId);
-                        });
-                    } else {
-                        // Response OK but no business found - NINO may not have self-employment registered
-                        LOG.warning("No self-employment business found for the stored NINO");
-                        Platform.runLater(() -> {
-                            setNinoVerificationStatus(NinoVerificationStatus.FAILED);
-                            SqliteDataStore.getInstance().saveNinoVerified(false);
-                            completeSetup(false, "No business found");
-                            showError("NINO Verification Failed",
-                                    "No self-employment business is registered with this NINO.\n\n" +
-                                    "Please check:\n" +
-                                    "1. Your NINO is entered correctly\n" +
-                                    "2. You have registered for Self Assessment with HMRC\n" +
-                                    "3. Your self-employment is registered in your Government Gateway account");
-                        });
-                    }
-                } else if (response.statusCode() == 403 || response.statusCode() == 401) {
-                    // NINO doesn't match the authenticated user
-                    LOG.warning("NINO mismatch - HTTP " + response.statusCode() + ": " + HmrcPiiRedactor.redact(response.body()));
-                    Platform.runLater(() -> {
-                        setNinoVerificationStatus(NinoVerificationStatus.FAILED);
-                        SqliteDataStore.getInstance().saveNinoVerified(false);
-                        completeSetup(false, "NINO mismatch");
-                        showError("NINO Verification Failed",
-                                "The NINO you entered doesn't match your HMRC account.\n\n" +
-                                "Please check that you entered the correct National Insurance Number.");
-                    });
-                } else if (response.statusCode() == 404) {
-                    // NINO not found - check if sandbox mode
-                    LOG.warning("NINO not found - HTTP 404: " + HmrcPiiRedactor.redact(response.body()));
-
-                    if (isSandboxMode(apiBaseUrl)) {
-                        // Sandbox mode: use fallback test business ID
-                        // This is EXPECTED behavior - sandbox doesn't have real NINOs
-                        String fallbackBusinessId = getSandboxFallbackBusinessId();
-                        LOG.info("Sandbox mode detected - saving fallback business ID: " + fallbackBusinessId);
-                        LOG.info("Note: Real NINOs cannot be verified in sandbox mode (expected behavior)");
-                        SqliteDataStore.getInstance().saveHmrcBusinessId(fallbackBusinessId);
-
-                        // Check if NINO has changed since last connection
-                        String connectedNino = SqliteDataStore.getInstance().loadConnectedNino();
-                        String currentNino = nino; // Current NINO being used
-                        boolean isFirstConnection = (connectedNino == null || connectedNino.isBlank());
-                        boolean ninoChanged = !isFirstConnection &&
-                                !connectedNino.equalsIgnoreCase(currentNino);
-
-                        if (ninoChanged) {
-                            // NINO changed - warn user that sandbox cannot verify
-                            LOG.warning("NINO changed since the last connection - sandbox cannot verify correctness");
-                            SqliteDataStore.getInstance().saveNinoVerified(false);
-
-                            // Update connected NINO to the new value so subsequent reconnects
-                            // with the same NINO won't trigger the warning again
-                            SqliteDataStore.getInstance().saveConnectedNino(currentNino);
-                            LOG.info("Updated the connected NINO");
-
-                            // Verify the save worked
-                            String savedId = SqliteDataStore.getInstance().loadHmrcBusinessId();
-                            LOG.info("Verified saved HMRC business ID: " + savedId);
-
-                            Platform.runLater(() -> {
-                                setNinoVerificationStatus(NinoVerificationStatus.NINO_CHANGED);
-                                completeSetup(true, "Connected (Sandbox) - NINO changed");
-                                showWarning("NINO Changed",
-                                        "Your NINO has changed since your last connection.\n\n" +
-                                        "Previous NINO: " + formatNinoForDisplay(connectedNino) + "\n" +
-                                        "Current NINO: " + formatNinoForDisplay(currentNino) + "\n\n" +
-                                        "WARNING: Sandbox mode cannot verify if your new NINO is correct.\n" +
-                                        "In production, your NINO will be validated against HMRC records.\n\n" +
-                                        "If this change was intentional, please verify your NINO is correct.");
-                            });
-                        } else {
-                            // First connection or same NINO - proceed normally
-                            SqliteDataStore.getInstance().saveNinoVerified(true);
-                            // Save the connected NINO for future change detection
-                            SqliteDataStore.getInstance().saveConnectedNino(currentNino);
-                            LOG.info("Saved the connected NINO for change detection");
-
-                            // Verify the save worked
-                            String savedId = SqliteDataStore.getInstance().loadHmrcBusinessId();
-                            LOG.info("Verified saved HMRC business ID: " + savedId);
-
-                            Platform.runLater(() -> {
-                                setNinoVerificationStatus(NinoVerificationStatus.VERIFIED);
-                                completeSetup(true, "Connected (Sandbox)");
-                                showInfo("HMRC Sandbox Connected",
-                                        "Connected to HMRC Sandbox!\n\n" +
-                                        "Your OAuth authentication was successful.\n" +
-                                        "Business ID: " + fallbackBusinessId + "\n\n" +
-                                        "Note: Sandbox mode uses test data. Your real NINO will be " +
-                                        "verified when you switch to production mode.");
-                            });
-                        }
-                    } else {
-                        // Production mode: real error - NINO not found is a problem
-                        Platform.runLater(() -> {
-                            setNinoVerificationStatus(NinoVerificationStatus.FAILED);
-                            SqliteDataStore.getInstance().saveNinoVerified(false);
-                            completeSetup(false, "NINO not found");
-                            showError("NINO Verification Failed",
-                                    "No self-employment record found for this NINO.\n\n" +
-                                    "Make sure you have registered for Self Assessment with HMRC.");
-                        });
-                    }
-                } else {
-                    LOG.warning("Failed to fetch business details: " + response.statusCode() + " - " + HmrcPiiRedactor.redact(response.body()));
-                    int statusCode = response.statusCode();
-                    Platform.runLater(() -> {
-                        if (isServerError(statusCode)) {
-                            // 5xx server error: OAuth worked but HMRC had a temporary issue
-                            setNinoVerificationStatus(NinoVerificationStatus.PROFILE_SYNC_PENDING);
-                            completeSetup(true, "Connected (profile sync pending)");
-                            showWarning("HMRC Partially Connected",
-                                    "Connected to HMRC but business profile sync failed.\n\n" +
-                                    "Your OAuth authentication was successful, but HMRC returned a " +
-                                    "server error (" + statusCode + ") when fetching your profile.\n\n" +
-                                    "Your profile will sync automatically on your first submission, " +
-                                    "or you can try reconnecting later.");
-                        } else {
-                            // 4xx client error: different handling
-                            setNinoVerificationStatus(NinoVerificationStatus.NOT_VERIFIED);
-                            completeSetup(true, "Connected (profile sync pending)");
-                            showInfo("HMRC Connected",
-                                    "Connected to HMRC. Business profile will sync on first submission.\n\n" +
-                                    "Note: If you're using sandbox mode, ensure test data is set up.");
-                        }
-                    });
+            if (error == null && result == HmrcConnectionService.VerificationResult.VERIFIED
+                    && tokens != null) {
+                String nino = SqliteDataStore.getInstance().loadNino();
+                if (nino != null && !nino.isBlank()) {
+                    reverifyBusinessProfile(nino, tokens.accessToken());
+                    return;
                 }
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Failed to fetch business profile", e);
-                Platform.runLater(() -> {
-                    setNinoVerificationStatus(NinoVerificationStatus.PROFILE_SYNC_PENDING);
-                    completeSetup(true, "Connected (profile sync pending)");
-                    showWarning("HMRC Partially Connected",
-                            "Connected to HMRC but business profile sync failed.\n\n" +
-                            "Your OAuth authentication was successful, but there was an error " +
-                            "fetching your profile.\n\n" +
-                            "Your profile will sync automatically on your first submission, " +
-                            "or you can try reconnecting later.");
-                });
+                launchConnectionWizard();
+            } else if (tokens != null && connectionService.canQuickReconnect()) {
+                if (hmrcSetupButton != null) {
+                    hmrcSetupButton.setDisable(false);
+                }
+                updateHmrcConnectionStatus();
+                showWarning("Couldn't Reconnect",
+                    "We couldn't reach HMRC just now. Please check your connection and try again.");
+            } else {
+                LOG.info("Session refresh was not possible; launching the full connection wizard");
+                launchConnectionWizard();
             }
+        }));
+    }
+
+    /**
+     * Re-resolves and persists the business profile for a silent reconnect (no wizard). Runs the
+     * fetch on a background thread via {@link HmrcBusinessProfileService} and, unlike the wizard
+     * flow, surfaces the outcome as a dialog because the user triggered the reconnect directly.
+     */
+    private void reverifyBusinessProfile(String nino, String accessToken) {
+        if (hmrcConnectionStatusLabel != null) {
+            hmrcConnectionStatusLabel.setText("Fetching business profile...");
+        }
+        Thread.startVirtualThread(() -> {
+            HmrcBusinessProfileService.Result result = profileService.fetchAndPersist(nino, accessToken);
+            Platform.runLater(() -> {
+                applyProfileStatus(result);
+                showProfileOutcomeDialog(result);
+            });
         });
     }
 
     /**
-     * Parses business ID from HMRC response.
+     * Launches the guided connection wizard, which owns the whole flow: OAuth, resolving and
+     * persisting the business profile, and showing the outcome. Once it closes, this reflects the
+     * final persisted state (and re-enables the button, since quick-reconnect may have disabled it).
      */
-    private String parseBusinessIdFromResponse(String jsonResponse) {
-        try {
-            // Simple JSON parsing - look for "businessId":"XAIS..."
-            int idx = jsonResponse.indexOf("\"businessId\"");
-            if (idx >= 0) {
-                int colonIdx = jsonResponse.indexOf(":", idx);
-                int quoteStart = jsonResponse.indexOf("\"", colonIdx + 1);
-                int quoteEnd = jsonResponse.indexOf("\"", quoteStart + 1);
-                if (quoteStart >= 0 && quoteEnd > quoteStart) {
-                    String businessId = jsonResponse.substring(quoteStart + 1, quoteEnd);
-                    // Validate format: X[A-Z0-9]{1}IS[0-9]{11}
-                    if (businessId.matches("^X[A-Z0-9]{1}IS[0-9]{11}$")) {
-                        return businessId;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to parse business ID from response", e);
+    private void launchConnectionWizard() {
+        Stage owner = getOwnerWindow() instanceof Stage stage ? stage : null;
+
+        HmrcConnectionWizardViewModel result = HmrcConnectionWizardController.showWizard(owner);
+
+        if (result == null) {
+            showError("Connection Failed",
+                "The HMRC connection screen could not be opened. Please try again.");
         }
-        return null;
+        if (hmrcSetupButton != null) {
+            hmrcSetupButton.setDisable(false);
+        }
+        updateHmrcConnectionStatus();
     }
 
-    private void handleOAuthError(Throwable error) {
-        LOG.log(Level.WARNING, "OAuth authentication failed", error);
-        completeSetup(false, "Connection failed");
+    /**
+     * Applies a resolved business-profile outcome to the Settings verification badge and button.
+     *
+     * @param result the resolved business-profile outcome
+     */
+    private void applyProfileStatus(HmrcBusinessProfileService.Result result) {
+        switch (result.outcome()) {
+            case VERIFIED -> {
+                setNinoVerificationStatus(NinoVerificationStatus.VERIFIED);
+                completeSetup(true, "Connected and verified");
+            }
+            case NINO_CHANGED_SANDBOX -> {
+                setNinoVerificationStatus(NinoVerificationStatus.NINO_CHANGED);
+                completeSetup(true, "Connected (Sandbox) - NINO changed");
+            }
+            case PROFILE_SYNC_PENDING -> {
+                setNinoVerificationStatus(NinoVerificationStatus.PROFILE_SYNC_PENDING);
+                completeSetup(true, "Connected (profile sync pending)");
+            }
+            case NINO_MISMATCH, NO_BUSINESS_FOUND, NINO_NOT_FOUND -> {
+                setNinoVerificationStatus(NinoVerificationStatus.FAILED);
+                completeSetup(false, "NINO verification failed");
+            }
+        }
+    }
 
-        String message = error.getMessage();
-        if (message != null && message.contains("USER_CANCELLED")) {
-            showInfo("Connection Cancelled", "HMRC connection was cancelled. You can try again when ready.");
-        } else {
-            showError("Connection Failed",
-                    "Failed to connect to HMRC: " + (message != null ? message : "Unknown error"));
+    /**
+     * Shows a dialog describing a resolved business-profile outcome, for the direct reconnect flow
+     * (the wizard shows its own outcome screen instead).
+     *
+     * @param result the resolved business-profile outcome
+     */
+    private void showProfileOutcomeDialog(HmrcBusinessProfileService.Result result) {
+        String environment = result.sandbox() ? "Sandbox" : "Production";
+        switch (result.outcome()) {
+            case VERIFIED -> showInfo("HMRC Connected (" + environment + ")",
+                "Your National Insurance number and business profile have been verified.\n\n"
+                    + "Business ID: " + result.businessId());
+            case NINO_CHANGED_SANDBOX -> showWarning("NINO Changed",
+                "Your National Insurance number has changed since your last connection.\n\n"
+                    + "Sandbox mode cannot verify whether the new number is correct; in production it "
+                    + "will be validated against HMRC records.");
+            case PROFILE_SYNC_PENDING -> showWarning("HMRC Partially Connected",
+                "Connected to HMRC, but your business profile could not be fetched right now.\n\n"
+                    + "It will sync automatically on your first submission, or you can try "
+                    + "reconnecting later.");
+            case NINO_MISMATCH -> showError("NINO Verification Failed",
+                "The National Insurance number you entered does not match your HMRC account.\n\n"
+                    + "Please check that you entered it correctly.");
+            case NO_BUSINESS_FOUND -> showError("NINO Verification Failed",
+                "No self-employment business is registered with this National Insurance number.\n\n"
+                    + "Make sure you have registered for Self Assessment with HMRC.");
+            case NINO_NOT_FOUND -> showError("NINO Verification Failed",
+                "No self-employment record was found for this National Insurance number.\n\n"
+                    + "Make sure you have registered for Self Assessment with HMRC.");
         }
     }
 

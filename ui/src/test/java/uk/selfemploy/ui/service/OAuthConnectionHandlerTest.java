@@ -237,6 +237,30 @@ class OAuthConnectionHandlerTest {
         }
 
         @Test
+        @DisplayName("should carry the access token on a successful result")
+        void success_resultCarriesAccessToken() throws Exception {
+            OAuthTokens tokens = createTestTokens();
+            when(mockOAuthService.authenticate())
+                .thenReturn(CompletableFuture.completedFuture(tokens));
+
+            CountDownLatch latch = new CountDownLatch(1);
+            OAuthConnectionHandler asyncHandler = new OAuthConnectionHandler(
+                mockOAuthService,
+                mockRepository,
+                statusUpdates::add,
+                result -> { resultRef.set(result); latch.countDown(); },
+                FIXED_CLOCK,
+                DEFAULT_TIMEOUT
+            );
+
+            asyncHandler.startConnection();
+
+            assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(resultRef.get().success()).isTrue();
+            assertThat(resultRef.get().accessToken()).isEqualTo("test-access-token");
+        }
+
+        @Test
         @DisplayName("should report COMPLETING status before success")
         void startConnection_reportsCompleting_beforeSuccess() throws Exception {
             // Given
