@@ -238,17 +238,20 @@ public class UiQuarterlySubmissionService {
                 response = executeRequest(url, jsonBody, httpMethod, isSandbox, bearerToken, reviewData);
 
                 if (response.statusCode() == 401) {
-                    // Still failing after refresh - session is truly expired
-                    LOG.warning("Still receiving 401 after token refresh - session expired");
-                    SqliteDataStore.getInstance().clearOAuthTokens();
+                    // The stored session is not at fault here: HMRC honoured the refresh token
+                    // moments ago. Something about this request is being refused, so report it and
+                    // leave the credentials alone rather than making the user re-authenticate.
+                    LOG.warning("Still receiving 401 after a successful token refresh");
                     throw new SubmissionException(
                             "SESSION_EXPIRED: Your HMRC session has expired. Please reconnect via the HMRC Submission page.");
                 }
             } catch (SubmissionException e) {
                 throw e;
             } catch (Exception e) {
-                LOG.warning("Token refresh failed: " + e.getMessage());
-                SqliteDataStore.getInstance().clearOAuthTokens();
+                // A failed refresh has already been judged by HmrcSessionPolicy, which alone decides
+                // whether the session is destroyed; anything else here is a request failure and is no
+                // reason to discard credentials.
+                LOG.warning("Retry after 401 failed: " + e.getMessage());
                 throw new SubmissionException(
                         "SESSION_EXPIRED: Your HMRC session has expired. Please reconnect via the HMRC Submission page.", e);
             }
@@ -641,24 +644,18 @@ public class UiQuarterlySubmissionService {
         try {
             OAuthTokens newTokens = oauthService.refreshAccessToken()
                     .get(30, java.util.concurrent.TimeUnit.SECONDS);
-
-            // Persist refreshed tokens
-            SqliteDataStore.getInstance().saveOAuthTokens(
-                    newTokens.accessToken(),
-                    newTokens.refreshToken(),
-                    newTokens.expiresIn(),
-                    newTokens.tokenType(),
-                    newTokens.scope(),
-                    newTokens.issuedAt()
-            );
-            LOG.info("OAuth tokens refreshed and persisted");
+            HmrcSessionPolicy.persistRefreshedTokens(newTokens);
             return newTokens;
 
         } catch (Exception e) {
-            HmrcSessionPolicy.onRefreshFailure(e, oauthService);
+            if (HmrcSessionPolicy.onRefreshFailure(e, oauthService)) {
+                throw new SubmissionException(
+                        "SESSION_EXPIRED: Your HMRC session has expired and could not be refreshed. " +
+                        "Please reconnect via the HMRC Submission page.", e);
+            }
             throw new SubmissionException(
-                    "SESSION_EXPIRED: Your HMRC session has expired and could not be refreshed. " +
-                    "Please reconnect via the HMRC Submission page.", e);
+                    "NETWORK: We couldn't reach HMRC to renew your session. Check your connection and " +
+                    "try again — you are still signed in.", e);
         }
     }
 

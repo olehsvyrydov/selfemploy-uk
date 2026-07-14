@@ -114,6 +114,11 @@ public final class OAuthServiceFactory {
                 LOG.info("Stored OAuth tokens have expired - attempting refresh");
                 if (refreshToken != null && !refreshToken.isBlank()) {
                     tryRefreshTokens(service, tokens);
+                } else if (SqliteDataStore.getInstance().hasRefreshToken()) {
+                    // The refresh token is on disk but would not decrypt, which the storage layer
+                    // reports as absence while deliberately keeping the ciphertext. It may well work
+                    // once the master key is readable again, so it must not be deleted on that basis.
+                    LOG.warning("The stored refresh token could not be read; leaving it in place");
                 } else {
                     LOG.info("No refresh token available - clearing expired tokens");
                     SqliteDataStore.getInstance().clearOAuthTokens();
@@ -147,17 +152,7 @@ public final class OAuthServiceFactory {
         try {
             service.setTokens(oldTokens); // Ensure refresh token is available
             OAuthTokens newTokens = service.refreshAccessToken().get(30, java.util.concurrent.TimeUnit.SECONDS);
-
-            // Persist new tokens
-            SqliteDataStore.getInstance().saveOAuthTokens(
-                newTokens.accessToken(),
-                newTokens.refreshToken(),
-                newTokens.expiresIn(),
-                newTokens.tokenType(),
-                newTokens.scope(),
-                newTokens.issuedAt()
-            );
-            LOG.info("OAuth tokens refreshed and persisted (expires in " + newTokens.getSecondsUntilExpiry() + "s)");
+            HmrcSessionPolicy.persistRefreshedTokens(newTokens);
 
         } catch (Exception e) {
             HmrcSessionPolicy.onRefreshFailure(e, service);

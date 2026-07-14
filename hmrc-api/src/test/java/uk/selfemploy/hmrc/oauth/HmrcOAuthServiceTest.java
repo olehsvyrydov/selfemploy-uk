@@ -461,6 +461,41 @@ class HmrcOAuthServiceTest {
         }
 
         @Test
+        @DisplayName("treats a blank refresh token as none, rather than presenting it to HMRC")
+        void blankRefreshTokenIsNotPresented() {
+            // An empty string is not a credential. Sending one earns an invalid_grant that looks
+            // exactly like a real revocation, and would cost the user their stored session.
+            oAuthService.setTokens(OAuthTokens.create("access", "  ", 14400, "Bearer", "scope"));
+
+            assertThatThrownBy(() -> oAuthService.refreshAccessToken().get())
+                .cause()
+                .extracting(e -> ((HmrcOAuthException) e).getError())
+                .isEqualTo(OAuthError.NO_REFRESH_TOKEN);
+
+            verify(tokenExchangeClient, never()).refreshTokens(anyString());
+        }
+
+        @Test
+        @DisplayName("disowns an in-flight refresh when the session it belongs to is replaced")
+        void replacingTheSessionDisownsAnInFlightRefresh() {
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token"))
+                .thenReturn(new CompletableFuture<>());
+            when(tokenExchangeClient.refreshTokens("second_refresh_token"))
+                .thenReturn(CompletableFuture.completedFuture(
+                    OAuthTokens.create("second_access", "rotated", 14400, "Bearer", "scope")));
+
+            oAuthService.refreshAccessToken();  // never completes
+
+            oAuthService.setTokens(OAuthTokens.create("second_access", "second_refresh_token",
+                14400, "Bearer", "scope"));
+            oAuthService.refreshAccessToken();
+
+            // The second call must refresh the new session, not join the abandoned one.
+            verify(tokenExchangeClient).refreshTokens("second_refresh_token");
+        }
+
+        @Test
         @DisplayName("starts a fresh request once the previous refresh has finished")
         void laterRefreshIsNotJoinedToACompletedOne() throws Exception {
             oAuthService.setTokens(createTestTokens());

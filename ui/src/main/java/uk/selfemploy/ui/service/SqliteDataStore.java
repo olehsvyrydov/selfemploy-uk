@@ -650,6 +650,17 @@ public final class SqliteDataStore {
         return loadSetting("oauth_access_token") != null;
     }
 
+    /**
+     * Checks whether a refresh token is stored, without attempting to decrypt it. A token that is
+     * present but currently unreadable — the master key can be momentarily unavailable — still counts:
+     * it is a credential the user owns, and it is not ours to discard because we could not read it.
+     *
+     * @return true if a refresh token is stored
+     */
+    public synchronized boolean hasRefreshToken() {
+        return loadSetting("oauth_refresh_token") != null;
+    }
+
     // === HMRC Business ID Operations ===
 
     /**

@@ -85,7 +85,11 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
                     ? cause
                     : new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
                 if (failure.getError() == OAuthError.INVALID_GRANT) {
-                    log.warn("HMRC rejected the refresh token; the user must reconnect");
+                    // This is the one failure that destroys the stored session, so it must leave a
+                    // record of what HMRC actually said — without a stack trace, since a rejection is
+                    // expected and user-recoverable rather than a fault to diagnose.
+                    log.warn("HMRC rejected the refresh token; the user must reconnect: {}",
+                        HmrcPiiRedactor.redact(String.valueOf(failure.getMessage())));
                 } else {
                     log.error("Token refresh failed: {}",
                         HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);

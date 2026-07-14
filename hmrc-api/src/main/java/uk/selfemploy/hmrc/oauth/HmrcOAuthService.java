@@ -206,23 +206,31 @@ public class HmrcOAuthService {
         }
 
         OAuthTokens current = currentTokens.get();
-        if (current == null || current.refreshToken() == null) {
+        if (current == null || isBlank(current.refreshToken())) {
             return CompletableFuture.failedFuture(new HmrcOAuthException(OAuthError.NO_REFRESH_TOKEN));
         }
 
         LOG.info("Refreshing access token");
         CompletableFuture<OAuthTokens> refresh = tokenExchangeClient.refreshTokens(current.refreshToken())
             .thenApply(tokens -> {
-                OAuthTokens refreshed = tokens.refreshToken() != null
-                    ? tokens
-                    : new OAuthTokens(tokens.accessToken(), current.refreshToken(), tokens.expiresIn(),
-                        tokens.tokenType(), tokens.scope(), tokens.issuedAt());
+                OAuthTokens refreshed = isBlank(tokens.refreshToken())
+                    ? new OAuthTokens(tokens.accessToken(), current.refreshToken(), tokens.expiresIn(),
+                        tokens.tokenType(), tokens.scope(), tokens.issuedAt())
+                    : tokens;
                 LOG.info("Access token refreshed successfully");
                 currentTokens.set(refreshed);
                 return refreshed;
             });
         refreshInFlight.set(refresh);
         return refresh;
+    }
+
+    /**
+     * Whether a refresh token is effectively absent. An empty string is not a credential: presenting
+     * one would earn an {@code invalid_grant} that looks exactly like a real revocation.
+     */
+    private static boolean isBlank(String refreshToken) {
+        return refreshToken == null || refreshToken.isBlank();
     }
 
     /**
@@ -277,16 +285,20 @@ public class HmrcOAuthService {
      */
     public void disconnect() {
         LOG.info("Disconnecting from HMRC");
-        currentTokens.set(null);
+        setTokens(null);
     }
 
     /**
      * Sets tokens (e.g., when restoring from secure storage).
      *
+     * <p>Any refresh still in flight belongs to the session being replaced, so it is disowned: a
+     * later caller must not join it and adopt tokens derived from a session that no longer exists.
+     *
      * @param tokens The tokens to set
      */
-    public void setTokens(OAuthTokens tokens) {
+    public synchronized void setTokens(OAuthTokens tokens) {
         currentTokens.set(tokens);
+        refreshInFlight.set(null);
     }
 
     private String encode(String value) {

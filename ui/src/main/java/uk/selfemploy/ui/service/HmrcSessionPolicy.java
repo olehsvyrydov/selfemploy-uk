@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.service;
 
 import uk.selfemploy.hmrc.oauth.HmrcOAuthService;
+import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 
 import java.util.logging.Logger;
 
@@ -28,6 +29,34 @@ final class HmrcSessionPolicy {
 
     private HmrcSessionPolicy() {
         // Utility class
+    }
+
+    /**
+     * Records a refreshed session.
+     *
+     * <p>The write is reported when it fails rather than passing silently. HMRC invalidates a refresh
+     * token the moment it issues a new one, so a rotation that is not written down leaves the spent
+     * token as the only copy on disk — and the next start presents it, is told {@code invalid_grant},
+     * and the user is logged out by a local storage failure rather than by HMRC.
+     *
+     * @param tokens the refreshed session
+     */
+    static void persistRefreshedTokens(OAuthTokens tokens) {
+        boolean saved = SqliteDataStore.getInstance().saveOAuthTokens(
+            tokens.accessToken(),
+            tokens.refreshToken(),
+            tokens.expiresIn(),
+            tokens.tokenType(),
+            tokens.scope(),
+            tokens.issuedAt());
+
+        if (saved) {
+            LOG.info("OAuth tokens refreshed and persisted (expires in "
+                + tokens.getSecondsUntilExpiry() + "s)");
+        } else {
+            LOG.warning("The refreshed HMRC session could not be saved. It works for this run, but "
+                + "the stored session is now stale and a reconnect may be needed after a restart");
+        }
     }
 
     /**

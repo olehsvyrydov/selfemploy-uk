@@ -270,10 +270,7 @@ public class HmrcConnectionService {
 
         return oauthService.refreshAccessToken()
             .thenApply(newTokens -> {
-                if (!persistTokens(newTokens)) {
-                    LOG.warning("The refreshed session could not be saved; continuing with the "
-                        + "in-memory session for this run");
-                }
+                HmrcSessionPolicy.persistRefreshedTokens(newTokens);
                 markSessionVerified();
                 LOG.info("Session verified successfully (tokens refreshed)");
                 return VerificationResult.VERIFIED;
@@ -285,21 +282,6 @@ public class HmrcConnectionService {
             });
     }
 
-    /**
-     * Persists OAuth tokens to storage.
-     *
-     * @return true if the tokens were written, false if the write was skipped
-     */
-    private boolean persistTokens(OAuthTokens tokens) {
-        return SqliteDataStore.getInstance().saveOAuthTokens(
-            tokens.accessToken(),
-            tokens.refreshToken(),
-            tokens.expiresIn(),
-            tokens.tokenType(),
-            tokens.scope(),
-            tokens.issuedAt()
-        );
-    }
 
     /**
      * Marks the session as verified for this app run.
