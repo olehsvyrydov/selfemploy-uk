@@ -75,7 +75,8 @@ public class HmrcBusinessProfileService {
      *
      * @param outcome     what the response meant
      * @param businessId  the resolved business ID, or null when none was stored
-     * @param previousNino the NINO the connection was previously verified against, when it changed
+     * @param previousNino the NINO the previous connection used, set only for
+     *                     {@link Outcome#NINO_CHANGED_SANDBOX}; null for every other outcome
      * @param sandbox     whether the connection targeted the sandbox environment
      */
     public record Result(Outcome outcome, String businessId, String previousNino, boolean sandbox) {
@@ -158,7 +159,7 @@ public class HmrcBusinessProfileService {
                     return new Result(Outcome.NINO_CHANGED_SANDBOX,
                             SANDBOX_FALLBACK_BUSINESS_ID, connectedNino, true);
                 }
-                return new Result(Outcome.VERIFIED, SANDBOX_FALLBACK_BUSINESS_ID, nino, true);
+                return new Result(Outcome.VERIFIED, SANDBOX_FALLBACK_BUSINESS_ID, null, true);
             }
             LOG.warning("NINO not found in production - HTTP 404");
             return rejectVerification(Outcome.NINO_NOT_FOUND, false);
@@ -202,7 +203,7 @@ public class HmrcBusinessProfileService {
             store.saveNino(nino);
             store.saveConnectedNino(nino);
             LOG.info("Stored business ID: " + businessId);
-            return new Result(Outcome.VERIFIED, businessId, nino, sandbox);
+            return new Result(Outcome.VERIFIED, businessId, null, sandbox);
         }
         LOG.warning("No self-employment business found for the connecting NINO");
         return rejectVerification(Outcome.NO_BUSINESS_FOUND, sandbox);

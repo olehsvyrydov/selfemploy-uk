@@ -516,6 +516,8 @@ public final class SqliteDataStore {
      * @param tokenType the token type (usually "bearer")
      * @param scope the granted scopes
      * @param issuedAt when the tokens were issued
+     * @return true when the tokens were encrypted and written, false when the save failed; callers
+     *     must not treat a failed save as a persisted session
      */
     public synchronized boolean saveOAuthTokens(String accessToken, String refreshToken,
                                                 long expiresIn, String tokenType,

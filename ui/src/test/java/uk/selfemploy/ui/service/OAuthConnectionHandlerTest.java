@@ -254,8 +254,8 @@ class OAuthConnectionHandlerTest {
             );
 
             asyncHandler.startConnection();
-            latch.await(2, TimeUnit.SECONDS);
 
+            assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
             assertThat(resultRef.get().success()).isTrue();
             assertThat(resultRef.get().accessToken()).isEqualTo("test-access-token");
         }

@@ -1090,19 +1090,29 @@ public class HmrcConnectionWizardController implements Initializable {
     private void showProfileOutcome(HmrcBusinessProfileService.Result result) {
         switch (result.outcome()) {
             case VERIFIED, NINO_CHANGED_SANDBOX -> showSuccess();
-            case PROFILE_SYNC_PENDING -> showError("PROFILE_SYNC_PENDING",
+            case PROFILE_SYNC_PENDING -> showProfileError("PROFILE_SYNC_PENDING",
                 "You're connected to HMRC, but we couldn't verify your details just now. "
                     + "They'll sync automatically on your first submission, or you can try again.");
-            case NINO_MISMATCH -> showError("NINO_MISMATCH",
+            case NINO_MISMATCH -> showProfileError("NINO_MISMATCH",
                 "The National Insurance number you entered does not match your HMRC account. "
                     + "Please go back and check it, then try again.");
-            case NO_BUSINESS_FOUND -> showError("NO_BUSINESS_FOUND",
+            case NO_BUSINESS_FOUND -> showProfileError("NO_BUSINESS_FOUND",
                 "No self-employment business is registered with this National Insurance number. "
                     + "Make sure you have registered for Self Assessment with HMRC.");
-            case NINO_NOT_FOUND -> showError("NINO_NOT_FOUND",
+            case NINO_NOT_FOUND -> showProfileError("NINO_NOT_FOUND",
                 "No self-employment record was found for this National Insurance number. "
                     + "Make sure you have registered for Self Assessment with HMRC.");
         }
+    }
+
+    /**
+     * Shows a failed business-profile outcome. The view model was marked successful when OAuth
+     * completed, but the connection is only usable once the profile verifies, so the flag is cleared
+     * here to keep the returned view model consistent with the screen the wizard actually presents.
+     */
+    private void showProfileError(String errorCode, String errorMessage) {
+        viewModel.setConnectionSuccessful(false);
+        showError(errorCode, errorMessage);
     }
 
     /**
