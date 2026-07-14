@@ -32,7 +32,6 @@ import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
 import uk.selfemploy.ui.component.AppDialog;
@@ -873,7 +872,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     if (hmrcConnectionStatusLabel != null) {
                         hmrcConnectionStatusLabel.setText("Fetching business profile...");
                     }
-                    fetchBusinessProfile(nino, tokens.accessToken());
+                    fetchBusinessProfile(nino, tokens.accessToken(), true);
                     return;
                 }
                 launchConnectionWizard();
@@ -900,29 +899,39 @@ public class SettingsController implements Initializable, MainController.TaxYear
      * then fetches and stores the business profile so the connection can reach a submit-ready state.
      */
     private void launchConnectionWizard() {
-        AtomicBoolean connecting = new AtomicBoolean(false);
+        // The wizard's completion callback runs synchronously on this thread during showAndWait,
+        // so a plain holder is sufficient to record whether a connection actually started.
+        boolean[] connecting = {false};
         Stage owner = getOwnerWindow() instanceof Stage stage ? stage : null;
 
         HmrcConnectionWizardViewModel result = HmrcConnectionWizardController.showWizard(
             owner, (accessToken, nino) -> {
-                connecting.set(true);
+                connecting[0] = true;
                 completeWizardConnection(accessToken, nino);
             });
 
         if (result == null) {
             showError("Connection Failed",
                 "The HMRC connection screen could not be opened. Please try again.");
-        } else if (!connecting.get()) {
-            // Closed without connecting; reflect the current (unchanged) status. When a connection
-            // did start, completeWizardConnection owns the status via its asynchronous fetch.
+        }
+        if (!connecting[0]) {
+            // No connection started (the screen failed to open, or the user closed it without
+            // connecting). This method can be reached from quick-reconnect, which disables the
+            // button first, so re-enable it and reflect the current, unchanged status. When a
+            // connection did start, completeWizardConnection owns the button and status via its
+            // asynchronous fetch.
+            if (hmrcSetupButton != null) {
+                hmrcSetupButton.setDisable(false);
+            }
             updateHmrcConnectionStatus();
         }
     }
 
     /**
      * Completes a wizard connection by fetching and storing the business profile. Invoked from the
-     * wizard's success callback on the FX thread, so it starts the (asynchronous) profile fetch and
-     * lets {@code completeSetup} update the status when it finishes.
+     * wizard's success callback while the wizard is still showing its own success screen, so the
+     * profile fetch runs non-interactively: it updates the Settings status badge silently rather
+     * than stacking dialogs on top of the open wizard.
      */
     private void completeWizardConnection(String accessToken, String nino) {
         if (accessToken == null) {
@@ -934,18 +943,23 @@ public class SettingsController implements Initializable, MainController.TaxYear
         if (hmrcConnectionStatusLabel != null) {
             hmrcConnectionStatusLabel.setText("Fetching business profile...");
         }
-        fetchBusinessProfile(nino, accessToken);
+        fetchBusinessProfile(nino, accessToken, false);
     }
 
     /**
-     * Fetches business profile from HMRC to get the business ID.
-     */
-    /**
      * Fetches the business profile from HMRC to resolve and store the business ID. The {@code nino}
-     * is used for the lookup but is only persisted to Settings once HMRC has verified it, so a wrong
-     * NINO entered in the wizard never overwrites a previously-correct stored value.
+     * is used for the lookup but, in production, is only persisted to Settings once HMRC has verified
+     * it (a 200 response), so a wrong NINO entered in the wizard never overwrites a previously-correct
+     * stored value; in sandbox, where HMRC cannot verify a real NINO, the entered NINO is persisted so
+     * the app can operate against test data.
+     *
+     * <p>When {@code interactive} is {@code false} the method reports its outcome only through the
+     * Settings status badge (via {@link #completeSetup} and {@link #setNinoVerificationStatus}) and
+     * suppresses pop-up dialogs, so it can run behind the wizard's own success screen without stacking
+     * contradictory dialogs. When {@code true} (a direct reconnect from Settings) it also surfaces the
+     * outcome as a dialog.
      */
-    private void fetchBusinessProfile(String nino, String accessToken) {
+    private void fetchBusinessProfile(String nino, String accessToken, boolean interactive) {
         String apiBaseUrl = System.getProperty("HMRC_API_BASE_URL", "https://test-api.service.hmrc.gov.uk");
         String url = apiBaseUrl + "/individuals/business/self-employment/" + nino;
 
@@ -990,10 +1004,12 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             setNinoVerificationStatus(NinoVerificationStatus.VERIFIED);
                             String modeLabel = isSandbox ? "Sandbox" : "Production";
                             completeSetup(true, "Connected and verified (" + modeLabel + ")");
-                            showInfo("HMRC Connected (" + modeLabel + ")",
-                                    "Successfully connected to HMRC " + modeLabel + "!\n\n" +
-                                    "Your NINO and business profile have been verified.\n" +
-                                    "Business ID: " + businessId);
+                            if (interactive) {
+                                showInfo("HMRC Connected (" + modeLabel + ")",
+                                        "Successfully connected to HMRC " + modeLabel + "!\n\n" +
+                                        "Your NINO and business profile have been verified.\n" +
+                                        "Business ID: " + businessId);
+                            }
                         });
                     } else {
                         // Response OK but no business found - NINO may not have self-employment registered
@@ -1002,12 +1018,14 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             setNinoVerificationStatus(NinoVerificationStatus.FAILED);
                             SqliteDataStore.getInstance().saveNinoVerified(false);
                             completeSetup(false, "No business found");
-                            showError("NINO Verification Failed",
-                                    "No self-employment business is registered with this NINO.\n\n" +
-                                    "Please check:\n" +
-                                    "1. Your NINO is entered correctly\n" +
-                                    "2. You have registered for Self Assessment with HMRC\n" +
-                                    "3. Your self-employment is registered in your Government Gateway account");
+                            if (interactive) {
+                                showError("NINO Verification Failed",
+                                        "No self-employment business is registered with this NINO.\n\n" +
+                                        "Please check:\n" +
+                                        "1. Your NINO is entered correctly\n" +
+                                        "2. You have registered for Self Assessment with HMRC\n" +
+                                        "3. Your self-employment is registered in your Government Gateway account");
+                            }
                         });
                     }
                 } else if (response.statusCode() == 403 || response.statusCode() == 401) {
@@ -1017,9 +1035,11 @@ public class SettingsController implements Initializable, MainController.TaxYear
                         setNinoVerificationStatus(NinoVerificationStatus.FAILED);
                         SqliteDataStore.getInstance().saveNinoVerified(false);
                         completeSetup(false, "NINO mismatch");
-                        showError("NINO Verification Failed",
-                                "The NINO you entered doesn't match your HMRC account.\n\n" +
-                                "Please check that you entered the correct National Insurance Number.");
+                        if (interactive) {
+                            showError("NINO Verification Failed",
+                                    "The NINO you entered doesn't match your HMRC account.\n\n" +
+                                    "Please check that you entered the correct National Insurance Number.");
+                        }
                     });
                 } else if (response.statusCode() == 404) {
                     // NINO not found - check if sandbox mode
@@ -1041,52 +1061,50 @@ public class SettingsController implements Initializable, MainController.TaxYear
                                 !connectedNino.equalsIgnoreCase(currentNino);
 
                         if (ninoChanged) {
-                            // NINO changed - warn user that sandbox cannot verify
+                            // NINO changed - warn user that sandbox cannot verify. Sandbox cannot
+                            // confirm a real NINO, so it stays marked unverified; the entered NINO is
+                            // still persisted (and recorded as the connected NINO) so the app operates
+                            // against test data and subsequent reconnects with the same NINO don't
+                            // re-warn.
                             LOG.warning("NINO changed since the last connection - sandbox cannot verify correctness");
                             SqliteDataStore.getInstance().saveNinoVerified(false);
-
-                            // Update connected NINO to the new value so subsequent reconnects
-                            // with the same NINO won't trigger the warning again
                             SqliteDataStore.getInstance().saveNino(currentNino);
                             SqliteDataStore.getInstance().saveConnectedNino(currentNino);
                             LOG.info("Updated the connected NINO");
 
-                            // Verify the save worked
-                            String savedId = SqliteDataStore.getInstance().loadHmrcBusinessId();
-                            LOG.info("Verified saved HMRC business ID: " + savedId);
-
                             Platform.runLater(() -> {
                                 setNinoVerificationStatus(NinoVerificationStatus.NINO_CHANGED);
                                 completeSetup(true, "Connected (Sandbox) - NINO changed");
-                                showWarning("NINO Changed",
-                                        "Your NINO has changed since your last connection.\n\n" +
-                                        "Previous NINO: " + formatNinoForDisplay(connectedNino) + "\n" +
-                                        "Current NINO: " + formatNinoForDisplay(currentNino) + "\n\n" +
-                                        "WARNING: Sandbox mode cannot verify if your new NINO is correct.\n" +
-                                        "In production, your NINO will be validated against HMRC records.\n\n" +
-                                        "If this change was intentional, please verify your NINO is correct.");
+                                if (interactive) {
+                                    showWarning("NINO Changed",
+                                            "Your NINO has changed since your last connection.\n\n" +
+                                            "Previous NINO: " + formatNinoForDisplay(connectedNino) + "\n" +
+                                            "Current NINO: " + formatNinoForDisplay(currentNino) + "\n\n" +
+                                            "WARNING: Sandbox mode cannot verify if your new NINO is correct.\n" +
+                                            "In production, your NINO will be validated against HMRC records.\n\n" +
+                                            "If this change was intentional, please verify your NINO is correct.");
+                                }
                             });
                         } else {
-                            // First connection or same NINO - proceed normally
+                            // First connection or same NINO - proceed normally. Sandbox uses test
+                            // data, so the entered NINO is persisted and recorded as the connected
+                            // NINO for future change detection.
                             SqliteDataStore.getInstance().saveNinoVerified(true);
-                            // Save the connected NINO for future change detection
                             SqliteDataStore.getInstance().saveNino(currentNino);
                             SqliteDataStore.getInstance().saveConnectedNino(currentNino);
                             LOG.info("Saved the connected NINO for change detection");
 
-                            // Verify the save worked
-                            String savedId = SqliteDataStore.getInstance().loadHmrcBusinessId();
-                            LOG.info("Verified saved HMRC business ID: " + savedId);
-
                             Platform.runLater(() -> {
                                 setNinoVerificationStatus(NinoVerificationStatus.VERIFIED);
                                 completeSetup(true, "Connected (Sandbox)");
-                                showInfo("HMRC Sandbox Connected",
-                                        "Connected to HMRC Sandbox!\n\n" +
-                                        "Your OAuth authentication was successful.\n" +
-                                        "Business ID: " + fallbackBusinessId + "\n\n" +
-                                        "Note: Sandbox mode uses test data. Your real NINO will be " +
-                                        "verified when you switch to production mode.");
+                                if (interactive) {
+                                    showInfo("HMRC Sandbox Connected",
+                                            "Connected to HMRC Sandbox!\n\n" +
+                                            "Your OAuth authentication was successful.\n" +
+                                            "Business ID: " + fallbackBusinessId + "\n\n" +
+                                            "Note: Sandbox mode uses test data. Your real NINO will be " +
+                                            "verified when you switch to production mode.");
+                                }
                             });
                         }
                     } else {
@@ -1095,9 +1113,11 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             setNinoVerificationStatus(NinoVerificationStatus.FAILED);
                             SqliteDataStore.getInstance().saveNinoVerified(false);
                             completeSetup(false, "NINO not found");
-                            showError("NINO Verification Failed",
-                                    "No self-employment record found for this NINO.\n\n" +
-                                    "Make sure you have registered for Self Assessment with HMRC.");
+                            if (interactive) {
+                                showError("NINO Verification Failed",
+                                        "No self-employment record found for this NINO.\n\n" +
+                                        "Make sure you have registered for Self Assessment with HMRC.");
+                            }
                         });
                     }
                 } else {
@@ -1108,19 +1128,23 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             // 5xx server error: OAuth worked but HMRC had a temporary issue
                             setNinoVerificationStatus(NinoVerificationStatus.PROFILE_SYNC_PENDING);
                             completeSetup(true, "Connected (profile sync pending)");
-                            showWarning("HMRC Partially Connected",
-                                    "Connected to HMRC but business profile sync failed.\n\n" +
-                                    "Your OAuth authentication was successful, but HMRC returned a " +
-                                    "server error (" + statusCode + ") when fetching your profile.\n\n" +
-                                    "Your profile will sync automatically on your first submission, " +
-                                    "or you can try reconnecting later.");
+                            if (interactive) {
+                                showWarning("HMRC Partially Connected",
+                                        "Connected to HMRC but business profile sync failed.\n\n" +
+                                        "Your OAuth authentication was successful, but HMRC returned a " +
+                                        "server error (" + statusCode + ") when fetching your profile.\n\n" +
+                                        "Your profile will sync automatically on your first submission, " +
+                                        "or you can try reconnecting later.");
+                            }
                         } else {
                             // 4xx client error: different handling
                             setNinoVerificationStatus(NinoVerificationStatus.NOT_VERIFIED);
                             completeSetup(true, "Connected (profile sync pending)");
-                            showInfo("HMRC Connected",
-                                    "Connected to HMRC. Business profile will sync on first submission.\n\n" +
-                                    "Note: If you're using sandbox mode, ensure test data is set up.");
+                            if (interactive) {
+                                showInfo("HMRC Connected",
+                                        "Connected to HMRC. Business profile will sync on first submission.\n\n" +
+                                        "Note: If you're using sandbox mode, ensure test data is set up.");
+                            }
                         }
                     });
                 }
@@ -1129,12 +1153,14 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 Platform.runLater(() -> {
                     setNinoVerificationStatus(NinoVerificationStatus.PROFILE_SYNC_PENDING);
                     completeSetup(true, "Connected (profile sync pending)");
-                    showWarning("HMRC Partially Connected",
-                            "Connected to HMRC but business profile sync failed.\n\n" +
-                            "Your OAuth authentication was successful, but there was an error " +
-                            "fetching your profile.\n\n" +
-                            "Your profile will sync automatically on your first submission, " +
-                            "or you can try reconnecting later.");
+                    if (interactive) {
+                        showWarning("HMRC Partially Connected",
+                                "Connected to HMRC but business profile sync failed.\n\n" +
+                                "Your OAuth authentication was successful, but there was an error " +
+                                "fetching your profile.\n\n" +
+                                "Your profile will sync automatically on your first submission, " +
+                                "or you can try reconnecting later.");
+                    }
                 });
             }
         });

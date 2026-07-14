@@ -1093,8 +1093,8 @@ class HmrcConnectionWizardE2ETest extends ApplicationTest {
         }
 
         @Test
-        @DisplayName("E2E-12-024: Auto-saves NINO to Settings on Step 5")
-        void step5_autoSavesNinoToSettings() {
+        @DisplayName("E2E-12-024: Reaching Step 5 does not persist the NINO to Settings")
+        void step5_doesNotPersistNinoBeforeVerification() {
             // Given: No NINO in Settings initially
             assertThat(SqliteDataStore.getInstance().loadNino()).isNull();
 
@@ -1117,24 +1117,20 @@ class HmrcConnectionWizardE2ETest extends ApplicationTest {
                 viewModel.setCanProceed(true);
                 viewModel.goNext(); // to Step 5
 
-                // Simulate auto-save logic from loadStep5Content()
-                String wizardNino = viewModel.getNino();
-                if (wizardNino != null && !wizardNino.isEmpty()) {
-                    SqliteDataStore.getInstance().saveNino(wizardNino);
-                }
-
                 updateContentForStep();
             });
             WaitForAsyncUtils.waitForFxEvents();
 
-            // Then: NINO should be saved to Settings
+            // Then: the wizard reached Step 5 but did not persist the NINO. Persistence happens only
+            // after HMRC verifies the NINO during the business-profile fetch, so an unverified value
+            // never overwrites a previously-correct stored one.
             assertThat(viewModel.getCurrentStep()).isEqualTo(5);
-            assertThat(SqliteDataStore.getInstance().loadNino()).isEqualTo(TEST_NINO);
+            assertThat(SqliteDataStore.getInstance().loadNino()).isNull();
         }
 
         @Test
-        @DisplayName("E2E-12-025: Full sync cycle - Settings → Wizard → Settings (updated)")
-        void fullSyncCycle_settingsToWizardToSettings() {
+        @DisplayName("E2E-12-025: Wizard reads the NINO from Settings but does not write it back before verification")
+        void wizardReadsNinoButDoesNotWriteBackBeforeVerification() {
             // Given: Initial NINO in Settings
             SqliteDataStore.getInstance().saveNino(TEST_NINO);
 
@@ -1160,7 +1156,7 @@ class HmrcConnectionWizardE2ETest extends ApplicationTest {
             });
             WaitForAsyncUtils.waitForFxEvents();
 
-            // Step 3: Navigate to Step 5 and auto-save
+            // Step 3: Navigate to Step 5
             runOnFxThread(() -> {
                 viewModel.setCanProceed(true);
                 handleNext(); // to Step 3
@@ -1169,18 +1165,14 @@ class HmrcConnectionWizardE2ETest extends ApplicationTest {
                 viewModel.setCanProceed(true);
                 viewModel.goNext(); // to Step 5
 
-                // Auto-save NINO
-                String wizardNino = viewModel.getNino();
-                if (wizardNino != null && !wizardNino.isEmpty()) {
-                    SqliteDataStore.getInstance().saveNino(wizardNino);
-                }
-
                 updateContentForStep();
             });
             WaitForAsyncUtils.waitForFxEvents();
 
-            // Then: Settings should have corrected NINO
-            assertThat(SqliteDataStore.getInstance().loadNino()).isEqualTo(DIFFERENT_NINO);
+            // Then: Settings still holds the original NINO. The corrected value is only persisted
+            // after HMRC verifies it during the business-profile fetch, so the wizard reaching Step 5
+            // must not overwrite the stored NINO with an unverified one.
+            assertThat(SqliteDataStore.getInstance().loadNino()).isEqualTo(TEST_NINO);
         }
 
         @Test

@@ -299,6 +299,24 @@ public class OAuthConnectionHandler {
                 return;
             }
             persistOAuthTokens(tokens);
+
+            // Persisting is best-effort at the storage layer, so confirm the tokens actually
+            // landed before claiming success — otherwise the session would look connected but not
+            // survive a restart. Also re-check cancellation: if the user cancelled while we were
+            // writing, roll the tokens back so a cancelled flow leaves nothing behind.
+            if (cancelled.get()) {
+                SqliteDataStore.getInstance().clearOAuthTokens();
+                handleCancellation();
+                return;
+            }
+            if (!SqliteDataStore.getInstance().hasOAuthTokens()) {
+                LOG.warning("OAuth succeeded but tokens could not be saved");
+                reportStatus(ConnectionStatus.ERROR);
+                reportResult(OAuthResult.ofError("STORAGE_ERROR",
+                    "Connected to HMRC, but your session could not be saved. Please try again."));
+                connectionInProgress.set(false);
+                return;
+            }
             HmrcConnectionService.getInstance().markSessionVerified();
             reportStatus(ConnectionStatus.SUCCESS);
             persistProgress();
@@ -308,8 +326,9 @@ public class OAuthConnectionHandler {
     }
 
     /**
-     * Persists OAuth tokens to SqliteDataStore for session survival.
-     * Sprint 12: Tokens are now persisted so they survive app restart.
+     * Persists OAuth tokens to {@link SqliteDataStore} so the session survives an app restart.
+     * The write is best-effort; callers verify {@link SqliteDataStore#hasOAuthTokens()} before
+     * reporting success.
      */
     private void persistOAuthTokens(OAuthTokens tokens) {
         try {

@@ -1130,12 +1130,8 @@ public class HmrcConnectionWizardController implements Initializable {
         contentArea.setPadding(new Insets(20));
         contentArea.setAlignment(Pos.TOP_CENTER);
 
-        // Auto-save NINO to Settings (bidirectional sync)
-        String wizardNino = viewModel.getNino();
-        if (wizardNino != null && !wizardNino.isEmpty()) {
-            SqliteDataStore.getInstance().saveNino(wizardNino);
-            LOG.info("NINO saved to Settings from wizard");
-        }
+        // The NINO is not persisted here: it is saved only after HMRC verifies it during the
+        // business-profile fetch, so an unverified value never overwrites a known-good one.
 
         // Success card with large checkmark
         VBox successCard = createStep5SuccessCard();
@@ -1143,7 +1139,7 @@ public class HmrcConnectionWizardController implements Initializable {
         // What you can do now
         VBox nextStepsBox = createStep5NextStepsBox();
 
-        // Retention reminder (FIN-002)
+        // Retention reminder
         InfoCard retentionCard = new InfoCard(
             "INFO_CIRCLE",
             RETENTION_TITLE,
