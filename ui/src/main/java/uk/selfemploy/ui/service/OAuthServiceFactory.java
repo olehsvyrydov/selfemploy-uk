@@ -2,6 +2,7 @@ package uk.selfemploy.ui.service;
 
 import io.vertx.core.Vertx;
 import uk.selfemploy.hmrc.config.HmrcConfig;
+import uk.selfemploy.hmrc.exception.HmrcOAuthException;
 import uk.selfemploy.hmrc.oauth.*;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 
@@ -139,8 +140,8 @@ public final class OAuthServiceFactory {
     }
 
     /**
-     * Attempts to refresh tokens. If successful, persists the new tokens.
-     * If refresh fails, clears the stored tokens.
+     * Attempts to refresh tokens. If successful, persists the new tokens. If HMRC actually rejects
+     * the refresh token, clears the stored tokens; a transient failure keeps them for a later try.
      */
     private static void tryRefreshTokens(HmrcOAuthService service, OAuthTokens oldTokens) {
         try {
@@ -159,10 +160,34 @@ public final class OAuthServiceFactory {
             LOG.info("OAuth tokens refreshed and persisted (expires in " + newTokens.getSecondsUntilExpiry() + "s)");
 
         } catch (Exception e) {
-            LOG.warning("Failed to refresh OAuth tokens: " + e.getMessage() + " - clearing stored tokens");
-            SqliteDataStore.getInstance().clearOAuthTokens();
-            service.setTokens(null);
+            if (isRefreshTokenRejected(e)) {
+                LOG.warning("Refresh token rejected by HMRC - clearing stored tokens");
+                SqliteDataStore.getInstance().clearOAuthTokens();
+                service.setTokens(null);
+            } else {
+                LOG.log(Level.WARNING,
+                    "Could not refresh OAuth tokens (transient); keeping stored tokens", e);
+            }
         }
+    }
+
+    /**
+     * Whether a refresh failure means HMRC actually rejected the refresh token — an
+     * {@code invalid_grant} — so the stored token is dead and should be cleared. A transient or
+     * environmental failure (network error, timeout, HMRC 5xx, or an unavailable master key) is not
+     * a rejection: the still-valid refresh token must be kept for a later attempt.
+     *
+     * @param error the failure thrown by a refresh attempt (possibly wrapped)
+     * @return true only if the cause chain contains an {@code invalid_grant} rejection
+     */
+    static boolean isRefreshTokenRejected(Throwable error) {
+        for (Throwable cause = error; cause != null && cause != cause.getCause();
+             cause = cause.getCause()) {
+            if (cause instanceof HmrcOAuthException hmrcError) {
+                return hmrcError.getError() == HmrcOAuthException.OAuthError.INVALID_GRANT;
+            }
+        }
+        return false;
     }
 
     /**

@@ -115,17 +115,16 @@ public final class SqliteDataStore {
     }
 
     /**
-     * Ensures the data directory exists and that neither it nor the database is readable by other
-     * users of the machine. The database holds OAuth tokens and taxpayer identifiers, so the
-     * permissions are re-applied on every start rather than only at creation — directories created
-     * by earlier versions were left at the default umask.
+     * Creates the data directory (owner-only) if it does not yet exist. The database files
+     * themselves are restricted by {@link #restrictDatabaseFiles()} after
+     * {@link #initializeDatabase()} has created them; calling it here would be a no-op because the
+     * files do not exist yet.
      */
     private void ensureDirectoryExists() {
         Path parent = databasePath.getParent();
         if (parent != null) {
             AppDataDirectory.createRestricted(parent);
         }
-        restrictDatabaseFiles();
     }
 
     private void restrictDatabaseFiles() {
@@ -521,8 +520,23 @@ public final class SqliteDataStore {
     public synchronized void saveOAuthTokens(String accessToken, String refreshToken,
                                              long expiresIn, String tokenType,
                                              String scope, Instant issuedAt) {
-        saveEncrypted("oauth_access_token", accessToken);
-        saveEncrypted("oauth_refresh_token", refreshToken);
+        String encryptedAccess = encryptForStorage("oauth_access_token", accessToken);
+        String encryptedRefresh = encryptForStorage("oauth_refresh_token", refreshToken);
+
+        // All-or-nothing: if a token could not be encrypted (the master key is unavailable), skip
+        // the whole write rather than persist fresh expiry metadata against the old ciphertext,
+        // which would later be read back as a current-but-stale session. The in-memory session
+        // keeps working and the tokens are re-persisted on the next successful save. This is
+        // deliberately non-throwing because upstream token-lifecycle code treats a persistence
+        // exception as an expired session and responds by discarding valid tokens.
+        if ((accessToken != null && encryptedAccess == null)
+                || (refreshToken != null && encryptedRefresh == null)) {
+            LOG.warning("Skipping OAuth token persistence: tokens could not be encrypted at rest");
+            return;
+        }
+
+        saveSetting("oauth_access_token", encryptedAccess);
+        saveSetting("oauth_refresh_token", encryptedRefresh);
         saveSetting("oauth_expires_in", String.valueOf(expiresIn));
         saveSetting("oauth_token_type", tokenType);
         saveSetting("oauth_scope", scope);
@@ -531,22 +545,19 @@ public final class SqliteDataStore {
     }
 
     /**
-     * Persists a value encrypted at rest on a best-effort basis. A key-storage failure is logged
-     * and the write is skipped rather than propagated: callers such as {@link #saveOAuthTokens}
-     * previously wrote plaintext that could never fail, and upstream token-lifecycle code treats a
-     * persistence exception as an expired session and responds by discarding valid tokens. Keeping
-     * this non-throwing preserves the in-memory session; the value is re-persisted on the next
-     * successful save.
+     * Encrypts a value for storage, or returns null if it is null or the master key is currently
+     * unavailable. A null return for a non-null input signals the caller that encryption could not
+     * be performed, so it can skip persisting rather than fail.
      */
-    private void saveEncrypted(String key, String value) {
+    private String encryptForStorage(String key, String value) {
         if (value == null) {
-            saveSetting(key, null);
-            return;
+            return null;
         }
         try {
-            saveSetting(key, credentialEncryption.encrypt(value));
+            return credentialEncryption.encrypt(value);
         } catch (CredentialEncryptionException e) {
-            LOG.log(Level.WARNING, "Could not encrypt " + key + " for storage; left prior value", e);
+            LOG.log(Level.WARNING, "Could not encrypt " + key + " for storage", e);
+            return null;
         }
     }
 

@@ -287,11 +287,12 @@ public class HmrcConnectionService {
             })
             .exceptionally(ex -> {
                 LOG.log(Level.WARNING, "Session verification failed: " + ex.getMessage(), ex);
-                // Only discard stored tokens on a genuine refresh rejection. If no tokens were even
-                // loaded into memory (e.g. the master key was unavailable at startup, so
-                // loadOAuthTokens returned null), the encrypted tokens on disk are still valid and
-                // must be preserved for a later attempt rather than deleted here.
-                if (oauthService.getCurrentTokens() != null) {
+                // Only discard stored tokens when HMRC actually rejected the refresh token. A
+                // transient failure (network, timeout, HMRC 5xx) or an unavailable master key at
+                // startup (loadOAuthTokens returned null, so no tokens are in memory) leaves the
+                // encrypted tokens on disk valid, so they must be preserved for a later attempt.
+                if (oauthService.getCurrentTokens() != null
+                        && OAuthServiceFactory.isRefreshTokenRejected(ex)) {
                     SqliteDataStore.getInstance().clearOAuthTokens();
                 }
                 resetSessionVerification();

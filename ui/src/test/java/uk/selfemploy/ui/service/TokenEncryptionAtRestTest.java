@@ -110,8 +110,8 @@ class TokenEncryptionAtRestTest {
     }
 
     @Test
-    @DisplayName("persists best-effort: a save does not throw when the master key cannot encrypt")
-    void saveOAuthTokensIsBestEffortWhenKeyUnavailable() {
+    @DisplayName("skips the whole save (no stale metadata) when the master key cannot encrypt")
+    void saveOAuthTokensIsAllOrNothingWhenKeyUnavailable() throws Exception {
         Path dbPath = tempDir.resolve("tokens.db");
         CredentialEncryption failingEncrypt = new CredentialEncryption(
             new MasterKeyProvider(tempDir.resolve("master.key"))) {
@@ -123,8 +123,14 @@ class TokenEncryptionAtRestTest {
         SqliteDataStore store = new SqliteDataStore(dbPath, failingEncrypt);
 
         assertThatCode(() -> store.saveOAuthTokens(
-            ACCESS_TOKEN, REFRESH_TOKEN, 3600, "bearer", "read", Instant.now()))
+            ACCESS_TOKEN, REFRESH_TOKEN, 3600, "bearer", "read",
+            Instant.parse("2026-01-01T00:00:00Z")))
             .doesNotThrowAnyException();
+
+        // No token row and no expiry metadata: the two must never diverge, or a stale token would
+        // later read back as current.
+        assertThat(storedSetting(dbPath, "oauth_access_token")).isNull();
+        assertThat(storedSetting(dbPath, "oauth_issued_at")).isNull();
     }
 
     @Test
