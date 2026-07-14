@@ -1,8 +1,9 @@
 package uk.selfemploy.mcp;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -13,26 +14,45 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
 /**
  * MCP Server for automating JavaFX desktop applications.
  *
  * Provides tools for:
- * - Taking screenshots
+ * - Taking screenshots (returned as MCP image content so the model can see them)
+ * - Listing application windows
  * - Clicking at coordinates
  * - Typing text
  * - Scrolling
  * - Getting screen dimensions
+ *
+ * Wayland note: java.awt.Robot screen capture is unreliable in Wayland sessions
+ * (the JDK routes it through the desktop portal, which blocks on a permission
+ * dialog; the plain X11 path only sees a black root window). JavaFX apps run as
+ * XWayland clients, so on Wayland this server captures the target application
+ * window directly via `xwd` instead. Robot input (XTest) reaches XWayland
+ * windows, so clicks and typing work either way.
  */
 public class JavaFxMcpServer {
 
     private static final Gson GSON = new Gson();  // No pretty-printing - MCP requires single-line JSON (NDJSON)
-    private static final AtomicInteger requestId = new AtomicInteger(0);
+    private static final int MAX_IMAGE_WIDTH = 1568;
+    private static final long EXEC_TIMEOUT_MS = 10_000;
     private static Robot robot;
     private static PrintWriter out;
 
@@ -55,7 +75,7 @@ public class JavaFxMcpServer {
                         out.flush();
                     }
                 } catch (Exception e) {
-                    sendError(-1, "Parse error: " + e.getMessage());
+                    sendError(JsonNull.INSTANCE, "Parse error: " + e.getMessage());
                 }
             }
         } catch (AWTException e) {
@@ -72,55 +92,81 @@ public class JavaFxMcpServer {
 
         // Handle notifications (no id, no response expected)
         if (!request.has("id")) {
-            // Notifications like "notifications/initialized" don't need a response
             return null;
         }
 
-        int id = request.get("id").getAsInt();
+        JsonElement id = request.get("id");
 
         return switch (method) {
-            case "initialize" -> handleInitialize(id);
+            case "initialize" -> handleInitialize(id, request.getAsJsonObject("params"));
+            case "ping" -> createSuccessResponse(id, new JsonObject());
             case "tools/list" -> handleToolsList(id);
             case "tools/call" -> handleToolsCall(id, request.getAsJsonObject("params"));
+            case "resources/list" -> emptyListResponse(id, "resources");
+            case "prompts/list" -> emptyListResponse(id, "prompts");
             default -> createErrorResponse(id, -32601, "Method not found: " + method);
         };
     }
 
-    private static JsonObject handleInitialize(int id) {
+    private static JsonObject emptyListResponse(JsonElement id, String field) {
         JsonObject result = new JsonObject();
-        result.addProperty("protocolVersion", "2024-11-05");
+        result.add(field, new JsonArray());
+        return createSuccessResponse(id, result);
+    }
+
+    private static JsonObject handleInitialize(JsonElement id, JsonObject params) {
+        JsonObject result = new JsonObject();
+        String protocolVersion = "2024-11-05";
+        if (params != null && params.has("protocolVersion")) {
+            protocolVersion = params.get("protocolVersion").getAsString();
+        }
+        result.addProperty("protocolVersion", protocolVersion);
 
         JsonObject capabilities = new JsonObject();
-        JsonObject tools = new JsonObject();
-        capabilities.add("tools", tools);
+        capabilities.add("tools", new JsonObject());
         result.add("capabilities", capabilities);
 
         JsonObject serverInfo = new JsonObject();
         serverInfo.addProperty("name", "javafx-automation");
-        serverInfo.addProperty("version", "1.0.0");
+        serverInfo.addProperty("version", "1.1.0");
         result.add("serverInfo", serverInfo);
 
         return createSuccessResponse(id, result);
     }
 
-    private static JsonObject handleToolsList(int id) {
+    private static JsonObject handleToolsList(JsonElement id) {
         JsonArray tools = new JsonArray();
 
         // Screenshot tool
         JsonObject screenshot = new JsonObject();
         screenshot.addProperty("name", "screenshot");
-        screenshot.addProperty("description", "Take a screenshot of the entire screen or a region");
+        screenshot.addProperty("description",
+                "Take a screenshot and return it as an image. On Wayland this captures the target "
+                + "application window (default: the largest visible window, or use windowTitle); on X11 "
+                + "it captures the screen. Coordinates x/y/width/height select a region in SCREEN coordinates. "
+                + "The response text explains how to map image pixels back to screen coordinates for clicking.");
         JsonObject screenshotSchema = new JsonObject();
         screenshotSchema.addProperty("type", "object");
         JsonObject screenshotProps = new JsonObject();
-        addIntProperty(screenshotProps, "x", "X coordinate of the region (optional, default: 0)");
-        addIntProperty(screenshotProps, "y", "Y coordinate of the region (optional, default: 0)");
-        addIntProperty(screenshotProps, "width", "Width of the region (optional, default: full screen)");
-        addIntProperty(screenshotProps, "height", "Height of the region (optional, default: full screen)");
-        addStringProperty(screenshotProps, "savePath", "Optional path to save the screenshot as PNG");
+        addIntProperty(screenshotProps, "x", "X coordinate of the region in screen coordinates (optional)");
+        addIntProperty(screenshotProps, "y", "Y coordinate of the region in screen coordinates (optional)");
+        addIntProperty(screenshotProps, "width", "Width of the region (optional, default: full capture)");
+        addIntProperty(screenshotProps, "height", "Height of the region (optional, default: full capture)");
+        addStringProperty(screenshotProps, "windowTitle", "Capture the window whose title contains this text (case-insensitive, optional)");
+        addStringProperty(screenshotProps, "savePath", "Optional path to also save the screenshot as PNG");
         screenshotSchema.add("properties", screenshotProps);
         screenshot.add("inputSchema", screenshotSchema);
         tools.add(screenshot);
+
+        // List windows tool
+        JsonObject listWindows = new JsonObject();
+        listWindows.addProperty("name", "list_windows");
+        listWindows.addProperty("description", "List visible application windows with their titles, positions and sizes (screen coordinates)");
+        JsonObject listWindowsSchema = new JsonObject();
+        listWindowsSchema.addProperty("type", "object");
+        listWindowsSchema.add("properties", new JsonObject());
+        listWindows.add("inputSchema", listWindowsSchema);
+        tools.add(listWindows);
 
         // Click tool
         JsonObject click = new JsonObject();
@@ -235,66 +281,316 @@ public class JavaFxMcpServer {
         return createSuccessResponse(id, result);
     }
 
-    private static JsonObject handleToolsCall(int id, JsonObject params) {
+    private static JsonObject handleToolsCall(JsonElement id, JsonObject params) {
         String name = params.get("name").getAsString();
         JsonObject arguments = params.has("arguments") ? params.getAsJsonObject("arguments") : new JsonObject();
 
         try {
-            String result = switch (name) {
+            JsonArray contentArray = switch (name) {
                 case "screenshot" -> takeScreenshot(arguments);
-                case "click" -> click(arguments);
-                case "move_mouse" -> moveMouse(arguments);
-                case "type_text" -> typeText(arguments);
-                case "press_key" -> pressKey(arguments);
-                case "scroll" -> scroll(arguments);
-                case "get_screen_info" -> getScreenInfo();
-                case "wait" -> wait(arguments);
+                case "list_windows" -> textContent(listWindowsJson());
+                case "click" -> textContent(click(arguments));
+                case "move_mouse" -> textContent(moveMouse(arguments));
+                case "type_text" -> textContent(typeText(arguments));
+                case "press_key" -> textContent(pressKey(arguments));
+                case "scroll" -> textContent(scroll(arguments));
+                case "get_screen_info" -> textContent(getScreenInfo());
+                case "wait" -> textContent(wait(arguments));
                 default -> throw new IllegalArgumentException("Unknown tool: " + name);
             };
 
-            JsonObject content = new JsonObject();
-            content.addProperty("type", "text");
-            content.addProperty("text", result);
-
-            JsonArray contentArray = new JsonArray();
-            contentArray.add(content);
-
             JsonObject resultObj = new JsonObject();
             resultObj.add("content", contentArray);
-
             return createSuccessResponse(id, resultObj);
         } catch (Exception e) {
             return createErrorResponse(id, -32000, "Tool error: " + e.getMessage());
         }
     }
 
-    private static String takeScreenshot(JsonObject args) throws Exception {
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    // ------------------------------------------------------------------
+    // Screenshot
+    // ------------------------------------------------------------------
 
-        int x = args.has("x") ? args.get("x").getAsInt() : 0;
-        int y = args.has("y") ? args.get("y").getAsInt() : 0;
-        int width = args.has("width") ? args.get("width").getAsInt() : screenSize.width - x;
-        int height = args.has("height") ? args.get("height").getAsInt() : screenSize.height - y;
+    /** A captured image plus the screen coordinates of its top-left corner. */
+    private record Capture(BufferedImage image, int originX, int originY, String source) {}
 
-        Rectangle captureRect = new Rectangle(x, y, width, height);
-        BufferedImage screenshot = robot.createScreenCapture(captureRect);
+    private record WindowInfo(String id, String title, int x, int y, int width, int height) {}
 
-        // Save to file if path provided
-        if (args.has("savePath")) {
-            String savePath = args.get("savePath").getAsString();
-            File outputFile = new File(savePath);
-            outputFile.getParentFile().mkdirs();
-            ImageIO.write(screenshot, "png", outputFile);
-            return "Screenshot saved to: " + outputFile.getAbsolutePath() + " (size: " + width + "x" + height + ")";
+    private static JsonArray takeScreenshot(JsonObject args) throws Exception {
+        Capture capture = isWayland() ? captureWindow(args) : captureX11Screen(args);
+
+        BufferedImage image = capture.image();
+        // Crop to the requested region (screen coordinates), if any
+        if (args.has("x") || args.has("y") || args.has("width") || args.has("height")) {
+            int rx = args.has("x") ? args.get("x").getAsInt() : capture.originX();
+            int ry = args.has("y") ? args.get("y").getAsInt() : capture.originY();
+            int rw = args.has("width") ? args.get("width").getAsInt() : image.getWidth();
+            int rh = args.has("height") ? args.get("height").getAsInt() : image.getHeight();
+            Rectangle requested = new Rectangle(rx, ry, rw, rh);
+            Rectangle available = new Rectangle(capture.originX(), capture.originY(), image.getWidth(), image.getHeight());
+            Rectangle region = requested.intersection(available);
+            if (region.isEmpty()) {
+                throw new IllegalArgumentException("Requested region " + rectString(requested)
+                        + " does not overlap the captured area " + rectString(available));
+            }
+            image = image.getSubimage(region.x - capture.originX(), region.y - capture.originY(), region.width, region.height);
+            capture = new Capture(image, region.x, region.y, capture.source());
         }
 
-        // Return as base64
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(screenshot, "png", baos);
-        String base64 = Base64.getEncoder().encodeToString(baos.toByteArray());
+        // Save to file if requested
+        String savedNote = "";
+        if (args.has("savePath")) {
+            File outputFile = new File(args.get("savePath").getAsString());
+            if (outputFile.getParentFile() != null) {
+                outputFile.getParentFile().mkdirs();
+            }
+            ImageIO.write(image, "png", outputFile);
+            savedNote = " Saved to: " + outputFile.getAbsolutePath() + ".";
+        }
 
-        return "Screenshot taken (size: " + width + "x" + height + ")\nBase64 (first 100 chars): " + base64.substring(0, Math.min(100, base64.length())) + "...";
+        // Downscale large captures so responses stay small; report the mapping
+        int capturedWidth = image.getWidth();
+        int capturedHeight = image.getHeight();
+        BufferedImage outputImage = image;
+        if (capturedWidth > MAX_IMAGE_WIDTH) {
+            double scale = (double) MAX_IMAGE_WIDTH / capturedWidth;
+            outputImage = scaleImage(image, MAX_IMAGE_WIDTH, (int) Math.round(capturedHeight * scale));
+        }
+
+        double factorX = (double) capturedWidth / outputImage.getWidth();
+        double factorY = (double) capturedHeight / outputImage.getHeight();
+        String mapping = (factorX == 1.0 && factorY == 1.0)
+                ? String.format("screenX = %d + imageX, screenY = %d + imageY.", capture.originX(), capture.originY())
+                : String.format(Locale.ROOT, "screenX = %d + round(imageX * %.3f), screenY = %d + round(imageY * %.3f).",
+                        capture.originX(), factorX, capture.originY(), factorY);
+
+        String text = String.format("Screenshot of %s: %dx%d at screen position (%d, %d).%s To click on something in this image: %s",
+                capture.source(), capturedWidth, capturedHeight, capture.originX(), capture.originY(), savedNote, mapping);
+
+        JsonArray content = textContent(text);
+        content.add(imageContent(outputImage));
+        return content;
     }
+
+    /** X11 session: capture the screen with Robot; fall back to window capture on a blank result. */
+    private static Capture captureX11Screen(JsonObject args) throws Exception {
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        BufferedImage screenshot = robot.createScreenCapture(new Rectangle(0, 0, screenSize.width, screenSize.height));
+        if (!looksUniform(screenshot)) {
+            return new Capture(screenshot, 0, 0, "the screen");
+        }
+        // Blank capture (e.g. XWayland root window) - try window capture instead
+        try {
+            return captureWindow(args);
+        } catch (Exception e) {
+            return new Capture(screenshot, 0, 0, "the screen (warning: capture looks blank and window capture failed: " + e.getMessage() + ")");
+        }
+    }
+
+    /** Capture one application window via xwd (works for XWayland clients such as JavaFX apps). */
+    private static Capture captureWindow(JsonObject args) throws Exception {
+        String titleFilter = args.has("windowTitle") ? args.get("windowTitle").getAsString() : null;
+        List<WindowInfo> candidates = selectWindows(titleFilter);
+        Exception lastError = null;
+        // A window that is partially offscreen makes xwd fail with BadMatch - try the next candidate
+        for (WindowInfo window : candidates) {
+            try {
+                byte[] xwdData = exec("xwd", "-id", window.id(), "-silent");
+                BufferedImage image = decodeXwd(xwdData);
+                return new Capture(image, window.x(), window.y(), "window \"" + window.title() + "\" (" + window.id() + ")");
+            } catch (Exception e) {
+                lastError = e;
+            }
+        }
+        throw new IllegalStateException("Could not capture any window ("
+                + candidates.stream().map(WindowInfo::title).toList() + "): "
+                + (lastError != null ? lastError.getMessage() : "no candidates"), lastError);
+    }
+
+    /** Candidate windows for capture, largest first, optionally filtered by title. */
+    private static List<WindowInfo> selectWindows(String titleFilter) throws Exception {
+        List<WindowInfo> windows = new ArrayList<>(listWindows());
+        if (windows.isEmpty()) {
+            throw new IllegalStateException("No visible application windows found (xwininfo)");
+        }
+        if (titleFilter != null) {
+            String needle = titleFilter.toLowerCase(Locale.ROOT);
+            List<String> allTitles = windows.stream().map(WindowInfo::title).toList();
+            windows.removeIf(w -> !w.title().toLowerCase(Locale.ROOT).contains(needle));
+            if (windows.isEmpty()) {
+                throw new IllegalArgumentException("No visible window with title containing \"" + titleFilter + "\". Visible: " + allTitles);
+            }
+        }
+        windows.sort(Comparator.comparingLong((WindowInfo w) -> (long) w.width() * w.height()).reversed());
+        return windows;
+    }
+
+    private static final Pattern WINDOW_LINE = Pattern.compile(
+            "^\\s*(0x[0-9a-fA-F]+)\\s+\"(.*)\":\\s+\\(([^)]*)\\)\\s+(\\d+)x(\\d+)\\+(-?\\d+)\\+(-?\\d+)\\s+\\+(-?\\d+)\\+(-?\\d+)\\s*$");
+
+    /** Visible, reasonably sized, titled top-level windows from xwininfo. */
+    private static List<WindowInfo> listWindows() throws Exception {
+        String tree = new String(exec("xwininfo", "-root", "-tree"), StandardCharsets.UTF_8);
+        List<WindowInfo> windows = new ArrayList<>();
+        for (String line : tree.split("\n")) {
+            Matcher m = WINDOW_LINE.matcher(line);
+            if (!m.matches()) {
+                continue;
+            }
+            String id = m.group(1);
+            String title = m.group(2);
+            String wmClass = m.group(3);
+            int width = Integer.parseInt(m.group(4));
+            int height = Integer.parseInt(m.group(5));
+            int absX = Integer.parseInt(m.group(8));
+            int absY = Integer.parseInt(m.group(9));
+            if (title.isBlank() || width < 100 || height < 50) {
+                continue;
+            }
+            // Windows without a WM class are desktop infrastructure (mutter guard
+            // window, GNOME Shell, ...); mutter-x11-frames are decoration wrappers.
+            if (wmClass.isBlank() || wmClass.contains("mutter-x11-frames")) {
+                continue;
+            }
+            if (isViewable(id)) {
+                windows.add(new WindowInfo(id, title, absX, absY, width, height));
+            }
+        }
+        return windows;
+    }
+
+    private static boolean isViewable(String windowId) {
+        try {
+            String stats = new String(exec("xwininfo", "-id", windowId, "-stats"), StandardCharsets.UTF_8);
+            return stats.contains("IsViewable");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static String listWindowsJson() throws Exception {
+        JsonArray array = new JsonArray();
+        for (WindowInfo w : listWindows()) {
+            JsonObject o = new JsonObject();
+            o.addProperty("id", w.id());
+            o.addProperty("title", w.title());
+            o.addProperty("x", w.x());
+            o.addProperty("y", w.y());
+            o.addProperty("width", w.width());
+            o.addProperty("height", w.height());
+            array.add(o);
+        }
+        return GSON.toJson(array);
+    }
+
+    /**
+     * Decode an XWD (X Window Dump) file into a BufferedImage.
+     * Supports the common case: ZPixmap, depth 24, 32 or 24 bits per pixel.
+     */
+    private static BufferedImage decodeXwd(byte[] data) {
+        ByteBuffer header = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN);
+        int headerSize = header.getInt(0);
+        int pixmapFormat = header.getInt(8);
+        int width = header.getInt(16);
+        int height = header.getInt(20);
+        int byteOrder = header.getInt(28); // 0 = LSBFirst, 1 = MSBFirst
+        int bitsPerPixel = header.getInt(44);
+        int bytesPerLine = header.getInt(48);
+        int redMask = header.getInt(56);
+        int greenMask = header.getInt(60);
+        int blueMask = header.getInt(64);
+        int ncolors = header.getInt(76);
+
+        if (pixmapFormat != 2 || (bitsPerPixel != 32 && bitsPerPixel != 24)) {
+            throw new IllegalStateException("Unsupported XWD format: pixmapFormat=" + pixmapFormat + ", bitsPerPixel=" + bitsPerPixel);
+        }
+
+        int pixelOffset = headerSize + ncolors * 12;
+        int bytesPerPixel = bitsPerPixel / 8;
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int row = 0; row < height; row++) {
+            int rowStart = pixelOffset + row * bytesPerLine;
+            for (int col = 0; col < width; col++) {
+                int p = rowStart + col * bytesPerPixel;
+                int pixel = 0;
+                if (byteOrder == 0) { // LSBFirst
+                    for (int b = bytesPerPixel - 1; b >= 0; b--) {
+                        pixel = (pixel << 8) | (data[p + b] & 0xFF);
+                    }
+                } else { // MSBFirst
+                    for (int b = 0; b < bytesPerPixel; b++) {
+                        pixel = (pixel << 8) | (data[p + b] & 0xFF);
+                    }
+                }
+                int r = extractChannel(pixel, redMask);
+                int g = extractChannel(pixel, greenMask);
+                int b = extractChannel(pixel, blueMask);
+                image.setRGB(col, row, (r << 16) | (g << 8) | b);
+            }
+        }
+        return image;
+    }
+
+    private static int extractChannel(int pixel, int mask) {
+        if (mask == 0) {
+            return 0;
+        }
+        return (pixel & mask) >>> Integer.numberOfTrailingZeros(mask);
+    }
+
+    private static boolean isWayland() {
+        return System.getenv("WAYLAND_DISPLAY") != null
+                || "wayland".equalsIgnoreCase(System.getenv("XDG_SESSION_TYPE"));
+    }
+
+    /** True if a sparse sample of the image is a single uniform color (blank/black capture). */
+    private static boolean looksUniform(BufferedImage image) {
+        int first = image.getRGB(0, 0);
+        int stepX = Math.max(1, image.getWidth() / 16);
+        int stepY = Math.max(1, image.getHeight() / 16);
+        for (int y = 0; y < image.getHeight(); y += stepY) {
+            for (int x = 0; x < image.getWidth(); x += stepX) {
+                if (image.getRGB(x, y) != first) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static BufferedImage scaleImage(BufferedImage source, int width, int height) {
+        BufferedImage scaled = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = scaled.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.drawImage(source, 0, 0, width, height, null);
+        g.dispose();
+        return scaled;
+    }
+
+    private static String rectString(Rectangle r) {
+        return r.width + "x" + r.height + " at (" + r.x + ", " + r.y + ")";
+    }
+
+    /** Run an external command and return its stdout; fails on non-zero exit or timeout. */
+    private static byte[] exec(String... command) throws Exception {
+        Process process = new ProcessBuilder(command).start();
+        try (InputStream stdout = process.getInputStream()) {
+            byte[] output = stdout.readAllBytes();
+            if (!process.waitFor(EXEC_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                process.destroyForcibly();
+                throw new IOException(command[0] + " timed out after " + EXEC_TIMEOUT_MS + " ms");
+            }
+            if (process.exitValue() != 0) {
+                String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+                throw new IOException(command[0] + " failed (exit " + process.exitValue() + "): " + stderr);
+            }
+            return output;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Input tools
+    // ------------------------------------------------------------------
 
     private static String click(JsonObject args) {
         int x = args.get("x").getAsInt();
@@ -455,14 +751,38 @@ public class JavaFxMcpServer {
         info.addProperty("screenHeight", screenSize.height);
         info.addProperty("mouseX", mousePos.x);
         info.addProperty("mouseY", mousePos.y);
+        info.addProperty("sessionType", isWayland() ? "wayland" : "x11");
 
         return GSON.toJson(info);
     }
 
     private static String wait(JsonObject args) {
-        int ms = args.get("ms").getAsInt();
+        int ms = Math.min(args.get("ms").getAsInt(), 60_000); // Robot.delay caps at 60s
         robot.delay(ms);
         return "Waited " + ms + " milliseconds";
+    }
+
+    // ------------------------------------------------------------------
+    // JSON-RPC / MCP plumbing
+    // ------------------------------------------------------------------
+
+    private static JsonArray textContent(String text) {
+        JsonObject content = new JsonObject();
+        content.addProperty("type", "text");
+        content.addProperty("text", text);
+        JsonArray array = new JsonArray();
+        array.add(content);
+        return array;
+    }
+
+    private static JsonObject imageContent(BufferedImage image) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", baos);
+        JsonObject content = new JsonObject();
+        content.addProperty("type", "image");
+        content.addProperty("data", Base64.getEncoder().encodeToString(baos.toByteArray()));
+        content.addProperty("mimeType", "image/png");
+        return content;
     }
 
     private static void addStringProperty(JsonObject props, String name, String description) {
@@ -479,18 +799,18 @@ public class JavaFxMcpServer {
         props.add(name, prop);
     }
 
-    private static JsonObject createSuccessResponse(int id, JsonObject result) {
+    private static JsonObject createSuccessResponse(JsonElement id, JsonObject result) {
         JsonObject response = new JsonObject();
         response.addProperty("jsonrpc", "2.0");
-        response.addProperty("id", id);
+        response.add("id", id);
         response.add("result", result);
         return response;
     }
 
-    private static JsonObject createErrorResponse(int id, int code, String message) {
+    private static JsonObject createErrorResponse(JsonElement id, int code, String message) {
         JsonObject response = new JsonObject();
         response.addProperty("jsonrpc", "2.0");
-        response.addProperty("id", id);
+        response.add("id", id);
         JsonObject error = new JsonObject();
         error.addProperty("code", code);
         error.addProperty("message", message);
@@ -498,7 +818,7 @@ public class JavaFxMcpServer {
         return response;
     }
 
-    private static void sendError(int id, String message) {
+    private static void sendError(JsonElement id, String message) {
         out.println(GSON.toJson(createErrorResponse(id, -32000, message)));
         out.flush();
     }
