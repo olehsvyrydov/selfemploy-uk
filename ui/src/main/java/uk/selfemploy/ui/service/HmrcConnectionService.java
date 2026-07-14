@@ -399,7 +399,23 @@ public class HmrcConnectionService {
     public boolean canQuickReconnect() {
         String businessId = SqliteDataStore.getInstance().loadHmrcBusinessId();
         return SqliteDataStore.getInstance().hasOAuthTokens()
-            && businessId != null && !businessId.isBlank();
+            && businessId != null && !businessId.isBlank()
+            && !ninoChanged();
+    }
+
+    /**
+     * Whether the NINO in Settings differs from the one the current connection was verified
+     * against. A changed NINO must be re-verified against HMRC via a business-profile fetch, which
+     * a silent token refresh does not do, so a quick reconnect is not sufficient.
+     *
+     * @return true if the current NINO differs from the connected one
+     */
+    private boolean ninoChanged() {
+        String connectedNino = SqliteDataStore.getInstance().loadConnectedNino();
+        String currentNino = SqliteDataStore.getInstance().loadNino();
+        return connectedNino != null && !connectedNino.isBlank()
+            && currentNino != null && !currentNino.isBlank()
+            && !connectedNino.equalsIgnoreCase(currentNino);
     }
 
     // === Status Text Generation (Unified Terminology) ===

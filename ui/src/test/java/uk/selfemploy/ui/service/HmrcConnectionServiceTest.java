@@ -832,5 +832,29 @@ class HmrcConnectionServiceTest {
 
             assertThat(service.canQuickReconnect()).isFalse();
         }
+
+        @Test
+        @DisplayName("is not eligible when the NINO changed, which needs re-verification")
+        void notEligibleWhenNinoChanged() {
+            SqliteDataStore.getInstance().saveHmrcBusinessId("XAIS12345678901");
+            SqliteDataStore.getInstance().saveOAuthTokens(
+                "access", "refresh", 14400, "bearer", "scope", java.time.Instant.now());
+            SqliteDataStore.getInstance().saveConnectedNino("AB123456C");
+            SqliteDataStore.getInstance().saveNino("CD654321B");
+
+            assertThat(service.canQuickReconnect()).isFalse();
+        }
+
+        @Test
+        @DisplayName("stays eligible when the NINO is unchanged")
+        void eligibleWhenNinoUnchanged() {
+            SqliteDataStore.getInstance().saveHmrcBusinessId("XAIS12345678901");
+            SqliteDataStore.getInstance().saveOAuthTokens(
+                "access", "refresh", 14400, "bearer", "scope", java.time.Instant.now());
+            SqliteDataStore.getInstance().saveConnectedNino("AB123456C");
+            SqliteDataStore.getInstance().saveNino("AB123456C");
+
+            assertThat(service.canQuickReconnect()).isTrue();
+        }
     }
 }

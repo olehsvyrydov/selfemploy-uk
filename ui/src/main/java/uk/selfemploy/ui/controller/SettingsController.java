@@ -29,6 +29,9 @@ import uk.selfemploy.core.export.ImportResult;
 import uk.selfemploy.core.export.ImportType;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
+import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
+import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
+
 import java.util.concurrent.atomic.AtomicReference;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
@@ -844,10 +847,12 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     /**
-     * Refreshes an existing session without the full wizard. Falls back to the wizard when the
-     * stored session can no longer be refreshed (a genuine rejection).
+     * Refreshes an existing session without the full wizard. Distinguishes a transient failure
+     * (network, HMRC 5xx) — where the stored tokens survive and the user can simply retry — from a
+     * genuine rejection, where the tokens are cleared and a full re-connect is required.
      */
     private void quickReconnect(HmrcConnectionService connectionService) {
+        String originalButtonText = hmrcSetupButton != null ? hmrcSetupButton.getText() : null;
         if (hmrcSetupButton != null) {
             hmrcSetupButton.setDisable(true);
             hmrcSetupButton.setText("Reconnecting...");
@@ -859,36 +864,70 @@ public class SettingsController implements Initializable, MainController.TaxYear
         connectionService.verifySession().whenComplete((result, error) -> Platform.runLater(() -> {
             if (hmrcSetupButton != null) {
                 hmrcSetupButton.setDisable(false);
+                if (originalButtonText != null) {
+                    hmrcSetupButton.setText(originalButtonText);
+                }
             }
+            updateHmrcConnectionStatus();
+
             if (error == null && result == HmrcConnectionService.VerificationResult.VERIFIED) {
-                updateHmrcConnectionStatus();
                 showInfo("Reconnected", "Your HMRC session has been refreshed.");
+            } else if (connectionService.canQuickReconnect()) {
+                // Stored tokens are still present, so this was a transient failure rather than a
+                // rejection: let the user retry instead of forcing a full re-authentication.
+                showWarning("Couldn't Reconnect",
+                    "We couldn't reach HMRC just now. Please check your connection and try again.");
             } else {
-                LOG.info("Quick reconnect did not verify the session; launching the full wizard");
+                LOG.info("Session refresh was rejected; launching the full connection wizard");
                 launchConnectionWizard();
             }
         }));
     }
 
     /**
-     * Launches the guided connection wizard. The wizard performs the OAuth flow and, on success,
-     * hands back the access token; once it closes we complete setup by fetching and storing the
-     * business profile the wizard does not, so the connection can reach a submit-ready state.
+     * Launches the guided connection wizard. The wizard performs the OAuth flow and collects the
+     * NINO; once it closes, if the connection succeeded, we persist the NINO and complete setup by
+     * fetching and storing the business profile the wizard does not, so the connection can reach a
+     * submit-ready state.
      */
     private void launchConnectionWizard() {
-        AtomicReference<String> accessToken = new AtomicReference<>();
-
+        AtomicReference<String> tokenFromCallback = new AtomicReference<>();
         Stage owner = getOwnerWindow() instanceof Stage stage ? stage : null;
-        HmrcConnectionWizardController.showWizard(owner, accessToken::set);
 
-        String token = accessToken.get();
+        HmrcConnectionWizardViewModel result =
+            HmrcConnectionWizardController.showWizard(owner, tokenFromCallback::set);
+
+        if (result == null || !result.isConnectionSuccessful()) {
+            updateHmrcConnectionStatus();
+            return;
+        }
+
+        // The wizard only auto-saves the NINO on its final step, which the user may not have
+        // reached; persist it now so the business-profile lookup below can resolve it.
+        String wizardNino = result.getNino();
+        if (wizardNino != null && !wizardNino.isBlank()) {
+            SqliteDataStore.getInstance().saveNino(wizardNino);
+        }
+
+        // Prefer the token from the success callback; fall back to the authenticated session in
+        // case the dialog closed before the delayed success callback delivered it.
+        String token = tokenFromCallback.get();
+        if (token == null) {
+            OAuthTokens current = OAuthServiceFactory.getOAuthService().getCurrentTokens();
+            token = current != null ? current.accessToken() : null;
+        }
+
         if (token != null) {
             if (hmrcConnectionStatusLabel != null) {
                 hmrcConnectionStatusLabel.setText("Fetching business profile...");
             }
+            // fetchBusinessProfile runs asynchronously and calls completeSetup, which updates the
+            // status when it finishes; do not overwrite the label here.
             fetchBusinessProfile(token);
+        } else {
+            LOG.warning("Wizard reported a successful connection but no access token was available");
+            updateHmrcConnectionStatus();
         }
-        updateHmrcConnectionStatus();
     }
 
     /**
