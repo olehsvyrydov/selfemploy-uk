@@ -2261,17 +2261,9 @@
     -fx-text-fill: #374151;
 }
 
-/* High contrast focus mode for accessibility */
-@media (prefers-contrast: high) {
-    .accessible-card:focused,
-    .metric-card:focused,
-    .summary-card:focused,
-    .feature-card:focused {
-        -fx-border-color: #000000;
-        -fx-border-width: 4;
-        -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.8), 8, 0, 0, 0);
-    }
-}
+/* High-contrast focus styles used to live here behind @media (prefers-contrast: high). JavaFX has no
+   such media feature, so the block never applied and only produced a CSS parse warning. Reinstating
+   high-contrast support needs a Java-side toggle (Platform.getPreferences) adding a style class. */
 
 /* ===== Guided tour overlay ===== */
 .tour-card {
