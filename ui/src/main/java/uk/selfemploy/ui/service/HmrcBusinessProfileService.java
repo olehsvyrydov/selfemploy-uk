@@ -184,13 +184,13 @@ public class HmrcBusinessProfileService {
             return persistPending(nino, sandbox);
         }
 
-        // readTree does not throw for an empty or blank body — it returns a missing/null node — so
-        // guard for the "no parseable content" case explicitly and treat it as sync-pending rather
-        // than a definitive "no business" that would wipe a verified profile. Any body that actually
-        // parsed (including an empty object {} or an empty array) is a real response and falls
-        // through to extractBusinessId, so a genuine no-business result still clears the profile.
-        if (root == null || root.isMissingNode() || root.isNull()) {
-            LOG.warning("200 response body was empty or blank; treating as sync-pending");
+        // Only a JSON object or array is a real business-list response. An empty/blank body parses to
+        // a missing/null node, and an unexpected scalar (e.g. "OK", a number) is not a business list;
+        // treat both as sync-pending rather than a definitive "no business" that would wipe a verified
+        // profile. A parsed object or array — including an empty one — falls through to extraction, so
+        // a genuine no-business result still clears the profile.
+        if (root == null || !root.isContainerNode()) {
+            LOG.warning("200 response body was empty or not a JSON object/array; treating as sync-pending");
             return persistPending(nino, sandbox);
         }
 
@@ -254,18 +254,31 @@ public class HmrcBusinessProfileService {
     }
 
     private static String extractBusinessId(JsonNode root) {
-        JsonNode businesses = root.path("selfEmployments");
-        if (businesses.isArray()) {
-            for (JsonNode business : businesses) {
+        // Documented shape: { "selfEmployments": [ { "businessId": ... } ] }.
+        String id = firstBusinessIdIn(root.path("selfEmployments"));
+        if (id != null) {
+            return id;
+        }
+        // Tolerate a top-level array of businesses, or a direct businessId field.
+        id = firstBusinessIdIn(root);
+        if (id != null) {
+            return id;
+        }
+        String direct = root.path("businessId").asText(null);
+        if (direct != null && direct.matches(BUSINESS_ID_PATTERN)) {
+            return direct;
+        }
+        return null;
+    }
+
+    private static String firstBusinessIdIn(JsonNode arrayNode) {
+        if (arrayNode != null && arrayNode.isArray()) {
+            for (JsonNode business : arrayNode) {
                 String id = business.path("businessId").asText(null);
                 if (id != null && id.matches(BUSINESS_ID_PATTERN)) {
                     return id;
                 }
             }
-        }
-        String direct = root.path("businessId").asText(null);
-        if (direct != null && direct.matches(BUSINESS_ID_PATTERN)) {
-            return direct;
         }
         return null;
     }

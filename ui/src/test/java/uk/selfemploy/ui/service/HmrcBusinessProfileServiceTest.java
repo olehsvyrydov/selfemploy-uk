@@ -163,6 +163,30 @@ class HmrcBusinessProfileServiceTest {
         }
 
         @Test
+        @DisplayName("a top-level array of businesses is understood and verifies")
+        void topLevelArrayOfBusinessesVerifies() {
+            Result result = service.applyResponse(200,
+                    "[{\"businessId\":\"XAIS12345678901\"}]", NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.VERIFIED);
+            assertThat(result.businessId()).isEqualTo("XAIS12345678901");
+            assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
+        }
+
+        @Test
+        @DisplayName("an unexpected scalar body is sync-pending and does not wipe a verified profile")
+        void scalarBodyIsSyncPending() {
+            store().saveHmrcBusinessId("XAIS12345678901");
+            store().saveConnectedNino(NINO);
+
+            Result result = service.applyResponse(200, "\"OK\"", NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
+            assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
+            assertThat(store().loadConnectedNino()).isEqualTo(NINO);
+        }
+
+        @Test
         @DisplayName("a transient error does not overwrite a different NINO already on file")
         void transientErrorDoesNotOverwriteDifferentNino() {
             store().saveNino(OTHER_NINO);
