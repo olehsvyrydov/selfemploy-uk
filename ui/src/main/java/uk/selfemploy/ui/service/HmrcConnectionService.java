@@ -400,7 +400,7 @@ public class HmrcConnectionService {
         String businessId = SqliteDataStore.getInstance().loadHmrcBusinessId();
         return SqliteDataStore.getInstance().hasOAuthTokens()
             && businessId != null && !businessId.isBlank()
-            && !ninoChanged();
+            && !isNinoChangedSinceConnection();
     }
 
     /**
@@ -410,7 +410,7 @@ public class HmrcConnectionService {
      *
      * @return true if the current NINO differs from the connected one
      */
-    private boolean ninoChanged() {
+    public boolean isNinoChangedSinceConnection() {
         String connectedNino = SqliteDataStore.getInstance().loadConnectedNino();
         String currentNino = SqliteDataStore.getInstance().loadNino();
         return connectedNino != null && !connectedNino.isBlank()

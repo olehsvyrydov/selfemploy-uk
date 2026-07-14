@@ -289,27 +289,20 @@ public class OAuthConnectionHandler {
         LOG.info("OAuth connection successful");
         reportStatus(ConnectionStatus.COMPLETING);
 
-        // Persist and report success together after the brief "completing" delay, and only if the
-        // user has not cancelled in the meantime. Persisting the tokens or marking the session
-        // verified before this check would leave them behind for a flow the user then cancelled,
-        // and reporting success after a cancel would connect against the user's wishes.
+        // Persist and report success after the brief "completing" delay. Cancellation is honoured
+        // only up to this point: once OAuth has delivered tokens the connection has materially
+        // happened, so a cancel arriving during the cosmetic delay skips persistence entirely (no
+        // tokens are written, nothing to undo) rather than trying to roll back — a rollback would
+        // clear ALL tokens and could destroy a pre-existing, still-valid session on a re-auth.
         scheduler.schedule(() -> {
             if (cancelled.get()) {
                 handleCancellation();
                 return;
             }
-            persistOAuthTokens(tokens);
-
-            // Persisting is best-effort at the storage layer, so confirm the tokens actually
-            // landed before claiming success — otherwise the session would look connected but not
-            // survive a restart. Also re-check cancellation: if the user cancelled while we were
-            // writing, roll the tokens back so a cancelled flow leaves nothing behind.
-            if (cancelled.get()) {
-                SqliteDataStore.getInstance().clearOAuthTokens();
-                handleCancellation();
-                return;
-            }
-            if (!SqliteDataStore.getInstance().hasOAuthTokens()) {
+            // The storage write is best-effort, so confirm it actually persisted (e.g. the master
+            // key may be unavailable) before claiming success — otherwise the session would look
+            // connected but not survive a restart.
+            if (!persistOAuthTokens(tokens)) {
                 LOG.warning("OAuth succeeded but tokens could not be saved");
                 reportStatus(ConnectionStatus.ERROR);
                 reportResult(OAuthResult.ofError("STORAGE_ERROR",
@@ -327,12 +320,13 @@ public class OAuthConnectionHandler {
 
     /**
      * Persists OAuth tokens to {@link SqliteDataStore} so the session survives an app restart.
-     * The write is best-effort; callers verify {@link SqliteDataStore#hasOAuthTokens()} before
-     * reporting success.
+     *
+     * @return {@code true} if the tokens were written, {@code false} if the write was skipped or
+     *         failed (e.g. the master key was unavailable)
      */
-    private void persistOAuthTokens(OAuthTokens tokens) {
+    private boolean persistOAuthTokens(OAuthTokens tokens) {
         try {
-            SqliteDataStore.getInstance().saveOAuthTokens(
+            boolean saved = SqliteDataStore.getInstance().saveOAuthTokens(
                 tokens.accessToken(),
                 tokens.refreshToken(),
                 tokens.expiresIn(),
@@ -340,9 +334,13 @@ public class OAuthConnectionHandler {
                 tokens.scope(),
                 tokens.issuedAt()
             );
-            LOG.info("OAuth tokens persisted to storage");
+            if (saved) {
+                LOG.info("OAuth tokens persisted to storage");
+            }
+            return saved;
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to persist OAuth tokens", e);
+            return false;
         }
     }
 

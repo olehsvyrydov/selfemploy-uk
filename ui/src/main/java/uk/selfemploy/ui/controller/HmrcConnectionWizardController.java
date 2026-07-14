@@ -27,6 +27,7 @@ import uk.selfemploy.ui.component.InfoCard;
 import uk.selfemploy.ui.component.NinoInputField;
 import uk.selfemploy.ui.component.PrerequisiteItem;
 import uk.selfemploy.ui.component.WizardProgressIndicator;
+import uk.selfemploy.ui.service.HmrcBusinessProfileService;
 import uk.selfemploy.ui.service.OAuthConnectionHandler;
 import uk.selfemploy.ui.service.OAuthConnectionHandler.ConnectionStatus;
 import uk.selfemploy.ui.service.SqliteDataStore;
@@ -72,6 +73,9 @@ import java.util.logging.Logger;
 public class HmrcConnectionWizardController implements Initializable {
 
     private static final Logger LOG = Logger.getLogger(HmrcConnectionWizardController.class.getName());
+
+    /** OAuth error code for a user-initiated cancellation; shown neutrally rather than as a failure. */
+    private static final String CANCELLED_ERROR_CODE = "USER_CANCELLED";
 
     // === Dialog Constants ===
     public static final int DIALOG_WIDTH = 520;
@@ -214,12 +218,11 @@ public class HmrcConnectionWizardController implements Initializable {
     private Label headerTitle;
 
     /**
-     * Invoked once OAuth succeeds, with the access token and the NINO the user entered, so the
-     * caller can complete setup — fetching and storing the business profile. Without this the
-     * wizard connects but never records the business ID, leaving the user unable to submit. May be
-     * null.
+     * Resolves and persists the business profile once OAuth succeeds. The wizard owns this step so
+     * the connection it reports reflects the real outcome (NINO verified, business ID stored) rather
+     * than just that the browser handshake completed.
      */
-    private java.util.function.BiConsumer<String, String> onConnected;
+    private HmrcBusinessProfileService profileService = new HmrcBusinessProfileService();
 
     /**
      * Creates a new wizard controller with default view model.
@@ -255,26 +258,12 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Sets the callback invoked with the access token and entered NINO once OAuth succeeds, so the
-     * caller can fetch and store the business profile that the wizard itself does not.
+     * Sets the business-profile service (for testing).
      *
-     * @param onConnected the completion callback, or null for none
+     * @param profileService the service used to resolve and persist the business profile
      */
-    public void setOnConnected(java.util.function.BiConsumer<String, String> onConnected) {
-        this.onConnected = onConnected;
-    }
-
-    /**
-     * Notifies the completion callback that OAuth succeeded. Package-private so the wiring can be
-     * verified without driving the full JavaFX dialog.
-     *
-     * @param accessToken the access token obtained from HMRC
-     * @param nino        the NINO the user entered in the wizard
-     */
-    void notifyConnected(String accessToken, String nino) {
-        if (onConnected != null) {
-            onConnected.accept(accessToken, nino);
-        }
+    void setProfileService(HmrcBusinessProfileService profileService) {
+        this.profileService = profileService;
     }
 
     /**
@@ -1032,15 +1021,19 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Handles the final OAuth result.
+     * Handles the final OAuth result. On success the wizard does not declare victory yet: it moves
+     * on to resolve the business profile, which determines whether the connection is actually usable
+     * (NINO verified, business ID stored). A user cancellation is shown as an informational message
+     * rather than an error, since nothing went wrong.
      */
     private void handleOAuthResult(OAuthConnectionHandler.OAuthResult result) {
         Platform.runLater(() -> {
             viewModel.handleOAuthResult(result);
 
             if (result.success()) {
-                showSuccess();
-                notifyConnected(result.accessToken(), viewModel.getNino());
+                verifyProfileAndShowOutcome(result.accessToken());
+            } else if (CANCELLED_ERROR_CODE.equals(result.errorCode())) {
+                showCancelled();
             } else {
                 showError(result.errorCode(), result.errorMessage());
             }
@@ -1048,11 +1041,63 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
+     * Resolves and persists the business profile with the freshly obtained token, then shows the
+     * outcome. Runs on a background thread so the network call does not block the UI; the wizard
+     * shows a "verifying" state in the meantime and the final screen reflects the real outcome.
+     *
+     * @param accessToken the access token obtained from HMRC
+     */
+    private void verifyProfileAndShowOutcome(String accessToken) {
+        if (statusLabel != null) {
+            statusLabel.setText("Verifying your details with HMRC...");
+        }
+        showContainer(progressContainer4);
+
+        String nino = viewModel.getNino();
+        Thread.startVirtualThread(() -> {
+            HmrcBusinessProfileService.Result result = profileService.fetchAndPersist(nino, accessToken);
+            Platform.runLater(() -> showProfileOutcome(result));
+        });
+    }
+
+    /**
+     * Renders the wizard's terminal screen for a resolved business-profile outcome. A connected
+     * result — verified, sandbox, or connected-but-not-yet-synced — shows the success screen; a
+     * definitive NINO rejection shows an actionable error so the user can correct it and retry.
+     *
+     * @param result the resolved business-profile outcome
+     */
+    private void showProfileOutcome(HmrcBusinessProfileService.Result result) {
+        switch (result.outcome()) {
+            case VERIFIED, NINO_CHANGED_SANDBOX, PROFILE_SYNC_PENDING -> showSuccess();
+            case NINO_MISMATCH -> showError("NINO_MISMATCH",
+                "The National Insurance number you entered does not match your HMRC account. "
+                    + "Please go back and check it, then try again.");
+            case NO_BUSINESS_FOUND -> showError("NO_BUSINESS_FOUND",
+                "No self-employment business is registered with this National Insurance number. "
+                    + "Make sure you have registered for Self Assessment with HMRC.");
+            case NINO_NOT_FOUND -> showError("NINO_NOT_FOUND",
+                "No self-employment record was found for this National Insurance number. "
+                    + "Make sure you have registered for Self Assessment with HMRC.");
+        }
+    }
+
+    /**
      * Shows the success state.
      */
     private void showSuccess() {
-        LOG.info("OAuth connection successful");
+        LOG.info("HMRC connection verified");
+        viewModel.setConnectionSuccessful(true);
         showContainer(successContainer);
+    }
+
+    /**
+     * Shows an informational "cancelled" state for a user-initiated cancellation, so backing out of
+     * the HMRC login is not presented as an error.
+     */
+    private void showCancelled() {
+        LOG.info("HMRC connection cancelled by user");
+        showError(CANCELLED_ERROR_CODE, "HMRC connection was cancelled. You can try again when ready.");
     }
 
     /**
@@ -1291,24 +1336,17 @@ public class HmrcConnectionWizardController implements Initializable {
      * @param ownerStage the owner stage for the dialog
      * @return the view model for checking result
      */
-    public static HmrcConnectionWizardViewModel showWizard(Stage ownerStage) {
-        return showWizard(ownerStage, null);
-    }
-
     /**
-     * Creates and shows the wizard dialog, invoking {@code onConnected} with the access token and
-     * entered NINO once OAuth succeeds so the caller can complete setup (fetching and storing the
-     * business profile).
+     * Creates and shows the wizard dialog. The wizard owns the entire connection flow: it performs
+     * OAuth, resolves and persists the business profile, and shows the outcome. The caller reads the
+     * final persisted state after this returns rather than being called back mid-flow.
      *
-     * @param ownerStage  the owner stage for the dialog
-     * @param onConnected  called with the access token and NINO on successful OAuth, or null
-     * @return the view model for checking result
+     * @param ownerStage the owner stage for the dialog
+     * @return the view model for checking result, or null if the dialog could not be shown
      */
-    public static HmrcConnectionWizardViewModel showWizard(
-            Stage ownerStage, java.util.function.BiConsumer<String, String> onConnected) {
+    public static HmrcConnectionWizardViewModel showWizard(Stage ownerStage) {
         try {
             HmrcConnectionWizardController controller = new HmrcConnectionWizardController();
-            controller.setOnConnected(onConnected);
 
             // Initialize OAuth service from factory
             controller.setOAuthService(uk.selfemploy.ui.service.OAuthServiceFactory.getOAuthService());

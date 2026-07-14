@@ -517,9 +517,9 @@ public final class SqliteDataStore {
      * @param scope the granted scopes
      * @param issuedAt when the tokens were issued
      */
-    public synchronized void saveOAuthTokens(String accessToken, String refreshToken,
-                                             long expiresIn, String tokenType,
-                                             String scope, Instant issuedAt) {
+    public synchronized boolean saveOAuthTokens(String accessToken, String refreshToken,
+                                                long expiresIn, String tokenType,
+                                                String scope, Instant issuedAt) {
         String encryptedAccess = encryptForStorage("oauth_access_token", accessToken);
         String encryptedRefresh = encryptForStorage("oauth_refresh_token", refreshToken);
 
@@ -528,11 +528,12 @@ public final class SqliteDataStore {
         // which would later be read back as a current-but-stale session. The in-memory session
         // keeps working and the tokens are re-persisted on the next successful save. This is
         // deliberately non-throwing because upstream token-lifecycle code treats a persistence
-        // exception as an expired session and responds by discarding valid tokens.
+        // exception as an expired session and responds by discarding valid tokens; the boolean
+        // return lets a caller that needs to confirm the write detect the skip instead.
         if ((accessToken != null && encryptedAccess == null)
                 || (refreshToken != null && encryptedRefresh == null)) {
             LOG.warning("Skipping OAuth token persistence: tokens could not be encrypted at rest");
-            return;
+            return false;
         }
 
         saveSetting("oauth_access_token", encryptedAccess);
@@ -542,6 +543,7 @@ public final class SqliteDataStore {
         saveSetting("oauth_scope", scope);
         saveSetting("oauth_issued_at", issuedAt != null ? issuedAt.toString() : null);
         LOG.info("OAuth tokens saved to persistent storage");
+        return true;
     }
 
     /**
