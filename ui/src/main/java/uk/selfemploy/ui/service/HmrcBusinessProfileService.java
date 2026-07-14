@@ -184,12 +184,13 @@ public class HmrcBusinessProfileService {
             return persistPending(nino, sandbox);
         }
 
-        // readTree does not throw for an empty, blank or non-JSON body — it returns a missing/null
-        // node — so guard for a real JSON object explicitly. A transient empty body must be treated
-        // as sync-pending, not as a definitive "no business" that would wipe a verified profile. A
-        // genuine empty object ({}) is a real result and still falls through to NO_BUSINESS_FOUND.
-        if (root == null || !root.isObject()) {
-            LOG.warning("200 response body was empty or not a JSON object; treating as sync-pending");
+        // readTree does not throw for an empty or blank body — it returns a missing/null node — so
+        // guard for the "no parseable content" case explicitly and treat it as sync-pending rather
+        // than a definitive "no business" that would wipe a verified profile. Any body that actually
+        // parsed (including an empty object {} or an empty array) is a real response and falls
+        // through to extractBusinessId, so a genuine no-business result still clears the profile.
+        if (root == null || root.isMissingNode() || root.isNull()) {
+            LOG.warning("200 response body was empty or blank; treating as sync-pending");
             return persistPending(nino, sandbox);
         }
 

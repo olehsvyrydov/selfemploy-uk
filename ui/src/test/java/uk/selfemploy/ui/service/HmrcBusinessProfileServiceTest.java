@@ -152,6 +152,17 @@ class HmrcBusinessProfileServiceTest {
         }
 
         @Test
+        @DisplayName("a parsed-but-empty array body is a genuine no-business rejection, not sync-pending")
+        void emptyArrayIsRejection() {
+            store().saveHmrcBusinessId("XAIS12345678901");
+
+            Result result = service.applyResponse(200, "[]", NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
+            assertThat(store().loadHmrcBusinessId()).isNull();
+        }
+
+        @Test
         @DisplayName("a transient error does not overwrite a different NINO already on file")
         void transientErrorDoesNotOverwriteDifferentNino() {
             store().saveNino(OTHER_NINO);
