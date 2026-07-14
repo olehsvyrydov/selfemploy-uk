@@ -32,7 +32,7 @@ import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
 import uk.selfemploy.ui.component.AppDialog;
@@ -847,12 +847,13 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     /**
-     * Refreshes an existing session without the full wizard. Distinguishes a transient failure
-     * (network, HMRC 5xx) — where the stored tokens survive and the user can simply retry — from a
-     * genuine rejection, where the tokens are cleared and a full re-connect is required.
+     * Refreshes an existing session without the full wizard, then re-fetches the business profile
+     * with the refreshed token so a changed NINO or a stale business ID is re-verified (the old
+     * connect always did this). Distinguishes a transient failure — stored tokens survive and are
+     * loaded, so the user can retry — from a genuine rejection or an unloadable session, which
+     * both need the full wizard.
      */
     private void quickReconnect(HmrcConnectionService connectionService) {
-        String originalButtonText = hmrcSetupButton != null ? hmrcSetupButton.getText() : null;
         if (hmrcSetupButton != null) {
             hmrcSetupButton.setDisable(true);
             hmrcSetupButton.setText("Reconnecting...");
@@ -862,79 +863,89 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
 
         connectionService.verifySession().whenComplete((result, error) -> Platform.runLater(() -> {
-            if (hmrcSetupButton != null) {
-                hmrcSetupButton.setDisable(false);
-                if (originalButtonText != null) {
-                    hmrcSetupButton.setText(originalButtonText);
-                }
-            }
-            updateHmrcConnectionStatus();
+            OAuthTokens tokens = OAuthServiceFactory.getOAuthService().getCurrentTokens();
 
-            if (error == null && result == HmrcConnectionService.VerificationResult.VERIFIED) {
-                showInfo("Reconnected", "Your HMRC session has been refreshed.");
-            } else if (connectionService.canQuickReconnect()) {
-                // Stored tokens are still present, so this was a transient failure rather than a
-                // rejection: let the user retry instead of forcing a full re-authentication.
+            if (error == null && result == HmrcConnectionService.VerificationResult.VERIFIED
+                    && tokens != null) {
+                // Re-verify the business profile with the refreshed token (no browser needed).
+                String nino = SqliteDataStore.getInstance().loadNino();
+                if (nino != null && !nino.isBlank()) {
+                    if (hmrcConnectionStatusLabel != null) {
+                        hmrcConnectionStatusLabel.setText("Fetching business profile...");
+                    }
+                    fetchBusinessProfile(nino, tokens.accessToken());
+                    return;
+                }
+                launchConnectionWizard();
+            } else if (tokens != null && connectionService.canQuickReconnect()) {
+                // The tokens are loaded and still present, so this was a transient failure rather
+                // than a rejection: let the user retry instead of forcing a full re-authentication.
+                if (hmrcSetupButton != null) {
+                    hmrcSetupButton.setDisable(false);
+                }
+                updateHmrcConnectionStatus();
                 showWarning("Couldn't Reconnect",
                     "We couldn't reach HMRC just now. Please check your connection and try again.");
             } else {
-                LOG.info("Session refresh was rejected; launching the full connection wizard");
+                // Rejected, or no in-memory session to refresh: a full re-connect is required.
+                LOG.info("Session refresh was not possible; launching the full connection wizard");
                 launchConnectionWizard();
             }
         }));
     }
 
     /**
-     * Launches the guided connection wizard. The wizard performs the OAuth flow and collects the
-     * NINO; once it closes, if the connection succeeded, we persist the NINO and complete setup by
-     * fetching and storing the business profile the wizard does not, so the connection can reach a
-     * submit-ready state.
+     * Launches the guided connection wizard. The wizard performs the OAuth flow and, on success,
+     * invokes the completion callback with the access token and NINO; {@link #completeWizardConnection}
+     * then fetches and stores the business profile so the connection can reach a submit-ready state.
      */
     private void launchConnectionWizard() {
-        AtomicReference<String> tokenFromCallback = new AtomicReference<>();
+        AtomicBoolean connecting = new AtomicBoolean(false);
         Stage owner = getOwnerWindow() instanceof Stage stage ? stage : null;
 
-        HmrcConnectionWizardViewModel result =
-            HmrcConnectionWizardController.showWizard(owner, tokenFromCallback::set);
+        HmrcConnectionWizardViewModel result = HmrcConnectionWizardController.showWizard(
+            owner, (accessToken, nino) -> {
+                connecting.set(true);
+                completeWizardConnection(accessToken, nino);
+            });
 
-        if (result == null || !result.isConnectionSuccessful()) {
-            updateHmrcConnectionStatus();
-            return;
-        }
-
-        // The wizard only auto-saves the NINO on its final step, which the user may not have
-        // reached; persist it now so the business-profile lookup below can resolve it.
-        String wizardNino = result.getNino();
-        if (wizardNino != null && !wizardNino.isBlank()) {
-            SqliteDataStore.getInstance().saveNino(wizardNino);
-        }
-
-        // Prefer the token from the success callback; fall back to the authenticated session in
-        // case the dialog closed before the delayed success callback delivered it.
-        String token = tokenFromCallback.get();
-        if (token == null) {
-            OAuthTokens current = OAuthServiceFactory.getOAuthService().getCurrentTokens();
-            token = current != null ? current.accessToken() : null;
-        }
-
-        if (token != null) {
-            if (hmrcConnectionStatusLabel != null) {
-                hmrcConnectionStatusLabel.setText("Fetching business profile...");
-            }
-            // fetchBusinessProfile runs asynchronously and calls completeSetup, which updates the
-            // status when it finishes; do not overwrite the label here.
-            fetchBusinessProfile(token);
-        } else {
-            LOG.warning("Wizard reported a successful connection but no access token was available");
+        if (result == null) {
+            showError("Connection Failed",
+                "The HMRC connection screen could not be opened. Please try again.");
+        } else if (!connecting.get()) {
+            // Closed without connecting; reflect the current (unchanged) status. When a connection
+            // did start, completeWizardConnection owns the status via its asynchronous fetch.
             updateHmrcConnectionStatus();
         }
     }
 
     /**
+     * Completes a wizard connection by fetching and storing the business profile. Invoked from the
+     * wizard's success callback on the FX thread, so it starts the (asynchronous) profile fetch and
+     * lets {@code completeSetup} update the status when it finishes.
+     */
+    private void completeWizardConnection(String accessToken, String nino) {
+        if (accessToken == null) {
+            return;
+        }
+        if (hmrcSetupButton != null) {
+            hmrcSetupButton.setDisable(true);
+        }
+        if (hmrcConnectionStatusLabel != null) {
+            hmrcConnectionStatusLabel.setText("Fetching business profile...");
+        }
+        fetchBusinessProfile(nino, accessToken);
+    }
+
+    /**
      * Fetches business profile from HMRC to get the business ID.
      */
-    private void fetchBusinessProfile(String accessToken) {
-        String nino = SqliteDataStore.getInstance().loadNino();
+    /**
+     * Fetches the business profile from HMRC to resolve and store the business ID. The {@code nino}
+     * is used for the lookup but is only persisted to Settings once HMRC has verified it, so a wrong
+     * NINO entered in the wizard never overwrites a previously-correct stored value.
+     */
+    private void fetchBusinessProfile(String nino, String accessToken) {
         String apiBaseUrl = System.getProperty("HMRC_API_BASE_URL", "https://test-api.service.hmrc.gov.uk");
         String url = apiBaseUrl + "/individuals/business/self-employment/" + nino;
 
@@ -970,6 +981,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     if (businessId != null) {
                         SqliteDataStore.getInstance().saveHmrcBusinessId(businessId);
                         SqliteDataStore.getInstance().saveNinoVerified(true); // NINO verified by HMRC
+                        // Persist the verified NINO and record it as the connected NINO, so a later
+                        // change is detected and Settings reflects the value HMRC accepted.
+                        SqliteDataStore.getInstance().saveNino(nino);
+                        SqliteDataStore.getInstance().saveConnectedNino(nino);
                         LOG.info("Stored business ID: " + businessId);
                         Platform.runLater(() -> {
                             setNinoVerificationStatus(NinoVerificationStatus.VERIFIED);
@@ -1032,6 +1047,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
                             // Update connected NINO to the new value so subsequent reconnects
                             // with the same NINO won't trigger the warning again
+                            SqliteDataStore.getInstance().saveNino(currentNino);
                             SqliteDataStore.getInstance().saveConnectedNino(currentNino);
                             LOG.info("Updated the connected NINO");
 
@@ -1054,6 +1070,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                             // First connection or same NINO - proceed normally
                             SqliteDataStore.getInstance().saveNinoVerified(true);
                             // Save the connected NINO for future change detection
+                            SqliteDataStore.getInstance().saveNino(currentNino);
                             SqliteDataStore.getInstance().saveConnectedNino(currentNino);
                             LOG.info("Saved the connected NINO for change detection");
 

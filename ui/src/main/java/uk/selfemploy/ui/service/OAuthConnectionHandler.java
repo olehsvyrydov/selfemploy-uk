@@ -289,14 +289,17 @@ public class OAuthConnectionHandler {
         LOG.info("OAuth connection successful");
         reportStatus(ConnectionStatus.COMPLETING);
 
-        // Persist OAuth tokens for session survival (Sprint 12)
-        persistOAuthTokens(tokens);
-
-        // Mark session as verified since we just authenticated
-        HmrcConnectionService.getInstance().markSessionVerified();
-
-        // Small delay before showing success for UX
+        // Persist and report success together after the brief "completing" delay, and only if the
+        // user has not cancelled in the meantime. Persisting the tokens or marking the session
+        // verified before this check would leave them behind for a flow the user then cancelled,
+        // and reporting success after a cancel would connect against the user's wishes.
         scheduler.schedule(() -> {
+            if (cancelled.get()) {
+                handleCancellation();
+                return;
+            }
+            persistOAuthTokens(tokens);
+            HmrcConnectionService.getInstance().markSessionVerified();
             reportStatus(ConnectionStatus.SUCCESS);
             persistProgress();
             reportResult(OAuthResult.ofSuccess(tokens.accessToken()));

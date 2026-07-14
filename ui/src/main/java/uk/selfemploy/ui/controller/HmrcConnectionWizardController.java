@@ -214,11 +214,12 @@ public class HmrcConnectionWizardController implements Initializable {
     private Label headerTitle;
 
     /**
-     * Invoked once OAuth succeeds, with the access token, so the caller can complete setup —
-     * fetching and storing the business profile. Without this the wizard connects but never records
-     * the business ID, leaving the user unable to submit. May be null.
+     * Invoked once OAuth succeeds, with the access token and the NINO the user entered, so the
+     * caller can complete setup — fetching and storing the business profile. Without this the
+     * wizard connects but never records the business ID, leaving the user unable to submit. May be
+     * null.
      */
-    private java.util.function.Consumer<String> onConnected;
+    private java.util.function.BiConsumer<String, String> onConnected;
 
     /**
      * Creates a new wizard controller with default view model.
@@ -254,12 +255,12 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Sets the callback invoked with the access token once OAuth succeeds, so the caller can fetch
-     * and store the business profile that the wizard itself does not.
+     * Sets the callback invoked with the access token and entered NINO once OAuth succeeds, so the
+     * caller can fetch and store the business profile that the wizard itself does not.
      *
      * @param onConnected the completion callback, or null for none
      */
-    public void setOnConnected(java.util.function.Consumer<String> onConnected) {
+    public void setOnConnected(java.util.function.BiConsumer<String, String> onConnected) {
         this.onConnected = onConnected;
     }
 
@@ -268,10 +269,11 @@ public class HmrcConnectionWizardController implements Initializable {
      * verified without driving the full JavaFX dialog.
      *
      * @param accessToken the access token obtained from HMRC
+     * @param nino        the NINO the user entered in the wizard
      */
-    void notifyConnected(String accessToken) {
+    void notifyConnected(String accessToken, String nino) {
         if (onConnected != null) {
-            onConnected.accept(accessToken);
+            onConnected.accept(accessToken, nino);
         }
     }
 
@@ -1038,7 +1040,7 @@ public class HmrcConnectionWizardController implements Initializable {
 
             if (result.success()) {
                 showSuccess();
-                notifyConnected(result.accessToken());
+                notifyConnected(result.accessToken(), viewModel.getNino());
             } else {
                 showError(result.errorCode(), result.errorMessage());
             }
@@ -1298,15 +1300,16 @@ public class HmrcConnectionWizardController implements Initializable {
     }
 
     /**
-     * Creates and shows the wizard dialog, invoking {@code onConnected} with the access token once
-     * OAuth succeeds so the caller can complete setup (fetching and storing the business profile).
+     * Creates and shows the wizard dialog, invoking {@code onConnected} with the access token and
+     * entered NINO once OAuth succeeds so the caller can complete setup (fetching and storing the
+     * business profile).
      *
      * @param ownerStage  the owner stage for the dialog
-     * @param onConnected  called with the access token on successful OAuth, or null for none
+     * @param onConnected  called with the access token and NINO on successful OAuth, or null
      * @return the view model for checking result
      */
     public static HmrcConnectionWizardViewModel showWizard(
-            Stage ownerStage, java.util.function.Consumer<String> onConnected) {
+            Stage ownerStage, java.util.function.BiConsumer<String, String> onConnected) {
         try {
             HmrcConnectionWizardController controller = new HmrcConnectionWizardController();
             controller.setOnConnected(onConnected);

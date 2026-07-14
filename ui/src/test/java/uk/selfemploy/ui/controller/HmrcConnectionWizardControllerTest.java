@@ -44,20 +44,25 @@ class HmrcConnectionWizardControllerTest {
     class CompletionCallbackTests {
 
         @Test
-        @DisplayName("passes the access token to onConnected so setup can be completed")
-        void notifiesConnectedWithAccessToken() {
-            AtomicReference<String> received = new AtomicReference<>();
-            controller.setOnConnected(received::set);
+        @DisplayName("passes the access token and NINO to onConnected so setup can be completed")
+        void notifiesConnectedWithAccessTokenAndNino() {
+            AtomicReference<String> receivedToken = new AtomicReference<>();
+            AtomicReference<String> receivedNino = new AtomicReference<>();
+            controller.setOnConnected((token, nino) -> {
+                receivedToken.set(token);
+                receivedNino.set(nino);
+            });
 
-            controller.notifyConnected("access-token-123");
+            controller.notifyConnected("access-token-123", "AB123456C");
 
-            assertThat(received.get()).isEqualTo("access-token-123");
+            assertThat(receivedToken.get()).isEqualTo("access-token-123");
+            assertThat(receivedNino.get()).isEqualTo("AB123456C");
         }
 
         @Test
         @DisplayName("is a no-op when no callback is set")
         void notifyConnectedWithoutCallbackDoesNotThrow() {
-            controller.notifyConnected("access-token-123");
+            controller.notifyConnected("access-token-123", "AB123456C");
         }
     }
 
