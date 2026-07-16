@@ -177,6 +177,13 @@ public class QuarterlyUpdatesController implements Initializable, MainController
                                 pageSubtitle.setText("Session expired. Please reconnect via HMRC Submission page.");
                             }
                         }
+                        case UNVERIFIED -> {
+                            LOG.info("Lazy verification could not be completed - session left intact");
+                            if (pageSubtitle != null) {
+                                pageSubtitle.setText("Couldn't verify your HMRC connection just now. "
+                                    + "You're still signed in — try again in a moment.");
+                            }
+                        }
                         case NOT_CONNECTED -> {
                             LOG.info("Not connected to HMRC");
                             if (pageSubtitle != null) {

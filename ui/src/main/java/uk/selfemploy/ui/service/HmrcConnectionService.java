@@ -231,8 +231,14 @@ public class HmrcConnectionService {
     public enum VerificationResult {
         /** Session verified successfully - tokens are valid */
         VERIFIED,
-        /** Session verification failed - tokens expired or revoked */
+        /** HMRC rejected the refresh token - the stored session is gone and the user must reconnect */
         EXPIRED,
+        /**
+         * Verification could not be completed - HMRC was unreachable, returned a transient error, or the
+         * stored credentials were momentarily unreadable. The session was left intact: the caller should
+         * invite a retry, not a reconnect.
+         */
+        UNVERIFIED,
         /** No tokens to verify - user needs to connect */
         NOT_CONNECTED
     }
@@ -275,9 +281,9 @@ public class HmrcConnectionService {
                 return VerificationResult.VERIFIED;
             })
             .exceptionally(ex -> {
-                HmrcSessionPolicy.onRefreshFailure(ex, oauthService);
+                boolean sessionCleared = HmrcSessionPolicy.onRefreshFailure(ex, oauthService);
                 resetSessionVerification();
-                return VerificationResult.EXPIRED;
+                return sessionCleared ? VerificationResult.EXPIRED : VerificationResult.UNVERIFIED;
             });
     }
 

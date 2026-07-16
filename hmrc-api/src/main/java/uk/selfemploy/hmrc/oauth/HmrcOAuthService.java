@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 /**
  * Service for managing OAuth2 authentication with HMRC.
@@ -232,7 +233,14 @@ public class HmrcOAuthService {
                     return refreshed;
                 }
                 LOG.info("Access token refreshed successfully");
-                refreshListener.accept(refreshed);
+                // The rotation has already been installed; notifying the listener is a side effect of
+                // a refresh that has succeeded. A listener that throws must not turn that success into a
+                // failed future, or callers would treat a renewed session as expired and discard it.
+                try {
+                    refreshListener.accept(refreshed);
+                } catch (RuntimeException e) {
+                    LOG.log(Level.WARNING, "The refresh listener failed to record a rotated session", e);
+                }
                 return refreshed;
             });
         refreshInFlight.set(refresh);

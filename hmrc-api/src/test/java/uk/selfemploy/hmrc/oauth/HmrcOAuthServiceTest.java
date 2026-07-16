@@ -532,6 +532,26 @@ class HmrcOAuthServiceTest {
         }
 
         @Test
+        @DisplayName("a listener that throws does not fail the refresh, and the rotation still installs")
+        void aThrowingListenerDoesNotFailTheRefresh() throws Exception {
+            // The rotation is already installed by the time the listener runs. A listener failure is a
+            // persistence side effect, not a refresh failure: turning it into a failed future would make
+            // callers treat a renewed session as expired and discard it.
+            oAuthService.setRefreshListener(tokens -> {
+                throw new RuntimeException("persistence unavailable");
+            });
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(
+                CompletableFuture.completedFuture(
+                    OAuthTokens.create("new_access", "rotated_refresh", 14400, "Bearer", "scope")));
+
+            OAuthTokens refreshed = oAuthService.refreshAccessToken().get();
+
+            assertThat(refreshed.accessToken()).isEqualTo("new_access");
+            assertThat(oAuthService.getCurrentTokens().refreshToken()).isEqualTo("rotated_refresh");
+        }
+
+        @Test
         @DisplayName("neither installs nor records a refresh that lands after the session was replaced")
         void discardsARefreshThatLandsAfterTheSessionChanged() throws Exception {
             List<OAuthTokens> recorded = new ArrayList<>();
