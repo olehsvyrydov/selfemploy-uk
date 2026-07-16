@@ -73,6 +73,7 @@ public final class OAuthServiceFactory {
             );
 
             HmrcOAuthService service = new HmrcOAuthService(config, callbackServer, tokenExchangeClient, browserLauncher);
+            service.setRefreshListener(HmrcSessionPolicy::persistRefreshedTokens);
 
             // Sprint 12: Restore tokens from persistent storage
             restoreTokensFromStorage(service);
@@ -92,6 +93,11 @@ public final class OAuthServiceFactory {
      *
      * <p>On restore, if tokens have less than 50% of their lifetime remaining,
      * we proactively refresh them to avoid mid-session expiry.</p>
+     *
+     * <p>Expired tokens are cleared only when no refresh token exists on disk at all. The storage
+     * layer reports a refresh token that fails to decrypt as absent while deliberately keeping the
+     * ciphertext — it may well work once the master key is readable again, so it must not be
+     * deleted on that basis.</p>
      */
     private static void restoreTokensFromStorage(HmrcOAuthService service) {
         try {
@@ -114,6 +120,8 @@ public final class OAuthServiceFactory {
                 LOG.info("Stored OAuth tokens have expired - attempting refresh");
                 if (refreshToken != null && !refreshToken.isBlank()) {
                     tryRefreshTokens(service, tokens);
+                } else if (SqliteDataStore.getInstance().hasRefreshToken()) {
+                    LOG.warning("The stored refresh token could not be read; leaving it in place");
                 } else {
                     LOG.info("No refresh token available - clearing expired tokens");
                     SqliteDataStore.getInstance().clearOAuthTokens();
@@ -126,7 +134,6 @@ public final class OAuthServiceFactory {
             long secondsRemaining = tokens.getSecondsUntilExpiry();
             if (secondsRemaining < halfLifetime && refreshToken != null && !refreshToken.isBlank()) {
                 LOG.info("Tokens at " + (secondsRemaining * 100 / expiresIn) + "% lifetime - proactively refreshing");
-                service.setTokens(tokens); // Set first so refresh has the refresh token
                 tryRefreshTokens(service, tokens);
                 return;
             }
@@ -140,34 +147,17 @@ public final class OAuthServiceFactory {
     }
 
     /**
-     * Attempts to refresh tokens. If successful, persists the new tokens. If HMRC actually rejects
-     * the refresh token, clears the stored tokens; a transient failure keeps them for a later try.
+     * Attempts to refresh the restored tokens. The rotated tokens are persisted by the refresh
+     * listener registered above, not here. A failure is handed to {@link HmrcSessionPolicy}, which
+     * alone decides whether the stored session is destroyed.
      */
     private static void tryRefreshTokens(HmrcOAuthService service, OAuthTokens oldTokens) {
         try {
-            service.setTokens(oldTokens); // Ensure refresh token is available
-            OAuthTokens newTokens = service.refreshAccessToken().get(30, java.util.concurrent.TimeUnit.SECONDS);
-
-            // Persist new tokens
-            SqliteDataStore.getInstance().saveOAuthTokens(
-                newTokens.accessToken(),
-                newTokens.refreshToken(),
-                newTokens.expiresIn(),
-                newTokens.tokenType(),
-                newTokens.scope(),
-                newTokens.issuedAt()
-            );
-            LOG.info("OAuth tokens refreshed and persisted (expires in " + newTokens.getSecondsUntilExpiry() + "s)");
+            service.setTokens(oldTokens);
+            service.refreshAccessToken().get(30, java.util.concurrent.TimeUnit.SECONDS);
 
         } catch (Exception e) {
-            if (isRefreshTokenRejected(e)) {
-                LOG.warning("Refresh token rejected by HMRC - clearing stored tokens");
-                SqliteDataStore.getInstance().clearOAuthTokens();
-                service.setTokens(null);
-            } else {
-                LOG.log(Level.WARNING,
-                    "Could not refresh OAuth tokens (transient); keeping stored tokens", e);
-            }
+            HmrcSessionPolicy.onRefreshFailure(e, service);
         }
     }
 

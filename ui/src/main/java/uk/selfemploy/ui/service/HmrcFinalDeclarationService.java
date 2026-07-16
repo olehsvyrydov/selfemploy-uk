@@ -195,13 +195,14 @@ public final class HmrcFinalDeclarationService {
         if (forceRefresh || tokens.isExpired() || tokens.getSecondsUntilExpiry() < 300) {
             try {
                 tokens = oauthService.refreshAccessToken().get(30, TimeUnit.SECONDS);
-                SqliteDataStore.getInstance().saveOAuthTokens(
-                    tokens.accessToken(), tokens.refreshToken(), tokens.expiresIn(),
-                    tokens.tokenType(), tokens.scope(), tokens.issuedAt());
             } catch (Exception e) {
-                SqliteDataStore.getInstance().clearOAuthTokens();
-                throw new DeclarationException(DeclarationOutcome.Reason.SESSION_EXPIRED,
-                    "Your HMRC session has expired. Please reconnect.", 0);
+                if (HmrcSessionPolicy.onRefreshFailure(e, oauthService)) {
+                    throw new DeclarationException(DeclarationOutcome.Reason.SESSION_EXPIRED,
+                        "Your HMRC session has expired. Please reconnect.", 0);
+                }
+                throw new DeclarationException(DeclarationOutcome.Reason.NETWORK,
+                    "We couldn't reach HMRC to renew your session. "
+                        + "Check your connection and try again — you are still signed in.", 0);
             }
         }
         return tokens.accessToken();

@@ -17,6 +17,7 @@ import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -382,6 +383,203 @@ class HmrcOAuthServiceTest {
             oAuthService.cancelAuthentication();
 
             verify(callbackServer).stop();
+        }
+    }
+
+    @Nested
+    @DisplayName("Token Refresh")
+    class TokenRefresh {
+
+        /**
+         * Nothing is sent to HMRC here, so nothing has been rejected. Reporting this as
+         * {@code invalid_grant} is what led callers to delete a session HMRC had never refused.
+         */
+        @Test
+        @DisplayName("reports a missing refresh token as NO_REFRESH_TOKEN, not as an HMRC rejection")
+        void missingRefreshTokenIsNotAnHmrcRejection() {
+            oAuthService.setTokens(OAuthTokens.create("access", null, 14400, "Bearer", "scope"));
+
+            assertThatThrownBy(() -> oAuthService.refreshAccessToken().get())
+                .cause()
+                .extracting(e -> ((HmrcOAuthException) e).getError())
+                .isEqualTo(OAuthError.NO_REFRESH_TOKEN);
+
+            verify(tokenExchangeClient, never()).refreshTokens(anyString());
+        }
+
+        @Test
+        @DisplayName("reports an absent session as NO_REFRESH_TOKEN")
+        void absentSessionIsNotAnHmrcRejection() {
+            assertThatThrownBy(() -> oAuthService.refreshAccessToken().get())
+                .cause()
+                .extracting(e -> ((HmrcOAuthException) e).getError())
+                .isEqualTo(OAuthError.NO_REFRESH_TOKEN);
+        }
+
+        @Test
+        @DisplayName("keeps the existing refresh token when HMRC's response omits a new one")
+        void carriesForwardRefreshTokenWhenResponseOmitsIt() throws Exception {
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(
+                CompletableFuture.completedFuture(
+                    OAuthTokens.create("new_access_token", null, 14400, "Bearer", "scope")));
+
+            OAuthTokens refreshed = oAuthService.refreshAccessToken().get();
+
+            assertThat(refreshed.accessToken()).isEqualTo("new_access_token");
+            assertThat(refreshed.refreshToken()).isEqualTo("test_refresh_token");
+            assertThat(oAuthService.getCurrentTokens().refreshToken()).isEqualTo("test_refresh_token");
+        }
+
+        @Test
+        @DisplayName("adopts the rotated refresh token when HMRC issues one")
+        void adoptsRotatedRefreshToken() throws Exception {
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(
+                CompletableFuture.completedFuture(OAuthTokens.create(
+                    "new_access_token", "rotated_refresh_token", 14400, "Bearer", "scope")));
+
+            assertThat(oAuthService.refreshAccessToken().get().refreshToken())
+                .isEqualTo("rotated_refresh_token");
+        }
+
+        /**
+         * HMRC invalidates a refresh token when it is redeemed. Two refreshes in flight together
+         * would present the same token, and the loser would be told {@code invalid_grant} - a
+         * rejection the app inflicted on itself, indistinguishable from a real revocation.
+         */
+        @Test
+        @DisplayName("shares one refresh between concurrent callers, so a rotation cannot reject itself")
+        void concurrentRefreshesShareOneRequest() {
+            oAuthService.setTokens(createTestTokens());
+            CompletableFuture<OAuthTokens> pending = new CompletableFuture<>();
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(pending);
+
+            CompletableFuture<OAuthTokens> first = oAuthService.refreshAccessToken();
+            CompletableFuture<OAuthTokens> second = oAuthService.refreshAccessToken();
+
+            verify(tokenExchangeClient, times(1)).refreshTokens("test_refresh_token");
+
+            pending.complete(OAuthTokens.create("new_access", "rotated_refresh", 14400, "Bearer", "scope"));
+            assertThat(first).isCompleted();
+            assertThat(second).isCompleted();
+        }
+
+        /**
+         * An empty string is not a credential. Sending one earns an {@code invalid_grant} that
+         * looks exactly like a real revocation, and would cost the user their stored session.
+         */
+        @Test
+        @DisplayName("treats a blank refresh token as none, rather than presenting it to HMRC")
+        void blankRefreshTokenIsNotPresented() {
+            oAuthService.setTokens(OAuthTokens.create("access", "  ", 14400, "Bearer", "scope"));
+
+            assertThatThrownBy(() -> oAuthService.refreshAccessToken().get())
+                .cause()
+                .extracting(e -> ((HmrcOAuthException) e).getError())
+                .isEqualTo(OAuthError.NO_REFRESH_TOKEN);
+
+            verify(tokenExchangeClient, never()).refreshTokens(anyString());
+        }
+
+        /**
+         * The second refresh must act on the new session, not join the abandoned one.
+         */
+        @Test
+        @DisplayName("disowns an in-flight refresh when the session it belongs to is replaced")
+        void replacingTheSessionDisownsAnInFlightRefresh() {
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token"))
+                .thenReturn(new CompletableFuture<>());
+            when(tokenExchangeClient.refreshTokens("second_refresh_token"))
+                .thenReturn(CompletableFuture.completedFuture(
+                    OAuthTokens.create("second_access", "rotated", 14400, "Bearer", "scope")));
+
+            oAuthService.refreshAccessToken();
+
+            oAuthService.setTokens(OAuthTokens.create("second_access", "second_refresh_token",
+                14400, "Bearer", "scope"));
+            oAuthService.refreshAccessToken();
+
+            verify(tokenExchangeClient).refreshTokens("second_refresh_token");
+        }
+
+        @Test
+        @DisplayName("starts a fresh request once the previous refresh has finished")
+        void laterRefreshIsNotJoinedToACompletedOne() throws Exception {
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens(anyString())).thenReturn(
+                CompletableFuture.completedFuture(
+                    OAuthTokens.create("access_1", "refresh_1", 14400, "Bearer", "scope")),
+                CompletableFuture.completedFuture(
+                    OAuthTokens.create("access_2", "refresh_2", 14400, "Bearer", "scope")));
+
+            assertThat(oAuthService.refreshAccessToken().get().accessToken()).isEqualTo("access_1");
+            assertThat(oAuthService.refreshAccessToken().get().accessToken()).isEqualTo("access_2");
+
+            verify(tokenExchangeClient, times(1)).refreshTokens("test_refresh_token");
+            verify(tokenExchangeClient, times(1)).refreshTokens("refresh_1");
+        }
+
+        /**
+         * HMRC has already invalidated the old refresh token by the time a rotation lands, so the
+         * new one must be recorded by the refresh itself - a caller that gave up waiting cannot be
+         * relied on to do it.
+         */
+        @Test
+        @DisplayName("notifies the refresh listener with the rotated tokens")
+        void notifiesTheListenerOnRotation() throws Exception {
+            List<OAuthTokens> recorded = new ArrayList<>();
+            oAuthService.setRefreshListener(recorded::add);
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(
+                CompletableFuture.completedFuture(
+                    OAuthTokens.create("new_access", "rotated_refresh", 14400, "Bearer", "scope")));
+
+            oAuthService.refreshAccessToken().get();
+
+            assertThat(recorded).singleElement()
+                .satisfies(tokens -> assertThat(tokens.refreshToken()).isEqualTo("rotated_refresh"));
+        }
+
+        /**
+         * The rotation is already installed by the time the listener runs. A listener failure is a
+         * persistence side effect, not a refresh failure: turning it into a failed future would
+         * make callers treat a renewed session as expired and discard it.
+         */
+        @Test
+        @DisplayName("a listener that throws does not fail the refresh, and the rotation still installs")
+        void aThrowingListenerDoesNotFailTheRefresh() throws Exception {
+            oAuthService.setRefreshListener(tokens -> {
+                throw new RuntimeException("persistence unavailable");
+            });
+            oAuthService.setTokens(createTestTokens());
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(
+                CompletableFuture.completedFuture(
+                    OAuthTokens.create("new_access", "rotated_refresh", 14400, "Bearer", "scope")));
+
+            OAuthTokens refreshed = oAuthService.refreshAccessToken().get();
+
+            assertThat(refreshed.accessToken()).isEqualTo("new_access");
+            assertThat(oAuthService.getCurrentTokens().refreshToken()).isEqualTo("rotated_refresh");
+        }
+
+        @Test
+        @DisplayName("neither installs nor records a refresh that lands after the session was replaced")
+        void discardsARefreshThatLandsAfterTheSessionChanged() throws Exception {
+            List<OAuthTokens> recorded = new ArrayList<>();
+            oAuthService.setRefreshListener(recorded::add);
+            oAuthService.setTokens(createTestTokens());
+            CompletableFuture<OAuthTokens> pending = new CompletableFuture<>();
+            when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(pending);
+
+            CompletableFuture<OAuthTokens> refresh = oAuthService.refreshAccessToken();
+            oAuthService.setTokens(null);
+            pending.complete(OAuthTokens.create("late_access", "late_refresh", 14400, "Bearer", "scope"));
+            refresh.get();
+
+            assertThat(oAuthService.getCurrentTokens()).isNull();
+            assertThat(recorded).isEmpty();
         }
     }
 

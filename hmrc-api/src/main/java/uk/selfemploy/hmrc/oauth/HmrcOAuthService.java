@@ -12,6 +12,8 @@ import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.logging.Level;
 
 /**
  * Service for managing OAuth2 authentication with HMRC.
@@ -36,6 +38,12 @@ public class HmrcOAuthService {
     private final AtomicReference<OAuthTokens> currentTokens = new AtomicReference<>();
     private final AtomicReference<String> currentAuthUrl = new AtomicReference<>();
     private final AtomicBoolean authenticationInProgress = new AtomicBoolean(false);
+
+    /** The refresh currently in flight, if any, shared by every caller that asks while it runs. */
+    private final AtomicReference<CompletableFuture<OAuthTokens>> refreshInFlight = new AtomicReference<>();
+
+    /** Notified when a refresh rotates the session, so the rotation is recorded even if callers give up. */
+    private volatile Consumer<OAuthTokens> refreshListener = tokens -> { };
 
     public HmrcOAuthService(HmrcConfig config,
                            OAuthCallbackServer callbackServer,
@@ -89,7 +97,7 @@ public class HmrcOAuthService {
                 .thenCompose(authCode -> tokenExchangeClient.exchangeCodeForTokens(authCode, pkce.verifier()))
                 .thenApply(tokens -> {
                     LOG.info("OAuth2 authentication completed successfully");
-                    currentTokens.set(tokens);
+                    setTokens(tokens);
                     return tokens;
                 })
                 .whenComplete((result, error) -> {
@@ -179,24 +187,98 @@ public class HmrcOAuthService {
     /**
      * Refreshes the current access token using the refresh token.
      *
+     * <p>Absence of a refresh token fails with {@link OAuthError#NO_REFRESH_TOKEN} rather than
+     * {@link OAuthError#INVALID_GRANT}: no request reaches HMRC, so nothing has been rejected, and a
+     * caller must not read this as a dead credential and discard the session over it.
+     *
+     * <p>HMRC usually rotates the refresh token on every refresh, but is not obliged to return a new
+     * one. When the response omits it, the existing refresh token remains valid and is carried
+     * forward, because storing the {@code null} would silently destroy the ability to refresh again.
+     *
+     * <p>Concurrent callers share a single refresh rather than racing. HMRC invalidates a refresh
+     * token the moment it is redeemed, so two refreshes in flight together would present the same
+     * token and the loser would be told {@code invalid_grant} — a rejection the app inflicted on
+     * itself, and one it cannot tell apart from a real revocation.
+     *
      * @return Future containing new tokens
-     * @throws HmrcOAuthException if no refresh token is available
+     * @throws HmrcOAuthException with {@link OAuthError#NO_REFRESH_TOKEN} if there is nothing to refresh
      */
-    public CompletableFuture<OAuthTokens> refreshAccessToken() {
+    public synchronized CompletableFuture<OAuthTokens> refreshAccessToken() {
+        CompletableFuture<OAuthTokens> inFlight = refreshInFlight.get();
+        if (inFlight != null && !inFlight.isDone()) {
+            LOG.info("A token refresh is already in flight; joining it");
+            return inFlight;
+        }
+
         OAuthTokens current = currentTokens.get();
-        if (current == null || current.refreshToken() == null) {
-            return CompletableFuture.failedFuture(
-                new HmrcOAuthException(OAuthError.INVALID_GRANT, "No refresh token available")
-            );
+        if (current == null || isBlank(current.refreshToken())) {
+            return CompletableFuture.failedFuture(new HmrcOAuthException(OAuthError.NO_REFRESH_TOKEN));
         }
 
         LOG.info("Refreshing access token");
-        return tokenExchangeClient.refreshTokens(current.refreshToken())
-            .thenApply(tokens -> {
-                LOG.info("Access token refreshed successfully");
-                currentTokens.set(tokens);
-                return tokens;
-            });
+        CompletableFuture<OAuthTokens> refresh = tokenExchangeClient.refreshTokens(current.refreshToken())
+            .thenApply(tokens -> adoptRefreshedSession(current, tokens));
+        refreshInFlight.set(refresh);
+        return refresh;
+    }
+
+    /**
+     * Installs the refreshed session and notifies the refresh listener, carrying the previous
+     * refresh token forward when HMRC's response omits one.
+     *
+     * <p>The install is a compare-and-set against the session the refresh was made for. If that
+     * session was replaced or disconnected while the request was in flight, the result belongs to a
+     * session that no longer exists and is discarded: adopting it would overwrite a newer
+     * credential, and recording it would resurrect a deleted one.</p>
+     *
+     * <p>The listener runs only after a successful install, and a listener failure is logged rather
+     * than rethrown. The rotation has already happened by then; failing the future over a recording
+     * side effect would make callers treat a renewed session as expired and discard it.</p>
+     *
+     * @param current   the session the refresh was made for
+     * @param refreshed the tokens HMRC returned
+     * @return the tokens that now represent the refreshed session
+     */
+    private OAuthTokens adoptRefreshedSession(OAuthTokens current, OAuthTokens refreshed) {
+        OAuthTokens adopted = isBlank(refreshed.refreshToken())
+            ? new OAuthTokens(refreshed.accessToken(), current.refreshToken(), refreshed.expiresIn(),
+                refreshed.tokenType(), refreshed.scope(), refreshed.issuedAt())
+            : refreshed;
+
+        if (!currentTokens.compareAndSet(current, adopted)) {
+            LOG.warning("The HMRC session was replaced while a refresh was in flight; "
+                + "the refreshed tokens are discarded rather than overwriting it");
+            return adopted;
+        }
+        LOG.info("Access token refreshed successfully");
+        try {
+            refreshListener.accept(adopted);
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "The refresh listener failed to record a rotated session", e);
+        }
+        return adopted;
+    }
+
+    /**
+     * Registers the listener notified when a refresh rotates the session.
+     *
+     * <p>The rotation is recorded from inside the refresh rather than left to whoever asked for it.
+     * HMRC invalidates the old refresh token the moment it issues a new one, so a caller that gave up
+     * waiting — a response arriving just past its timeout is routine — would otherwise leave the spent
+     * token as the only copy on record, and the next start would be refused.
+     *
+     * @param listener receives the rotated session, or null to remove the current listener
+     */
+    public void setRefreshListener(Consumer<OAuthTokens> listener) {
+        this.refreshListener = listener != null ? listener : tokens -> { };
+    }
+
+    /**
+     * Whether a refresh token is effectively absent. An empty string is not a credential: presenting
+     * one would earn an {@code invalid_grant} that looks exactly like a real revocation.
+     */
+    private static boolean isBlank(String refreshToken) {
+        return refreshToken == null || refreshToken.isBlank();
     }
 
     /**
@@ -251,16 +333,20 @@ public class HmrcOAuthService {
      */
     public void disconnect() {
         LOG.info("Disconnecting from HMRC");
-        currentTokens.set(null);
+        setTokens(null);
     }
 
     /**
      * Sets tokens (e.g., when restoring from secure storage).
      *
+     * <p>Any refresh still in flight belongs to the session being replaced, so it is disowned: a
+     * later caller must not join it and adopt tokens derived from a session that no longer exists.
+     *
      * @param tokens The tokens to set
      */
-    public void setTokens(OAuthTokens tokens) {
+    public synchronized void setTokens(OAuthTokens tokens) {
         currentTokens.set(tokens);
+        refreshInFlight.set(null);
     }
 
     private String encode(String value) {

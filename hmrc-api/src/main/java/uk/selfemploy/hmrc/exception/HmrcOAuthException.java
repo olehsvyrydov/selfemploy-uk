@@ -7,13 +7,22 @@ public class HmrcOAuthException extends HmrcAuthenticationException {
 
     private final OAuthError error;
 
+    /**
+     * The reason an OAuth flow failed.
+     *
+     * <p>{@link #INVALID_GRANT} and {@link #NO_REFRESH_TOKEN} must not be conflated: the first means
+     * HMRC rejected a grant we presented, so the stored credential is dead and may be discarded; the
+     * second is a local precondition failure — no request was ever made — so nothing about the stored
+     * credentials has been proven and none of them may be discarded on its account.
+     */
     public enum OAuthError {
         INVALID_STATE("State parameter mismatch - possible CSRF attack"),
         USER_CANCELLED("User cancelled the authentication"),
         TIMEOUT("Authentication flow timed out"),
         ACCESS_DENIED("User denied access"),
         SERVER_ERROR("OAuth server error"),
-        INVALID_GRANT("Invalid or expired authorization code"),
+        INVALID_GRANT("HMRC rejected the authorization code or refresh token"),
+        NO_REFRESH_TOKEN("No refresh token is available to refresh the session"),
         INVALID_CLIENT("Invalid client credentials"),
         CALLBACK_ERROR("Failed to receive callback"),
         TOKEN_EXCHANGE_FAILED("Failed to exchange code for tokens"),
