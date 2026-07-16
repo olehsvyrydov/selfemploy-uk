@@ -107,13 +107,16 @@ class HmrcSessionPolicyTest {
             assertThat(store().hasOAuthTokens()).isTrue();
         }
 
+        /**
+         * This is the bug that logged users out. The stored session can fail to decrypt (the
+         * master key is momentarily unreadable), leaving nothing in memory to refresh with. That
+         * used to be reported as {@code invalid_grant} and mistaken for an HMRC rejection, which
+         * wiped a session HMRC had never refused - including an access token with hours of life
+         * left.
+         */
         @Test
         @DisplayName("having no refresh token to send is a local failure, not HMRC's word: nothing is destroyed")
         void missingRefreshTokenKeepsTheSession() {
-            // This is the bug that logged users out. The stored session can fail to decrypt (the
-            // master key is momentarily unreadable), leaving nothing in memory to refresh with. That
-            // used to be reported as invalid_grant and mistaken for an HMRC rejection, which wiped a
-            // session HMRC had never refused - including an access token with hours of life left.
             boolean cleared = HmrcSessionPolicy.onRefreshFailure(
                 new CompletionException(new HmrcOAuthException(OAuthError.NO_REFRESH_TOKEN)), oauthService);
 

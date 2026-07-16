@@ -217,34 +217,46 @@ public class HmrcOAuthService {
 
         LOG.info("Refreshing access token");
         CompletableFuture<OAuthTokens> refresh = tokenExchangeClient.refreshTokens(current.refreshToken())
-            .thenApply(tokens -> {
-                OAuthTokens refreshed = isBlank(tokens.refreshToken())
-                    ? new OAuthTokens(tokens.accessToken(), current.refreshToken(), tokens.expiresIn(),
-                        tokens.tokenType(), tokens.scope(), tokens.issuedAt())
-                    : tokens;
-
-                // Install and record the rotation only if the session we refreshed is still the
-                // current one. If it was replaced or disconnected while this was in flight, the
-                // result belongs to a session that no longer exists: adopting it would overwrite a
-                // newer credential, and recording it would resurrect a deleted one.
-                if (!currentTokens.compareAndSet(current, refreshed)) {
-                    LOG.warning("The HMRC session was replaced while a refresh was in flight; "
-                        + "the refreshed tokens are discarded rather than overwriting it");
-                    return refreshed;
-                }
-                LOG.info("Access token refreshed successfully");
-                // The rotation has already been installed; notifying the listener is a side effect of
-                // a refresh that has succeeded. A listener that throws must not turn that success into a
-                // failed future, or callers would treat a renewed session as expired and discard it.
-                try {
-                    refreshListener.accept(refreshed);
-                } catch (RuntimeException e) {
-                    LOG.log(Level.WARNING, "The refresh listener failed to record a rotated session", e);
-                }
-                return refreshed;
-            });
+            .thenApply(tokens -> adoptRefreshedSession(current, tokens));
         refreshInFlight.set(refresh);
         return refresh;
+    }
+
+    /**
+     * Installs the refreshed session and notifies the refresh listener, carrying the previous
+     * refresh token forward when HMRC's response omits one.
+     *
+     * <p>The install is a compare-and-set against the session the refresh was made for. If that
+     * session was replaced or disconnected while the request was in flight, the result belongs to a
+     * session that no longer exists and is discarded: adopting it would overwrite a newer
+     * credential, and recording it would resurrect a deleted one.</p>
+     *
+     * <p>The listener runs only after a successful install, and a listener failure is logged rather
+     * than rethrown. The rotation has already happened by then; failing the future over a recording
+     * side effect would make callers treat a renewed session as expired and discard it.</p>
+     *
+     * @param current   the session the refresh was made for
+     * @param refreshed the tokens HMRC returned
+     * @return the tokens that now represent the refreshed session
+     */
+    private OAuthTokens adoptRefreshedSession(OAuthTokens current, OAuthTokens refreshed) {
+        OAuthTokens adopted = isBlank(refreshed.refreshToken())
+            ? new OAuthTokens(refreshed.accessToken(), current.refreshToken(), refreshed.expiresIn(),
+                refreshed.tokenType(), refreshed.scope(), refreshed.issuedAt())
+            : refreshed;
+
+        if (!currentTokens.compareAndSet(current, adopted)) {
+            LOG.warning("The HMRC session was replaced while a refresh was in flight; "
+                + "the refreshed tokens are discarded rather than overwriting it");
+            return adopted;
+        }
+        LOG.info("Access token refreshed successfully");
+        try {
+            refreshListener.accept(adopted);
+        } catch (RuntimeException e) {
+            LOG.log(Level.WARNING, "The refresh listener failed to record a rotated session", e);
+        }
+        return adopted;
     }
 
     /**

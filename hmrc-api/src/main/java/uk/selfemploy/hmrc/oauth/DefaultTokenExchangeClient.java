@@ -80,22 +80,32 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
         String body = buildTokenRequestBody("refresh_token", "refresh_token", refreshToken);
 
         return sendTokenRequest(body)
-            .exceptionally(ex -> {
-                HmrcOAuthException failure = ex.getCause() instanceof HmrcOAuthException cause
-                    ? cause
-                    : new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
-                if (failure.getError() == OAuthError.INVALID_GRANT) {
-                    // This is the one failure that destroys the stored session, so it must leave a
-                    // record of what HMRC actually said — without a stack trace, since a rejection is
-                    // expected and user-recoverable rather than a fault to diagnose.
-                    log.warn("HMRC rejected the refresh token; the user must reconnect: {}",
-                        HmrcPiiRedactor.redact(String.valueOf(failure.getMessage())));
-                } else {
-                    log.error("Token refresh failed: {}",
-                        HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
-                }
-                throw failure;
-            });
+            .exceptionally(DefaultTokenExchangeClient::logAndRethrowRefreshFailure);
+    }
+
+    /**
+     * Logs a refresh failure and rethrows it as an {@link HmrcOAuthException}.
+     *
+     * <p>An {@code invalid_grant} is the one failure that destroys the stored session, so the log
+     * must record what HMRC actually said — redacted, and without a stack trace, since a rejection
+     * is expected and user-recoverable rather than a fault to diagnose. Every other failure keeps
+     * its stack trace.</p>
+     *
+     * @param ex the failure raised by the token request
+     * @return never; the method always throws
+     */
+    private static OAuthTokens logAndRethrowRefreshFailure(Throwable ex) {
+        HmrcOAuthException failure = ex.getCause() instanceof HmrcOAuthException cause
+            ? cause
+            : new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
+        if (failure.getError() == OAuthError.INVALID_GRANT) {
+            log.warn("HMRC rejected the refresh token; the user must reconnect: {}",
+                HmrcPiiRedactor.redact(String.valueOf(failure.getMessage())));
+        } else {
+            log.error("Token refresh failed: {}",
+                HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
+        }
+        throw failure;
     }
 
     private String buildTokenRequestBody(String grantType, String paramName, String paramValue) {

@@ -93,6 +93,11 @@ public final class OAuthServiceFactory {
      *
      * <p>On restore, if tokens have less than 50% of their lifetime remaining,
      * we proactively refresh them to avoid mid-session expiry.</p>
+     *
+     * <p>Expired tokens are cleared only when no refresh token exists on disk at all. The storage
+     * layer reports a refresh token that fails to decrypt as absent while deliberately keeping the
+     * ciphertext — it may well work once the master key is readable again, so it must not be
+     * deleted on that basis.</p>
      */
     private static void restoreTokensFromStorage(HmrcOAuthService service) {
         try {
@@ -116,9 +121,6 @@ public final class OAuthServiceFactory {
                 if (refreshToken != null && !refreshToken.isBlank()) {
                     tryRefreshTokens(service, tokens);
                 } else if (SqliteDataStore.getInstance().hasRefreshToken()) {
-                    // The refresh token is on disk but would not decrypt, which the storage layer
-                    // reports as absence while deliberately keeping the ciphertext. It may well work
-                    // once the master key is readable again, so it must not be deleted on that basis.
                     LOG.warning("The stored refresh token could not be read; leaving it in place");
                 } else {
                     LOG.info("No refresh token available - clearing expired tokens");

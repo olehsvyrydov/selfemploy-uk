@@ -390,11 +390,13 @@ class HmrcOAuthServiceTest {
     @DisplayName("Token Refresh")
     class TokenRefresh {
 
+        /**
+         * Nothing is sent to HMRC here, so nothing has been rejected. Reporting this as
+         * {@code invalid_grant} is what led callers to delete a session HMRC had never refused.
+         */
         @Test
         @DisplayName("reports a missing refresh token as NO_REFRESH_TOKEN, not as an HMRC rejection")
         void missingRefreshTokenIsNotAnHmrcRejection() {
-            // Nothing is sent to HMRC, so nothing has been rejected. Reporting this as invalid_grant
-            // is what led callers to delete a session HMRC had never refused.
             oAuthService.setTokens(OAuthTokens.create("access", null, 14400, "Bearer", "scope"));
 
             assertThatThrownBy(() -> oAuthService.refreshAccessToken().get())
@@ -441,12 +443,14 @@ class HmrcOAuthServiceTest {
                 .isEqualTo("rotated_refresh_token");
         }
 
+        /**
+         * HMRC invalidates a refresh token when it is redeemed. Two refreshes in flight together
+         * would present the same token, and the loser would be told {@code invalid_grant} - a
+         * rejection the app inflicted on itself, indistinguishable from a real revocation.
+         */
         @Test
         @DisplayName("shares one refresh between concurrent callers, so a rotation cannot reject itself")
         void concurrentRefreshesShareOneRequest() {
-            // HMRC invalidates a refresh token when it is redeemed. Two refreshes in flight together
-            // would present the same token, and the loser would be told invalid_grant - a rejection
-            // the app inflicted on itself, indistinguishable from a real revocation.
             oAuthService.setTokens(createTestTokens());
             CompletableFuture<OAuthTokens> pending = new CompletableFuture<>();
             when(tokenExchangeClient.refreshTokens("test_refresh_token")).thenReturn(pending);
@@ -461,11 +465,13 @@ class HmrcOAuthServiceTest {
             assertThat(second).isCompleted();
         }
 
+        /**
+         * An empty string is not a credential. Sending one earns an {@code invalid_grant} that
+         * looks exactly like a real revocation, and would cost the user their stored session.
+         */
         @Test
         @DisplayName("treats a blank refresh token as none, rather than presenting it to HMRC")
         void blankRefreshTokenIsNotPresented() {
-            // An empty string is not a credential. Sending one earns an invalid_grant that looks
-            // exactly like a real revocation, and would cost the user their stored session.
             oAuthService.setTokens(OAuthTokens.create("access", "  ", 14400, "Bearer", "scope"));
 
             assertThatThrownBy(() -> oAuthService.refreshAccessToken().get())
@@ -476,6 +482,9 @@ class HmrcOAuthServiceTest {
             verify(tokenExchangeClient, never()).refreshTokens(anyString());
         }
 
+        /**
+         * The second refresh must act on the new session, not join the abandoned one.
+         */
         @Test
         @DisplayName("disowns an in-flight refresh when the session it belongs to is replaced")
         void replacingTheSessionDisownsAnInFlightRefresh() {
@@ -486,13 +495,12 @@ class HmrcOAuthServiceTest {
                 .thenReturn(CompletableFuture.completedFuture(
                     OAuthTokens.create("second_access", "rotated", 14400, "Bearer", "scope")));
 
-            oAuthService.refreshAccessToken();  // never completes
+            oAuthService.refreshAccessToken();
 
             oAuthService.setTokens(OAuthTokens.create("second_access", "second_refresh_token",
                 14400, "Bearer", "scope"));
             oAuthService.refreshAccessToken();
 
-            // The second call must refresh the new session, not join the abandoned one.
             verify(tokenExchangeClient).refreshTokens("second_refresh_token");
         }
 
@@ -513,11 +521,14 @@ class HmrcOAuthServiceTest {
             verify(tokenExchangeClient, times(1)).refreshTokens("refresh_1");
         }
 
+        /**
+         * HMRC has already invalidated the old refresh token by the time a rotation lands, so the
+         * new one must be recorded by the refresh itself - a caller that gave up waiting cannot be
+         * relied on to do it.
+         */
         @Test
         @DisplayName("notifies the refresh listener with the rotated tokens")
         void notifiesTheListenerOnRotation() throws Exception {
-            // HMRC has already invalidated the old refresh token by this point, so the new one must
-            // be recorded by the refresh itself - a caller that gave up waiting cannot be relied on.
             List<OAuthTokens> recorded = new ArrayList<>();
             oAuthService.setRefreshListener(recorded::add);
             oAuthService.setTokens(createTestTokens());
@@ -531,12 +542,14 @@ class HmrcOAuthServiceTest {
                 .satisfies(tokens -> assertThat(tokens.refreshToken()).isEqualTo("rotated_refresh"));
         }
 
+        /**
+         * The rotation is already installed by the time the listener runs. A listener failure is a
+         * persistence side effect, not a refresh failure: turning it into a failed future would
+         * make callers treat a renewed session as expired and discard it.
+         */
         @Test
         @DisplayName("a listener that throws does not fail the refresh, and the rotation still installs")
         void aThrowingListenerDoesNotFailTheRefresh() throws Exception {
-            // The rotation is already installed by the time the listener runs. A listener failure is a
-            // persistence side effect, not a refresh failure: turning it into a failed future would make
-            // callers treat a renewed session as expired and discard it.
             oAuthService.setRefreshListener(tokens -> {
                 throw new RuntimeException("persistence unavailable");
             });
