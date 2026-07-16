@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -782,16 +784,25 @@ class PluginSystemE2ETest {
     @DisplayName("Event Bus E2E")
     class EventBusE2E {
 
+        /**
+         * Delivery order is deliberately not asserted: BACKGROUND handlers run on a cached thread
+         * pool, so two publishes may be handled on different threads and arrive in either order.
+         * The bus promises delivery, not cross-event ordering.
+         */
         @Test
         @DisplayName("should publish events to subscribers")
         void shouldPublishEventsToSubscribers() throws Exception {
             // Given
             DefaultPluginEventBus eventBus = new DefaultPluginEventBus();
             List<String> receivedEvents = new CopyOnWriteArrayList<>();
+            CountDownLatch delivered = new CountDownLatch(2);
 
             eventBus.subscribe(
                 TestPluginEvent.class,
-                event -> receivedEvents.add(event.getMessage()),
+                event -> {
+                    receivedEvents.add(event.getMessage());
+                    delivered.countDown();
+                },
                 uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
                 "test-plugin"
             );
@@ -800,11 +811,11 @@ class PluginSystemE2ETest {
             eventBus.publish(new TestPluginEvent("test-plugin", "Hello"));
             eventBus.publish(new TestPluginEvent("test-plugin", "World"));
 
-            // Give async handlers time to complete
-            Thread.sleep(100);
-
             // Then
-            assertThat(receivedEvents).containsExactly("Hello", "World");
+            assertThat(delivered.await(5, TimeUnit.SECONDS))
+                .as("both events delivered within 5s")
+                .isTrue();
+            assertThat(receivedEvents).containsExactlyInAnyOrder("Hello", "World");
 
             // Cleanup
             eventBus.close();
@@ -816,6 +827,7 @@ class PluginSystemE2ETest {
             // Given
             DefaultPluginEventBus eventBus = new DefaultPluginEventBus();
             List<String> receivedEvents = new CopyOnWriteArrayList<>();
+            CountDownLatch delivered = new CountDownLatch(1);
 
             eventBus.subscribe(
                 TestPluginEvent.class,
@@ -825,7 +837,10 @@ class PluginSystemE2ETest {
             );
             eventBus.subscribe(
                 TestPluginEvent.class,
-                event -> receivedEvents.add("B:" + event.getMessage()),
+                event -> {
+                    receivedEvents.add("B:" + event.getMessage());
+                    delivered.countDown();
+                },
                 uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
                 "plugin-b"
             );
@@ -834,10 +849,10 @@ class PluginSystemE2ETest {
             eventBus.unsubscribeAll("plugin-a");
             eventBus.publish(new TestPluginEvent("plugin-b", "Test"));
 
-            // Give async handlers time to complete
-            Thread.sleep(100);
-
             // Then - only plugin-b handler receives the event
+            assertThat(delivered.await(5, TimeUnit.SECONDS))
+                .as("the remaining handler delivered within 5s")
+                .isTrue();
             assertThat(receivedEvents).containsExactly("B:Test");
 
             // Cleanup
