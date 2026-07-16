@@ -70,7 +70,7 @@ final class HmrcSessionPolicy {
      */
     static boolean onRefreshFailure(Throwable error, HmrcOAuthService oauthService) {
         if (!OAuthServiceFactory.isRefreshTokenRejected(error)) {
-            LOG.warning("Could not renew the HMRC session (" + error.getMessage()
+            LOG.warning("Could not renew the HMRC session (" + describe(error)
                 + "); the stored tokens are untouched");
             return false;
         }
@@ -79,5 +79,21 @@ final class HmrcSessionPolicy {
         SqliteDataStore.getInstance().clearOAuthTokens();
         oauthService.setTokens(null);
         return true;
+    }
+
+    /**
+     * Describes a refresh failure by its root cause, class name included. Wrappers like
+     * {@code CompletionException} bury the informative exception, and some failures — a timeout —
+     * carry no message at all, so the message alone can log as {@code null} and name no type.
+     *
+     * @param error the failure, possibly wrapped
+     * @return the root cause's class name, with its message when it has one
+     */
+    private static String describe(Throwable error) {
+        Throwable cause = error;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause.toString();
     }
 }
