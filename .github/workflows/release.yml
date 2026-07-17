@@ -64,8 +64,18 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF#refs/tags/v}"
+          # jpackage rejects non-numeric versions (MSI ProductVersion, DMG CFBundleVersion) and
+          # rpmbuild rejects '-', so a pre-release tag like 1.0.0-beta.1 is reduced to its numeric
+          # x.y.z prefix for --app-version, mirroring the pom's build-helper parse-version. The
+          # full tag still names the release and its artifacts.
+          if [[ ! "$TAG" =~ ^([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            echo "Tag v$TAG does not start with a numeric x.y.z version" >&2
+            exit 1
+          fi
+          APP_VERSION="${BASH_REMATCH[1]}"
           echo "version=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Building version: $TAG"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $TAG (jpackage app-version: $APP_VERSION)"
 
       - name: Install RPM tools (Linux RPM only)
         if: matrix.type == 'rpm'
@@ -73,27 +83,38 @@ jobs:
 
       - name: Build application
         shell: bash
-        run: mvn -B package -DskipTests --no-transfer-progress
+        run: mvn -B package -Ppackage -DskipTests --no-transfer-progress
 
-      - name: Prepare jpackage input
+      - name: Locate main jar
+        id: mainjar
         shell: bash
         run: |
-          mkdir -p app/target/jpackage-input
-          cp -r app/target/quarkus-app/* app/target/jpackage-input/
+          shopt -s nullglob
+          JARS=(app/target/jpackage-input/self-employment-app-*.jar)
+          if [ "${#JARS[@]}" -ne 1 ]; then
+            echo "Expected exactly one app jar in jpackage-input, found ${#JARS[@]}: ${JARS[*]}" >&2
+            exit 1
+          fi
+          MAIN_JAR="$(basename "${JARS[0]}")"
+          echo "name=$MAIN_JAR" >> "$GITHUB_OUTPUT"
+          echo "Main jar: $MAIN_JAR"
 
       - name: Run jpackage (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
           jpackage \
             --name SelfEmploy \
-            --app-version "${{ steps.version.outputs.version }}" \
+            --app-version "${{ steps.version.outputs.app_version }}" \
             --vendor "Self-Employment UK" \
             --description "Manage accounting and submit HMRC reports" \
             --input app/target/jpackage-input \
-            --main-jar quarkus-run.jar \
-            --main-class io.quarkus.bootstrap.runner.QuarkusEntryPoint \
+            --main-jar "${{ steps.mainjar.outputs.name }}" \
+            --main-class uk.selfemploy.app.Main \
             --java-options "-Dfile.encoding=UTF-8" \
             --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" \
+            --java-options "--enable-native-access=ALL-UNNAMED" \
+            --java-options "-Dio.netty.noUnsafe=true" \
+            --java-options "-Djava.util.logging.config.file=\$APPDIR/logging.properties" \
             --type ${{ matrix.type }} \
             --dest app/target/installer
 
@@ -103,14 +124,17 @@ jobs:
         run: |
           jpackage `
             --name SelfEmploy `
-            --app-version "${{ steps.version.outputs.version }}" `
+            --app-version "${{ steps.version.outputs.app_version }}" `
             --vendor "Self-Employment UK" `
             --description "Manage accounting and submit HMRC reports" `
             --input app/target/jpackage-input `
-            --main-jar quarkus-run.jar `
-            --main-class io.quarkus.bootstrap.runner.QuarkusEntryPoint `
+            --main-jar "${{ steps.mainjar.outputs.name }}" `
+            --main-class uk.selfemploy.app.Main `
             --java-options "-Dfile.encoding=UTF-8" `
             --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" `
+            --java-options "--enable-native-access=ALL-UNNAMED" `
+            --java-options "-Dio.netty.noUnsafe=true" `
+            --java-options "-Djava.util.logging.config.file=`$APPDIR/logging.properties" `
             --type ${{ matrix.type }} `
             --dest app/target/installer `
             --win-menu `

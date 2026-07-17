@@ -111,12 +111,12 @@ selfemploy-uk/
 
 | Component | Technology |
 |-----------|------------|
-| Backend | Quarkus 3.x |
 | UI | JavaFX 25+ |
-| Database | SQLite (local) + H2 (persistence) |
-| Migrations | Flyway |
+| Database | SQLite (local) |
 | Build | Maven + jpackage |
-| Native | GraalVM Native Image |
+
+The optional server-side stack (Quarkus, H2, Flyway) is quarantined behind the `-Pserver`
+build profile and is not part of the desktop application.
 
 ## Target Users
 

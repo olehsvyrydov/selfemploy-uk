@@ -322,6 +322,11 @@ class HmrcOAuthServiceTest {
             verify(callbackServer).stop();
         }
 
+        /**
+         * The browser is opened on an async stage after the callback listener binds, so the
+         * verification polls with a timeout rather than asserting immediately - the main thread
+         * would otherwise race the dispatch and see zero interactions.
+         */
         @Test
         @DisplayName("rejects a second concurrent authentication without disturbing the first")
         void rejectsConcurrentAuthentication() {
@@ -335,7 +340,7 @@ class HmrcOAuthServiceTest {
             assertThat(second).isCompletedExceptionally();
             assertThatThrownBy(second::get).hasCauseInstanceOf(HmrcOAuthException.class);
 
-            verify(browserLauncher, times(1)).openUrl(anyString());
+            verify(browserLauncher, timeout(5000)).openUrl(anyString());
             verify(callbackServer, never()).stop();
         }
 

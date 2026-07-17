@@ -24,8 +24,9 @@ import java.util.logging.Logger;
 /**
  * Main application launcher for UK Self-Employment Manager.
  *
- * This class serves as the entry point for the JavaFX application.
- * It initializes the Quarkus container and launches the UI.
+ * This class serves as the entry point for the JavaFX application. The packaged app
+ * starts it through {@link Main}, whose class does not extend {@code Application} and so
+ * passes the java launcher's class-path check.
  */
 public class Launcher extends Application {
 

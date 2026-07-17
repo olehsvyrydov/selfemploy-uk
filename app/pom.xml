@@ -33,10 +33,13 @@
             <artifactId>self-employment-ui</artifactId>
         </dependency>
 
-        <!-- Quarkus -->
+        <!-- Logging: route SLF4J (used by core and hmrc-api) to java.util.logging, which the rest
+             of the app logs through. Without a provider SLF4J silently drops those logs. -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>${slf4j-jdk14.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- JavaFX -->
@@ -51,21 +54,26 @@
 
         <!-- Testing -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>quarkus-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>uk.selfemploy.app.Main</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>libs/</classpathPrefix>
+                        </manifest>
+                    </archive>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.openjfx</groupId>
@@ -110,10 +118,27 @@
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-runtime-classpath</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/jpackage-input/libs</outputDirectory>
+                                    <includeScope>runtime</includeScope>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>copy-quarkus-app</id>
+                                <id>copy-app-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
@@ -122,9 +147,15 @@
                                     <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
                                     <resources>
                                         <resource>
-                                            <directory>${project.build.directory}/quarkus-app</directory>
+                                            <directory>${project.build.directory}</directory>
                                             <includes>
-                                                <include>**/*</include>
+                                                <include>${project.build.finalName}.jar</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../packaging</directory>
+                                            <includes>
+                                                <include>logging.properties</include>
                                             </includes>
                                         </resource>
                                     </resources>
@@ -142,9 +173,8 @@
                             <description>Manage accounting and submit HMRC reports</description>
                             <appVersion>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</appVersion>
                             <input>${project.build.directory}/jpackage-input</input>
-                            <mainClass>io.quarkus.bootstrap.runner.QuarkusEntryPoint</mainClass>
-                            <mainJar>quarkus-run.jar</mainJar>
-                            <icon>${project.basedir}/../packaging/icon</icon>
+                            <mainClass>uk.selfemploy.app.Main</mainClass>
+                            <mainJar>${project.build.finalName}.jar</mainJar>
                             <destination>${project.build.directory}/installer</destination>
                             <javaOptions>
                                 <option>-Dfile.encoding=UTF-8</option>
@@ -155,6 +185,7 @@
                                      an "unknown module" warning. -->
                                 <option>--enable-native-access=ALL-UNNAMED</option>
                                 <option>-Dio.netty.noUnsafe=true</option>
+                                <option>-Djava.util.logging.config.file=$APPDIR/logging.properties</option>
                             </javaOptions>
                         </configuration>
                     </plugin>
