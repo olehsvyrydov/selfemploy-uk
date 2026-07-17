@@ -6,11 +6,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.selfemploy.plugin.api.EventHandler;
 import uk.selfemploy.plugin.api.Plugin;
 import uk.selfemploy.plugin.api.PluginContext;
 import uk.selfemploy.plugin.api.PluginDependency;
 import uk.selfemploy.plugin.api.PluginDescriptor;
 import uk.selfemploy.plugin.api.PluginPermission;
+import uk.selfemploy.plugin.api.ThreadAffinity;
 import uk.selfemploy.plugin.extension.ExtensionPoint;
 
 import java.nio.file.Path;
@@ -18,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -782,66 +787,86 @@ class PluginSystemE2ETest {
     @DisplayName("Event Bus E2E")
     class EventBusE2E {
 
+        /**
+         * The bus is given a single-thread executor, so dispatched handler tasks run in FIFO
+         * order and {@link #awaitDispatchesToComplete} can fence the queue: once an empty task
+         * submitted after the publishes has run, every earlier dispatch has completed. That makes
+         * the assertion deterministic in both directions - a lost delivery and a duplicate one
+         * both fail - where a sleep or a latch alone leaves a timing window.
+         *
+         * <p>The handler is held in a strong local because the bus itself holds handlers only
+         * weakly; an inline lambda would be collectable between subscribe and dispatch.
+         */
         @Test
         @DisplayName("should publish events to subscribers")
         void shouldPublishEventsToSubscribers() throws Exception {
             // Given
-            DefaultPluginEventBus eventBus = new DefaultPluginEventBus();
             List<String> receivedEvents = new CopyOnWriteArrayList<>();
+            ExecutorService dispatcher = Executors.newSingleThreadExecutor();
 
-            eventBus.subscribe(
-                TestPluginEvent.class,
-                event -> receivedEvents.add(event.getMessage()),
-                uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
-                "test-plugin"
-            );
+            try (DefaultPluginEventBus eventBus = new DefaultPluginEventBus(dispatcher)) {
+                EventHandler<TestPluginEvent> handler = event -> receivedEvents.add(event.getMessage());
+                eventBus.subscribe(
+                    TestPluginEvent.class,
+                    handler,
+                    ThreadAffinity.BACKGROUND,
+                    "test-plugin"
+                );
 
-            // When
-            eventBus.publish(new TestPluginEvent("test-plugin", "Hello"));
-            eventBus.publish(new TestPluginEvent("test-plugin", "World"));
+                // When
+                eventBus.publish(new TestPluginEvent("test-plugin", "Hello"));
+                eventBus.publish(new TestPluginEvent("test-plugin", "World"));
+                awaitDispatchesToComplete(dispatcher);
 
-            // Give async handlers time to complete
-            Thread.sleep(100);
-
-            // Then
-            assertThat(receivedEvents).containsExactly("Hello", "World");
-
-            // Cleanup
-            eventBus.close();
+                // Then
+                assertThat(receivedEvents).containsExactly("Hello", "World");
+            }
         }
 
+        /**
+         * The fence makes the negative half of the assertion real: had unsubscribeAll left
+         * plugin-a's handler subscribed, its dispatch would have been queued before the fence
+         * task and its "Test" entry would be in the list by the time the fence completes.
+         */
         @Test
         @DisplayName("should unsubscribe all handlers for a plugin")
         void shouldUnsubscribeAllHandlersForPlugin() throws Exception {
             // Given
-            DefaultPluginEventBus eventBus = new DefaultPluginEventBus();
             List<String> receivedEvents = new CopyOnWriteArrayList<>();
+            ExecutorService dispatcher = Executors.newSingleThreadExecutor();
 
-            eventBus.subscribe(
-                TestPluginEvent.class,
-                event -> receivedEvents.add(event.getMessage()),
-                uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
-                "plugin-a"
-            );
-            eventBus.subscribe(
-                TestPluginEvent.class,
-                event -> receivedEvents.add("B:" + event.getMessage()),
-                uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
-                "plugin-b"
-            );
+            try (DefaultPluginEventBus eventBus = new DefaultPluginEventBus(dispatcher)) {
+                EventHandler<TestPluginEvent> handlerA = event -> receivedEvents.add(event.getMessage());
+                EventHandler<TestPluginEvent> handlerB = event -> receivedEvents.add("B:" + event.getMessage());
+                eventBus.subscribe(
+                    TestPluginEvent.class,
+                    handlerA,
+                    ThreadAffinity.BACKGROUND,
+                    "plugin-a"
+                );
+                eventBus.subscribe(
+                    TestPluginEvent.class,
+                    handlerB,
+                    ThreadAffinity.BACKGROUND,
+                    "plugin-b"
+                );
 
-            // When
-            eventBus.unsubscribeAll("plugin-a");
-            eventBus.publish(new TestPluginEvent("plugin-b", "Test"));
+                // When
+                eventBus.unsubscribeAll("plugin-a");
+                eventBus.publish(new TestPluginEvent("plugin-b", "Test"));
+                awaitDispatchesToComplete(dispatcher);
 
-            // Give async handlers time to complete
-            Thread.sleep(100);
+                // Then - only plugin-b handler receives the event
+                assertThat(receivedEvents).containsExactly("B:Test");
+            }
+        }
 
-            // Then - only plugin-b handler receives the event
-            assertThat(receivedEvents).containsExactly("B:Test");
-
-            // Cleanup
-            eventBus.close();
+        /**
+         * Fences the single-thread dispatcher: an empty task submitted now runs only after every
+         * handler task dispatched before it, so on return all prior deliveries have completed.
+         */
+        private static void awaitDispatchesToComplete(ExecutorService dispatcher) throws Exception {
+            dispatcher.submit(() -> { }).get(5, TimeUnit.SECONDS);
         }
     }
 
