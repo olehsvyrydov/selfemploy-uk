@@ -616,11 +616,11 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
     }
 
-    private boolean selfTestInProgress;
+    private boolean hmrcOperationInProgress;
 
     @FXML
     void handleSaveHmrcCredentials(ActionEvent event) {
-        if (selfTestInProgress) {
+        if (hmrcOperationInProgress) {
             return;
         }
 
@@ -659,8 +659,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
         String environment = SqliteDataStore.getInstance().loadHmrcEnvironment();
 
-        loadHmrcCredentialsStatus();
-        updateHmrcConnectionStatus();
+        loadHmrcCredentialsStatus(); // also refreshes the connection status and button state
         // Fields are kept until the self-test passes, so a failed test leaves them editable to fix.
         runCredentialSelfTest(environment, trimmedId, trimmedSecret);
     }
@@ -673,8 +672,13 @@ public class SettingsController implements Initializable, MainController.TaxYear
      * usable state rather than leaving it stuck on "Testing…".
      */
     private void runCredentialSelfTest(String environment, String clientId, String clientSecret) {
-        selfTestInProgress = true;
+        hmrcOperationInProgress = true;
         setCredentialButtonsDisabled(true);
+        // Disable Connect & Verify for the duration too, so the OAuth flow can't interleave with the
+        // self-test. The operation flag keeps it disabled through any status refresh.
+        if (hmrcSetupButton != null) {
+            hmrcSetupButton.setDisable(true);
+        }
         if (hmrcCredentialsStatusLabel != null) {
             hmrcCredentialsStatusLabel.setText("Testing…");
         }
@@ -699,7 +703,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
      * result is discarded when nothing is stored.
      */
     private void completeSelfTest(HmrcConnectionSelfTest.SelfTestReport report) {
-        selfTestInProgress = false;
+        hmrcOperationInProgress = false;
         setCredentialButtonsDisabled(false);
         loadHmrcCredentialsStatus();
 
@@ -784,8 +788,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         SqliteDataStore.getInstance().clearHmrcCredentials();
         System.clearProperty("HMRC_CLIENT_ID");
         System.clearProperty("HMRC_CLIENT_SECRET");
-        loadHmrcCredentialsStatus();
-        updateHmrcConnectionStatus();
+        loadHmrcCredentialsStatus(); // also refreshes the connection status and button state
         showInfo("Credentials Cleared", "Your HMRC API credentials have been removed.");
     }
 
@@ -928,6 +931,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
      * has no session left to refresh and falls back to the full wizard.
      */
     private void quickReconnect(HmrcConnectionService connectionService) {
+        hmrcOperationInProgress = true;
         if (hmrcSetupButton != null) {
             hmrcSetupButton.setDisable(true);
             hmrcSetupButton.setText("Reconnecting...");
@@ -946,15 +950,15 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     reverifyBusinessProfile(nino, tokens.accessToken());
                     return;
                 }
+                hmrcOperationInProgress = false;
                 launchConnectionWizard();
             } else if (tokens != null && connectionService.canQuickReconnect()) {
-                if (hmrcSetupButton != null) {
-                    hmrcSetupButton.setDisable(false);
-                }
+                hmrcOperationInProgress = false;
                 updateHmrcConnectionStatus();
                 showWarning("Couldn't Reconnect",
                     "We couldn't reach HMRC just now. Please check your connection and try again.");
             } else {
+                hmrcOperationInProgress = false;
                 LOG.info("Session refresh was not possible; launching the full connection wizard");
                 launchConnectionWizard();
             }
@@ -971,11 +975,26 @@ public class SettingsController implements Initializable, MainController.TaxYear
             hmrcConnectionStatusLabel.setText("Fetching business profile...");
         }
         Thread.startVirtualThread(() -> {
-            HmrcBusinessProfileService.Result result = profileService.fetchAndPersist(nino, accessToken);
-            Platform.runLater(() -> {
-                applyProfileStatus(result);
-                showProfileOutcomeDialog(result);
-            });
+            HmrcBusinessProfileService.Result result = null;
+            try {
+                result = profileService.fetchAndPersist(nino, accessToken);
+            } finally {
+                // A finally guarantees the operation is cleared and the UI restored even if the fetch
+                // throws, so the button is never left permanently disabled on "Fetching…".
+                HmrcBusinessProfileService.Result finalResult = result;
+                Platform.runLater(() -> {
+                    hmrcOperationInProgress = false;
+                    if (finalResult != null) {
+                        applyProfileStatus(finalResult);
+                        showProfileOutcomeDialog(finalResult);
+                    } else {
+                        updateHmrcConnectionStatus();
+                        showWarning("Couldn't Finish Connecting",
+                            "We couldn't fetch your HMRC business profile just now. "
+                                + "Please check your connection and try again.");
+                    }
+                });
+            }
         });
     }
 
@@ -992,9 +1011,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
         if (result == null) {
             showError("Connection Failed",
                 "The HMRC connection screen could not be opened. Please try again.");
-        }
-        if (hmrcSetupButton != null) {
-            hmrcSetupButton.setDisable(false);
         }
         updateHmrcConnectionStatus();
     }
@@ -1059,7 +1075,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void completeSetup(boolean success, String statusText) {
         if (hmrcSetupButton != null) {
-            hmrcSetupButton.setDisable(false);
             hmrcSetupButton.setText(success ? "Reconnect" : "Connect & Verify");
         }
         updateHmrcConnectionStatus();
@@ -1225,10 +1240,27 @@ public class SettingsController implements Initializable, MainController.TaxYear
             }
         }
 
-        // Single authority for the button's enabled state: the OAuth flow needs both a NINO and
-        // saved credentials, so the button is enabled only when both are present.
+        // Credentials cleared while a session is still active: the tokens work until they need a
+        // refresh, which the missing credentials cannot do. Say so plainly instead of leaving a green
+        // "ready" status above a disabled button.
+        if (hasOAuth && !hasCredentials) {
+            hmrcConnectionStatusLabel.setText("Re-enter your HMRC Client ID and Secret to keep this connection working");
+            if (hmrcStatusIcon != null) {
+                hmrcStatusIcon.setIconLiteral("fas-exclamation-circle");
+                hmrcStatusIcon.setIconColor(Color.web("#f59e0b")); // Amber
+            }
+            if (hmrcSetupInstructions != null) {
+                hmrcSetupInstructions.setText("Your HMRC credentials were removed. Re-enter your Client ID "
+                    + "and Secret above so your session can be renewed when it expires.");
+            }
+        }
+
+        // Single authority for the button's enabled state. It stays disabled while an HMRC operation
+        // (a reconnect or a credential self-test) is in flight, so a status refresh triggered mid-flight
+        // cannot re-enable it and let the user start a second, concurrent flow. Otherwise it is enabled
+        // only when both a NINO and saved credentials are present, which the OAuth flow requires.
         if (hmrcSetupButton != null) {
-            hmrcSetupButton.setDisable(!(hasNino && hasCredentials));
+            hmrcSetupButton.setDisable(hmrcOperationInProgress || !(hasNino && hasCredentials));
         }
     }
 
