@@ -703,3 +703,80 @@
 .dialog-header-red {
     -fx-background-color: linear-gradient(to right, #b91c1c, #ef4444);
 }
+
+/* ===== HMRC Registration Guide Dialog ===== */
+
+.guide-copy-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6b7280;
+}
+
+.guide-copy-field {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #111827;
+    -fx-padding: 8 10;
+    -fx-highlight-fill: #ccfbf1;
+    -fx-highlight-text-fill: #0f766e;
+}
+
+.guide-copy-field:focused {
+    -fx-border-color: #0f766e;
+    -fx-background-color: white;
+}
+
+.guide-step {
+    -fx-padding: 8 0 8 0;
+}
+
+.guide-step-check {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #111827;
+}
+
+.guide-step-check > .box {
+    -fx-background-color: white;
+    -fx-border-color: #d1d5db;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 3;
+}
+
+.guide-step-check:selected > .box {
+    -fx-background-color: #0f766e;
+    -fx-border-color: #0f766e;
+}
+
+.guide-step-check:selected > .box > .mark {
+    -fx-background-color: white;
+}
+
+.guide-step-check:selected {
+    -fx-text-fill: #6b7280;
+}
+
+.guide-step-check:focused > .box {
+    -fx-border-color: #0f766e;
+    -fx-border-width: 2;
+}
+
+.guide-step-detail {
+    -fx-font-size: 13px;
+    -fx-text-fill: #4b5563;
+    -fx-line-spacing: 2;
+    -fx-wrap-text: true;
+}
+
+.guide-production-note {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6b7280;
+    -fx-font-style: italic;
+    -fx-wrap-text: true;
+}

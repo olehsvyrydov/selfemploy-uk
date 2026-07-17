@@ -205,6 +205,15 @@ public final class OAuthServiceFactory {
         return new SimpleHmrcConfig().authTimeoutSeconds();
     }
 
+    /**
+     * Returns the OAuth redirect URI the app listens on, for display and for registration guidance.
+     *
+     * @return the redirect URI, e.g. {@code http://localhost:8088/oauth/callback}
+     */
+    public static String getRedirectUri() {
+        return new SimpleHmrcConfig().getRedirectUri();
+    }
+
     public static boolean isConfigured() {
         return getOAuthService() != null &&
                new SimpleHmrcConfig().isConfigured();
@@ -255,7 +264,20 @@ public final class OAuthServiceFactory {
 
         @Override
         public int callbackPort() {
-            return Integer.parseInt(System.getProperty("HMRC_CALLBACK_PORT", "8088"));
+            String value = System.getProperty("HMRC_CALLBACK_PORT", "8088");
+            try {
+                int port = Integer.parseInt(value.trim());
+                if (port < 1 || port > 65535) {
+                    LOG.warning("HMRC_CALLBACK_PORT is out of the valid 1-65535 range ('" + value
+                        + "'); using the default 8088");
+                    return 8088;
+                }
+                return port;
+            } catch (NumberFormatException e) {
+                LOG.warning("HMRC_CALLBACK_PORT is not a valid port number ('" + value
+                    + "'); using the default 8088");
+                return 8088;
+            }
         }
 
         @Override
