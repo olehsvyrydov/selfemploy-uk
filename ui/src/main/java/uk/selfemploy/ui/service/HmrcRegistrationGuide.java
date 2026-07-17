@@ -72,10 +72,6 @@ public final class HmrcRegistrationGuide {
         return DEVELOPER_HUB_URL;
     }
 
-    public String suggestedAppName() {
-        return SUGGESTED_APP_NAME;
-    }
-
     public String redirectUri() {
         return redirectUri;
     }

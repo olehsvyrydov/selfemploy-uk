@@ -15,7 +15,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -24,6 +23,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import uk.selfemploy.ui.service.HmrcRegistrationGuide;
 import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.util.ClipboardUtil;
+import uk.selfemploy.ui.util.DialogBounds;
 import uk.selfemploy.ui.util.DialogStyler;
 
 import java.util.function.Consumer;
@@ -74,12 +74,9 @@ public final class HmrcRegistrationGuideDialog {
         container.getStyleClass().add("help-dialog-container");
         container.setMinWidth(DIALOG_WIDTH);
         container.setMaxWidth(DIALOG_WIDTH);
-        container.getChildren().addAll(createHeader(stage), createBody(), createFooter(stage));
+        container.getChildren().addAll(createHeader(stage), createBody(owner), createFooter(stage));
 
-        DialogStyler.applyRoundedClip(container, DialogStyler.CORNER_RADIUS);
-        StackPane wrapper = DialogStyler.createShadowWrapper(container);
-        DialogStyler.setupStyledDialog(stage, wrapper, STYLESHEET);
-        DialogStyler.centerOnOwner(stage);
+        DialogStyler.setupFullyStyledDialog(stage, container, STYLESHEET, DialogStyler.CORNER_RADIUS);
 
         stage.getScene().setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ESCAPE) {
@@ -120,7 +117,7 @@ public final class HmrcRegistrationGuideDialog {
         return header;
     }
 
-    private ScrollPane createBody() {
+    private ScrollPane createBody(Window owner) {
         VBox body = new VBox(16);
         body.getStyleClass().add("help-dialog-body");
         body.setPadding(new Insets(20, 24, 20, 24));
@@ -136,7 +133,9 @@ public final class HmrcRegistrationGuideDialog {
         scroll.setFitToWidth(true);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        double screenHeight = Screen.getPrimary().getVisualBounds().getHeight();
+        // Cap against the screen the dialog opens on (not always the primary), so the footer stays
+        // on-screen on a multi-monitor setup.
+        double screenHeight = DialogBounds.visualBoundsForOwner(owner).getHeight();
         scroll.setMaxHeight(Math.min(520, screenHeight * 0.65));
         return scroll;
     }

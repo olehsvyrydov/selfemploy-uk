@@ -30,4 +30,14 @@ class OAuthServiceFactoryRedirectUriTest {
         assertThatCode(OAuthServiceFactory::getRedirectUri).doesNotThrowAnyException();
         assertThat(OAuthServiceFactory.getRedirectUri()).isEqualTo("http://localhost:8088/oauth/callback");
     }
+
+    @Test
+    @DisplayName("falls back to the default port for an out-of-range value")
+    void outOfRangePortFallsBack() {
+        System.setProperty("HMRC_CALLBACK_PORT", "808888");
+        assertThat(OAuthServiceFactory.getRedirectUri()).isEqualTo("http://localhost:8088/oauth/callback");
+
+        System.setProperty("HMRC_CALLBACK_PORT", "-1");
+        assertThat(OAuthServiceFactory.getRedirectUri()).isEqualTo("http://localhost:8088/oauth/callback");
+    }
 }
