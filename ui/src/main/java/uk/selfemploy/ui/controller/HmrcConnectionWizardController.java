@@ -6,8 +6,6 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -970,18 +968,11 @@ public class HmrcConnectionWizardController implements Initializable {
         tryAgainBtn.getStyleClass().add("hmrc-wizard-btn-primary");
         tryAgainBtn.setOnAction(e -> resetToConnectState());
 
-        Button copyLinkBtn = new Button("Copy sign-in link");
-        copyLinkBtn.setId("oauth-copy-link-btn");
-        copyLinkBtn.getStyleClass().add("hmrc-wizard-btn-secondary");
-        copyLinkBtn.setVisible(false);
-        copyLinkBtn.setManaged(false);
-        copyLinkBtn.setOnAction(e -> copyAuthUrlToClipboard());
-
         Button cancelBtn = new Button("Cancel");
         cancelBtn.getStyleClass().add("hmrc-wizard-btn-secondary");
         cancelBtn.setOnAction(e -> handleCancel());
 
-        buttonBox.getChildren().addAll(tryAgainBtn, copyLinkBtn, cancelBtn);
+        buttonBox.getChildren().addAll(tryAgainBtn, cancelBtn);
 
         container.getChildren().addAll(iconWrapper, errorLabel, guidanceLabel, buttonBox);
         return container;
@@ -1193,42 +1184,9 @@ public class HmrcConnectionWizardController implements Initializable {
                 guidanceLabel.setVisible(!guidance.isEmpty());
                 guidanceLabel.setManaged(!guidance.isEmpty());
             }
-
-            updateCopyLinkButton(errorCode);
         }
 
         showContainer(errorContainer);
-    }
-
-    /**
-     * Shows the "Copy sign-in link" button when the user can recover by opening HMRC's sign-in page
-     * manually — a timed-out flow whose browser tab may have been lost, or the callback port being
-     * busy — and only while an authorization URL for the current attempt is available.
-     */
-    private void updateCopyLinkButton(String errorCode) {
-        Button copyLinkBtn = (Button) errorContainer.lookup("#oauth-copy-link-btn");
-        if (copyLinkBtn == null) {
-            return;
-        }
-        boolean recoverableByManualOpen = "TIMEOUT".equals(errorCode) || "PORT_IN_USE".equals(errorCode);
-        boolean hasUrl = oAuthService != null && oAuthService.getCurrentAuthUrl() != null;
-        boolean show = recoverableByManualOpen && hasUrl;
-        copyLinkBtn.setVisible(show);
-        copyLinkBtn.setManaged(show);
-    }
-
-    /** Copies the current HMRC authorization URL to the clipboard so the user can open it manually. */
-    private void copyAuthUrlToClipboard() {
-        if (oAuthService == null) {
-            return;
-        }
-        String authUrl = oAuthService.getCurrentAuthUrl();
-        if (authUrl == null || authUrl.isBlank()) {
-            return;
-        }
-        ClipboardContent content = new ClipboardContent();
-        content.putString(authUrl);
-        Clipboard.getSystemClipboard().setContent(content);
     }
 
     /**

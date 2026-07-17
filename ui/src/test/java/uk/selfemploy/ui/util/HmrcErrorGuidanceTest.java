@@ -50,10 +50,11 @@ class HmrcErrorGuidanceTest {
         }
 
         @Test
-        @DisplayName("PORT_IN_USE names the port and a recovery action")
+        @DisplayName("PORT_IN_USE explains the port conflict without hardcoding a port number")
         void portInUseIsSpecific() {
-            String help = guidance.getGuidanceForErrorCode("PORT_IN_USE");
-            assertThat(help).contains("8088");
+            String help = guidance.getGuidanceForErrorCode("PORT_IN_USE").toLowerCase();
+            assertThat(help).contains("port");
+            assertThat(help).doesNotContain("8088");
         }
 
         @Test

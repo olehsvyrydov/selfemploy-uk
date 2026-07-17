@@ -58,13 +58,10 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
 
         return sendTokenRequest(body)
             .exceptionally(ex -> {
-                HmrcOAuthException typed = asHmrcOAuthException(ex);
-                if (typed != null) {
-                    throw typed;
-                }
                 log.error("Token exchange failed: {}",
                     HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
-                throw new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
+                HmrcOAuthException typed = asHmrcOAuthException(ex);
+                throw typed != null ? typed : new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
             });
     }
 

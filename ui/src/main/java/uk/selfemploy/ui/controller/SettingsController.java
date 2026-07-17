@@ -54,7 +54,6 @@ import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
@@ -600,7 +599,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     hmrcCredentialsStatusLabel.setText("Configured");
                     hmrcCredentialsStatusLabel.setStyle("-fx-text-fill: #27ae60;");
                 } else {
-                    hmrcCredentialsStatusLabel.setText("Not configured");
+                    hmrcCredentialsStatusLabel.setText("Not configured — enter your Client ID and Secret above");
                     hmrcCredentialsStatusLabel.setStyle("");
                 }
             }
@@ -616,31 +615,38 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     /**
      * Enables "Connect & Verify" only once credentials are stored; without them the OAuth flow
-     * cannot start, so the button stays disabled with a tooltip saying what is missing. Presence is
-     * read through {@link SqliteDataStore#hasHmrcCredentials()} — the secret is never loaded into a
-     * control.
+     * cannot start. What is missing is shown by the adjacent credentials-status label rather than a
+     * tooltip, because a disabled JavaFX control receives no hover events. Presence is read through
+     * {@link SqliteDataStore#hasHmrcCredentials()} — the secret is never loaded into a control.
      */
     private void applyConnectButtonEnabledState(boolean hasCredentials) {
         if (hmrcSetupButton == null) {
             return;
         }
         hmrcSetupButton.setDisable(!hasCredentials);
-        hmrcSetupButton.setTooltip(hasCredentials
-            ? null
-            : new Tooltip("Save your HMRC Client ID and Secret above first."));
     }
+
+    private boolean selfTestInProgress;
 
     @FXML
     void handleSaveHmrcCredentials(ActionEvent event) {
+        if (selfTestInProgress) {
+            return;
+        }
+
+        // Trim first: a leading/trailing space is a routine paste artifact, and the stored value is
+        // trimmed anyway. Validate the trimmed value, so only genuinely malformed input is rejected.
         String clientId = hmrcClientIdField != null ? hmrcClientIdField.getText() : null;
         String clientSecret = hmrcClientSecretField != null ? hmrcClientSecretField.getText() : null;
+        String trimmedId = clientId == null ? "" : clientId.trim();
+        String trimmedSecret = clientSecret == null ? "" : clientSecret.trim();
 
-        HmrcCredentialValidator.Result idCheck = HmrcCredentialValidator.validateClientId(clientId);
+        HmrcCredentialValidator.Result idCheck = HmrcCredentialValidator.validateClientId(trimmedId);
         if (!idCheck.valid()) {
             showError("Check your Client ID", idCheck.message());
             return;
         }
-        HmrcCredentialValidator.Result secretCheck = HmrcCredentialValidator.validateClientSecret(clientSecret);
+        HmrcCredentialValidator.Result secretCheck = HmrcCredentialValidator.validateClientSecret(trimmedSecret);
         if (!secretCheck.valid()) {
             showError("Check your Client Secret", secretCheck.message());
             return;
@@ -648,8 +654,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
         SqliteDataStore store = SqliteDataStore.getInstance();
         try {
-            store.saveHmrcClientId(clientId.trim());
-            store.saveHmrcClientSecret(clientSecret.trim());
+            store.saveHmrcClientId(trimmedId);
+            store.saveHmrcClientSecret(trimmedSecret);
         } catch (CredentialEncryptionException e) {
             LOG.log(Level.SEVERE, "Failed to encrypt and save HMRC credentials", e);
             showError("Could Not Save Credentials",
@@ -659,39 +665,53 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
 
         // Apply credentials as system properties for HmrcConfig
-        applyHmrcCredentialsToSystemProperties(clientId.trim(), clientSecret.trim());
+        applyHmrcCredentialsToSystemProperties(trimmedId, trimmedSecret);
 
         String environment = SqliteDataStore.getInstance().loadHmrcEnvironment();
-        String testClientId = clientId.trim();
-        String testClientSecret = clientSecret.trim();
-
-        if (hmrcClientIdField != null) {
-            hmrcClientIdField.clear();
-        }
-        if (hmrcClientSecretField != null) {
-            hmrcClientSecretField.clear();
-        }
 
         loadHmrcCredentialsStatus();
         updateHmrcConnectionStatus();
-        runCredentialSelfTest(environment, testClientId, testClientSecret);
+        // Fields are kept until the self-test passes, so a failed test leaves them editable to fix.
+        runCredentialSelfTest(environment, trimmedId, trimmedSecret);
     }
 
     /**
      * Runs the HMRC connection self-test off the UI thread after a save and reports the three checks.
      * The credential values are passed straight to the test and never re-read into a control; the
-     * self-test itself keeps them out of logs and messages (task T4.3 gate).
+     * self-test itself keeps them out of logs and messages (task T4.3 gate). Saving is debounced
+     * while a test is in flight, and any unexpected failure of the test still returns the UI to a
+     * usable state rather than leaving it stuck on "Testing…".
      */
     private void runCredentialSelfTest(String environment, String clientId, String clientSecret) {
+        selfTestInProgress = true;
+        if (saveCredentialsButton != null) {
+            saveCredentialsButton.setDisable(true);
+        }
         if (hmrcCredentialsStatusLabel != null) {
             hmrcCredentialsStatusLabel.setText("Testing…");
         }
         Thread.startVirtualThread(() -> {
-            HmrcConnectionSelfTest.SelfTestReport report =
-                new HmrcConnectionSelfTest().run(environment, clientId, clientSecret);
+            HmrcConnectionSelfTest.SelfTestReport report;
+            try {
+                report = new HmrcConnectionSelfTest().run(environment, clientId, clientSecret);
+            } catch (RuntimeException e) {
+                LOG.log(Level.WARNING, "HMRC connection self-test failed unexpectedly", e);
+                report = null;
+            }
+            HmrcConnectionSelfTest.SelfTestReport finalReport = report;
             Platform.runLater(() -> {
+                selfTestInProgress = false;
+                if (saveCredentialsButton != null) {
+                    saveCredentialsButton.setDisable(false);
+                }
                 loadHmrcCredentialsStatus();
-                showSelfTestReport(report);
+                if (finalReport == null) {
+                    showWarning("Connection Test",
+                        "Your credentials were saved, but the connection test couldn't be completed. "
+                            + "Try 'Connect & Verify', or save again to retest.");
+                    return;
+                }
+                showSelfTestReport(finalReport);
             });
         });
     }
@@ -708,10 +728,16 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 .append(check.message()).append('\n');
         }
         if (report.allPassed()) {
+            if (hmrcClientIdField != null) {
+                hmrcClientIdField.clear();
+            }
+            if (hmrcClientSecretField != null) {
+                hmrcClientSecretField.clear();
+            }
             body.append("\nYou're ready to connect with 'Connect & Verify'.");
             showInfo("Connection Test Passed", body.toString());
         } else {
-            body.append("\nFix the items marked ✗, then save again.");
+            body.append("\nCheck the values above and save again to retest.");
             showWarning("Connection Test", body.toString());
         }
     }

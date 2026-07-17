@@ -172,12 +172,12 @@ public class HmrcErrorGuidance {
 
         // OAuth connection-flow codes (HMRC sign-in in the connection wizard)
         Map.entry("PORT_IN_USE",
-            "Another program is using the port this app needs to finish signing in (8088). " +
+            "Another program is using the local port this app needs to finish signing in. " +
             "Close other apps that may be using it — or restart this app — and try again."),
 
         Map.entry("TIMEOUT",
-            "The sign-in didn't finish in time. If your browser is still open, complete the HMRC " +
-            "sign-in there, or use the sign-in link below to open it again."),
+            "The sign-in didn't finish in time. Choose 'Try Again' to open the HMRC sign-in " +
+            "afresh, and complete it in your browser when it opens."),
 
         Map.entry("ACCESS_DENIED",
             "Sign-in was declined at HMRC. To connect, choose 'Grant authority' on the HMRC consent " +
