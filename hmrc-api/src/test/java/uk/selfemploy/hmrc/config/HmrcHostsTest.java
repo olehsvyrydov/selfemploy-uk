@@ -48,6 +48,8 @@ class HmrcHostsTest {
 
         assertThat(HmrcHosts.isAllowed(URI.create("http://localhost:8088/oauth/token"))).isTrue();
         assertThat(HmrcHosts.isAllowed(URI.create("http://127.0.0.1:9999/x"))).isTrue();
+        // IPv6 loopback: URI.getHost() returns the bracketed literal.
+        assertThat(HmrcHosts.isAllowed(URI.create("http://[::1]:8088/oauth/token"))).isTrue();
         // The opt-in never widens the allowlist to arbitrary remote hosts.
         assertThat(HmrcHosts.isAllowed(URI.create("http://attacker.example/x"))).isFalse();
     }

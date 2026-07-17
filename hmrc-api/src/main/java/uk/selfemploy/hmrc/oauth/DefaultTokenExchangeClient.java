@@ -141,7 +141,7 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
     private CompletableFuture<OAuthTokens> sendTokenRequest(String body) {
         URI tokenUri = URI.create(config.tokenUrl());
         if (!HmrcHosts.isAllowed(tokenUri)) {
-            log.error("Refusing to send credentials: token URL host is not an official HMRC host");
+            // Reported once by the caller's failure handler; no secret is sent.
             return CompletableFuture.failedFuture(
                 new HmrcOAuthException(OAuthError.CONFIGURATION_ERROR,
                     "The configured HMRC token URL is not an official HMRC address."));

@@ -32,7 +32,8 @@ public final class HmrcHosts {
     private static final List<String> ALLOWED_HOST_SUFFIXES =
         List.of(".service.hmrc.gov.uk", ".tax.service.gov.uk");
 
-    private static final Set<String> LOOPBACK_HOSTS = Set.of("localhost", "127.0.0.1", "::1");
+    // URI.getHost() returns the IPv6 literal in brackets, so "[::1]" is matched, not bare "::1".
+    private static final Set<String> LOOPBACK_HOSTS = Set.of("localhost", "127.0.0.1", "[::1]");
 
     private HmrcHosts() {
     }

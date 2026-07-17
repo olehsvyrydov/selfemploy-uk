@@ -2,7 +2,7 @@ package uk.selfemploy.ui.service;
 
 /**
  * Validates the <em>shape</em> of HMRC Developer Hub credentials before they are saved, so obvious
- * garbage (finding M15: {@code "abc"} was accepted) is rejected at entry.
+ * garbage (for example {@code "abc"}, previously accepted) is rejected at entry.
  *
  * <p>HMRC does not publish a fixed format for client ids or secrets, so validation is deliberately
  * conservative: it rejects only what cannot be a real credential — blank, internal whitespace,

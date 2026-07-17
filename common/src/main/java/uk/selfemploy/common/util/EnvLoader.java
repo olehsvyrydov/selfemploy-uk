@@ -72,8 +72,8 @@ public final class EnvLoader {
                     }
 
                     if (!ALLOWED_KEYS.contains(key)) {
-                        LOG.warning("Ignoring .env key '" + key + "': not one this app reads from a "
-                            + ".env file. Set HMRC URLs via the Settings environment selector.");
+                        LOG.warning("Ignoring .env key '" + key + "': it is not one this app reads "
+                            + "from a .env file. The HMRC environment is chosen in Settings.");
                         return;
                     }
 

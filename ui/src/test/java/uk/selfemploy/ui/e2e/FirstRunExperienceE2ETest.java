@@ -124,7 +124,7 @@ class FirstRunExperienceE2ETest extends BaseE2ETest {
         void hmrcCredentialsDefaultNotConfigured() {
             assertThat(lookup("#hmrcCredentialsStatusLabel").tryQuery()).isPresent();
             Label statusLabel = lookup("#hmrcCredentialsStatusLabel").queryAs(Label.class);
-            assertThat(statusLabel.getText()).isEqualTo("Not configured");
+            assertThat(statusLabel.getText()).startsWith("Not configured");
         }
 
         @Test

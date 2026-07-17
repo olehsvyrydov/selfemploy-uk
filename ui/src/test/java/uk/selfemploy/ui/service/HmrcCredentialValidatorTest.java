@@ -29,7 +29,7 @@ class HmrcCredentialValidatorTest {
         }
 
         @Test
-        @DisplayName("the M15 example \"abc\" is rejected as too short")
+        @DisplayName("a short placeholder like \"abc\" is rejected as too short")
         void shortGarbageIsInvalid() {
             assertThat(HmrcCredentialValidator.validateClientId("abc").valid()).isFalse();
             assertThat(HmrcCredentialValidator.validateClientSecret("abc").valid()).isFalse();

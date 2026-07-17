@@ -17,7 +17,7 @@ import java.util.List;
  * independent checks the user can act on: the credentials' shape, whether HMRC is reachable, and
  * whether HMRC accepts the credentials over a live OAuth round-trip.
  *
- * <p>Security posture (task T4.3 gate conditions):</p>
+ * <p>Security posture:</p>
  * <ul>
  *   <li>Endpoints are resolved from this class's own {@code sandbox}/{@code production} constants,
  *       never from the {@code HMRC_*} system properties — those are populated from a {@code .env}
@@ -36,10 +36,17 @@ public final class HmrcConnectionSelfTest {
     private static final String SANDBOX_BASE = "https://test-api.service.hmrc.gov.uk";
     private static final String PRODUCTION_BASE = "https://api.service.hmrc.gov.uk";
 
+    /**
+     * Shared across self-tests so repeated saves don't each leak an {@link HttpClient} (every
+     * instance owns a selector thread that lives until GC).
+     */
+    private static final HttpClient SHARED_CLIENT =
+        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+
     private final HttpClient httpClient;
 
     public HmrcConnectionSelfTest() {
-        this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
+        this(SHARED_CLIENT);
     }
 
     HmrcConnectionSelfTest(HttpClient httpClient) {

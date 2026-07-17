@@ -608,23 +608,12 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 clearCredentialsButton.setVisible(hasCredentials);
                 clearCredentialsButton.setManaged(hasCredentials);
             }
-            applyConnectButtonEnabledState(hasCredentials);
+            // The Connect & Verify button's enabled state is owned solely by
+            // updateHmrcConnectionStatus, which gates on both credentials and NINO.
+            updateHmrcConnectionStatus();
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to load HMRC credentials status", e);
         }
-    }
-
-    /**
-     * Enables "Connect & Verify" only once credentials are stored; without them the OAuth flow
-     * cannot start. What is missing is shown by the adjacent credentials-status label rather than a
-     * tooltip, because a disabled JavaFX control receives no hover events. Presence is read through
-     * {@link SqliteDataStore#hasHmrcCredentials()} — the secret is never loaded into a control.
-     */
-    private void applyConnectButtonEnabledState(boolean hasCredentials) {
-        if (hmrcSetupButton == null) {
-            return;
-        }
-        hmrcSetupButton.setDisable(!hasCredentials);
     }
 
     private boolean selfTestInProgress;
@@ -679,42 +668,60 @@ public class SettingsController implements Initializable, MainController.TaxYear
     /**
      * Runs the HMRC connection self-test off the UI thread after a save and reports the three checks.
      * The credential values are passed straight to the test and never re-read into a control; the
-     * self-test itself keeps them out of logs and messages (task T4.3 gate). Saving is debounced
+     * self-test itself keeps them out of logs and messages. Saving is debounced
      * while a test is in flight, and any unexpected failure of the test still returns the UI to a
      * usable state rather than leaving it stuck on "Testing…".
      */
     private void runCredentialSelfTest(String environment, String clientId, String clientSecret) {
         selfTestInProgress = true;
-        if (saveCredentialsButton != null) {
-            saveCredentialsButton.setDisable(true);
-        }
+        setCredentialButtonsDisabled(true);
         if (hmrcCredentialsStatusLabel != null) {
             hmrcCredentialsStatusLabel.setText("Testing…");
         }
         Thread.startVirtualThread(() -> {
-            HmrcConnectionSelfTest.SelfTestReport report;
+            HmrcConnectionSelfTest.SelfTestReport report = null;
             try {
                 report = new HmrcConnectionSelfTest().run(environment, clientId, clientSecret);
             } catch (RuntimeException e) {
                 LOG.log(Level.WARNING, "HMRC connection self-test failed unexpectedly", e);
-                report = null;
+            } finally {
+                // A finally block guarantees the UI is restored even if run() throws an Error
+                // (e.g. a linkage error or OOM) rather than a RuntimeException.
+                HmrcConnectionSelfTest.SelfTestReport finalReport = report;
+                Platform.runLater(() -> completeSelfTest(finalReport));
             }
-            HmrcConnectionSelfTest.SelfTestReport finalReport = report;
-            Platform.runLater(() -> {
-                selfTestInProgress = false;
-                if (saveCredentialsButton != null) {
-                    saveCredentialsButton.setDisable(false);
-                }
-                loadHmrcCredentialsStatus();
-                if (finalReport == null) {
-                    showWarning("Connection Test",
-                        "Your credentials were saved, but the connection test couldn't be completed. "
-                            + "Try 'Connect & Verify', or save again to retest.");
-                    return;
-                }
-                showSelfTestReport(finalReport);
-            });
         });
+    }
+
+    /**
+     * Restores the UI after a self-test and shows the outcome. If the credentials were cleared while
+     * the test ran, the "passed" report would be about credentials that no longer exist, so the
+     * result is discarded when nothing is stored.
+     */
+    private void completeSelfTest(HmrcConnectionSelfTest.SelfTestReport report) {
+        selfTestInProgress = false;
+        setCredentialButtonsDisabled(false);
+        loadHmrcCredentialsStatus();
+
+        if (!SqliteDataStore.getInstance().hasHmrcCredentials()) {
+            return;
+        }
+        if (report == null) {
+            showWarning("Connection Test",
+                "Your credentials were saved, but the connection test couldn't be completed. "
+                    + "Try 'Connect & Verify', or save again to retest.");
+            return;
+        }
+        showSelfTestReport(report);
+    }
+
+    private void setCredentialButtonsDisabled(boolean disabled) {
+        if (saveCredentialsButton != null) {
+            saveCredentialsButton.setDisable(disabled);
+        }
+        if (clearCredentialsButton != null) {
+            clearCredentialsButton.setDisable(disabled);
+        }
     }
 
     private void showSelfTestReport(HmrcConnectionSelfTest.SelfTestReport report) {
@@ -1089,6 +1096,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         boolean ninoVerified = SqliteDataStore.getInstance().isNinoVerified();
 
         boolean hasNino = nino != null && !nino.isBlank();
+        boolean hasCredentials = SqliteDataStore.getInstance().hasHmrcCredentials();
         boolean hasOAuth = state == HmrcConnectionService.ConnectionState.CONNECTED ||
                            state == HmrcConnectionService.ConnectionState.PROFILE_SYNCED ||
                            state == HmrcConnectionService.ConnectionState.READY_TO_SUBMIT ||
@@ -1150,6 +1158,15 @@ public class SettingsController implements Initializable, MainController.TaxYear
             if (hmrcSetupButton != null) {
                 hmrcSetupButton.setText("Sync Profile");
             }
+        } else if (hasNino && !hasCredentials) {
+            hmrcConnectionStatusLabel.setText("Enter your HMRC Client ID and Secret above to connect");
+            if (hmrcStatusIcon != null) {
+                hmrcStatusIcon.setIconLiteral("fas-key");
+                hmrcStatusIcon.setIconColor(Color.web("#3b82f6")); // Blue
+            }
+            if (hmrcSetupButton != null) {
+                hmrcSetupButton.setText("Connect & Verify");
+            }
         } else if (hasNino) {
             hmrcConnectionStatusLabel.setText("NINO saved - Click to connect to HMRC");
             if (hmrcStatusIcon != null) {
@@ -1208,9 +1225,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
             }
         }
 
-        // Re-enable button if NINO is set
-        if (hmrcSetupButton != null && hasNino) {
-            hmrcSetupButton.setDisable(false);
+        // Single authority for the button's enabled state: the OAuth flow needs both a NINO and
+        // saved credentials, so the button is enabled only when both are present.
+        if (hmrcSetupButton != null) {
+            hmrcSetupButton.setDisable(!(hasNino && hasCredentials));
         }
     }
 
