@@ -79,7 +79,13 @@ jobs:
         id: mainjar
         shell: bash
         run: |
-          MAIN_JAR="$(basename app/target/jpackage-input/self-employment-app-*.jar)"
+          shopt -s nullglob
+          JARS=(app/target/jpackage-input/self-employment-app-*.jar)
+          if [ "${#JARS[@]}" -ne 1 ]; then
+            echo "Expected exactly one app jar in jpackage-input, found ${#JARS[@]}: ${JARS[*]}" >&2
+            exit 1
+          fi
+          MAIN_JAR="$(basename "${JARS[0]}")"
           echo "name=$MAIN_JAR" >> "$GITHUB_OUTPUT"
           echo "Main jar: $MAIN_JAR"
 
