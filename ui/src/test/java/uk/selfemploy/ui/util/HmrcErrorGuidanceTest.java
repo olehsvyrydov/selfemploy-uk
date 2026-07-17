@@ -30,6 +30,41 @@ class HmrcErrorGuidanceTest {
     }
 
     @Nested
+    @DisplayName("OAuth connection-flow guidance")
+    class OAuthFlowGuidanceTests {
+
+        @Test
+        @DisplayName("every OAuth failure code has specific, actionable guidance")
+        void oauthCodesHaveGuidance() {
+            for (String code : java.util.List.of(
+                "PORT_IN_USE", "TIMEOUT", "ACCESS_DENIED", "INVALID_STATE",
+                "STORAGE_ERROR", "CONFIGURATION_ERROR")) {
+                String help = guidance.getGuidanceForErrorCode(code);
+                assertThat(help)
+                    .as("guidance for " + code)
+                    .isNotBlank();
+                assertThat(help)
+                    .as(code + " should not fall back to generic guidance")
+                    .isNotEqualTo(guidance.getGuidanceForErrorCode("SOME_UNKNOWN_CODE"));
+            }
+        }
+
+        @Test
+        @DisplayName("PORT_IN_USE names the port and a recovery action")
+        void portInUseIsSpecific() {
+            String help = guidance.getGuidanceForErrorCode("PORT_IN_USE");
+            assertThat(help).contains("8088");
+        }
+
+        @Test
+        @DisplayName("ACCESS_DENIED explains how to grant authority at HMRC")
+        void accessDeniedExplainsConsent() {
+            assertThat(guidance.getGuidanceForErrorCode("ACCESS_DENIED").toLowerCase())
+                .contains("grant authority");
+        }
+    }
+
+    @Nested
     @DisplayName("Error Code Mapping")
     class ErrorCodeMappingTests {
 
