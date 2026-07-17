@@ -72,8 +72,12 @@ public final class HmrcRegistrationGuideDialog {
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         VBox root = new VBox(scroll, footer(stage));
-        DialogStyler.setupStyledDialog(stage, root, STYLESHEET);
-        stage.setScene(new Scene(root, 560, 640));
+        Scene scene = new Scene(root, 560, 640);
+        String cssUrl = DialogStyler.getCssResourceUrl(STYLESHEET);
+        if (cssUrl != null) {
+            scene.getStylesheets().add(cssUrl);
+        }
+        stage.setScene(scene);
         stage.showAndWait();
     }
 

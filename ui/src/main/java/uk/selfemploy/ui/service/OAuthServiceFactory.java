@@ -264,7 +264,14 @@ public final class OAuthServiceFactory {
 
         @Override
         public int callbackPort() {
-            return Integer.parseInt(System.getProperty("HMRC_CALLBACK_PORT", "8088"));
+            String value = System.getProperty("HMRC_CALLBACK_PORT", "8088");
+            try {
+                return Integer.parseInt(value.trim());
+            } catch (NumberFormatException e) {
+                LOG.warning("HMRC_CALLBACK_PORT is not a valid port number ('" + value
+                    + "'); using the default 8088");
+                return 8088;
+            }
         }
 
         @Override
