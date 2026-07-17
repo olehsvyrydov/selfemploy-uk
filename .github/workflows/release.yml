@@ -64,8 +64,18 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF#refs/tags/v}"
+          # jpackage rejects non-numeric versions (MSI ProductVersion, DMG CFBundleVersion) and
+          # rpmbuild rejects '-', so a pre-release tag like 1.0.0-beta.1 is reduced to its numeric
+          # x.y.z prefix for --app-version, mirroring the pom's build-helper parse-version. The
+          # full tag still names the release and its artifacts.
+          if [[ ! "$TAG" =~ ^([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            echo "Tag v$TAG does not start with a numeric x.y.z version" >&2
+            exit 1
+          fi
+          APP_VERSION="${BASH_REMATCH[1]}"
           echo "version=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Building version: $TAG"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $TAG (jpackage app-version: $APP_VERSION)"
 
       - name: Install RPM tools (Linux RPM only)
         if: matrix.type == 'rpm'
@@ -94,7 +104,7 @@ jobs:
         run: |
           jpackage \
             --name SelfEmploy \
-            --app-version "${{ steps.version.outputs.version }}" \
+            --app-version "${{ steps.version.outputs.app_version }}" \
             --vendor "Self-Employment UK" \
             --description "Manage accounting and submit HMRC reports" \
             --input app/target/jpackage-input \
@@ -114,7 +124,7 @@ jobs:
         run: |
           jpackage `
             --name SelfEmploy `
-            --app-version "${{ steps.version.outputs.version }}" `
+            --app-version "${{ steps.version.outputs.app_version }}" `
             --vendor "Self-Employment UK" `
             --description "Manage accounting and submit HMRC reports" `
             --input app/target/jpackage-input `

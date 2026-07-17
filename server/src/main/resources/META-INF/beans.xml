@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    CDI beans.xml for the server module.
-    bean-discovery-mode="all" ensures all CDI beans (@ApplicationScoped, etc.)
-    are discovered during Quarkus build, which is required for multi-module projects.
+    Bean-archive marker for the server module, so a consuming Quarkus application discovers the
+    CDI beans in this jar. Quarkus ArC ignores the discovery mode and always uses annotated
+    discovery, so every bean in this module carries a bean-defining annotation.
 -->
 <beans xmlns="https://jakarta.ee/xml/ns/jakartaee"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_4_0.xsd"
        version="4.0"
-       bean-discovery-mode="all">
+       bean-discovery-mode="annotated">
 </beans>
