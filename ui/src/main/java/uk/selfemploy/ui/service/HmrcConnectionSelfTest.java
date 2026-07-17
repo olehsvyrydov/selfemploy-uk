@@ -1,5 +1,7 @@
 package uk.selfemploy.ui.service;
 
+import uk.selfemploy.hmrc.config.HmrcHosts;
+
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -35,10 +37,6 @@ public final class HmrcConnectionSelfTest {
     private static final String SANDBOX_BASE = "https://test-api.service.hmrc.gov.uk";
     private static final String PRODUCTION_BASE = "https://api.service.hmrc.gov.uk";
 
-    /** HMRC hosts the self-test is permitted to contact. */
-    private static final List<String> ALLOWED_HOST_SUFFIXES =
-        List.of(".service.hmrc.gov.uk", ".tax.service.gov.uk");
-
     private final HttpClient httpClient;
 
     public HmrcConnectionSelfTest() {
@@ -49,13 +47,9 @@ public final class HmrcConnectionSelfTest {
         this.httpClient = httpClient;
     }
 
-    /** Whether a URL is one the self-test may contact: HTTPS on a known HMRC host. */
+    /** Whether a URL is one the self-test may contact. Delegates to the shared HMRC allowlist. */
     static boolean isHmrcHost(URI uri) {
-        if (uri == null || !"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null) {
-            return false;
-        }
-        String host = uri.getHost().toLowerCase();
-        return ALLOWED_HOST_SUFFIXES.stream().anyMatch(host::endsWith);
+        return HmrcHosts.isAllowed(uri);
     }
 
     /** The status of one check. */
