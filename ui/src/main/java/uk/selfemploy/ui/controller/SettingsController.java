@@ -43,6 +43,8 @@ import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.CredentialEncryptionException;
 import uk.selfemploy.ui.service.HmrcBusinessProfileService;
+import uk.selfemploy.ui.service.HmrcConnectionSelfTest;
+import uk.selfemploy.ui.service.HmrcCredentialValidator;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
 import uk.selfemploy.ui.service.SqliteDataStore;
@@ -52,6 +54,7 @@ import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
@@ -605,9 +608,26 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 clearCredentialsButton.setVisible(hasCredentials);
                 clearCredentialsButton.setManaged(hasCredentials);
             }
+            applyConnectButtonEnabledState(hasCredentials);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to load HMRC credentials status", e);
         }
+    }
+
+    /**
+     * Enables "Connect & Verify" only once credentials are stored; without them the OAuth flow
+     * cannot start, so the button stays disabled with a tooltip saying what is missing. Presence is
+     * read through {@link SqliteDataStore#hasHmrcCredentials()} — the secret is never loaded into a
+     * control.
+     */
+    private void applyConnectButtonEnabledState(boolean hasCredentials) {
+        if (hmrcSetupButton == null) {
+            return;
+        }
+        hmrcSetupButton.setDisable(!hasCredentials);
+        hmrcSetupButton.setTooltip(hasCredentials
+            ? null
+            : new Tooltip("Save your HMRC Client ID and Secret above first."));
     }
 
     @FXML
@@ -615,12 +635,14 @@ public class SettingsController implements Initializable, MainController.TaxYear
         String clientId = hmrcClientIdField != null ? hmrcClientIdField.getText() : null;
         String clientSecret = hmrcClientSecretField != null ? hmrcClientSecretField.getText() : null;
 
-        if (clientId == null || clientId.isBlank()) {
-            showError("Client ID Required", "Please enter your HMRC Developer Hub Client ID.");
+        HmrcCredentialValidator.Result idCheck = HmrcCredentialValidator.validateClientId(clientId);
+        if (!idCheck.valid()) {
+            showError("Check your Client ID", idCheck.message());
             return;
         }
-        if (clientSecret == null || clientSecret.isBlank()) {
-            showError("Client Secret Required", "Please enter your HMRC Developer Hub Client Secret.");
+        HmrcCredentialValidator.Result secretCheck = HmrcCredentialValidator.validateClientSecret(clientSecret);
+        if (!secretCheck.valid()) {
+            showError("Check your Client Secret", secretCheck.message());
             return;
         }
 
@@ -639,6 +661,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
         // Apply credentials as system properties for HmrcConfig
         applyHmrcCredentialsToSystemProperties(clientId.trim(), clientSecret.trim());
 
+        String environment = SqliteDataStore.getInstance().loadHmrcEnvironment();
+        String testClientId = clientId.trim();
+        String testClientSecret = clientSecret.trim();
+
         if (hmrcClientIdField != null) {
             hmrcClientIdField.clear();
         }
@@ -648,9 +674,46 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
         loadHmrcCredentialsStatus();
         updateHmrcConnectionStatus();
-        showInfo("Credentials Saved",
-                "Your HMRC API credentials have been saved and encrypted.\n\n" +
-                "You can now connect to HMRC using the 'Connect & Verify' button below.");
+        runCredentialSelfTest(environment, testClientId, testClientSecret);
+    }
+
+    /**
+     * Runs the HMRC connection self-test off the UI thread after a save and reports the three checks.
+     * The credential values are passed straight to the test and never re-read into a control; the
+     * self-test itself keeps them out of logs and messages (task T4.3 gate).
+     */
+    private void runCredentialSelfTest(String environment, String clientId, String clientSecret) {
+        if (hmrcCredentialsStatusLabel != null) {
+            hmrcCredentialsStatusLabel.setText("Testing…");
+        }
+        Thread.startVirtualThread(() -> {
+            HmrcConnectionSelfTest.SelfTestReport report =
+                new HmrcConnectionSelfTest().run(environment, clientId, clientSecret);
+            Platform.runLater(() -> {
+                loadHmrcCredentialsStatus();
+                showSelfTestReport(report);
+            });
+        });
+    }
+
+    private void showSelfTestReport(HmrcConnectionSelfTest.SelfTestReport report) {
+        StringBuilder body = new StringBuilder("Your HMRC credentials are saved and encrypted.\n\n");
+        for (HmrcConnectionSelfTest.Check check : report.checks()) {
+            String mark = switch (check.status()) {
+                case PASS -> "✓";
+                case FAIL -> "✗";
+                case SKIPPED -> "–";
+            };
+            body.append(mark).append("  ").append(check.name()).append(" — ")
+                .append(check.message()).append('\n');
+        }
+        if (report.allPassed()) {
+            body.append("\nYou're ready to connect with 'Connect & Verify'.");
+            showInfo("Connection Test Passed", body.toString());
+        } else {
+            body.append("\nFix the items marked ✗, then save again.");
+            showWarning("Connection Test", body.toString());
+        }
     }
 
     @FXML
