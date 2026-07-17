@@ -12,6 +12,7 @@ import uk.selfemploy.plugin.api.PluginContext;
 import uk.selfemploy.plugin.api.PluginDependency;
 import uk.selfemploy.plugin.api.PluginDescriptor;
 import uk.selfemploy.plugin.api.PluginPermission;
+import uk.selfemploy.plugin.api.ThreadAffinity;
 import uk.selfemploy.plugin.extension.ExtensionPoint;
 
 import java.nio.file.Path;
@@ -808,7 +809,7 @@ class PluginSystemE2ETest {
                 eventBus.subscribe(
                     TestPluginEvent.class,
                     handler,
-                    uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
+                    ThreadAffinity.BACKGROUND,
                     "test-plugin"
                 );
 
@@ -840,13 +841,13 @@ class PluginSystemE2ETest {
                 eventBus.subscribe(
                     TestPluginEvent.class,
                     handlerA,
-                    uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
+                    ThreadAffinity.BACKGROUND,
                     "plugin-a"
                 );
                 eventBus.subscribe(
                     TestPluginEvent.class,
                     handlerB,
-                    uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
+                    ThreadAffinity.BACKGROUND,
                     "plugin-b"
                 );
 
