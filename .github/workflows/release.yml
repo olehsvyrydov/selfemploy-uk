@@ -73,13 +73,15 @@ jobs:
 
       - name: Build application
         shell: bash
-        run: mvn -B package -DskipTests --no-transfer-progress
+        run: mvn -B package -Ppackage -DskipTests --no-transfer-progress
 
-      - name: Prepare jpackage input
+      - name: Locate main jar
+        id: mainjar
         shell: bash
         run: |
-          mkdir -p app/target/jpackage-input
-          cp -r app/target/quarkus-app/* app/target/jpackage-input/
+          MAIN_JAR="$(basename app/target/jpackage-input/self-employment-app-*.jar)"
+          echo "name=$MAIN_JAR" >> "$GITHUB_OUTPUT"
+          echo "Main jar: $MAIN_JAR"
 
       - name: Run jpackage (Linux/macOS)
         if: runner.os != 'Windows'
@@ -90,10 +92,12 @@ jobs:
             --vendor "Self-Employment UK" \
             --description "Manage accounting and submit HMRC reports" \
             --input app/target/jpackage-input \
-            --main-jar quarkus-run.jar \
-            --main-class io.quarkus.bootstrap.runner.QuarkusEntryPoint \
+            --main-jar "${{ steps.mainjar.outputs.name }}" \
+            --main-class uk.selfemploy.app.Main \
             --java-options "-Dfile.encoding=UTF-8" \
             --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" \
+            --java-options "--enable-native-access=ALL-UNNAMED" \
+            --java-options "-Dio.netty.noUnsafe=true" \
             --type ${{ matrix.type }} \
             --dest app/target/installer
 
@@ -107,10 +111,12 @@ jobs:
             --vendor "Self-Employment UK" `
             --description "Manage accounting and submit HMRC reports" `
             --input app/target/jpackage-input `
-            --main-jar quarkus-run.jar `
-            --main-class io.quarkus.bootstrap.runner.QuarkusEntryPoint `
+            --main-jar "${{ steps.mainjar.outputs.name }}" `
+            --main-class uk.selfemploy.app.Main `
             --java-options "-Dfile.encoding=UTF-8" `
             --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" `
+            --java-options "--enable-native-access=ALL-UNNAMED" `
+            --java-options "-Dio.netty.noUnsafe=true" `
             --type ${{ matrix.type }} `
             --dest app/target/installer `
             --win-menu `
