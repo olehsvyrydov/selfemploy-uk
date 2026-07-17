@@ -205,6 +205,15 @@ public final class OAuthServiceFactory {
         return new SimpleHmrcConfig().authTimeoutSeconds();
     }
 
+    /**
+     * Returns the OAuth redirect URI the app listens on, for display and for registration guidance.
+     *
+     * @return the redirect URI, e.g. {@code http://localhost:8088/oauth/callback}
+     */
+    public static String getRedirectUri() {
+        return new SimpleHmrcConfig().getRedirectUri();
+    }
+
     public static boolean isConfigured() {
         return getOAuthService() != null &&
                new SimpleHmrcConfig().isConfigured();

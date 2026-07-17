@@ -36,15 +36,14 @@ import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
 import uk.selfemploy.ui.component.AppDialog;
-import uk.selfemploy.ui.component.HelpDialog;
+import uk.selfemploy.ui.component.HmrcRegistrationGuideDialog;
 import uk.selfemploy.ui.help.HelpContent;
-import uk.selfemploy.ui.help.HelpService;
-import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.CredentialEncryptionException;
 import uk.selfemploy.ui.service.HmrcBusinessProfileService;
 import uk.selfemploy.ui.service.HmrcConnectionSelfTest;
+import uk.selfemploy.ui.service.HmrcRegistrationGuide;
 import uk.selfemploy.ui.service.HmrcCredentialValidator;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
@@ -59,7 +58,6 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.awt.Desktop;
@@ -756,11 +754,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     @FXML
     void handleShowRegistrationHelp(ActionEvent event) {
-        HelpService helpService = new HelpService();
-        helpService.getHelp(HelpTopic.HMRC_REGISTRATION).ifPresent(content ->
-            new HelpDialog(content, FontAwesomeSolid.KEY, "#2563eb", helpService,
-                    HelpDialog.DialogSize.MEDIUM).showAndWait()
-        );
+        String redirectUri = hmrcRedirectUriField != null && !hmrcRedirectUriField.getText().isBlank()
+            ? hmrcRedirectUriField.getText()
+            : OAuthServiceFactory.getRedirectUri();
+        HmrcRegistrationGuideDialog.show(getOwnerWindow(), new HmrcRegistrationGuide(redirectUri));
     }
 
     @FXML
