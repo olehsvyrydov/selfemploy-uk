@@ -262,7 +262,6 @@ public class OAuthCallbackServer {
 
         String expected = expectedState.get();
         if (state == null || !state.equals(expected)) {
-            // Neither state value is logged: the expected one is a live CSRF secret for this flow.
             log.error("OAuth callback rejected: state parameter did not match the pending request");
             sendErrorResponse(request, "Invalid state parameter - possible security issue");
             future.completeExceptionally(new HmrcOAuthException(OAuthError.INVALID_STATE));

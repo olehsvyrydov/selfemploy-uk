@@ -2,6 +2,7 @@ package uk.selfemploy.hmrc.config;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -21,6 +22,13 @@ public final class HmrcHosts {
     /** Test-only system property enabling loopback destinations. Never settable from {@code .env}. */
     public static final String ALLOW_LOOPBACK_PROPERTY = "selfemploy.hmrc.allow-loopback";
 
+    /**
+     * HMRC's official domain suffixes. Defined in code on purpose and not read from any external
+     * configuration: this list is the security boundary that keeps the client secret from being sent
+     * elsewhere, so a runtime source an attacker could reach (a {@code .env} file, a system property)
+     * must never be able to widen it. HMRC's domains are stable; a genuine change is a code change,
+     * reviewed like any other.
+     */
     private static final List<String> ALLOWED_HOST_SUFFIXES =
         List.of(".service.hmrc.gov.uk", ".tax.service.gov.uk");
 
@@ -40,7 +48,7 @@ public final class HmrcHosts {
             return false;
         }
         String scheme = uri.getScheme();
-        String host = uri.getHost().toLowerCase();
+        String host = uri.getHost().toLowerCase(Locale.ROOT);
 
         if ("https".equalsIgnoreCase(scheme)
             && ALLOWED_HOST_SUFFIXES.stream().anyMatch(host::endsWith)) {

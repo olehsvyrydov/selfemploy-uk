@@ -2,6 +2,7 @@ package uk.selfemploy.ui.service;
 
 import uk.selfemploy.hmrc.config.HmrcHosts;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -10,7 +11,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Runs a real connection self-test against HMRC after credentials are saved, surfacing three
@@ -31,7 +31,6 @@ import java.util.logging.Logger;
  */
 public final class HmrcConnectionSelfTest {
 
-    private static final Logger LOG = Logger.getLogger(HmrcConnectionSelfTest.class.getName());
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
     private static final String SANDBOX_BASE = "https://test-api.service.hmrc.gov.uk";
@@ -126,7 +125,7 @@ public final class HmrcConnectionSelfTest {
         try {
             httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             return new Check("HMRC reachable", CheckStatus.PASS, "Reached HMRC's service.");
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             return new Check("HMRC reachable", CheckStatus.FAIL,
                 "Couldn't reach HMRC. Check your internet connection and try again.");
         } catch (InterruptedException e) {
@@ -153,7 +152,7 @@ public final class HmrcConnectionSelfTest {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             return roundtripResult(response.statusCode());
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             return new Check("OAuth round-trip", CheckStatus.FAIL,
                 "Couldn't complete the HMRC sign-in check. Check your connection and try again.");
         } catch (InterruptedException e) {

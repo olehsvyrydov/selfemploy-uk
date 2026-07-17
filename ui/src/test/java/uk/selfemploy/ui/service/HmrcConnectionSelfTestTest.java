@@ -17,6 +17,8 @@ import java.net.http.HttpResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DisplayName("HmrcConnectionSelfTest")
@@ -94,8 +96,7 @@ class HmrcConnectionSelfTestTest {
         @SuppressWarnings("unchecked")
         private void verifyNoNetwork() {
             try {
-                org.mockito.Mockito.verify(httpClient, org.mockito.Mockito.never())
-                    .send(any(HttpRequest.class), any());
+                verify(httpClient, never()).send(any(HttpRequest.class), any());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

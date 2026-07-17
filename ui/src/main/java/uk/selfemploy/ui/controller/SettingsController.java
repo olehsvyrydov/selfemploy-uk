@@ -13,6 +13,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import uk.selfemploy.ui.util.DialogBounds;
+import uk.selfemploy.ui.util.StatusGlyph;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -720,9 +721,9 @@ public class SettingsController implements Initializable, MainController.TaxYear
         StringBuilder body = new StringBuilder("Your HMRC credentials are saved and encrypted.\n\n");
         for (HmrcConnectionSelfTest.Check check : report.checks()) {
             String mark = switch (check.status()) {
-                case PASS -> "✓";
-                case FAIL -> "✗";
-                case SKIPPED -> "–";
+                case PASS -> StatusGlyph.PASS;
+                case FAIL -> StatusGlyph.FAIL;
+                case SKIPPED -> StatusGlyph.NEUTRAL;
             };
             body.append(mark).append("  ").append(check.name()).append(" — ")
                 .append(check.message()).append('\n');

@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.controller;
 import uk.selfemploy.ui.component.ToastNotification;
+import uk.selfemploy.ui.util.StatusGlyph;
 import uk.selfemploy.ui.component.AppDialog;
 
 import jakarta.inject.Inject;
@@ -359,7 +360,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     setGraphic(null);
                 } else {
                     // Use checkmark for yes, X for no
-                    Label badge = new Label(deductible ? "✓" : "✗");
+                    Label badge = new Label(deductible ? StatusGlyph.PASS : StatusGlyph.FAIL);
                     badge.getStyleClass().addAll("deductible-badge",
                         deductible ? "deductible-yes" : "deductible-no");
 
