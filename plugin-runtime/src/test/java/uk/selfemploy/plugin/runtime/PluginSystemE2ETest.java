@@ -793,70 +793,66 @@ class PluginSystemE2ETest {
         @DisplayName("should publish events to subscribers")
         void shouldPublishEventsToSubscribers() throws Exception {
             // Given
-            DefaultPluginEventBus eventBus = new DefaultPluginEventBus();
             List<String> receivedEvents = new CopyOnWriteArrayList<>();
             CountDownLatch delivered = new CountDownLatch(2);
 
-            eventBus.subscribe(
-                TestPluginEvent.class,
-                event -> {
-                    receivedEvents.add(event.getMessage());
-                    delivered.countDown();
-                },
-                uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
-                "test-plugin"
-            );
+            try (DefaultPluginEventBus eventBus = new DefaultPluginEventBus()) {
+                eventBus.subscribe(
+                    TestPluginEvent.class,
+                    event -> {
+                        receivedEvents.add(event.getMessage());
+                        delivered.countDown();
+                    },
+                    uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
+                    "test-plugin"
+                );
 
-            // When
-            eventBus.publish(new TestPluginEvent("test-plugin", "Hello"));
-            eventBus.publish(new TestPluginEvent("test-plugin", "World"));
+                // When
+                eventBus.publish(new TestPluginEvent("test-plugin", "Hello"));
+                eventBus.publish(new TestPluginEvent("test-plugin", "World"));
 
-            // Then
-            assertThat(delivered.await(5, TimeUnit.SECONDS))
-                .as("both events delivered within 5s")
-                .isTrue();
-            assertThat(receivedEvents).containsExactlyInAnyOrder("Hello", "World");
-
-            // Cleanup
-            eventBus.close();
+                // Then
+                assertThat(delivered.await(5, TimeUnit.SECONDS))
+                    .as("both events delivered within 5s")
+                    .isTrue();
+                assertThat(receivedEvents).containsExactlyInAnyOrder("Hello", "World");
+            }
         }
 
         @Test
         @DisplayName("should unsubscribe all handlers for a plugin")
         void shouldUnsubscribeAllHandlersForPlugin() throws Exception {
             // Given
-            DefaultPluginEventBus eventBus = new DefaultPluginEventBus();
             List<String> receivedEvents = new CopyOnWriteArrayList<>();
             CountDownLatch delivered = new CountDownLatch(1);
 
-            eventBus.subscribe(
-                TestPluginEvent.class,
-                event -> receivedEvents.add(event.getMessage()),
-                uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
-                "plugin-a"
-            );
-            eventBus.subscribe(
-                TestPluginEvent.class,
-                event -> {
-                    receivedEvents.add("B:" + event.getMessage());
-                    delivered.countDown();
-                },
-                uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
-                "plugin-b"
-            );
+            try (DefaultPluginEventBus eventBus = new DefaultPluginEventBus()) {
+                eventBus.subscribe(
+                    TestPluginEvent.class,
+                    event -> receivedEvents.add(event.getMessage()),
+                    uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
+                    "plugin-a"
+                );
+                eventBus.subscribe(
+                    TestPluginEvent.class,
+                    event -> {
+                        receivedEvents.add("B:" + event.getMessage());
+                        delivered.countDown();
+                    },
+                    uk.selfemploy.plugin.api.ThreadAffinity.BACKGROUND,
+                    "plugin-b"
+                );
 
-            // When
-            eventBus.unsubscribeAll("plugin-a");
-            eventBus.publish(new TestPluginEvent("plugin-b", "Test"));
+                // When
+                eventBus.unsubscribeAll("plugin-a");
+                eventBus.publish(new TestPluginEvent("plugin-b", "Test"));
 
-            // Then - only plugin-b handler receives the event
-            assertThat(delivered.await(5, TimeUnit.SECONDS))
-                .as("the remaining handler delivered within 5s")
-                .isTrue();
-            assertThat(receivedEvents).containsExactly("B:Test");
-
-            // Cleanup
-            eventBus.close();
+                // Then - only plugin-b handler receives the event
+                assertThat(delivered.await(5, TimeUnit.SECONDS))
+                    .as("the remaining handler delivered within 5s")
+                    .isTrue();
+                assertThat(receivedEvents).containsExactly("B:Test");
+            }
         }
     }
 
