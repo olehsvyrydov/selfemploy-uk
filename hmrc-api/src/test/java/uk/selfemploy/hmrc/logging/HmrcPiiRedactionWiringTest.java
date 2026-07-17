@@ -42,8 +42,8 @@ class HmrcPiiRedactionWiringTest {
      * (SLF4J/Logback convention — the message is not substituted).
      */
     private static final List<String> REDACTOR_AWARE_SOURCE_FILES = List.of(
-        "hmrc-api/src/main/java/uk/selfemploy/hmrc/resilience/HmrcResilienceDecorator.java",
-        "hmrc-api/src/main/java/uk/selfemploy/hmrc/client/HmrcHeaderFactory.java",
+        "server/src/main/java/uk/selfemploy/hmrc/resilience/HmrcResilienceDecorator.java",
+        "server/src/main/java/uk/selfemploy/hmrc/client/HmrcHeaderFactory.java",
         "hmrc-api/src/main/java/uk/selfemploy/hmrc/oauth/DefaultTokenExchangeClient.java",
         "hmrc-api/src/main/java/uk/selfemploy/hmrc/fraud/FraudPreventionService.java"
     );

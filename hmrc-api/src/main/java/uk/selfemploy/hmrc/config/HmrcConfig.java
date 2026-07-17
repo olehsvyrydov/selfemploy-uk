@@ -1,16 +1,15 @@
 package uk.selfemploy.hmrc.config;
 
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
-
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Configuration for HMRC API integration.
- * Uses SmallRye Config for type-safe configuration mapping.
+ *
+ * <p>Defaults target the HMRC sandbox; an implementation switches to production by overriding the
+ * URL methods. The desktop app implements this directly from environment configuration, so no
+ * config-binding framework is involved.
  */
-@ConfigMapping(prefix = "hmrc")
 public interface HmrcConfig {
 
     /**
@@ -18,24 +17,27 @@ public interface HmrcConfig {
      * Sandbox: https://test-api.service.hmrc.gov.uk
      * Production: https://api.service.hmrc.gov.uk
      */
-    @WithDefault("https://test-api.service.hmrc.gov.uk")
-    String apiBaseUrl();
+    default String apiBaseUrl() {
+        return "https://test-api.service.hmrc.gov.uk";
+    }
 
     /**
      * OAuth2 authorization URL.
      * Sandbox: https://test-www.tax.service.gov.uk/oauth/authorize
      * Production: https://www.tax.service.gov.uk/oauth/authorize
      */
-    @WithDefault("https://test-www.tax.service.gov.uk/oauth/authorize")
-    String authorizeUrl();
+    default String authorizeUrl() {
+        return "https://test-www.tax.service.gov.uk/oauth/authorize";
+    }
 
     /**
      * OAuth2 token endpoint URL.
      * Sandbox: https://test-api.service.hmrc.gov.uk/oauth/token
      * Production: https://api.service.hmrc.gov.uk/oauth/token
      */
-    @WithDefault("https://test-api.service.hmrc.gov.uk/oauth/token")
-    String tokenUrl();
+    default String tokenUrl() {
+        return "https://test-api.service.hmrc.gov.uk/oauth/token";
+    }
 
     /**
      * OAuth2 client ID from HMRC Developer Hub.
@@ -52,38 +54,44 @@ public interface HmrcConfig {
     /**
      * OAuth2 scopes required for MTD APIs.
      */
-    @WithDefault("read:self-assessment,write:self-assessment")
-    List<String> scopes();
+    default List<String> scopes() {
+        return List.of("read:self-assessment", "write:self-assessment");
+    }
 
     /**
      * Localhost port for OAuth callback server.
      */
-    @WithDefault("8088")
-    int callbackPort();
+    default int callbackPort() {
+        return 8088;
+    }
 
     /**
      * Callback path for OAuth redirect.
      */
-    @WithDefault("/oauth/callback")
-    String callbackPath();
+    default String callbackPath() {
+        return "/oauth/callback";
+    }
 
     /**
      * Product name for fraud prevention headers.
      */
-    @WithDefault("UK Self-Employment Manager")
-    String productName();
+    default String productName() {
+        return "UK Self-Employment Manager";
+    }
 
     /**
      * Product version for fraud prevention headers.
      */
-    @WithDefault("1.0.0")
-    String productVersion();
+    default String productVersion() {
+        return "1.0.0";
+    }
 
     /**
      * Timeout in seconds for OAuth flow.
      */
-    @WithDefault("120")
-    int authTimeoutSeconds();
+    default int authTimeoutSeconds() {
+        return 120;
+    }
 
     /**
      * Returns the full redirect URI for OAuth callback.
