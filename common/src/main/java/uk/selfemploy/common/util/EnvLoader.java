@@ -5,16 +5,32 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Utility to load environment variables from .env files.
- * Sets them as System properties so they're available to SmallRye Config.
+ *
+ * <p>Only an allowlisted set of keys is applied as System properties. A {@code .env} file lives in
+ * the working directory — a low bar for an attacker to plant — and setting arbitrary system
+ * properties from it is dangerous: keys like {@code javax.net.ssl.trustStore} or {@code https.proxyHost}
+ * would let a planted file intercept the TLS connection that carries the HMRC client secret, and the
+ * {@code HMRC_*_URL} keys would let it redirect that secret outright. Environment URLs are chosen by
+ * the app (Settings ⇄ hardcoded HMRC constants), not by {@code .env}, so only the credential and
+ * connection keys the app reads from a {@code .env} are honoured; everything else is logged and
+ * ignored. Command-line {@code -D} properties are unaffected.
  */
 public final class EnvLoader {
 
     private static final Logger LOG = Logger.getLogger(EnvLoader.class.getName());
+
+    /** The only keys a .env file may set as system properties. */
+    private static final Set<String> ALLOWED_KEYS = Set.of(
+        "HMRC_CLIENT_ID",
+        "HMRC_CLIENT_SECRET",
+        "HMRC_SCOPES",
+        "HMRC_CALLBACK_PORT");
 
     private EnvLoader() {
         // Utility class
@@ -55,12 +71,14 @@ public final class EnvLoader {
                         value = value.substring(1, value.length() - 1);
                     }
 
+                    if (!ALLOWED_KEYS.contains(key)) {
+                        LOG.warning("Ignoring .env key '" + key + "': it is not one this app reads "
+                            + "from a .env file. The HMRC environment is chosen in Settings.");
+                        return;
+                    }
+
                     env.put(key, value);
-
-                    // Set as System property (for SmallRye Config)
-                    // SmallRye maps HMRC_CLIENT_ID -> hmrc.client-id
                     System.setProperty(key, value);
-
                     LOG.fine("Loaded env: " + key + "=***");
                 }
             });

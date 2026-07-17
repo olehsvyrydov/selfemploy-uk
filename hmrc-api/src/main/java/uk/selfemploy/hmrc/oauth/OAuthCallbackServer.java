@@ -260,10 +260,9 @@ public class OAuthCallbackServer {
             return;
         }
 
-        // Validate state parameter
         String expected = expectedState.get();
         if (state == null || !state.equals(expected)) {
-            log.error("State mismatch: expected={}, received={}", expected, state);
+            log.error("OAuth callback rejected: state parameter did not match the pending request");
             sendErrorResponse(request, "Invalid state parameter - possible security issue");
             future.completeExceptionally(new HmrcOAuthException(OAuthError.INVALID_STATE));
             stop();

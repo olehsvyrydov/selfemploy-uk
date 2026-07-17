@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.hmrc.config.HmrcConfig;
+import uk.selfemploy.hmrc.config.HmrcHosts;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException;
 import uk.selfemploy.hmrc.exception.HmrcOAuthException.OAuthError;
 import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
@@ -59,11 +60,24 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
             .exceptionally(ex -> {
                 log.error("Token exchange failed: {}",
                     HmrcPiiRedactor.redact(String.valueOf(ex.getMessage())), ex);
-                if (ex.getCause() instanceof HmrcOAuthException) {
-                    throw (HmrcOAuthException) ex.getCause();
-                }
-                throw new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
+                HmrcOAuthException typed = asHmrcOAuthException(ex);
+                throw typed != null ? typed : new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
             });
+    }
+
+    /**
+     * Returns the {@link HmrcOAuthException} carried by a failed stage — whether it is the throwable
+     * itself or its cause — or null if the failure is not one. A stage that fails with a plain
+     * {@code failedFuture(hmrcException)} surfaces it directly, not wrapped.
+     */
+    private static HmrcOAuthException asHmrcOAuthException(Throwable ex) {
+        if (ex instanceof HmrcOAuthException direct) {
+            return direct;
+        }
+        if (ex.getCause() instanceof HmrcOAuthException cause) {
+            return cause;
+        }
+        return null;
     }
 
     /**
@@ -95,8 +109,9 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
      * @return never; the method always throws
      */
     private static OAuthTokens logAndRethrowRefreshFailure(Throwable ex) {
-        HmrcOAuthException failure = ex.getCause() instanceof HmrcOAuthException cause
-            ? cause
+        HmrcOAuthException typed = asHmrcOAuthException(ex);
+        HmrcOAuthException failure = typed != null
+            ? typed
             : new HmrcOAuthException(OAuthError.TOKEN_EXCHANGE_FAILED, ex);
         if (failure.getError() == OAuthError.INVALID_GRANT) {
             log.warn("HMRC rejected the refresh token; the user must reconnect: {}",
@@ -118,9 +133,21 @@ public class DefaultTokenExchangeClient implements TokenExchangeClient {
         return body.toString();
     }
 
+    /**
+     * Posts a token request, but only to an official HMRC host. The token URL comes from a system
+     * property a {@code .env} file can set, so the destination is checked against {@link HmrcHosts}
+     * immediately before the client secret is sent, whatever the configuration claims.
+     */
     private CompletableFuture<OAuthTokens> sendTokenRequest(String body) {
+        URI tokenUri = URI.create(config.tokenUrl());
+        if (!HmrcHosts.isAllowed(tokenUri)) {
+            // Reported once by the caller's failure handler; no secret is sent.
+            return CompletableFuture.failedFuture(
+                new HmrcOAuthException(OAuthError.CONFIGURATION_ERROR,
+                    "The configured HMRC token URL is not an official HMRC address."));
+        }
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(config.tokenUrl()))
+            .uri(tokenUri)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .header("Accept", "application/json")
             .timeout(TIMEOUT)

@@ -5,6 +5,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.core.exception.SubmissionException;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.util.List;
+import javax.net.ssl.SSLHandshakeException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,6 +33,42 @@ class HmrcErrorGuidanceTest {
     @BeforeEach
     void setUp() {
         guidance = new HmrcErrorGuidance();
+    }
+
+    @Nested
+    @DisplayName("OAuth connection-flow guidance")
+    class OAuthFlowGuidanceTests {
+
+        @Test
+        @DisplayName("every OAuth failure code has specific, actionable guidance")
+        void oauthCodesHaveGuidance() {
+            for (String code : List.of(
+                "PORT_IN_USE", "TIMEOUT", "ACCESS_DENIED", "INVALID_STATE",
+                "STORAGE_ERROR", "CONFIGURATION_ERROR")) {
+                String help = guidance.getGuidanceForErrorCode(code);
+                assertThat(help)
+                    .as("guidance for " + code)
+                    .isNotBlank();
+                assertThat(help)
+                    .as(code + " should not fall back to generic guidance")
+                    .isNotEqualTo(guidance.getGuidanceForErrorCode("SOME_UNKNOWN_CODE"));
+            }
+        }
+
+        @Test
+        @DisplayName("PORT_IN_USE explains the port conflict without hardcoding a port number")
+        void portInUseIsSpecific() {
+            String help = guidance.getGuidanceForErrorCode("PORT_IN_USE").toLowerCase();
+            assertThat(help).contains("port");
+            assertThat(help).doesNotContain("8088");
+        }
+
+        @Test
+        @DisplayName("ACCESS_DENIED explains how to grant authority at HMRC")
+        void accessDeniedExplainsConsent() {
+            assertThat(guidance.getGuidanceForErrorCode("ACCESS_DENIED").toLowerCase())
+                .contains("grant authority");
+        }
     }
 
     @Nested
@@ -702,7 +744,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("TC-019: network timeout with retryable flag")
         void shouldBuildDisplayForRetryableNetworkError() {
-            var ex = new SubmissionException("Connection timed out", new java.io.IOException(), true);
+            var ex = new SubmissionException("Connection timed out", new IOException(), true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
 
@@ -788,7 +830,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("SSLHandshakeException should produce Connection Error title")
         void shouldDetectSslHandshakeException() {
-            var sslEx = new javax.net.ssl.SSLHandshakeException("SSL handshake failed");
+            var sslEx = new SSLHandshakeException("SSL handshake failed");
             var ex = new SubmissionException("SSL handshake failed", sslEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
@@ -799,7 +841,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("ConnectException should produce Connection Error title")
         void shouldDetectConnectException() {
-            var connectEx = new java.net.ConnectException("Connection refused");
+            var connectEx = new ConnectException("Connection refused");
             var ex = new SubmissionException("Connection refused", connectEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
@@ -810,7 +852,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("SocketTimeoutException should produce Connection Error title")
         void shouldDetectSocketTimeoutException() {
-            var timeoutEx = new java.net.SocketTimeoutException("Read timed out");
+            var timeoutEx = new SocketTimeoutException("Read timed out");
             var ex = new SubmissionException("Read timed out", timeoutEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
@@ -821,7 +863,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("UnknownHostException should produce Connection Error title")
         void shouldDetectUnknownHostException() {
-            var hostEx = new java.net.UnknownHostException("api.service.hmrc.gov.uk");
+            var hostEx = new UnknownHostException("api.service.hmrc.gov.uk");
             var ex = new SubmissionException("Unknown host", hostEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
@@ -832,7 +874,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("network error should have network-specific message")
         void shouldShowNetworkSpecificMessage() {
-            var connectEx = new java.net.ConnectException("Connection refused");
+            var connectEx = new ConnectException("Connection refused");
             var ex = new SubmissionException("Connection refused", connectEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
@@ -844,7 +886,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("network error should have network-specific guidance")
         void shouldShowNetworkSpecificGuidance() {
-            var connectEx = new java.net.ConnectException("Connection refused");
+            var connectEx = new ConnectException("Connection refused");
             var ex = new SubmissionException("Connection refused", connectEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
@@ -855,7 +897,7 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("network error should not be a settings error")
         void shouldNotBeSettingsError() {
-            var connectEx = new java.net.ConnectException("Connection refused");
+            var connectEx = new ConnectException("Connection refused");
             var ex = new SubmissionException("Connection refused", connectEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);
@@ -886,8 +928,8 @@ class HmrcErrorGuidanceTest {
         @Test
         @DisplayName("network error with nested cause should be detected")
         void shouldDetectNestedNetworkCause() {
-            var sslEx = new javax.net.ssl.SSLHandshakeException("cert invalid");
-            var ioEx = new java.io.IOException("wrapped", sslEx);
+            var sslEx = new SSLHandshakeException("cert invalid");
+            var ioEx = new IOException("wrapped", sslEx);
             var ex = new SubmissionException("Request failed", ioEx, true);
 
             SubmissionErrorDisplay display = guidance.buildErrorDisplay(ex);

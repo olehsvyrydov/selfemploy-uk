@@ -124,7 +124,10 @@ class FirstRunExperienceE2ETest extends BaseE2ETest {
         void hmrcCredentialsDefaultNotConfigured() {
             assertThat(lookup("#hmrcCredentialsStatusLabel").tryQuery()).isPresent();
             Label statusLabel = lookup("#hmrcCredentialsStatusLabel").queryAs(Label.class);
-            assertThat(statusLabel.getText()).isEqualTo("Not configured");
+            // Exact controller-produced text, so this fails if the controller never populated the
+            // label (the FXML placeholder is the shorter "Not configured").
+            assertThat(statusLabel.getText())
+                .isEqualTo("Not configured — enter your Client ID and Secret above");
         }
 
         @Test

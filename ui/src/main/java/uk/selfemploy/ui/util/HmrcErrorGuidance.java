@@ -168,7 +168,32 @@ public class HmrcErrorGuidance {
 
         Map.entry("SERVICE_UNAVAILABLE",
             "HMRC services are temporarily unavailable. " +
-            "Please try again later.")
+            "Please try again later."),
+
+        // OAuth connection-flow codes (HMRC sign-in in the connection wizard)
+        Map.entry("PORT_IN_USE",
+            "Another program is using the local port this app needs to finish signing in. " +
+            "Close other apps that may be using it — or restart this app — and try again."),
+
+        Map.entry("TIMEOUT",
+            "The sign-in didn't finish in time. Choose 'Try Again' to open the HMRC sign-in " +
+            "afresh, and complete it in your browser when it opens."),
+
+        Map.entry("ACCESS_DENIED",
+            "Sign-in was declined at HMRC. To connect, choose 'Grant authority' on the HMRC consent " +
+            "screen. Try again when you're ready."),
+
+        Map.entry("INVALID_STATE",
+            "The sign-in couldn't be verified and was stopped as a precaution. Start the connection " +
+            "again from this app so it can be matched securely."),
+
+        Map.entry("STORAGE_ERROR",
+            "You signed in to HMRC, but the session couldn't be saved on this device. Check that the " +
+            "application data folder is writable, then connect again."),
+
+        Map.entry("CONFIGURATION_ERROR",
+            "The HMRC connection isn't configured correctly on this device. Check your Client ID and " +
+            "Secret in Settings, confirm the environment, and try again.")
     );
 
     /**
@@ -194,7 +219,13 @@ public class HmrcErrorGuidance {
         Map.entry("MATCHING_RESOURCE_NOT_FOUND", "HMRC Business Profile Not Synced"),
         Map.entry("HMRC_PROFILE_NOT_SYNCED", "HMRC Profile Not Synced"),
         Map.entry("SERVER_ERROR", "HMRC Service Unavailable"),
-        Map.entry("SERVICE_UNAVAILABLE", "HMRC Service Unavailable")
+        Map.entry("SERVICE_UNAVAILABLE", "HMRC Service Unavailable"),
+        Map.entry("PORT_IN_USE", "Sign-in Port In Use"),
+        Map.entry("TIMEOUT", "Sign-in Timed Out"),
+        Map.entry("ACCESS_DENIED", "Sign-in Declined at HMRC"),
+        Map.entry("INVALID_STATE", "Sign-in Could Not Be Verified"),
+        Map.entry("STORAGE_ERROR", "Session Could Not Be Saved"),
+        Map.entry("CONFIGURATION_ERROR", "HMRC Connection Not Configured")
     );
 
     /**

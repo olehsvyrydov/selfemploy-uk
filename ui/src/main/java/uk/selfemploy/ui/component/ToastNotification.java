@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.component;
 
+import uk.selfemploy.ui.util.StatusGlyph;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -145,7 +146,7 @@ public final class ToastNotification {
      * Creates success toast content with a checkmark icon.
      */
     private static HBox createSuccessContent(String message) {
-        Label iconLabel = new Label("✓");
+        Label iconLabel = new Label(StatusGlyph.PASS);
         iconLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #4ade80;");
 
         Label messageLabel = new Label(message);
