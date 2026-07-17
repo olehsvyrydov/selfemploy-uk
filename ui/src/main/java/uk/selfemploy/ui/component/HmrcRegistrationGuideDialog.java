@@ -1,6 +1,5 @@
 package uk.selfemploy.ui.component;
 
-import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,21 +8,18 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import javafx.util.Duration;
 import uk.selfemploy.ui.service.HmrcRegistrationGuide;
+import uk.selfemploy.ui.util.BrowserUtil;
+import uk.selfemploy.ui.util.ClipboardUtil;
+import uk.selfemploy.ui.util.DialogStyler;
 
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * A guided walkthrough for registering an application on the HMRC Developer Hub to obtain API
@@ -35,7 +31,7 @@ import java.util.logging.Logger;
  */
 public final class HmrcRegistrationGuideDialog {
 
-    private static final Logger LOG = Logger.getLogger(HmrcRegistrationGuideDialog.class.getName());
+    private static final String STYLESHEET = "/css/help.css";
 
     private final HmrcRegistrationGuide guide;
     private final Consumer<String> browserOpener;
@@ -52,7 +48,7 @@ public final class HmrcRegistrationGuideDialog {
      * @param guide the walkthrough content
      */
     public static void show(Window owner, HmrcRegistrationGuide guide) {
-        new HmrcRegistrationGuideDialog(guide, HmrcRegistrationGuideDialog::openInBrowser).showModal(owner);
+        new HmrcRegistrationGuideDialog(guide, BrowserUtil::openUrl).showModal(owner);
     }
 
     private void showModal(Window owner) {
@@ -69,13 +65,14 @@ public final class HmrcRegistrationGuideDialog {
         content.getChildren().add(copyValuesSection());
         content.getChildren().add(openHubButton());
         content.getChildren().add(stepsSection());
+        content.getChildren().add(productionNote());
 
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
-
-        VBox root = new VBox(scroll, footer(stage));
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
+        VBox root = new VBox(scroll, footer(stage));
+        DialogStyler.setupStyledDialog(stage, root, STYLESHEET);
         stage.setScene(new Scene(root, 560, 640));
         stage.showAndWait();
     }
@@ -104,7 +101,7 @@ public final class HmrcRegistrationGuideDialog {
         HBox.setHgrow(field, Priority.ALWAYS);
 
         Button copy = new Button("Copy");
-        copy.setOnAction(e -> copyToClipboard(value.value(), copy));
+        copy.setOnAction(e -> ClipboardUtil.copyWithFeedback(copy, value.value()));
 
         HBox row = new HBox(8, label, field, copy);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -132,6 +129,14 @@ public final class HmrcRegistrationGuideDialog {
         return box;
     }
 
+    private Label productionNote() {
+        Label note = new Label(guide.productionNote());
+        note.setWrapText(true);
+        note.setPadding(new Insets(8, 0, 0, 0));
+        note.setStyle("-fx-font-style: italic;");
+        return note;
+    }
+
     private HBox footer(Stage stage) {
         Button close = new Button("Done");
         close.setDefaultButton(true);
@@ -140,34 +145,5 @@ public final class HmrcRegistrationGuideDialog {
         footer.setAlignment(Pos.CENTER_RIGHT);
         footer.setPadding(new Insets(12, 24, 16, 24));
         return footer;
-    }
-
-    private void copyToClipboard(String value, Button button) {
-        ClipboardContent content = new ClipboardContent();
-        content.putString(value);
-        Clipboard.getSystemClipboard().setContent(content);
-
-        String original = button.getText();
-        button.setText("Copied!");
-        button.setDisable(true);
-        PauseTransition pause = new PauseTransition(Duration.millis(1500));
-        pause.setOnFinished(ev -> {
-            button.setText(original);
-            button.setDisable(false);
-        });
-        pause.play();
-    }
-
-    private static void openInBrowser(String url) {
-        try {
-            if (java.awt.Desktop.isDesktopSupported()
-                && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
-                java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
-            } else {
-                LOG.warning("Cannot open a browser on this platform; the Developer Hub URL is " + url);
-            }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to open the HMRC Developer Hub in a browser", e);
-        }
     }
 }

@@ -44,12 +44,21 @@ public final class HmrcRegistrationGuide {
                     + "Use the suggested application name below (or any name you like)."),
             new Step(3, "Set the Redirect URI",
                 "In your application's Redirect URIs, add the Redirect URI below exactly as shown."),
-            new Step(4, "Subscribe to the Self Assessment (MTD) API",
-                "In your application's API subscriptions, subscribe to Self Assessment (MTD)."),
+            new Step(4, "Subscribe to the Making Tax Digital APIs",
+                "In your application's API subscriptions, subscribe to the Making Tax Digital for "
+                    + "Income Tax (Self Assessment) APIs — the ones the Developer Hub lists for MTD ITSA, "
+                    + "so this app can read your obligations and submit updates."),
             new Step(5, "Copy your Client ID and Client Secret",
                 "Open your application's Credentials to find your Client ID and Client Secret."),
             new Step(6, "Enter them below",
                 "Paste your Client ID and Client Secret into the fields on this page and save."));
+    }
+
+    /** A note about moving from sandbox testing to live (production) submissions. */
+    public String productionNote() {
+        return "These steps set up a Sandbox application for testing. To file real returns you apply "
+            + "for Production credentials on the Developer Hub (HMRC reviews the request, which can take "
+            + "a few days), then switch the environment to Production in these Settings.";
     }
 
     /** The values HMRC asks the user to enter, each offered with a copy button. */

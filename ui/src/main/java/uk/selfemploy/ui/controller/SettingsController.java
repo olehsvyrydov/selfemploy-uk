@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import uk.selfemploy.ui.util.ClipboardUtil;
 import uk.selfemploy.ui.util.DialogBounds;
 import uk.selfemploy.ui.util.StatusGlyph;
 import javafx.stage.Stage;
@@ -37,7 +38,6 @@ import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
 import uk.selfemploy.ui.component.AppDialog;
 import uk.selfemploy.ui.component.HmrcRegistrationGuideDialog;
-import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.CredentialEncryptionException;
@@ -54,8 +54,6 @@ import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -194,6 +192,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
         updateUtrDisplay();
         loadNinoFromStore();
         updateNinoDisplay();
+        // Show the real redirect URI (reflecting HMRC_CALLBACK_PORT) rather than the FXML default.
+        if (hmrcRedirectUriField != null) {
+            hmrcRedirectUriField.setText(OAuthServiceFactory.getRedirectUri());
+        }
         loadHmrcCredentialsStatus();
         initHmrcEnvironmentCombo();
         updateHmrcConnectionStatus();
@@ -754,30 +756,15 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     @FXML
     void handleShowRegistrationHelp(ActionEvent event) {
-        String redirectUri = hmrcRedirectUriField != null && !hmrcRedirectUriField.getText().isBlank()
-            ? hmrcRedirectUriField.getText()
-            : OAuthServiceFactory.getRedirectUri();
-        HmrcRegistrationGuideDialog.show(getOwnerWindow(), new HmrcRegistrationGuide(redirectUri));
+        // Sourced from the OAuth config, not the read-only field, so it reflects the real callback
+        // port (HMRC_CALLBACK_PORT) rather than a hardcoded default.
+        HmrcRegistrationGuideDialog.show(getOwnerWindow(),
+            new HmrcRegistrationGuide(OAuthServiceFactory.getRedirectUri()));
     }
 
     @FXML
     void handleCopyRedirectUri(ActionEvent event) {
-        String uri = hmrcRedirectUriField != null ? hmrcRedirectUriField.getText() : "http://localhost:8088/oauth/callback";
-        Clipboard clipboard = Clipboard.getSystemClipboard();
-        ClipboardContent content = new ClipboardContent();
-        content.putString(uri);
-        clipboard.setContent(content);
-        if (copyRedirectUriButton != null) {
-            String originalText = copyRedirectUriButton.getText();
-            copyRedirectUriButton.setText("Copied!");
-            copyRedirectUriButton.setDisable(true);
-            javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(1500));
-            pause.setOnFinished(ev -> {
-                copyRedirectUriButton.setText(originalText);
-                copyRedirectUriButton.setDisable(false);
-            });
-            pause.play();
-        }
+        ClipboardUtil.copyWithFeedback(copyRedirectUriButton, OAuthServiceFactory.getRedirectUri());
     }
 
     @FXML

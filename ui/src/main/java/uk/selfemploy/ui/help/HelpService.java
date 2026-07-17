@@ -400,35 +400,6 @@ public class HelpService {
                 .linkText("Learn about Making Tax Digital")
                 .build());
 
-        helpContent.put(HelpTopic.HMRC_REGISTRATION, HelpContent.builder()
-                .title("How to Register on HMRC Developer Hub")
-                .body("To use this app with HMRC, you need your own API credentials.\n\n" +
-                        "Step 1: Create a Developer Hub Account\n" +
-                        "• Go to the HMRC Developer Hub\n" +
-                        "• Click 'Register' and create an account\n" +
-                        "• Verify your email address\n\n" +
-                        "Step 2: Register Your Application\n" +
-                        "• Log in to the Developer Hub\n" +
-                        "• Go to 'Applications' and click 'Add an application'\n" +
-                        "• Choose 'Sandbox' to start testing\n" +
-                        "• Enter any application name (e.g., 'My Tax Manager')\n\n" +
-                        "Step 3: Configure Your Application\n" +
-                        "• Open your new application\n" +
-                        "• Go to 'Credentials' to find your Client ID and Client Secret\n" +
-                        "• Go to 'Redirect URIs' and add: http://localhost:8088/oauth/callback\n" +
-                        "• Subscribe to the 'Self Assessment (MTD)' API\n\n" +
-                        "Step 4: Enter Credentials in This App\n" +
-                        "• Go to Settings > HMRC API Credentials\n" +
-                        "• Enter your Client ID and Client Secret\n" +
-                        "• Click 'Save Credentials'\n\n" +
-                        "For Production:\n" +
-                        "• Apply for production credentials on the Developer Hub\n" +
-                        "• HMRC will review your application (may take several days)\n" +
-                        "• Once approved, switch to 'Production' in Settings")
-                .hmrcLink("https://developer.service.hmrc.gov.uk/api-documentation")
-                .linkText("Open HMRC Developer Hub")
-                .build());
-
         helpContent.put(HelpTopic.SECURITY_PRIVACY, HelpContent.builder()
                 .title("Security & Privacy")
                 .body("Your data privacy is our priority.\n\n" +

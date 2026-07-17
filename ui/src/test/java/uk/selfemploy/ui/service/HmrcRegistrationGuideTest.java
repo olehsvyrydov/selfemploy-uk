@@ -62,4 +62,12 @@ class HmrcRegistrationGuideTest {
     void developerHubUrlIsOfficialHttps() {
         assertThat(guide.developerHubUrl()).startsWith("https://developer.service.hmrc.gov.uk");
     }
+
+    @Test
+    @DisplayName("the production note explains that the sandbox steps need a separate production application")
+    void productionNoteCoversProduction() {
+        assertThat(guide.productionNote().toLowerCase())
+            .contains("sandbox")
+            .contains("production");
+    }
 }
