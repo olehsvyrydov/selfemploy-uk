@@ -6,6 +6,8 @@ import uk.selfemploy.ui.service.HmrcRegistrationGuide.CopyValue;
 import uk.selfemploy.ui.service.HmrcRegistrationGuide.Step;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,8 +29,10 @@ class HmrcRegistrationGuideTest {
             assertThat(steps.get(i).title()).isNotBlank();
             assertThat(steps.get(i).detail()).isNotBlank();
         }
-        String allText = steps.stream().map(s -> s.title() + " " + s.detail())
-            .reduce("", (a, b) -> a + " " + b).toLowerCase();
+        String allText = steps.stream()
+            .map(s -> s.title() + " " + s.detail())
+            .collect(Collectors.joining(" "))
+            .toLowerCase(Locale.ROOT);
         assertThat(allText).contains("account");
         assertThat(allText).contains("redirect uri");
         assertThat(allText).contains("self assessment");
@@ -66,7 +70,7 @@ class HmrcRegistrationGuideTest {
     @Test
     @DisplayName("the production note explains that the sandbox steps need a separate production application")
     void productionNoteCoversProduction() {
-        assertThat(guide.productionNote().toLowerCase())
+        assertThat(guide.productionNote().toLowerCase(Locale.ROOT))
             .contains("sandbox")
             .contains("production");
     }
