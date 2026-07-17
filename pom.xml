@@ -218,9 +218,6 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
                     <configuration>
-                        <systemPropertyVariables>
-                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        </systemPropertyVariables>
                         <!-- Exclude E2E tests by default. Override with -Dsurefire.excludedGroups= to include them -->
                         <excludedGroups>${surefire.excludedGroups}</excludedGroups>
                     </configuration>

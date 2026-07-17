@@ -98,6 +98,7 @@ jobs:
             --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" \
             --java-options "--enable-native-access=ALL-UNNAMED" \
             --java-options "-Dio.netty.noUnsafe=true" \
+            --java-options "-Djava.util.logging.config.file=\$APPDIR/logging.properties" \
             --type ${{ matrix.type }} \
             --dest app/target/installer
 
@@ -117,6 +118,7 @@ jobs:
             --java-options "--add-opens=java.base/java.lang=ALL-UNNAMED" `
             --java-options "--enable-native-access=ALL-UNNAMED" `
             --java-options "-Dio.netty.noUnsafe=true" `
+            --java-options "-Djava.util.logging.config.file=`$APPDIR/logging.properties" `
             --type ${{ matrix.type }} `
             --dest app/target/installer `
             --win-menu `

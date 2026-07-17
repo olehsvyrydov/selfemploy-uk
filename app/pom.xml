@@ -56,6 +56,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -151,6 +152,12 @@
                                                 <include>${project.build.finalName}.jar</include>
                                             </includes>
                                         </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../packaging</directory>
+                                            <includes>
+                                                <include>logging.properties</include>
+                                            </includes>
+                                        </resource>
                                     </resources>
                                 </configuration>
                             </execution>
@@ -178,6 +185,7 @@
                                      an "unknown module" warning. -->
                                 <option>--enable-native-access=ALL-UNNAMED</option>
                                 <option>-Dio.netty.noUnsafe=true</option>
+                                <option>-Djava.util.logging.config.file=$APPDIR/logging.properties</option>
                             </javaOptions>
                         </configuration>
                     </plugin>
