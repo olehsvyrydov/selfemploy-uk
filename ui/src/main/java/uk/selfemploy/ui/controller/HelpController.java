@@ -3,12 +3,8 @@ package uk.selfemploy.ui.controller;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextArea;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import uk.selfemploy.common.domain.TaxYear;
@@ -177,19 +173,12 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
 
     // === FXML Injected Fields ===
 
-    @FXML private ListView<String> categoryList;
-    @FXML private ListView<String> topicList;
-    @FXML private VBox contentPane;
-    @FXML private Label helpTitle;
-    @FXML private TextArea helpBody;
-    @FXML private Label hmrcLinkLabel;
     @FXML private Label versionLabel;
 
     // === State ===
 
     private TaxYear taxYear;
     private final HelpService helpService;
-    private HelpTopic selectedTopic;
 
     // Wired by MainController; runs the guided tour when the user replays it from here.
     private Runnable onReplayTour;
@@ -314,163 +303,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         return "General";
     }
 
-    /**
-     * Returns the comprehensive User Guide content for the User Guide dialog.
-     * This content is adapted from the full USER_GUIDE.md for in-app display.
-     *
-     * @return the user guide content as a formatted string
-     */
-    public String getUserGuideContent() {
-        return USER_GUIDE_CONTENT;
-    }
-
-    /**
-     * Comprehensive User Guide content for in-app display.
-     * Adapted from docs/USER_GUIDE.md.
-     */
-    private static final String USER_GUIDE_CONTENT = """
-            What This App Does
-            ━━━━━━━━━━━━━━━━━━
-            UK Self-Employment Manager is a free, open-source desktop application \
-            for UK self-employed individuals to:
-
-            • Track Income - Record all business income with dates and descriptions
-            • Track Expenses - Log expenses categorised to match HMRC's SA103 form
-            • Calculate Tax - Real-time estimates of Income Tax and NI Class 4
-            • Submit to HMRC - One-click annual Self Assessment via MTD APIs
-
-            What makes it different: completely free, privacy-first (data stays on \
-            your computer), open source, and MTD compliant.
-
-            Getting Started
-            ━━━━━━━━━━━━━━━
-            1. Complete the setup wizard with your name and UTR
-            2. Select your tax year (runs 6 April to 5 April)
-            3. Choose your business type (Freelancer, Sole Trader, etc.)
-
-            After setup, you can:
-            • Add income from the Dashboard or Income page
-            • Record expenses from the Expenses page
-            • View tax estimates on the Tax Summary page
-
-            Daily Usage
-            ━━━━━━━━━━━
-            Adding Income:
-            Navigate to Income > Add Income > Enter date, amount, description, source
-
-            Adding Expenses:
-            Navigate to Expenses > Add Expense > Select SA103 category > Enter details
-
-            Expense categories match HMRC's SA103F form:
-            • Cost of Sales (Box 17)
-            • Staff Costs (Box 19)
-            • Travel (Box 20)
-            • Premises (Box 21)
-            • Office Costs (Box 23)
-            • Professional Fees (Box 26)
-            • Other Expenses (Box 28)
-
-            Bank Statement Import
-            ━━━━━━━━━━━━━━━━━━━━━
-            Save time by importing transactions directly from your bank's CSV export \
-            instead of entering them manually.
-
-            Supported Banks:
-            • Barclays, HSBC, Lloyds, Nationwide, Starling, Monzo
-            • Revolut, Santander, Metro Bank
-            • Any other bank via manual column mapping
-
-            How to Import:
-            1. Download a CSV statement from your online banking
-            2. Open the Import Wizard from Income or Expenses page
-            3. Drag and drop your CSV file (or click Browse)
-            4. The app auto-detects your bank and maps columns
-            5. Preview transactions - assign or confirm categories
-            6. Click Import to add them to your records
-
-            Smart Features:
-            • Duplicate detection prevents importing the same transactions twice
-            • Category suggestions based on transaction descriptions
-            • Business vs personal filtering to skip personal spending
-            • Full import history with undo capability
-
-            Tips:
-            • Always download CSV format (not PDF or OFX)
-            • Revolut: only completed GBP transactions are imported
-            • Metro Bank: transaction type and description are combined
-            • Review all suggested categories before confirming
-
-            Understanding HMRC Connection
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            This app uses OAuth2 - a secure industry-standard protocol:
-
-            1. You click "Connect to HMRC" in the app
-            2. Your browser opens HMRC's official Government Gateway
-            3. You log in with YOUR credentials on HMRC's website
-            4. HMRC asks if you want to grant this app access
-            5. You click "Allow" and return to the app
-
-            Your password is NEVER shared with us:
-            • You enter your password only on HMRC's website
-            • We receive only a limited-access token
-            • HMRC controls what we can do on your behalf
-
-            Security and Privacy
-            ━━━━━━━━━━━━━━━━━━━━
-            Local-Only Storage:
-            • All data stays on YOUR computer
-            • We have NO access to your data
-            • No cloud servers store your information
-
-            Encryption:
-            • Your HMRC API credentials and National Insurance number are encrypted (AES-256-GCM)
-            • Your financial data is stored in a local database on your device (not yet encrypted at rest)
-
-            What's sent to HMRC when you submit:
-            • Your tax figures (income, expenses, profit)
-            • Fraud prevention headers (required by HMRC)
-
-            Key Deadlines
-            ━━━━━━━━━━━━━
-            • Tax Year Ends: 5 April
-            • Online Return Deadline: 31 January
-            • Tax Payment Deadline: 31 January
-            • Payment on Account 2: 31 July
-
-            Late filing penalties:
-            • 1 day late: £100
-            • 3 months late: £10/day (up to £900)
-            • 6 months late: £300 or 5% of tax owed
-            • 12 months late: £300 or up to 100% of tax owed
-
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            ⚠ This software is a record-keeping tool, not a substitute \
-            for professional advice. Tax calculations are estimates only. \
-            Always verify with a qualified accountant.
-            """;
-
     // === FXML Event Handlers ===
-
-    @FXML
-    void handleCategorySelect() {
-        // Handle category selection from ListView
-        if (categoryList != null && categoryList.getSelectionModel().getSelectedItem() != null) {
-            String category = categoryList.getSelectionModel().getSelectedItem();
-            updateTopicList(category);
-        }
-    }
-
-    @FXML
-    void handleTopicSelect() {
-        // Handle topic selection from ListView
-        if (topicList != null && topicList.getSelectionModel().getSelectedItem() != null) {
-            String topicName = topicList.getSelectionModel().getSelectedItem();
-            HelpTopic topic = findTopicByDisplayName(topicName);
-            if (topic != null) {
-                showHelpContent(topic);
-            }
-        }
-    }
 
     /** Sets the callback that replays the guided tour. Wired by {@code MainController}. */
     public void setOnReplayTour(Runnable onReplayTour) {
@@ -481,18 +314,6 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     void handleReplayTour(ActionEvent event) {
         if (onReplayTour != null) {
             onReplayTour.run();
-        }
-    }
-
-    @FXML
-    void handleOpenHmrcLink(ActionEvent event) {
-        if (selectedTopic != null) {
-            getHelpForTopic(selectedTopic).ifPresent(content -> {
-                if (content.hmrcLink() != null) {
-                    // Use in-app browser for HMRC/GOV.UK links
-                    helpService.openHmrcGuidance(content.hmrcLink(), content.title());
-                }
-            });
         }
     }
 
@@ -699,40 +520,11 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      * This provides a single-page overview of the application.
      */
     private void showUserGuideDialog() {
-        HelpContent userGuideContent = HelpContent.builder()
-                .title("User Guide")
-                .body(getUserGuideContent())
-                .build();
-
-        String color = getCategoryColor("User Guide");
-        // Use large mode (1200x900) for User Guide with styled section titles
-        HelpDialog dialog = new HelpDialog(userGuideContent, FontAwesomeSolid.BOOK, color, helpService, true);
-        dialog.showAndWaitDialog();
-    }
-
-    private void updateTopicList(String category) {
-        if (topicList != null) {
-            topicList.getItems().clear();
-            List<HelpTopic> topics = getTopicsForCategory(category);
-            for (HelpTopic topic : topics) {
-                topicList.getItems().add(getTopicDisplayName(topic));
-            }
-        }
-    }
-
-    private void showHelpContent(HelpTopic topic) {
-        selectedTopic = topic;
-        getHelpForTopic(topic).ifPresent(content -> {
-            if (helpTitle != null) {
-                helpTitle.setText(content.title());
-            }
-            if (helpBody != null) {
-                helpBody.setText(content.body());
-            }
-            if (hmrcLinkLabel != null && content.linkText() != null) {
-                hmrcLinkLabel.setText(content.linkText());
-                hmrcLinkLabel.setVisible(true);
-            }
+        getHelpForTopic(HelpTopic.USER_GUIDE).ifPresent(userGuideContent -> {
+            String color = getCategoryColor("User Guide");
+            HelpDialog dialog = new HelpDialog(
+                userGuideContent, FontAwesomeSolid.BOOK, color, helpService, HelpDialog.DialogSize.LARGE);
+            dialog.showAndWaitDialog();
         });
     }
 

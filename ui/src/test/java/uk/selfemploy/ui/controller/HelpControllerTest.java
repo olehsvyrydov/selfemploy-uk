@@ -774,21 +774,23 @@ class HelpControllerTest {
             @Test
             @DisplayName("should have user guide content available")
             void shouldHaveUserGuideContentAvailable() {
-                String userGuideContent = controller.getUserGuideContent();
+                String userGuideContent = controller.getHelpForTopic(HelpTopic.USER_GUIDE)
+                        .orElseThrow().body();
                 assertThat(userGuideContent).isNotNull().isNotBlank();
             }
 
             @Test
             @DisplayName("user guide content should include key sections")
             void userGuideContentShouldIncludeKeySections() {
-                String content = controller.getUserGuideContent();
+                String content = controller.getHelpForTopic(HelpTopic.USER_GUIDE)
+                        .orElseThrow().body();
 
-                assertThat(content).contains("What This App Does");
-                assertThat(content).contains("Getting Started");
-                assertThat(content).contains("Daily Usage");
-                assertThat(content).contains("HMRC Connection");
+                assertThat(content).contains("What this app does");
+                assertThat(content).contains("Getting started");
+                assertThat(content).contains("Daily usage");
+                assertThat(content).contains("HMRC connection");
                 assertThat(content).contains("Security");
-                assertThat(content).contains("Deadline");
+                assertThat(content).contains("deadline");
             }
         }
 

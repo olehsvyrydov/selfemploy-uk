@@ -20,6 +20,7 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
+import uk.selfemploy.ui.help.markdown.HelpMarkdownRenderer;
 import uk.selfemploy.ui.util.DialogStyler;
 
 import java.util.Objects;
@@ -177,8 +178,7 @@ public class HelpDialog {
         container.getChildren().add(createHeader());
 
         // Body content with scroll support
-        Region bodyContent = (dialogSize == DialogSize.LARGE || dialogSize == DialogSize.MEDIUM)
-                ? createStyledBody() : createBody();
+        Region bodyContent = createBody();
 
         // Wrap body in ScrollPane
         ScrollPane scrollPane = new ScrollPane(bodyContent);
@@ -276,106 +276,22 @@ public class HelpDialog {
     }
 
     /**
-     * Creates body content with styled section titles for User Guide.
-     * Section titles are detected by lines ending with ━━━ characters.
+     * Builds the scrollable body by rendering the topic's markdown into JavaFX nodes, then appending
+     * the optional "Learn more" link. The same renderer is used for every dialog size, so headings,
+     * bullet lists and tables render identically whether in a standard popup or the full User Guide.
      */
-    private VBox createStyledBody() {
-        VBox body = new VBox();
+    private VBox createBody() {
+        VBox body = new VBox(16);
         body.getStyleClass().add("help-dialog-body");
-        body.setSpacing(12);  // Improved paragraph spacing per /aura review
         body.setPadding(new Insets(24, 32, 24, 32));
         body.setStyle("-fx-background-color: white;");
 
-        String bodyText = content.body();
-        String[] lines = bodyText.split("\n");
+        body.getChildren().add(new HelpMarkdownRenderer().render(content.body()));
 
-        StringBuilder currentParagraph = new StringBuilder();
-
-        for (String line : lines) {
-            // Check if this line is a section underline (━━━━━)
-            if (line.contains("━━━")) {
-                // Previous line was a section title - flush current paragraph first
-                if (!currentParagraph.isEmpty()) {
-                    // Check if the last part is a title (short line before ━━━)
-                    String paragraphText = currentParagraph.toString().trim();
-                    if (!paragraphText.isEmpty()) {
-                        // This is the section title - styled per /aura review
-                        Label titleLabel = new Label(paragraphText);
-                        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1f2937; -fx-padding: 24 0 8 0;");
-                        titleLabel.setWrapText(true);
-                        titleLabel.setMaxWidth(Double.MAX_VALUE);
-                        body.getChildren().add(titleLabel);
-                    }
-                    currentParagraph = new StringBuilder();
-                }
-                // Skip the underline itself
-                continue;
-            }
-
-            // Empty line means end of paragraph
-            if (line.trim().isEmpty()) {
-                if (!currentParagraph.isEmpty()) {
-                    addParagraph(body, currentParagraph.toString().trim());
-                    currentParagraph = new StringBuilder();
-                }
-            } else {
-                if (!currentParagraph.isEmpty()) {
-                    currentParagraph.append(" ");
-                }
-                currentParagraph.append(line);
-            }
-        }
-
-        // Add final paragraph
-        if (!currentParagraph.isEmpty()) {
-            addParagraph(body, currentParagraph.toString().trim());
-        }
-
-        // HMRC Link button if available
-        if (content.hasLink() && helpService != null) {
-            Region spacer = new Region();
-            spacer.setMinHeight(16);
-
-            Button learnMoreBtn = createLinkButton();
-            body.getChildren().addAll(spacer, learnMoreBtn);
-        }
-
-        return body;
-    }
-
-    private void addParagraph(VBox body, String text) {
-        if (text.isEmpty()) return;
-
-        Label label = new Label(text);
-        label.setWrapText(true);
-        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #374151; -fx-line-spacing: 4;");
-        label.setMaxWidth(Double.MAX_VALUE);
-        body.getChildren().add(label);
-    }
-
-    private VBox createBody() {
-        VBox body = new VBox();
-        body.getStyleClass().add("help-dialog-body");
-        body.setSpacing(16);
-        body.setPadding(new Insets(24));
-        body.setStyle("-fx-background-color: white;");
-
-        // Body text
-        Label bodyLabel = new Label(content.body());
-        bodyLabel.getStyleClass().add("help-dialog-text");
-        bodyLabel.setWrapText(true);
-        bodyLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #374151; -fx-line-spacing: 4;");
-        bodyLabel.setMaxWidth(Double.MAX_VALUE);
-
-        body.getChildren().add(bodyLabel);
-
-        // HMRC Link button if available
         if (content.hasLink() && helpService != null) {
             Region spacer = new Region();
             spacer.setMinHeight(8);
-
-            Button learnMoreBtn = createLinkButton();
-            body.getChildren().addAll(spacer, learnMoreBtn);
+            body.getChildren().addAll(spacer, createLinkButton());
         }
 
         return body;
