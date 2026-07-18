@@ -6,13 +6,14 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
-import uk.selfemploy.ui.component.NotificationDialog;
 import uk.selfemploy.ui.component.TourOverlay;
 import uk.selfemploy.ui.viewmodel.TourViewModel;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
@@ -60,6 +61,7 @@ public class MainController implements Initializable {
     private final Map<View, Node> viewCache = new HashMap<>();
     private final Map<View, Object> controllerCache = new HashMap<>();
     private final DeadlineNotificationService notificationService = new DeadlineNotificationService();
+    private NotificationPanelController notificationPanelController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -86,7 +88,52 @@ public class MainController implements Initializable {
             notificationService.startScheduler(currentYear);
         }
 
+        setupNotificationPanel();
+
         LOG.info("Notification service initialized");
+    }
+
+    /**
+     * Loads the notification flyout panel and hosts it as a top-right overlay on the root stack,
+     * so the bell opens the full panel (filters, snooze, dismiss) instead of a one-shot dialog.
+     */
+    private void setupNotificationPanel() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/notification-panel.fxml"));
+            Node panel = loader.load();
+            notificationPanelController = loader.getController();
+            notificationPanelController.initializeWithService(notificationService);
+            notificationPanelController.setNavigationHandler(this::navigateFromNotification);
+            notificationPanelController.setSettingsHandler(() -> {
+                notificationPanelController.hide();
+                loadView(View.SETTINGS);
+            });
+
+            StackPane.setAlignment(panel, Pos.TOP_RIGHT);
+            StackPane.setMargin(panel, new Insets(64, 12, 12, 12)); // sit below the header bar
+            rootStack.getChildren().add(panel);
+        } catch (IOException e) {
+            LOG.severe("Failed to load notification panel: " + e.getMessage());
+        }
+    }
+
+    /** Routes a notification's deep-link action URL to the matching view, then closes the panel. */
+    private void navigateFromNotification(String url) {
+        if (notificationPanelController != null) {
+            notificationPanelController.hide();
+        }
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        if (url.startsWith("/settings")) {
+            loadView(View.SETTINGS);
+        } else if (url.startsWith("/submission")) {
+            loadView(View.HMRC_SUBMISSION);
+        } else if (url.startsWith("/tax-summary")) {
+            loadView(View.TAX_SUMMARY);
+        } else {
+            loadView(View.DASHBOARD);
+        }
     }
 
     private void setupTaxYearSelector() {
@@ -363,18 +410,9 @@ public class MainController implements Initializable {
     }
 
     private void showNotificationPanel() {
-        var notifications = notificationService.getNotificationHistory();
-        TaxYear currentYear = navigationViewModel.getSelectedTaxYear();
-
-        // Create and show custom notification dialog with /aura's design
-        NotificationDialog dialog = new NotificationDialog(
-            notifications,
-            currentYear,
-            () -> notificationService.markAllAsRead()
-        );
-
-        dialog.showDialog();
-        LOG.info("Notification dialog shown, " + notifications.size() + " notifications");
+        if (notificationPanelController != null) {
+            notificationPanelController.toggle();
+        }
     }
 
     /**

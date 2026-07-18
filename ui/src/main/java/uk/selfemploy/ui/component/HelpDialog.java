@@ -29,9 +29,8 @@ import java.util.logging.Logger;
 /**
  * A custom styled dialog for displaying help content.
  *
- * <p>Refactored to use Stage with StageStyle.TRANSPARENT and DialogStyler
- * for consistent popup styling with rounded corners and shadows - matching
- * the NotificationDialog pattern.</p>
+ * <p>Uses a Stage with StageStyle.TRANSPARENT and DialogStyler for consistent
+ * popup styling with rounded corners and shadows.</p>
  *
  * <p>Features:</p>
  * <ul>
@@ -71,7 +70,7 @@ public class HelpDialog {
     private static final double MEDIUM_WIDTH = 600;
     private static final double MEDIUM_HEIGHT = 500;
 
-    // Standard dialog dimensions (same as NotificationDialog)
+    // Standard dialog dimensions
     private static final double STANDARD_WIDTH = 420;
 
     private final HelpContent content;
@@ -189,7 +188,7 @@ public class HelpDialog {
         // Footer with buttons
         container.getChildren().add(createFooter());
 
-        // Apply styling using DialogStyler utility (same as NotificationDialog)
+        // Apply styling using DialogStyler utility
         DialogStyler.applyRoundedClip(container, DialogStyler.CORNER_RADIUS);
         StackPane shadowWrapper = DialogStyler.createShadowWrapper(container);
         DialogStyler.setupStyledDialog(stage, shadowWrapper, STYLESHEET);
@@ -219,7 +218,7 @@ public class HelpDialog {
 
     /**
      * Creates the gradient header with icon, title, and close button.
-     * Matches NotificationDialog pattern for consistent styling.
+     * Uses the shared gradient-header dialog styling.
      * Uses the category-specific color for the gradient.
      */
     private HBox createHeader() {
