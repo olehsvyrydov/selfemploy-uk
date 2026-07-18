@@ -6,6 +6,7 @@ import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.viewmodel.Deadline;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -42,8 +43,25 @@ public class DeadlineNotificationService {
     // Scheduler for periodic checks
     private ScheduledExecutorService scheduler;
 
+    // Obligation-specific reminder offsets (days before the deadline). Annual Self Assessment
+    // deadlines warn earlier and for longer; MTD quarterly updates warn on a tighter cadence.
+    private static final List<Integer> ANNUAL_OFFSETS = List.of(60, 30, 7);
+    private static final List<Integer> QUARTERLY_OFFSETS = List.of(30, 7, 1);
+
+    // Injectable time source so reminder scheduling can be tested deterministically.
+    private Clock clock = Clock.systemDefaultZone();
+
     public DeadlineNotificationService() {
         // Initialize with default preferences
+    }
+
+    /** Overrides the time source (tests only); production uses the system clock. */
+    void setClock(Clock clock) {
+        this.clock = clock;
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(clock);
     }
 
     // === Preferences ===
@@ -81,8 +99,12 @@ public class DeadlineNotificationService {
             return Collections.emptyList();
         }
 
+        long daysRemaining = ChronoUnit.DAYS.between(today(), deadline.date());
+        if (daysRemaining < 0) {
+            return Collections.emptyList(); // deadline already passed
+        }
+
         List<DeadlineNotification> notifications = new ArrayList<>();
-        long daysRemaining = deadline.daysRemaining();
 
         // Check if deadline is today (special case)
         if (daysRemaining == 0) {
@@ -90,14 +112,31 @@ public class DeadlineNotificationService {
             return notifications;
         }
 
-        // Check against configured trigger days
-        for (int triggerDay : preferences.getTriggerDays()) {
+        // Fire at each reminder offset appropriate to this obligation type.
+        for (int triggerDay : offsetsFor(deadline)) {
             if (daysRemaining == triggerDay) {
                 notifications.add(DeadlineNotification.create(deadline, triggerDay));
             }
         }
 
         return notifications;
+    }
+
+    /**
+     * Returns the reminder offsets (days before) for a deadline: MTD quarterly updates use a tight
+     * cadence, annual Self Assessment deadlines a longer one, and any other deadline falls back to
+     * the user-configurable preference.
+     */
+    private List<Integer> offsetsFor(Deadline deadline) {
+        String label = deadline.label().toLowerCase(Locale.ROOT);
+        if (label.contains("mtd") || label.contains("quarter")) {
+            return QUARTERLY_OFFSETS;
+        }
+        if (label.contains("filing") || label.contains("payment")
+                || label.contains("account") || label.contains("annual")) {
+            return ANNUAL_OFFSETS;
+        }
+        return preferences.getTriggerDays();
     }
 
     /**
@@ -174,7 +213,7 @@ public class DeadlineNotificationService {
     }
 
     private String createNotificationKey(Deadline deadline, int triggerDays) {
-        return deadline.label() + "_" + deadline.date() + "_" + triggerDays + "_" + LocalDate.now();
+        return deadline.label() + "_" + deadline.date() + "_" + triggerDays + "_" + today();
     }
 
     // === History Management ===
@@ -314,12 +353,22 @@ public class DeadlineNotificationService {
         List<Deadline> deadlines = getDeadlinesForTaxYear(taxYear);
 
         for (Deadline deadline : deadlines) {
+            // Respect snooze: don't re-nag while an unexpired snoozed reminder for this deadline exists.
+            if (hasActiveSnooze(deadline)) {
+                continue;
+            }
             List<DeadlineNotification> notifications = checkDeadline(deadline);
             for (DeadlineNotification notification : notifications) {
                 // Use the notification's trigger days
                 triggerNotification(deadline, notification.triggerDays());
             }
         }
+    }
+
+    private boolean hasActiveSnooze(Deadline deadline) {
+        return history.stream().anyMatch(n ->
+            n.deadline().label().equals(deadline.label())
+                && n.isSnoozed() && !n.isSnoozeExpired());
     }
 
     /**
