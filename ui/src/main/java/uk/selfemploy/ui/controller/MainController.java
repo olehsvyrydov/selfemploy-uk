@@ -12,6 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Window;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.component.TourOverlay;
@@ -428,6 +429,17 @@ public class MainController implements Initializable {
 
     private void wireImportHistory(ImportHistoryController controller) {
         loadImportHistoryAsync(controller);
+
+        // Wire the "New Import" / empty-state buttons (previously inert): open the wizard, then
+        // refresh the history and land on Bank Review scoped to the just-imported batch.
+        controller.setOnNewImport(() -> {
+            Window owner = rootStack.getScene() != null ? rootStack.getScene().getWindow() : null;
+            BankImportLauncher.launch(owner, (message, batchId) -> {
+                loadImportHistoryAsync(controller);
+                navigateToTransactionReviewWithMessage(message, batchId);
+            });
+        });
+
         controller.setOnUndoImport(item -> IMPORT_HISTORY_WORKER.submit(() -> {
             ImportHistoryCoordinator.UndoResult result;
             try {
