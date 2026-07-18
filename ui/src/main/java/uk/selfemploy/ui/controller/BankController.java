@@ -8,6 +8,7 @@ import uk.selfemploy.common.domain.TaxYear;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.IntConsumer;
 
 /**
  * Hosts the single "Bank" section: an "Import statement" action plus three tabs — Review
@@ -30,10 +31,26 @@ public class BankController implements Initializable, MainController.TaxYearAwar
     @FXML private ReconciliationDashboardController recordsCheckController;
 
     private Runnable onImportStatement;
+    private IntConsumer onTabSelected;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Wiring is done by MainController via the getters below.
+        // Refresh a tab's data whenever it becomes selected, so an action taken on one tab (e.g.
+        // undoing an import) can't leave stale rows showing on another.
+        bankTabs.getSelectionModel().selectedIndexProperty().addListener((obs, oldIndex, newIndex) -> {
+            if (onTabSelected != null) {
+                onTabSelected.accept(newIndex.intValue());
+            }
+        });
+    }
+
+    /** Sets the callback invoked (with the tab index) whenever the selected tab changes. */
+    public void setOnTabSelected(IntConsumer onTabSelected) {
+        this.onTabSelected = onTabSelected;
+    }
+
+    public int getSelectedTab() {
+        return bankTabs.getSelectionModel().getSelectedIndex();
     }
 
     public TransactionReviewController getReviewController() {
@@ -68,11 +85,7 @@ public class BankController implements Initializable, MainController.TaxYearAwar
     @Override
     public void setTaxYear(TaxYear taxYear) {
         // Imports span tax years, so only the year-scoped tabs receive the change.
-        if (reviewController != null) {
-            reviewController.setTaxYear(taxYear);
-        }
-        if (recordsCheckController != null) {
-            recordsCheckController.setTaxYear(taxYear);
-        }
+        reviewController.setTaxYear(taxYear);
+        recordsCheckController.setTaxYear(taxYear);
     }
 }

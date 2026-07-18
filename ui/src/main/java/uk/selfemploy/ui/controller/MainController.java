@@ -301,11 +301,11 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Navigates to the Transaction Review view and shows an import success banner.
-     * Called after a successful bank statement import from the Income or Expense view.
-     * Clears the Transaction Review view cache to ensure fresh data is loaded.
+     * Opens the Bank section on its Review Transactions tab, reloads it, and shows an import success
+     * banner scoped to the just-imported batch. Called after a bank statement import from elsewhere.
      *
-     * @param message the success message to display on the Transaction Review page
+     * @param message the success message to display on the Review tab
+     * @param batchId the imported batch to scope the review to
      */
     private void navigateToTransactionReviewWithMessage(String message, UUID batchId) {
         loadView(View.BANK);
@@ -326,9 +326,18 @@ public class MainController implements Initializable {
 
     private void refreshCurrentView() {
         View currentView = navigationViewModel.getCurrentView();
+
+        // Preserve the selected Bank tab across the rebuild (a tax-year change discards the view).
+        int bankTab = currentView == View.BANK && bankController() != null
+            ? bankController().getSelectedTab() : -1;
+
         viewCache.remove(currentView);
         controllerCache.remove(currentView);
         loadView(currentView);
+
+        if (bankTab >= 0 && bankController() != null) {
+            bankController().selectTab(bankTab);
+        }
     }
 
     /**
@@ -384,9 +393,9 @@ public class MainController implements Initializable {
             bank.selectTab(BankController.REVIEW_TAB);
             TransactionReviewController review = bank.getReviewController();
             if (review != null) {
+                // Sidebar entry clears any batch scope left by a prior import and reloads.
                 review.showAllTransactions();
             }
-            loadImportHistoryAsync(bank.getImportsController());
         }
     }
 
@@ -419,9 +428,32 @@ public class MainController implements Initializable {
                     review.refreshData();
                     review.showImportSuccessBanner(message, batchId);
                 }
-                loadImportHistoryAsync(bank.getImportsController());
             });
         });
+
+        // Load each tab's data lazily, when it is first shown, and refresh it on every re-entry so
+        // an action on one tab (e.g. an undo) can't leave stale rows on another.
+        bank.setOnTabSelected(tabIndex -> refreshBankTab(bank, tabIndex));
+        refreshBankTab(bank, bank.getSelectedTab()); // the listener won't fire for the initial tab
+    }
+
+    private void refreshBankTab(BankController bank, int tabIndex) {
+        switch (tabIndex) {
+            case BankController.REVIEW_TAB -> {
+                TransactionReviewController review = bank.getReviewController();
+                if (review != null) {
+                    review.refreshData();
+                }
+            }
+            case BankController.IMPORTS_TAB -> loadImportHistoryAsync(bank.getImportsController());
+            case BankController.RECORDS_CHECK_TAB -> {
+                ReconciliationDashboardController records = bank.getRecordsCheckController();
+                if (records != null) {
+                    records.refresh();
+                }
+            }
+            default -> { }
+        }
     }
 
     private ImportHistoryCoordinator newImportHistoryCoordinator() {
@@ -445,7 +477,8 @@ public class MainController implements Initializable {
     }
 
     private void wireImportHistory(ImportHistoryController controller) {
-        loadImportHistoryAsync(controller);
+        // The list is loaded lazily when the Imports tab is shown (see refreshBankTab), so no eager
+        // query here.
 
         // Wire the "New Import" / empty-state buttons (previously inert): open the wizard, then
         // refresh the history and land on Bank Review scoped to the just-imported batch.

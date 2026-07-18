@@ -92,17 +92,16 @@ public class ReconciliationDashboardController implements Initializable, MainCon
     /** Wires the real reconciliation data source and triggers an initial run if the year is set. */
     public void setCoordinator(ReconciliationCoordinator coordinator) {
         this.coordinator = coordinator;
-        if (taxYear != null) {
-            runReconciliation();
-        }
     }
 
     @Override
     public void setTaxYear(TaxYear taxYear) {
         this.taxYear = taxYear;
-        if (coordinator != null) {
-            runReconciliation();
-        }
+    }
+
+    /** Runs a reconciliation for the current coordinator + tax year. Called when the tab is shown. */
+    public void refresh() {
+        runReconciliation();
     }
 
     // A single shared worker so each run reuses one thread (and thus one SQLite connection) rather
