@@ -167,6 +167,7 @@ class NavigationViewModelTest {
                 View.INCOME,
                 View.EXPENSES,
                 View.TRANSACTION_REVIEW,
+                View.RECONCILIATION,
                 View.TAX_SUMMARY,
                 View.HMRC_SUBMISSION,
                 View.SETTINGS,

@@ -12,6 +12,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.service.ReconciliationCoordinator;
+import uk.selfemploy.ui.service.ReconciliationCoordinator.ReconciliationSummary;
 import uk.selfemploy.ui.viewmodel.*;
 
 import java.math.BigDecimal;
@@ -21,11 +24,9 @@ import java.util.function.Consumer;
 
 /**
  * Controller for the Reconciliation Dashboard.
- * Displays data health metrics and reconciliation issues.
- *
- * SE-10B-008: Reconciliation Dashboard
+ * Displays data health metrics and reconciliation issues from a real reconciliation run.
  */
-public class ReconciliationDashboardController implements Initializable {
+public class ReconciliationDashboardController implements Initializable, MainController.TaxYearAware {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReconciliationDashboardController.class);
 
@@ -65,6 +66,10 @@ public class ReconciliationDashboardController implements Initializable {
     // ViewModel
     private ReconciliationViewModel viewModel;
 
+    // Real data source (wired by MainController); when absent the dashboard stays empty.
+    private ReconciliationCoordinator coordinator;
+    private TaxYear taxYear;
+
     // Callbacks
     private Runnable onViewIncome;
     private Runnable onViewExpenses;
@@ -79,6 +84,47 @@ public class ReconciliationDashboardController implements Initializable {
 
         setupBindings();
         setupKeyboardNavigation();
+    }
+
+    /** Wires the real reconciliation data source and triggers an initial run if the year is set. */
+    public void setCoordinator(ReconciliationCoordinator coordinator) {
+        this.coordinator = coordinator;
+        if (taxYear != null) {
+            runReconciliation();
+        }
+    }
+
+    @Override
+    public void setTaxYear(TaxYear taxYear) {
+        this.taxYear = taxYear;
+        if (coordinator != null) {
+            runReconciliation();
+        }
+    }
+
+    /** Runs reconciliation off the FX thread and applies the result back on it. */
+    private void runReconciliation() {
+        if (coordinator == null || taxYear == null) {
+            return;
+        }
+        TaxYear year = taxYear;
+        viewModel.setLoading(true);
+        Thread worker = new Thread(() -> {
+            try {
+                ReconciliationSummary summary = coordinator.reconcile(year);
+                Platform.runLater(() -> {
+                    setData(summary.totalIncome(), summary.totalExpenses(),
+                        summary.incomeCount(), summary.expenseCount(),
+                        summary.duplicateCount(), summary.uncategorizedCount(), summary.issues());
+                    viewModel.setLoading(false);
+                });
+            } catch (RuntimeException e) {
+                LOG.warn("Reconciliation failed: {}", e.toString());
+                Platform.runLater(() -> viewModel.setLoading(false));
+            }
+        }, "reconciliation-worker");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     /**
@@ -336,14 +382,8 @@ public class ReconciliationDashboardController implements Initializable {
 
     @FXML
     void handleRefresh(ActionEvent event) {
-        viewModel.setLoading(true);
         LOG.info("Refreshing reconciliation data");
-
-        // Simulate async refresh (in real implementation, call service)
-        Platform.runLater(() -> {
-            viewModel.refresh();
-            viewModel.setLoading(false);
-        });
+        runReconciliation();
     }
 
     @FXML

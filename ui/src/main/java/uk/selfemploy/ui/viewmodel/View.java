@@ -9,6 +9,7 @@ public enum View {
     INCOME("Income", "/fxml/income.fxml"),
     EXPENSES("Expenses", "/fxml/expenses.fxml"),
     TRANSACTION_REVIEW("Bank Review", "/fxml/transaction-review.fxml"),
+    RECONCILIATION("Reconciliation", "/fxml/reconciliation-dashboard.fxml"),
     TAX_SUMMARY("Tax Summary", "/fxml/tax-summary.fxml"),
     HMRC_SUBMISSION("HMRC Submission", "/fxml/hmrc-submission.fxml"),
     SETTINGS("Settings", "/fxml/settings.fxml"),

@@ -16,7 +16,11 @@ import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.component.TourOverlay;
 import uk.selfemploy.ui.viewmodel.TourViewModel;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
+import uk.selfemploy.ui.service.ReconciliationCoordinator;
+import uk.selfemploy.ui.service.SqliteBankTransactionRepository;
+import uk.selfemploy.ui.service.SqliteReconciliationMatchRepository;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
 
@@ -46,6 +50,7 @@ public class MainController implements Initializable {
     @FXML private ToggleButton navIncome;
     @FXML private ToggleButton navExpenses;
     @FXML private ToggleButton navTransactionReview;
+    @FXML private ToggleButton navReconciliation;
     @FXML private ToggleButton navTax;
     @FXML private ToggleButton navHmrc;
     @FXML private ComboBox<TaxYear> taxYearSelector;
@@ -179,6 +184,7 @@ public class MainController implements Initializable {
             case INCOME -> navIncome.setSelected(true);
             case EXPENSES -> navExpenses.setSelected(true);
             case TRANSACTION_REVIEW -> navTransactionReview.setSelected(true);
+            case RECONCILIATION -> navReconciliation.setSelected(true);
             case TAX_SUMMARY -> navTax.setSelected(true);
             case HMRC_SUBMISSION -> navHmrc.setSelected(true);
             default -> {} // Help and Settings don't have nav buttons
@@ -256,6 +262,11 @@ public class MainController implements Initializable {
                 if (controller instanceof ExpenseController expenseController) {
                     expenseController.setNavigateToTransactionReview(
                         this::navigateToTransactionReviewWithMessage);
+                }
+
+                // Wire the reconciliation dashboard to real data + deep-link its quick actions.
+                if (controller instanceof ReconciliationDashboardController reconController) {
+                    wireReconciliationDashboard(reconController);
                 }
 
                 viewCache.put(view, viewNode);
@@ -355,6 +366,28 @@ public class MainController implements Initializable {
             reviewController.showAllTransactions();
         }
         loadView(View.TRANSACTION_REVIEW);
+    }
+
+    @FXML
+    void navigateToReconciliation(ActionEvent event) {
+        loadView(View.RECONCILIATION);
+    }
+
+    private void wireReconciliationDashboard(ReconciliationDashboardController reconController) {
+        UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+        ReconciliationCoordinator coordinator = new ReconciliationCoordinator(
+            businessId,
+            CoreServiceFactory.getIncomeService(),
+            CoreServiceFactory.getExpenseService(),
+            new SqliteReconciliationMatchRepository(),
+            () -> new SqliteBankTransactionRepository(businessId).findAll());
+
+        reconController.setOnViewIncome(() -> loadView(View.INCOME));
+        reconController.setOnViewExpenses(() -> loadView(View.EXPENSES));
+        reconController.setOnReviewDuplicates(() -> loadView(View.TRANSACTION_REVIEW));
+        reconController.setOnFixCategories(() -> loadView(View.EXPENSES));
+        reconController.setOnCheckGaps(() -> loadView(View.TRANSACTION_REVIEW));
+        reconController.setCoordinator(coordinator); // triggers the initial reconciliation run
     }
 
     @FXML

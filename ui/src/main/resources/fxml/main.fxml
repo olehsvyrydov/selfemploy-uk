@@ -94,6 +94,11 @@
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
+            <ToggleButton fx:id="navReconciliation" text="Reconciliation" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToReconciliation">
+                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
+            </ToggleButton>
+
             <ToggleButton fx:id="navTax" text="Tax Summary" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToTax">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
