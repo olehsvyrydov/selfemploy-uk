@@ -5,7 +5,10 @@ import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.domain.BankTransaction;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
+import uk.selfemploy.common.domain.ImportAudit;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.enums.ImportAuditStatus;
+import uk.selfemploy.common.enums.ImportAuditType;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.bankimport.BankFormatDetector;
 import uk.selfemploy.core.bankimport.CategorySuggestion;
@@ -61,6 +64,7 @@ public class ImportOrchestrationService {
     private final SqliteBankTransactionService bankTransactionService;
     private final DescriptionCategorizer categorizer = new DescriptionCategorizer();
     private final UUID businessId;
+    private final SqliteImportAuditRepository auditRepository;
 
     public ImportOrchestrationService(
             CsvTransactionParser csvParser,
@@ -68,11 +72,24 @@ public class ImportOrchestrationService {
             ExpenseService expenseService,
             SqliteBankTransactionService bankTransactionService,
             UUID businessId) {
+        // No audit repository → no import-history rows written. Unit tests use this constructor so
+        // they never touch the real audit table; production wires the repository via the overload.
+        this(csvParser, incomeService, expenseService, bankTransactionService, businessId, null);
+    }
+
+    public ImportOrchestrationService(
+            CsvTransactionParser csvParser,
+            IncomeService incomeService,
+            ExpenseService expenseService,
+            SqliteBankTransactionService bankTransactionService,
+            UUID businessId,
+            SqliteImportAuditRepository auditRepository) {
         this.csvParser = csvParser;
         this.incomeService = incomeService;
         this.expenseService = expenseService;
         this.bankTransactionService = bankTransactionService;
         this.businessId = businessId;
+        this.auditRepository = auditRepository;
     }
 
     /**
@@ -259,6 +276,7 @@ public class ImportOrchestrationService {
      */
     public ImportResult importTransactions(
             List<ImportedTransactionRow> transactions,
+            String fileName,
             Consumer<Double> progressCallback) {
 
         UUID batchId = UUID.randomUUID();
@@ -267,6 +285,7 @@ public class ImportOrchestrationService {
         int skipped = 0;
         int errors = 0;
         int total = transactions.size();
+        List<UUID> stagedIds = new ArrayList<>();
 
         for (int i = 0; i < total; i++) {
             ImportedTransactionRow row = transactions.get(i);
@@ -289,6 +308,7 @@ public class ImportOrchestrationService {
                         tx = applyExpenseSuggestion(tx, row, now);
                     }
                     bankTransactionService.save(tx);
+                    stagedIds.add(tx.id());
                     staged++;
                 }
             } catch (Exception e) {
@@ -304,6 +324,21 @@ public class ImportOrchestrationService {
 
         LOG.info("Import staged: {} new, {} duplicate(s) skipped, {} error(s) out of {} total",
                 staged, skipped, errors, total);
+
+        // Record the import so it appears in Import History and can be undone. The audit id is the
+        // batch id already stamped on each staged transaction (bank_transactions.import_audit_id).
+        if (staged > 0 && auditRepository != null) {
+            ImportAudit audit = new ImportAudit(
+                batchId, businessId, now, fileName, null, ImportAuditType.BANK_CSV,
+                total, staged, skipped, List.copyOf(stagedIds),
+                ImportAuditStatus.ACTIVE, null, null, null, null, null, null);
+            try {
+                auditRepository.save(audit);
+            } catch (RuntimeException e) {
+                LOG.warn("Failed to record import audit for batch {}: {}", batchId, e.toString());
+            }
+        }
+
         return new ImportResult(staged, errors, skipped, batchId);
     }
 

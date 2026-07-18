@@ -7,7 +7,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.viewmodel.Deadline;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -536,6 +538,162 @@ class DeadlineNotificationServiceTest {
             List<DeadlineNotification> notifications = service.checkDeadline(deadline);
 
             assertThat(notifications.get(0).priority()).isEqualTo(NotificationPriority.CRITICAL);
+        }
+    }
+
+    @Nested
+    @DisplayName("Obligation-specific reminder offsets (fixed clock)")
+    class ObligationOffsets {
+
+        private static final LocalDate TODAY = LocalDate.of(2026, 6, 1);
+
+        @BeforeEach
+        void fixClock() {
+            service.setClock(fixedAt(TODAY));
+        }
+
+        @Test
+        @DisplayName("Annual Self Assessment deadlines remind at T-60, T-30 and T-7")
+        void annualOffsets() {
+            assertThat(triggerDaysFor("Online Filing Deadline", 60)).containsExactly(60);
+            assertThat(triggerDaysFor("Online Filing Deadline", 30)).containsExactly(30);
+            assertThat(triggerDaysFor("Online Filing Deadline", 7)).containsExactly(7);
+        }
+
+        @Test
+        @DisplayName("Annual deadlines do not use the generic T-14 offset")
+        void annualSkipsGenericOffset() {
+            assertThat(service.checkDeadline(Deadline.of("Online Filing Deadline", TODAY.plusDays(14))))
+                .isEmpty();
+        }
+
+        @Test
+        @DisplayName("MTD quarterly updates remind at T-30, T-7 and T-1")
+        void quarterlyOffsets() {
+            assertThat(triggerDaysFor("MTD Q1 Update Due", 30)).containsExactly(30);
+            assertThat(triggerDaysFor("MTD Q1 Update Due", 7)).containsExactly(7);
+            assertThat(triggerDaysFor("MTD Q1 Update Due", 1)).containsExactly(1);
+        }
+
+        @Test
+        @DisplayName("A deadline on the day still fires an urgent reminder")
+        void dayOfFires() {
+            List<DeadlineNotification> n = service.checkDeadline(Deadline.of("Payment Due", TODAY));
+            assertThat(n).hasSize(1);
+            assertThat(n.get(0).triggerDays()).isZero();
+        }
+
+        @Test
+        @DisplayName("checkAllDeadlines fires the quarterly T-1 reminder when nothing is snoozed")
+        void schedulerFiresQuarterlyT1() {
+            TaxYear year = TaxYear.of(2026);
+            Deadline quarterly = firstQuarterly(year);
+
+            service.setClock(fixedAt(quarterly.date().minusDays(1)));
+            service.checkAllDeadlines(year);
+
+            assertThat(countFired(quarterly, 1)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("An active snooze suppresses a later reminder for the same deadline")
+        void activeSnoozeSuppressesLaterReminder() {
+            TaxYear year = TaxYear.of(2026);
+            Deadline quarterly = firstQuarterly(year);
+
+            // T-7: fire the reminder, then snooze it for a week.
+            service.setClock(fixedAt(quarterly.date().minusDays(7)));
+            service.checkAllDeadlines(year);
+            service.getNotificationHistory().stream()
+                .filter(n -> n.deadline().label().equals(quarterly.label()))
+                .forEach(n -> service.snooze(n.id(), 168));
+
+            // T-1: while the snooze is still active, the T-1 reminder must not fire.
+            service.setClock(fixedAt(quarterly.date().minusDays(1)));
+            service.checkAllDeadlines(year);
+
+            assertThat(countFired(quarterly, 1)).isZero();
+        }
+
+        private Deadline firstQuarterly(TaxYear year) {
+            return service.getDeadlinesForTaxYear(year).stream()
+                .filter(d -> d.label().toLowerCase(java.util.Locale.ROOT).contains("mtd"))
+                .findFirst().orElseThrow();
+        }
+
+        private long countFired(Deadline deadline, int triggerDays) {
+            return service.getNotificationHistory().stream()
+                .filter(n -> n.deadline().label().equals(deadline.label())
+                    && n.triggerDays() == triggerDays)
+                .count();
+        }
+
+        private List<Integer> triggerDaysFor(String label, int daysAway) {
+            return service.checkDeadline(Deadline.of(label, TODAY.plusDays(daysAway)))
+                .stream().map(DeadlineNotification::triggerDays).toList();
+        }
+    }
+
+    private static Clock fixedAt(LocalDate date) {
+        return Clock.fixed(date.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC);
+    }
+
+    @Nested
+    @DisplayName("Read/snooze state persistence across restarts")
+    class StatePersistence {
+
+        /** In-memory store standing in for the SQLite one, so persistence is tested without a DB. */
+        private final NotificationStateStore store = new NotificationStateStore() {
+            private final java.util.Map<String, PersistedState> map = new java.util.HashMap<>();
+
+            @Override
+            public void save(String key, boolean read, java.time.LocalDateTime snoozeUntil) {
+                map.put(key, new PersistedState(read, snoozeUntil));
+            }
+
+            @Override
+            public java.util.Map<String, PersistedState> loadAll() {
+                return new java.util.HashMap<>(map);
+            }
+        };
+
+        private final Deadline deadline = Deadline.of("Payment Due", LocalDate.now().plusDays(30));
+
+        @Test
+        @DisplayName("a dismissed reminder stays dismissed after the app restarts")
+        void dismissedReminderStaysDismissed() {
+            DeadlineNotificationService first = new DeadlineNotificationService();
+            first.setStateStore(store);
+            first.triggerNotification(deadline, 30);
+            first.markAsRead(first.getNotificationHistory().get(0).id());
+
+            // Simulate a restart: a fresh service loading the same store regenerates the reminder.
+            DeadlineNotificationService restarted = new DeadlineNotificationService();
+            restarted.setStateStore(store);
+            restarted.triggerNotification(deadline, 30);
+
+            assertThat(restarted.getNotificationHistory().get(0).isRead()).isTrue();
+            assertThat(restarted.getUnreadCount()).isZero();
+            restarted.shutdown();
+            first.shutdown();
+        }
+
+        @Test
+        @DisplayName("a snoozed reminder stays snoozed after the app restarts")
+        void snoozedReminderStaysSnoozed() {
+            DeadlineNotificationService first = new DeadlineNotificationService();
+            first.setStateStore(store);
+            first.triggerNotification(deadline, 30);
+            first.snooze(first.getNotificationHistory().get(0).id(), 168); // one week
+
+            DeadlineNotificationService restarted = new DeadlineNotificationService();
+            restarted.setStateStore(store);
+            restarted.triggerNotification(deadline, 30);
+
+            assertThat(restarted.getNotificationHistory().get(0).isSnoozed()).isTrue();
+            assertThat(restarted.getUnreadCount()).isZero();
+            restarted.shutdown();
+            first.shutdown();
         }
     }
 }

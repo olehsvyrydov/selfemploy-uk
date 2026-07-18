@@ -12,20 +12,24 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.component.AppDialog;
+import uk.selfemploy.ui.service.ReconciliationCoordinator;
+import uk.selfemploy.ui.service.ReconciliationCoordinator.ReconciliationSummary;
 import uk.selfemploy.ui.viewmodel.*;
 
 import java.math.BigDecimal;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
  * Controller for the Reconciliation Dashboard.
- * Displays data health metrics and reconciliation issues.
- *
- * SE-10B-008: Reconciliation Dashboard
+ * Displays data health metrics and reconciliation issues from a real reconciliation run.
  */
-public class ReconciliationDashboardController implements Initializable {
+public class ReconciliationDashboardController implements Initializable, MainController.TaxYearAware {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReconciliationDashboardController.class);
 
@@ -65,6 +69,10 @@ public class ReconciliationDashboardController implements Initializable {
     // ViewModel
     private ReconciliationViewModel viewModel;
 
+    // Real data source (wired by MainController); when absent the dashboard stays empty.
+    private ReconciliationCoordinator coordinator;
+    private TaxYear taxYear;
+
     // Callbacks
     private Runnable onViewIncome;
     private Runnable onViewExpenses;
@@ -79,6 +87,54 @@ public class ReconciliationDashboardController implements Initializable {
 
         setupBindings();
         setupKeyboardNavigation();
+    }
+
+    /** Wires the real reconciliation data source and triggers an initial run if the year is set. */
+    public void setCoordinator(ReconciliationCoordinator coordinator) {
+        this.coordinator = coordinator;
+        if (taxYear != null) {
+            runReconciliation();
+        }
+    }
+
+    @Override
+    public void setTaxYear(TaxYear taxYear) {
+        this.taxYear = taxYear;
+        if (coordinator != null) {
+            runReconciliation();
+        }
+    }
+
+    // A single shared worker so each run reuses one thread (and thus one SQLite connection) rather
+    // than leaking a connection per spawned thread.
+    private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "reconciliation-worker");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /** Runs reconciliation off the FX thread and applies the result back on it. */
+    private void runReconciliation() {
+        if (coordinator == null || taxYear == null) {
+            return;
+        }
+        TaxYear year = taxYear;
+        viewModel.setLoading(true);
+        WORKER.submit(() -> {
+            try {
+                ReconciliationSummary summary = coordinator.reconcile(year);
+                Platform.runLater(() -> setData(summary.totalIncome(), summary.totalExpenses(),
+                    summary.incomeCount(), summary.expenseCount(),
+                    summary.duplicateCount(), summary.uncategorizedCount(), summary.issues()));
+            } catch (Exception e) {
+                LOG.warn("Reconciliation failed: {}", e.toString());
+                Platform.runLater(() -> AppDialog.error("Reconciliation failed",
+                    "Could not check your data right now. Please try again."));
+            } finally {
+                // Always clear the spinner, even on an unexpected error, so the view is never stuck.
+                Platform.runLater(() -> viewModel.setLoading(false));
+            }
+        });
     }
 
     /**
@@ -336,14 +392,8 @@ public class ReconciliationDashboardController implements Initializable {
 
     @FXML
     void handleRefresh(ActionEvent event) {
-        viewModel.setLoading(true);
         LOG.info("Refreshing reconciliation data");
-
-        // Simulate async refresh (in real implementation, call service)
-        Platform.runLater(() -> {
-            viewModel.refresh();
-            viewModel.setLoading(false);
-        });
+        runReconciliation();
     }
 
     @FXML

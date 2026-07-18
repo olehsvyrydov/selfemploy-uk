@@ -6,16 +6,26 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Window;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
-import uk.selfemploy.ui.component.NotificationDialog;
 import uk.selfemploy.ui.component.TourOverlay;
 import uk.selfemploy.ui.viewmodel.TourViewModel;
+import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
+import uk.selfemploy.ui.service.ImportHistoryCoordinator;
+import uk.selfemploy.ui.service.ReconciliationCoordinator;
+import uk.selfemploy.ui.service.SqliteBankTransactionRepository;
+import uk.selfemploy.ui.service.SqliteImportAuditRepository;
+import uk.selfemploy.ui.service.SqliteNotificationStateRepository;
+import uk.selfemploy.ui.service.SqliteReconciliationMatchRepository;
+import uk.selfemploy.ui.service.SubmittedPeriodIndex;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
 
@@ -45,6 +55,8 @@ public class MainController implements Initializable {
     @FXML private ToggleButton navIncome;
     @FXML private ToggleButton navExpenses;
     @FXML private ToggleButton navTransactionReview;
+    @FXML private ToggleButton navReconciliation;
+    @FXML private ToggleButton navImportHistory;
     @FXML private ToggleButton navTax;
     @FXML private ToggleButton navHmrc;
     @FXML private ComboBox<TaxYear> taxYearSelector;
@@ -60,6 +72,7 @@ public class MainController implements Initializable {
     private final Map<View, Node> viewCache = new HashMap<>();
     private final Map<View, Object> controllerCache = new HashMap<>();
     private final DeadlineNotificationService notificationService = new DeadlineNotificationService();
+    private NotificationPanelController notificationPanelController;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -80,13 +93,61 @@ public class MainController implements Initializable {
             notificationBadge.setManaged(count > 0);
         });
 
+        // Persist read/snooze state so dismissed reminders don't re-nag after a restart.
+        notificationService.setStateStore(new SqliteNotificationStateRepository());
+
         // Start notification scheduler for current tax year
         TaxYear currentYear = navigationViewModel.getSelectedTaxYear();
         if (currentYear != null) {
             notificationService.startScheduler(currentYear);
         }
 
+        setupNotificationPanel();
+
         LOG.info("Notification service initialized");
+    }
+
+    /**
+     * Loads the notification flyout panel and hosts it as a top-right overlay on the root stack,
+     * so the bell opens the full panel (filters, snooze, dismiss) instead of a one-shot dialog.
+     */
+    private void setupNotificationPanel() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/notification-panel.fxml"));
+            Node panel = loader.load();
+            notificationPanelController = loader.getController();
+            notificationPanelController.initializeWithService(notificationService);
+            notificationPanelController.setNavigationHandler(this::navigateFromNotification);
+            notificationPanelController.setSettingsHandler(() -> {
+                notificationPanelController.hide();
+                loadView(View.SETTINGS);
+            });
+
+            StackPane.setAlignment(panel, Pos.TOP_RIGHT);
+            StackPane.setMargin(panel, new Insets(64, 12, 12, 12)); // sit below the header bar
+            rootStack.getChildren().add(panel);
+        } catch (IOException e) {
+            LOG.severe("Failed to load notification panel: " + e.getMessage());
+        }
+    }
+
+    /** Routes a notification's deep-link action URL to the matching view, then closes the panel. */
+    private void navigateFromNotification(String url) {
+        if (notificationPanelController != null) {
+            notificationPanelController.hide();
+        }
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        if (url.startsWith("/settings")) {
+            loadView(View.SETTINGS);
+        } else if (url.startsWith("/submission")) {
+            loadView(View.HMRC_SUBMISSION);
+        } else if (url.startsWith("/tax-summary")) {
+            loadView(View.TAX_SUMMARY);
+        } else {
+            loadView(View.DASHBOARD);
+        }
     }
 
     private void setupTaxYearSelector() {
@@ -132,6 +193,8 @@ public class MainController implements Initializable {
             case INCOME -> navIncome.setSelected(true);
             case EXPENSES -> navExpenses.setSelected(true);
             case TRANSACTION_REVIEW -> navTransactionReview.setSelected(true);
+            case RECONCILIATION -> navReconciliation.setSelected(true);
+            case IMPORT_HISTORY -> navImportHistory.setSelected(true);
             case TAX_SUMMARY -> navTax.setSelected(true);
             case HMRC_SUBMISSION -> navHmrc.setSelected(true);
             default -> {} // Help and Settings don't have nav buttons
@@ -209,6 +272,16 @@ public class MainController implements Initializable {
                 if (controller instanceof ExpenseController expenseController) {
                     expenseController.setNavigateToTransactionReview(
                         this::navigateToTransactionReviewWithMessage);
+                }
+
+                // Wire the reconciliation dashboard to real data + deep-link its quick actions.
+                if (controller instanceof ReconciliationDashboardController reconController) {
+                    wireReconciliationDashboard(reconController);
+                }
+
+                // Wire the import history screen to the real audit trail + undo.
+                if (controller instanceof ImportHistoryController importHistoryController) {
+                    wireImportHistory(importHistoryController);
                 }
 
                 viewCache.put(view, viewNode);
@@ -311,6 +384,102 @@ public class MainController implements Initializable {
     }
 
     @FXML
+    void navigateToReconciliation(ActionEvent event) {
+        loadView(View.RECONCILIATION);
+    }
+
+    // A single shared worker so import-history queries run off the FX thread (keeping the UI
+    // responsive) and reuse one SQLite connection rather than leaking one per spawned thread.
+    private static final java.util.concurrent.ExecutorService IMPORT_HISTORY_WORKER =
+        java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "import-history-worker");
+            t.setDaemon(true);
+            return t;
+        });
+
+    @FXML
+    void navigateToImportHistory(ActionEvent event) {
+        // Reload the list on each visit so imports and undos made elsewhere are reflected.
+        Object controller = controllerCache.get(View.IMPORT_HISTORY);
+        if (controller instanceof ImportHistoryController importHistoryController) {
+            loadImportHistoryAsync(importHistoryController);
+        }
+        loadView(View.IMPORT_HISTORY);
+    }
+
+    private ImportHistoryCoordinator newImportHistoryCoordinator() {
+        UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+        return new ImportHistoryCoordinator(
+            businessId,
+            new SqliteImportAuditRepository(),
+            new SqliteBankTransactionRepository(businessId),
+            SubmittedPeriodIndex.forBusiness(businessId));
+    }
+
+    private void loadImportHistoryAsync(ImportHistoryController controller) {
+        IMPORT_HISTORY_WORKER.submit(() -> {
+            try {
+                var items = newImportHistoryCoordinator().loadHistory();
+                Platform.runLater(() -> controller.setImports(items));
+            } catch (Exception e) {
+                LOG.severe("Failed to load import history: " + e.getMessage());
+            }
+        });
+    }
+
+    private void wireImportHistory(ImportHistoryController controller) {
+        loadImportHistoryAsync(controller);
+
+        // Wire the "New Import" / empty-state buttons (previously inert): open the wizard, then
+        // refresh the history and land on Bank Review scoped to the just-imported batch.
+        controller.setOnNewImport(() -> {
+            Window owner = rootStack.getScene() != null ? rootStack.getScene().getWindow() : null;
+            BankImportLauncher.launch(owner, (message, batchId) -> {
+                loadImportHistoryAsync(controller);
+                navigateToTransactionReviewWithMessage(message, batchId);
+            });
+        });
+
+        controller.setOnUndoImport(item -> IMPORT_HISTORY_WORKER.submit(() -> {
+            ImportHistoryCoordinator.UndoResult result;
+            try {
+                result = newImportHistoryCoordinator().undo(item.getId());
+            } catch (Exception e) {
+                LOG.warning("Undo import failed: " + e.getMessage());
+                Platform.runLater(() -> AppDialog.error("Cannot undo import",
+                    "Something went wrong. Please try again."));
+                loadImportHistoryAsync(controller);
+                return;
+            }
+            Platform.runLater(() -> {
+                if (result.success()) {
+                    AppDialog.info("Import undone", result.message());
+                } else {
+                    AppDialog.error("Cannot undo import", result.message());
+                }
+            });
+            loadImportHistoryAsync(controller);
+        }));
+    }
+
+    private void wireReconciliationDashboard(ReconciliationDashboardController reconController) {
+        UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+        ReconciliationCoordinator coordinator = new ReconciliationCoordinator(
+            businessId,
+            CoreServiceFactory.getIncomeService(),
+            CoreServiceFactory.getExpenseService(),
+            new SqliteReconciliationMatchRepository(),
+            () -> new SqliteBankTransactionRepository(businessId).findAll());
+
+        reconController.setOnViewIncome(() -> loadView(View.INCOME));
+        reconController.setOnViewExpenses(() -> loadView(View.EXPENSES));
+        reconController.setOnReviewDuplicates(() -> loadView(View.TRANSACTION_REVIEW));
+        reconController.setOnFixCategories(() -> loadView(View.EXPENSES));
+        reconController.setOnCheckGaps(() -> loadView(View.TRANSACTION_REVIEW));
+        reconController.setCoordinator(coordinator); // triggers the initial reconciliation run
+    }
+
+    @FXML
     void navigateToTax(ActionEvent event) {
         loadView(View.TAX_SUMMARY);
     }
@@ -363,18 +532,9 @@ public class MainController implements Initializable {
     }
 
     private void showNotificationPanel() {
-        var notifications = notificationService.getNotificationHistory();
-        TaxYear currentYear = navigationViewModel.getSelectedTaxYear();
-
-        // Create and show custom notification dialog with /aura's design
-        NotificationDialog dialog = new NotificationDialog(
-            notifications,
-            currentYear,
-            () -> notificationService.markAllAsRead()
-        );
-
-        dialog.showDialog();
-        LOG.info("Notification dialog shown, " + notifications.size() + " notifications");
+        if (notificationPanelController != null) {
+            notificationPanelController.toggle();
+        }
     }
 
     /**

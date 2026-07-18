@@ -52,7 +52,7 @@ class SqliteSchemaVersionTest {
     @Test
     @DisplayName("records every defined migration version after initialisation")
     void recordsMigrationVersions() throws Exception {
-        assertThat(appliedVersions()).containsExactly(1, 2, 3);
+        assertThat(appliedVersions()).containsExactly(1, 2, 3, 4, 5);
     }
 
     @Test

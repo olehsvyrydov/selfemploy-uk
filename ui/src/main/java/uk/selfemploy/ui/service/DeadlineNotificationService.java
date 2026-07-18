@@ -6,6 +6,7 @@ import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.viewmodel.Deadline;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -42,8 +43,64 @@ public class DeadlineNotificationService {
     // Scheduler for periodic checks
     private ScheduledExecutorService scheduler;
 
+    // Obligation-specific reminder offsets (days before the deadline). Annual Self Assessment
+    // deadlines warn earlier and for longer; MTD quarterly updates warn on a tighter cadence.
+    private static final List<Integer> ANNUAL_OFFSETS = List.of(60, 30, 7);
+    private static final List<Integer> QUARTERLY_OFFSETS = List.of(30, 7, 1);
+
+    // Injectable time source so reminder scheduling can be tested deterministically.
+    private Clock clock = Clock.systemDefaultZone();
+
+    // Persists read/snooze state across restarts; defaults to a no-op until a real store is wired in.
+    private NotificationStateStore stateStore = NotificationStateStore.NOOP;
+    private Map<String, NotificationStateStore.PersistedState> persistedState = new ConcurrentHashMap<>();
+
     public DeadlineNotificationService() {
         // Initialize with default preferences
+    }
+
+    /** Overrides the time source (tests only); production uses the system clock. */
+    void setClock(Clock clock) {
+        this.clock = clock;
+    }
+
+    /**
+     * Wires the store used to persist read/snooze state across restarts and loads any existing state
+     * so regenerated reminders inherit it.
+     */
+    public void setStateStore(NotificationStateStore stateStore) {
+        this.stateStore = stateStore != null ? stateStore : NotificationStateStore.NOOP;
+        this.persistedState = new ConcurrentHashMap<>(this.stateStore.loadAll());
+    }
+
+    private void persist(DeadlineNotification notification) {
+        NotificationStateStore.PersistedState state =
+            new NotificationStateStore.PersistedState(notification.isRead(), notification.snoozeUntil());
+        persistedState.put(notification.stableKey(), state);
+        try {
+            stateStore.save(notification.stableKey(), notification.isRead(), notification.snoozeUntil());
+        } catch (RuntimeException e) {
+            LOG.warning("Failed to persist notification state: " + e.getMessage());
+        }
+    }
+
+    private DeadlineNotification applyPersistedState(DeadlineNotification notification) {
+        NotificationStateStore.PersistedState state = persistedState.get(notification.stableKey());
+        if (state == null) {
+            return notification;
+        }
+        DeadlineNotification result = notification;
+        if (state.read()) {
+            result = result.markAsRead();
+        }
+        if (state.snoozeUntil() != null && LocalDateTime.now().isBefore(state.snoozeUntil())) {
+            result = result.snoozeUntil(state.snoozeUntil());
+        }
+        return result;
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(clock);
     }
 
     // === Preferences ===
@@ -81,8 +138,12 @@ public class DeadlineNotificationService {
             return Collections.emptyList();
         }
 
+        long daysRemaining = ChronoUnit.DAYS.between(today(), deadline.date());
+        if (daysRemaining < 0) {
+            return Collections.emptyList(); // deadline already passed
+        }
+
         List<DeadlineNotification> notifications = new ArrayList<>();
-        long daysRemaining = deadline.daysRemaining();
 
         // Check if deadline is today (special case)
         if (daysRemaining == 0) {
@@ -90,14 +151,49 @@ public class DeadlineNotificationService {
             return notifications;
         }
 
-        // Check against configured trigger days
-        for (int triggerDay : preferences.getTriggerDays()) {
+        // Fire at each reminder offset appropriate to this obligation type.
+        for (int triggerDay : offsetsFor(deadline)) {
             if (daysRemaining == triggerDay) {
                 notifications.add(DeadlineNotification.create(deadline, triggerDay));
             }
         }
 
         return notifications;
+    }
+
+    /**
+     * Returns the reminder offsets (days before) for a deadline: MTD quarterly updates use a tight
+     * cadence, annual Self Assessment deadlines a longer one, and any other deadline falls back to
+     * the user-configurable preference.
+     */
+    private List<Integer> offsetsFor(Deadline deadline) {
+        List<Integer> obligation = obligationOffsets(deadline);
+        List<Integer> configured = preferences.getTriggerDays();
+        if (obligation == null) {
+            // Unrecognised deadline: honour the configured trigger days as before.
+            return configured;
+        }
+        if (configured.equals(NotificationPreferences.DEFAULT_TRIGGER_DAYS)) {
+            // Default preference: use the obligation-specific schedule only.
+            return obligation;
+        }
+        // The user has customised their trigger days, so honour them alongside the obligation schedule.
+        Set<Integer> merged = new TreeSet<>(obligation);
+        merged.addAll(configured);
+        return new ArrayList<>(merged);
+    }
+
+    /** The obligation-specific offsets for a recognised deadline, or null if the type is unknown. */
+    private List<Integer> obligationOffsets(Deadline deadline) {
+        String label = deadline.label().toLowerCase(Locale.ROOT);
+        if (label.contains("mtd") || label.contains("quarter")) {
+            return QUARTERLY_OFFSETS;
+        }
+        if (label.contains("filing") || label.contains("payment")
+                || label.contains("account") || label.contains("annual")) {
+            return ANNUAL_OFFSETS;
+        }
+        return null;
     }
 
     /**
@@ -151,8 +247,10 @@ public class DeadlineNotificationService {
             return;
         }
 
-        // Create notification
-        DeadlineNotification notification = DeadlineNotification.create(deadline, triggerDays);
+        // Create notification, inheriting any read/snooze state persisted from a previous run so a
+        // dismissed or snoozed reminder does not re-nag after a restart.
+        DeadlineNotification notification = applyPersistedState(
+            DeadlineNotification.create(deadline, triggerDays));
 
         // Add to history
         history.add(0, notification); // Add at beginning (most recent first)
@@ -174,7 +272,7 @@ public class DeadlineNotificationService {
     }
 
     private String createNotificationKey(Deadline deadline, int triggerDays) {
-        return deadline.label() + "_" + deadline.date() + "_" + triggerDays + "_" + LocalDate.now();
+        return deadline.label() + "_" + deadline.date() + "_" + triggerDays + "_" + today();
     }
 
     // === History Management ===
@@ -202,7 +300,9 @@ public class DeadlineNotificationService {
         for (int i = 0; i < history.size(); i++) {
             DeadlineNotification notification = history.get(i);
             if (notification.id().equals(notificationId)) {
-                history.set(i, notification.markAsRead());
+                DeadlineNotification updated = notification.markAsRead();
+                history.set(i, updated);
+                persist(updated);
                 updateUnreadCount();
                 break;
             }
@@ -216,7 +316,9 @@ public class DeadlineNotificationService {
         for (int i = 0; i < history.size(); i++) {
             DeadlineNotification notification = history.get(i);
             if (!notification.isRead()) {
-                history.set(i, notification.markAsRead());
+                DeadlineNotification updated = notification.markAsRead();
+                history.set(i, updated);
+                persist(updated);
             }
         }
         updateUnreadCount();
@@ -231,7 +333,9 @@ public class DeadlineNotificationService {
         for (int i = 0; i < history.size(); i++) {
             DeadlineNotification notification = history.get(i);
             if (notification.id().equals(notificationId)) {
-                history.set(i, notification.snoozeUntil(snoozeUntil));
+                DeadlineNotification updated = notification.snoozeUntil(snoozeUntil);
+                history.set(i, updated);
+                persist(updated);
                 updateUnreadCount();
                 break;
             }
@@ -314,12 +418,25 @@ public class DeadlineNotificationService {
         List<Deadline> deadlines = getDeadlinesForTaxYear(taxYear);
 
         for (Deadline deadline : deadlines) {
+            // Respect snooze: don't re-nag while an unexpired snoozed reminder for this deadline exists.
+            if (hasActiveSnooze(deadline)) {
+                continue;
+            }
             List<DeadlineNotification> notifications = checkDeadline(deadline);
             for (DeadlineNotification notification : notifications) {
                 // Use the notification's trigger days
                 triggerNotification(deadline, notification.triggerDays());
             }
         }
+    }
+
+    private boolean hasActiveSnooze(Deadline deadline) {
+        // Match on label AND date: labels repeat every tax year, so a snooze from a prior year's
+        // same-named deadline must not suppress this year's reminders.
+        return history.stream().anyMatch(n ->
+            n.deadline().label().equals(deadline.label())
+                && n.deadline().date().equals(deadline.date())
+                && n.isSnoozed() && !n.isSnoozeExpired());
     }
 
     /**
