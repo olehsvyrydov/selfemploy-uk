@@ -178,7 +178,9 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     // === State ===
 
     private TaxYear taxYear;
-    private final HelpService helpService;
+    // Rebuilt per selected tax year so year-aware topics (NI Class 2, deadlines) resolve their
+    // figures for the year the user is viewing, not just the machine's current year.
+    private HelpService helpService;
 
     // Wired by MainController; runs the guided tour when the user replays it from here.
     private Runnable onReplayTour;
@@ -198,6 +200,9 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     @Override
     public void setTaxYear(TaxYear taxYear) {
         this.taxYear = taxYear;
+        if (taxYear != null) {
+            this.helpService = new HelpService(taxYear.startYear());
+        }
     }
 
     /**

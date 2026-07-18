@@ -51,7 +51,7 @@ public final class HelpMarkdownRenderer {
             case HelpBlock.Heading h -> heading(h);
             case HelpBlock.Paragraph p -> paragraph(p.content());
             case HelpBlock.BulletList list -> list(list.items(), null);
-            case HelpBlock.OrderedList list -> list(list.items(), 1);
+            case HelpBlock.OrderedList list -> list(list.items(), list.start());
             case HelpBlock.Table t -> table(t);
             case HelpBlock.Rule ignored -> {
                 Region rule = new Region();

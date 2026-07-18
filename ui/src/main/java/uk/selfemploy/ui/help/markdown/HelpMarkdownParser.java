@@ -8,6 +8,7 @@ import org.commonmark.ext.gfm.tables.TableCell;
 import org.commonmark.ext.gfm.tables.TableHead;
 import org.commonmark.ext.gfm.tables.TableRow;
 import org.commonmark.ext.gfm.tables.TablesExtension;
+import org.commonmark.node.BlockQuote;
 import org.commonmark.node.BulletList;
 import org.commonmark.node.Code;
 import org.commonmark.node.Document;
@@ -54,13 +55,21 @@ public final class HelpMarkdownParser {
     public List<HelpBlock> parseBody(String markdown) {
         Node document = PARSER.parse(markdown == null ? "" : markdown);
         List<HelpBlock> blocks = new ArrayList<>();
-        for (Node node = document.getFirstChild(); node != null; node = node.getNext()) {
+        collectBlocks(document, blocks);
+        return blocks;
+    }
+
+    private void collectBlocks(Node parent, List<HelpBlock> out) {
+        for (Node node = parent.getFirstChild(); node != null; node = node.getNext()) {
+            if (node instanceof BlockQuote) {
+                collectBlocks(node, out); // render quoted content as ordinary blocks, never drop it
+                continue;
+            }
             HelpBlock block = toBlock(node);
             if (block != null) {
-                blocks.add(block);
+                out.add(block);
             }
         }
-        return blocks;
     }
 
     /**
@@ -99,7 +108,8 @@ public final class HelpMarkdownParser {
             return new HelpBlock.BulletList(listItems(list));
         }
         if (node instanceof OrderedList list) {
-            return new HelpBlock.OrderedList(listItems(list));
+            Integer start = list.getMarkerStartNumber();
+            return new HelpBlock.OrderedList(start != null ? start : 1, listItems(list));
         }
         if (node instanceof TableBlock table) {
             return toTable(table);
@@ -188,11 +198,20 @@ public final class HelpMarkdownParser {
 
     private String linkText(Link link) {
         StringBuilder sb = new StringBuilder();
-        for (Node node = link.getFirstChild(); node != null; node = node.getNext()) {
+        appendText(link, sb);
+        return sb.toString();
+    }
+
+    /** Collects visible text from a link label, descending through emphasis/strong/code wrappers. */
+    private void appendText(Node parent, StringBuilder sb) {
+        for (Node node = parent.getFirstChild(); node != null; node = node.getNext()) {
             if (node instanceof Text text) {
                 sb.append(text.getLiteral());
+            } else if (node instanceof Code code) {
+                sb.append(code.getLiteral());
+            } else {
+                appendText(node, sb);
             }
         }
-        return sb.toString();
     }
 }

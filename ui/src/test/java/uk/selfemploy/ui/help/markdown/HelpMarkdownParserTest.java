@@ -85,8 +85,46 @@ class HelpMarkdownParserTest {
             """);
 
         assertThat(blocks).singleElement()
+            .isInstanceOfSatisfying(OrderedList.class, list -> {
+                assertThat(list.items()).hasSize(2);
+                assertThat(list.start()).isEqualTo(1);
+            });
+    }
+
+    @Test
+    @DisplayName("an ordered list that does not start at 1 keeps its start number")
+    void orderedListStartNumber() {
+        List<HelpBlock> blocks = parser.parseBody("""
+            4. Review categories
+            5. Confirm import
+            """);
+
+        assertThat(blocks).singleElement()
             .isInstanceOfSatisfying(OrderedList.class, list ->
-                assertThat(list.items()).hasSize(2));
+                assertThat(list.start()).isEqualTo(4));
+    }
+
+    @Test
+    @DisplayName("a link label wrapped in bold still yields its visible text")
+    void linkWithFormattedLabel() {
+        List<HelpBlock> blocks = parser.parseBody("[**Check your State Pension**](https://www.gov.uk/check-state-pension)");
+
+        Paragraph p = (Paragraph) blocks.get(0);
+        assertThat(p.content()).anySatisfy(run ->
+            assertThat(run).isInstanceOfSatisfying(Inline.Link.class, l -> {
+                assertThat(l.text()).isEqualTo("Check your State Pension");
+                assertThat(l.url()).isEqualTo("https://www.gov.uk/check-state-pension");
+            }));
+    }
+
+    @Test
+    @DisplayName("blockquoted content is rendered as blocks, never dropped")
+    void blockQuoteContentPreserved() {
+        List<HelpBlock> blocks = parser.parseBody("> Keep your records for at least 5 years.");
+
+        assertThat(blocks).singleElement()
+            .isInstanceOfSatisfying(Paragraph.class, p ->
+                assertThat(text(p.content())).contains("Keep your records"));
     }
 
     @Test

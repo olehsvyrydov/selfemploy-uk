@@ -24,8 +24,8 @@ public sealed interface HelpBlock
     record BulletList(List<List<Inline>> items) implements HelpBlock {
     }
 
-    /** An ordered list; each item is its own inline content. Numbering starts at 1. */
-    record OrderedList(List<List<Inline>> items) implements HelpBlock {
+    /** An ordered list; {@code start} is the first item's number (usually 1). */
+    record OrderedList(int start, List<List<Inline>> items) implements HelpBlock {
     }
 
     /** A simple table: a header row and body rows, each cell being inline content. */

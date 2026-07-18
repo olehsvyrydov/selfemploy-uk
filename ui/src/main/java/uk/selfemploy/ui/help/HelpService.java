@@ -206,12 +206,25 @@ public class HelpService {
         if (!trimmed.startsWith("---")) {
             return markdown;
         }
-        int end = trimmed.indexOf("\n---", 3);
+        // YAML front matter is closed by "---" or "..." (both accepted by the commonmark extension).
+        int end = earliestClosingFence(trimmed);
         if (end < 0) {
             return markdown;
         }
         int newline = trimmed.indexOf('\n', end + 1);
         return newline < 0 ? "" : trimmed.substring(newline + 1).stripLeading();
+    }
+
+    private static int earliestClosingFence(String text) {
+        int dashes = text.indexOf("\n---", 3);
+        int dots = text.indexOf("\n...", 3);
+        if (dashes < 0) {
+            return dots;
+        }
+        if (dots < 0) {
+            return dashes;
+        }
+        return Math.min(dashes, dots);
     }
 
     private static String applyPlaceholders(String text, Map<String, String> placeholders) {
