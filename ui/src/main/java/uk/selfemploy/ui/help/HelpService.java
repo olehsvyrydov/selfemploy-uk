@@ -16,10 +16,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Centralized service for help content throughout the application.
@@ -37,6 +40,14 @@ public class HelpService {
 
     private static final String RESOURCE_DIR = "/help/";
 
+    /**
+     * Topic content is static per tax year, so it is parsed once and shared across the several
+     * controllers that each construct a HelpService, rather than re-reading and re-parsing every
+     * resource per instance.
+     */
+    private static final Map<Integer, Map<HelpTopic, HelpContent>> CONTENT_CACHE =
+        new ConcurrentHashMap<>();
+
     private final Map<HelpTopic, HelpContent> helpContent;
 
     /**
@@ -52,7 +63,8 @@ public class HelpService {
      * @param taxYearStart the tax year start (e.g. 2025 for 2025/26)
      */
     public HelpService(int taxYearStart) {
-        this.helpContent = loadContent(buildPlaceholders(taxYearStart));
+        this.helpContent = CONTENT_CACHE.computeIfAbsent(taxYearStart,
+            year -> loadContent(buildPlaceholders(year)));
     }
 
     /**
@@ -166,12 +178,21 @@ public class HelpService {
                 placeholders);
             FrontMatter fm = parser.parseFrontMatter(resolved);
             String title = fm.title() != null ? fm.title() : topic.name();
-            String body = stripFrontMatter(resolved);
+            // Only strip a front-matter block the parser actually recognised, so a body that merely
+            // opens with a "---" thematic break is rendered rather than truncated.
+            String body = hasFrontMatter(fm) ? stripFrontMatter(resolved) : resolved;
             return Optional.of(new HelpContent(title, body, fm.hmrcLink(), fm.linkText()));
-        } catch (IOException e) {
-            LOG.warn("Failed to read help resource {}: {}", resource, e.getMessage());
+        } catch (IOException | RuntimeException e) {
+            // A malformed or blank resource (e.g. HelpContent rejecting an empty body) must degrade
+            // to "this topic is unavailable", never abort loading of the whole help system.
+            LOG.warn("Failed to load help resource {}: {}", resource, e.toString());
             return Optional.empty();
         }
+    }
+
+    private static boolean hasFrontMatter(FrontMatter fm) {
+        return fm.id() != null || fm.title() != null || fm.category() != null
+            || fm.hmrcLink() != null || fm.linkText() != null;
     }
 
     /**
@@ -220,7 +241,8 @@ public class HelpService {
 
     private static String formatMoney(BigDecimal amount) {
         boolean hasPence = amount.stripTrailingZeros().scale() > 0;
-        DecimalFormat format = new DecimalFormat(hasPence ? "£#,##0.00" : "£#,##0");
+        DecimalFormat format = new DecimalFormat(hasPence ? "£#,##0.00" : "£#,##0",
+            DecimalFormatSymbols.getInstance(Locale.UK));
         return format.format(amount.setScale(hasPence ? 2 : 0, RoundingMode.HALF_UP));
     }
 }

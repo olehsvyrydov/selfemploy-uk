@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import uk.selfemploy.core.config.NIClass2Rates;
 import uk.selfemploy.core.config.TaxRateConfiguration;
 
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -359,6 +360,22 @@ class HelpServiceTest {
             String body = fixedYearService.getHelp(HelpTopic.HMRC_CONNECTION).orElseThrow().body();
             assertThat(body).contains("Settings → HMRC");
             assertThat(body).doesNotContain("Settings > HMRC Connection > Disconnect");
+        }
+
+        @Test
+        @DisplayName("money figures use UK separators regardless of the JVM default locale")
+        void moneyFormattingIsLocaleIndependent() {
+            String dottedRate = "£" + TaxRateConfiguration.getInstance().getNIClass2Rates(2099)
+                .weeklyRate().stripTrailingZeros().toPlainString(); // e.g. "£3.45"
+            Locale original = Locale.getDefault();
+            try {
+                Locale.setDefault(Locale.GERMANY); // uses a comma as the decimal separator
+                // A tax year not exercised elsewhere, so it is not served from the shared cache.
+                String body = new HelpService(2099).getHelp(HelpTopic.NI_CLASS_2).orElseThrow().body();
+                assertThat(body).contains(dottedRate);
+            } finally {
+                Locale.setDefault(original);
+            }
         }
     }
 }

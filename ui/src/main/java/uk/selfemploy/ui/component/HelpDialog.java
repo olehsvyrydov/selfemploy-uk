@@ -94,19 +94,6 @@ public class HelpDialog {
     }
 
     /**
-     * Creates a new HelpDialog with optional large mode (for backwards compatibility).
-     *
-     * @param content the help content to display
-     * @param icon the FontAwesome icon for this topic
-     * @param categoryColor the hex color for this category
-     * @param helpService the help service for opening HMRC links
-     * @param largeMode if true, uses large size for comprehensive guides
-     */
-    public HelpDialog(HelpContent content, Ikon icon, String categoryColor, HelpService helpService, boolean largeMode) {
-        this(content, icon, categoryColor, helpService, largeMode ? DialogSize.LARGE : DialogSize.STANDARD);
-    }
-
-    /**
      * Creates a new HelpDialog with specified size.
      *
      * @param content the help content to display

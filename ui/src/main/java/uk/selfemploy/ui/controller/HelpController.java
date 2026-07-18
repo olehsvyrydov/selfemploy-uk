@@ -303,6 +303,21 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         return "General";
     }
 
+    /**
+     * Finds a HelpTopic by its display name.
+     *
+     * @param displayName the display name to search for
+     * @return the matching HelpTopic, or null if not found
+     */
+    public HelpTopic findTopicByDisplayName(String displayName) {
+        for (Map.Entry<HelpTopic, String> entry : TOPIC_DISPLAY_NAMES.entrySet()) {
+            if (entry.getValue().equals(displayName)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     // === FXML Event Handlers ===
 
     /** Sets the callback that replays the guided tour. Wired by {@code MainController}. */
@@ -510,15 +525,14 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      * @param size the dialog size (STANDARD, MEDIUM, or LARGE)
      */
     private void showHelpDialog(HelpTopic topic, DialogSize size) {
-        var contentOpt = getHelpForTopic(topic);
-        contentOpt.ifPresent(content -> {
+        getHelpForTopic(topic).ifPresentOrElse(content -> {
             Ikon icon = getTopicIcon(topic);
             String category = getCategoryForTopic(topic);
             String color = getCategoryColor(category);
 
             HelpDialog dialog = new HelpDialog(content, icon, color, helpService, size);
             dialog.showAndWaitDialog();
-        });
+        }, () -> LOG.warning("No help content available for topic: " + topic));
     }
 
     /**
@@ -526,26 +540,12 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      * This provides a single-page overview of the application.
      */
     private void showUserGuideDialog() {
-        getHelpForTopic(HelpTopic.USER_GUIDE).ifPresent(userGuideContent -> {
+        getHelpForTopic(HelpTopic.USER_GUIDE).ifPresentOrElse(userGuideContent -> {
             String color = getCategoryColor("User Guide");
             HelpDialog dialog = new HelpDialog(
                 userGuideContent, FontAwesomeSolid.BOOK, color, helpService, HelpDialog.DialogSize.LARGE);
             dialog.showAndWaitDialog();
-        });
+        }, () -> LOG.warning("User Guide help content is unavailable"));
     }
 
-    /**
-     * Finds a HelpTopic by its display name.
-     *
-     * @param displayName the display name to search for
-     * @return the matching HelpTopic, or null if not found
-     */
-    public HelpTopic findTopicByDisplayName(String displayName) {
-        for (Map.Entry<HelpTopic, String> entry : TOPIC_DISPLAY_NAMES.entrySet()) {
-            if (entry.getValue().equals(displayName)) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
 }

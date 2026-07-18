@@ -9,6 +9,7 @@ import org.commonmark.ext.gfm.tables.TableHead;
 import org.commonmark.ext.gfm.tables.TableRow;
 import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.node.BulletList;
+import org.commonmark.node.Code;
 import org.commonmark.node.Document;
 import org.commonmark.node.Emphasis;
 import org.commonmark.node.HardLineBreak;
@@ -175,6 +176,8 @@ public final class HelpMarkdownParser {
                 collectInlines(node, bold, out); // no italic in the model — render as the current weight
             } else if (node instanceof Link link) {
                 out.add(new HelpBlock.Inline.Link(linkText(link), link.getDestination()));
+            } else if (node instanceof Code code) {
+                out.add(new HelpBlock.Inline.TextRun(code.getLiteral(), bold)); // inline `code` as text
             } else if (node instanceof SoftLineBreak || node instanceof HardLineBreak) {
                 out.add(new HelpBlock.Inline.TextRun(" ", bold));
             } else if (node.getFirstChild() != null) {
