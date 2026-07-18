@@ -17,6 +17,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Locale;
@@ -64,7 +65,7 @@ public class HelpService {
      */
     public HelpService(int taxYearStart) {
         this.helpContent = CONTENT_CACHE.computeIfAbsent(taxYearStart,
-            year -> loadContent(buildPlaceholders(year)));
+            year -> Collections.unmodifiableMap(loadContent(buildPlaceholders(year))));
     }
 
     /**
@@ -185,7 +186,7 @@ public class HelpService {
         } catch (IOException | RuntimeException e) {
             // A malformed or blank resource (e.g. HelpContent rejecting an empty body) must degrade
             // to "this topic is unavailable", never abort loading of the whole help system.
-            LOG.warn("Failed to load help resource {}: {}", resource, e.toString());
+            LOG.warn("Failed to load help resource {}", resource, e);
             return Optional.empty();
         }
     }
