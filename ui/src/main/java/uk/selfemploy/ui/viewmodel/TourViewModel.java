@@ -37,8 +37,8 @@ public class TourViewModel {
             new TourStep("navExpenses", "Track expenses",
                 "Record business costs and pick an SA103 category so they map straight onto your "
                 + "Self Assessment."),
-            new TourStep("navTransactionReview", "Review imported transactions",
-                "Bank statement imports land here first. Mark each transaction as business or "
+            new TourStep("navBank", "Import and review bank statements",
+                "Import a statement here, then review each transaction — mark it business or "
                 + "personal before it becomes income or an expense."),
             new TourStep("navTax", "See your tax",
                 "The tax summary estimates the Income Tax and National Insurance to set aside, "

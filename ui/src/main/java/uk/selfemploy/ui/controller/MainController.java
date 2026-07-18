@@ -54,9 +54,7 @@ public class MainController implements Initializable {
     @FXML private ToggleButton navDashboard;
     @FXML private ToggleButton navIncome;
     @FXML private ToggleButton navExpenses;
-    @FXML private ToggleButton navTransactionReview;
-    @FXML private ToggleButton navReconciliation;
-    @FXML private ToggleButton navImportHistory;
+    @FXML private ToggleButton navBank;
     @FXML private ToggleButton navTax;
     @FXML private ToggleButton navHmrc;
     @FXML private ComboBox<TaxYear> taxYearSelector;
@@ -192,9 +190,7 @@ public class MainController implements Initializable {
             case DASHBOARD -> navDashboard.setSelected(true);
             case INCOME -> navIncome.setSelected(true);
             case EXPENSES -> navExpenses.setSelected(true);
-            case TRANSACTION_REVIEW -> navTransactionReview.setSelected(true);
-            case RECONCILIATION -> navReconciliation.setSelected(true);
-            case IMPORT_HISTORY -> navImportHistory.setSelected(true);
+            case BANK, TRANSACTION_REVIEW, RECONCILIATION, IMPORT_HISTORY -> navBank.setSelected(true);
             case TAX_SUMMARY -> navTax.setSelected(true);
             case HMRC_SUBMISSION -> navHmrc.setSelected(true);
             default -> {} // Help and Settings don't have nav buttons
@@ -284,6 +280,11 @@ public class MainController implements Initializable {
                     wireImportHistory(importHistoryController);
                 }
 
+                // Wire the Bank section: its three embedded tabs (review, imports, records check).
+                if (controller instanceof BankController bankController) {
+                    wireBankSection(bankController);
+                }
+
                 viewCache.put(view, viewNode);
             } catch (IOException e) {
                 showError("Failed to load view: " + view.getTitle(), e);
@@ -300,31 +301,43 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Navigates to the Transaction Review view and shows an import success banner.
-     * Called after a successful bank statement import from the Income or Expense view.
-     * Clears the Transaction Review view cache to ensure fresh data is loaded.
+     * Opens the Bank section on its Review Transactions tab, reloads it, and shows an import success
+     * banner scoped to the just-imported batch. Called after a bank statement import from elsewhere.
      *
-     * @param message the success message to display on the Transaction Review page
+     * @param message the success message to display on the Review tab
+     * @param batchId the imported batch to scope the review to
      */
     private void navigateToTransactionReviewWithMessage(String message, UUID batchId) {
-        // Clear the cached Transaction Review view so it reloads with fresh data
-        viewCache.remove(View.TRANSACTION_REVIEW);
-        controllerCache.remove(View.TRANSACTION_REVIEW);
-
-        loadView(View.TRANSACTION_REVIEW);
-
-        // Scope the newly loaded screen to the just-imported batch and show the success banner.
-        Object controller = controllerCache.get(View.TRANSACTION_REVIEW);
-        if (controller instanceof TransactionReviewController reviewController) {
-            reviewController.showImportSuccessBanner(message, batchId);
+        loadView(View.BANK);
+        BankController bank = bankController();
+        if (bank != null) {
+            bank.selectTab(BankController.REVIEW_TAB);
+            TransactionReviewController review = bank.getReviewController();
+            if (review != null) {
+                // showImportSuccessBanner scopes to the batch and reloads, so no extra refresh here.
+                review.showImportSuccessBanner(message, batchId);
+            }
         }
+    }
+
+    private BankController bankController() {
+        return controllerCache.get(View.BANK) instanceof BankController b ? b : null;
     }
 
     private void refreshCurrentView() {
         View currentView = navigationViewModel.getCurrentView();
+
+        // Preserve the selected Bank tab across the rebuild (a tax-year change discards the view).
+        int bankTab = currentView == View.BANK && bankController() != null
+            ? bankController().getSelectedTab() : -1;
+
         viewCache.remove(currentView);
         controllerCache.remove(currentView);
         loadView(currentView);
+
+        if (bankTab >= 0 && bankController() != null) {
+            bankController().selectTab(bankTab);
+        }
     }
 
     /**
@@ -369,23 +382,33 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Opens the Bank Review screen from the sidebar. Reached this way (rather than from an import),
-     * it shows all transactions, clearing any batch scope a prior import left on the cached screen.
-     *
-     * @param event the navigation action event
+     * Opens the Bank section from the sidebar, landing on the Review tab and clearing any batch
+     * scope a prior import left on it.
      */
     @FXML
-    void navigateToTransactionReview(ActionEvent event) {
-        Object controller = controllerCache.get(View.TRANSACTION_REVIEW);
-        if (controller instanceof TransactionReviewController reviewController) {
-            reviewController.showAllTransactions();
+    void navigateToBank(ActionEvent event) {
+        // On first load the Review tab is populated by setTaxYear; only a re-entry needs to clear a
+        // lingering batch scope and reload.
+        boolean firstLoad = !controllerCache.containsKey(View.BANK);
+        loadView(View.BANK);
+        BankController bank = bankController();
+        if (bank != null) {
+            bank.selectTab(BankController.REVIEW_TAB);
+            if (!firstLoad) {
+                TransactionReviewController review = bank.getReviewController();
+                if (review != null) {
+                    review.showAllTransactions();
+                }
+            }
         }
-        loadView(View.TRANSACTION_REVIEW);
     }
 
-    @FXML
-    void navigateToReconciliation(ActionEvent event) {
-        loadView(View.RECONCILIATION);
+    /** Selects a tab within the (already visible) Bank section — used by deep-link actions. */
+    private void showBankTab(int tabIndex) {
+        BankController bank = bankController();
+        if (bank != null) {
+            bank.selectTab(tabIndex);
+        }
     }
 
     // A single shared worker so import-history queries run off the FX thread (keeping the UI
@@ -397,14 +420,44 @@ public class MainController implements Initializable {
             return t;
         });
 
-    @FXML
-    void navigateToImportHistory(ActionEvent event) {
-        // Reload the list on each visit so imports and undos made elsewhere are reflected.
-        Object controller = controllerCache.get(View.IMPORT_HISTORY);
-        if (controller instanceof ImportHistoryController importHistoryController) {
-            loadImportHistoryAsync(importHistoryController);
+    private void wireBankSection(BankController bank) {
+        wireReconciliationDashboard(bank.getRecordsCheckController());
+        wireImportHistory(bank.getImportsController());
+        bank.setOnImportStatement(() -> {
+            Window owner = rootStack.getScene() != null ? rootStack.getScene().getWindow() : null;
+            BankImportLauncher.launch(owner, (message, batchId) -> {
+                bank.selectTab(BankController.REVIEW_TAB);
+                TransactionReviewController review = bank.getReviewController();
+                if (review != null) {
+                    // showImportSuccessBanner scopes to the batch and reloads.
+                    review.showImportSuccessBanner(message, batchId);
+                }
+            });
+        });
+
+        // Refresh a tab's data whenever it becomes selected, so an action on one tab (e.g. an undo)
+        // can't leave stale rows on another. The initial Review tab is already loaded via setTaxYear,
+        // and the other tabs load lazily when first selected.
+        bank.setOnTabSelected(tabIndex -> refreshBankTab(bank, tabIndex));
+    }
+
+    private void refreshBankTab(BankController bank, int tabIndex) {
+        switch (tabIndex) {
+            case BankController.REVIEW_TAB -> {
+                TransactionReviewController review = bank.getReviewController();
+                if (review != null) {
+                    review.refreshData();
+                }
+            }
+            case BankController.IMPORTS_TAB -> loadImportHistoryAsync(bank.getImportsController());
+            case BankController.RECORDS_CHECK_TAB -> {
+                ReconciliationDashboardController records = bank.getRecordsCheckController();
+                if (records != null) {
+                    records.refresh();
+                }
+            }
+            default -> { }
         }
-        loadView(View.IMPORT_HISTORY);
     }
 
     private ImportHistoryCoordinator newImportHistoryCoordinator() {
@@ -428,7 +481,8 @@ public class MainController implements Initializable {
     }
 
     private void wireImportHistory(ImportHistoryController controller) {
-        loadImportHistoryAsync(controller);
+        // The list is loaded lazily when the Imports tab is shown (see refreshBankTab), so no eager
+        // query here.
 
         // Wire the "New Import" / empty-state buttons (previously inert): open the wizard, then
         // refresh the history and land on Bank Review scoped to the just-imported batch.
@@ -473,10 +527,10 @@ public class MainController implements Initializable {
 
         reconController.setOnViewIncome(() -> loadView(View.INCOME));
         reconController.setOnViewExpenses(() -> loadView(View.EXPENSES));
-        reconController.setOnReviewDuplicates(() -> loadView(View.TRANSACTION_REVIEW));
+        reconController.setOnReviewDuplicates(() -> showBankTab(BankController.REVIEW_TAB));
         reconController.setOnFixCategories(() -> loadView(View.EXPENSES));
-        reconController.setOnCheckGaps(() -> loadView(View.TRANSACTION_REVIEW));
-        reconController.setCoordinator(coordinator); // triggers the initial reconciliation run
+        reconController.setOnCheckGaps(() -> showBankTab(BankController.REVIEW_TAB));
+        reconController.setCoordinator(coordinator); // the run happens lazily when the tab is shown
     }
 
     @FXML

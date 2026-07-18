@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.e2e;
 
+import uk.selfemploy.ui.controller.BankController;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -31,8 +32,37 @@ class TransactionReviewE2ETest extends BaseE2ETest {
 
     @BeforeEach
     void navigateToTransactionReview() {
-        clickOn("#navTransactionReview");
+        clickOn("#navBank");
         waitForFxEvents();
+    }
+
+    @Nested
+    @DisplayName("Bank Section Tests")
+    class BankSectionTests {
+
+        @Test
+        @DisplayName("The Bank header has an always-visible Import statement button")
+        void importStatementButtonExists() {
+            assertThat(lookup("Import statement").queryButton()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("The Bank section has Review / Imports / Records check tabs")
+        void bankTabsExist() {
+            TabPane tabs = lookup("#bankTabs").queryAs(TabPane.class);
+            assertThat(tabs).isNotNull();
+            assertThat(tabs.getTabs()).extracting(Tab::getText)
+                .containsExactly("Review Transactions", "Imports", "Records check");
+        }
+
+        @Test
+        @DisplayName("Selecting the Imports tab switches to it")
+        void canSwitchToImportsTab() {
+            TabPane tabs = lookup("#bankTabs").queryAs(TabPane.class);
+            interact(() -> tabs.getSelectionModel().select(BankController.IMPORTS_TAB));
+            waitForFxEvents();
+            assertThat(tabs.getSelectionModel().getSelectedIndex()).isEqualTo(BankController.IMPORTS_TAB);
+        }
     }
 
     // === Navigation ===
@@ -44,9 +74,9 @@ class TransactionReviewE2ETest extends BaseE2ETest {
         @Test
         @DisplayName("TC-01: Bank Review nav button exists and is clickable")
         void bankReviewNavButtonExistsAndIsClickable() {
-            ToggleButton navBtn = lookup("#navTransactionReview").queryAs(ToggleButton.class);
+            ToggleButton navBtn = lookup("#navBank").queryAs(ToggleButton.class);
             assertThat(navBtn).isNotNull();
-            assertThat(navBtn.getText()).isEqualTo("Bank Review");
+            assertThat(navBtn.getText()).isEqualTo("Bank");
             assertThat(navBtn.isSelected()).isTrue();
         }
 
@@ -55,7 +85,7 @@ class TransactionReviewE2ETest extends BaseE2ETest {
         void pageTitleShowsTransactionReview() {
             Label pageTitle = lookup(".page-title").queryAs(Label.class);
             assertThat(pageTitle).isNotNull();
-            assertThat(pageTitle.getText()).isEqualTo("Transaction Review");
+            assertThat(pageTitle.getText()).isEqualTo("Bank");
         }
 
         @Test
@@ -69,14 +99,14 @@ class TransactionReviewE2ETest extends BaseE2ETest {
             assertThat(dashBtn.isSelected()).isTrue();
 
             // Navigate back to Bank Review
-            clickOn("#navTransactionReview");
+            clickOn("#navBank");
             waitForFxEvents();
 
-            ToggleButton navBtn = lookup("#navTransactionReview").queryAs(ToggleButton.class);
+            ToggleButton navBtn = lookup("#navBank").queryAs(ToggleButton.class);
             assertThat(navBtn.isSelected()).isTrue();
 
             Label pageTitle = lookup(".page-title").queryAs(Label.class);
-            assertThat(pageTitle.getText()).isEqualTo("Transaction Review");
+            assertThat(pageTitle.getText()).isEqualTo("Bank");
         }
     }
 
@@ -411,7 +441,7 @@ class TransactionReviewE2ETest extends BaseE2ETest {
 
             // Verify page is still showing correctly
             Label pageTitle = lookup(".page-title").queryAs(Label.class);
-            assertThat(pageTitle.getText()).isEqualTo("Transaction Review");
+            assertThat(pageTitle.getText()).isEqualTo("Bank");
         }
     }
 }
