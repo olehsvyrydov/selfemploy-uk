@@ -236,24 +236,24 @@
         <VBox styleClass="settings-section, settings-section-data" spacing="16">
             <Label text="Data Management" styleClass="section-title"/>
 
-            <!-- Export Data -->
+            <!-- Back up data -->
             <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
                 <FontIcon iconLiteral="fas-upload" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Export Data" styleClass="settings-label"/>
-                    <Label text="Export your income, expenses, and tax data to a file" styleClass="settings-description"/>
+                    <Label text="Back up data" styleClass="settings-label"/>
+                    <Label text="Save a copy of your income, expenses and settings to a file (not bank statements — import those from the Bank section)" styleClass="settings-description"/>
                 </VBox>
-                <Button fx:id="exportButton" text="Export" styleClass="button-secondary" onAction="#handleExportData"/>
+                <Button fx:id="exportButton" text="Back up" styleClass="button-secondary" onAction="#handleExportData"/>
             </HBox>
 
-            <!-- Import Data -->
+            <!-- Restore from backup -->
             <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
                 <FontIcon iconLiteral="fas-download" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Import Data" styleClass="settings-label"/>
-                    <Label text="Import data from a previously exported file" styleClass="settings-description"/>
+                    <Label text="Restore from backup" styleClass="settings-label"/>
+                    <Label text="Replace your data with a previously saved backup file" styleClass="settings-description"/>
                 </VBox>
-                <Button fx:id="importButton" text="Import" styleClass="button-secondary" onAction="#handleImportData"/>
+                <Button fx:id="importButton" text="Restore" styleClass="button-secondary" onAction="#handleImportData"/>
             </HBox>
         </VBox>
 

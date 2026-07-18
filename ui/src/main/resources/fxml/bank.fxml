@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<!-- The single "Bank" section: import a statement, then Review / Imports / Records check as tabs
+     over the same bank data. Each tab embeds an existing screen via fx:include. -->
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="uk.selfemploy.ui.controller.BankController"
+      styleClass="bank-container" spacing="0">
+
+    <HBox styleClass="bank-header" alignment="CENTER_LEFT" spacing="12">
+        <padding><Insets top="24" right="32" bottom="8" left="32"/></padding>
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Bank" styleClass="page-title"/>
+            <Label text="Import, review and reconcile your bank statements" styleClass="page-subtitle"/>
+        </VBox>
+        <Button text="Import statement" styleClass="button-primary" onAction="#handleImportStatement"/>
+    </HBox>
+
+    <TabPane fx:id="bankTabs" VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE" styleClass="bank-tabs">
+        <tabs>
+            <Tab text="Review Transactions">
+                <content>
+                    <fx:include fx:id="review" source="transaction-review.fxml"/>
+                </content>
+            </Tab>
+            <Tab text="Imports">
+                <content>
+                    <fx:include fx:id="imports" source="import-history.fxml"/>
+                </content>
+            </Tab>
+            <Tab text="Records check">
+                <content>
+                    <fx:include fx:id="recordsCheck" source="reconciliation-dashboard.fxml"/>
+                </content>
+            </Tab>
+        </tabs>
+    </TabPane>
+</VBox>

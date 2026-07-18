@@ -166,6 +166,7 @@ class NavigationViewModelTest {
                 View.DASHBOARD,
                 View.INCOME,
                 View.EXPENSES,
+                View.BANK,
                 View.TRANSACTION_REVIEW,
                 View.RECONCILIATION,
                 View.IMPORT_HISTORY,

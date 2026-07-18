@@ -14,7 +14,7 @@
 
         <!-- Page Header -->
         <HBox alignment="CENTER_LEFT" spacing="15">
-            <Label text="Transaction Review" styleClass="page-title"/>
+            <Label text="Review transactions" styleClass="page-title"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Button fx:id="undoBtn" text="Undo" styleClass="button-secondary"
                     onAction="#handleUndo" disable="true"/>

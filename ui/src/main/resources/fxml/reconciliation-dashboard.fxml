@@ -18,7 +18,7 @@
         <!-- Header -->
         <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="1200">
             <VBox spacing="4" HBox.hgrow="ALWAYS">
-                <Label text="Reconciliation Dashboard" styleClass="page-title"/>
+                <Label text="Records check" styleClass="page-title"/>
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label fx:id="lastCheckedLabel" text="Last checked: Just now"
                            styleClass="page-subtitle"/>

@@ -89,18 +89,8 @@
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
-            <ToggleButton fx:id="navTransactionReview" text="Bank Review" styleClass="nav-button"
-                          maxWidth="Infinity" onAction="#navigateToTransactionReview">
-                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
-            </ToggleButton>
-
-            <ToggleButton fx:id="navReconciliation" text="Reconciliation" styleClass="nav-button"
-                          maxWidth="Infinity" onAction="#navigateToReconciliation">
-                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
-            </ToggleButton>
-
-            <ToggleButton fx:id="navImportHistory" text="Import History" styleClass="nav-button"
-                          maxWidth="Infinity" onAction="#navigateToImportHistory">
+            <ToggleButton fx:id="navBank" text="Bank" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToBank">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 

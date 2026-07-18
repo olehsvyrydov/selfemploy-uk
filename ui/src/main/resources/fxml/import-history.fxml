@@ -18,7 +18,7 @@
         <!-- Header -->
         <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="1200">
             <VBox spacing="4" HBox.hgrow="ALWAYS">
-                <Label text="Import History" styleClass="page-title"/>
+                <Label text="Imports" styleClass="page-title"/>
                 <Label fx:id="headerSubtitle" text="View and manage past bank statement imports"
                        styleClass="page-subtitle"/>
             </VBox>

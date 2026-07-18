@@ -8,6 +8,7 @@ public enum View {
     DASHBOARD("Dashboard", "/fxml/dashboard.fxml"),
     INCOME("Income", "/fxml/income.fxml"),
     EXPENSES("Expenses", "/fxml/expenses.fxml"),
+    BANK("Bank", "/fxml/bank.fxml"),
     TRANSACTION_REVIEW("Bank Review", "/fxml/transaction-review.fxml"),
     RECONCILIATION("Reconciliation", "/fxml/reconciliation-dashboard.fxml"),
     IMPORT_HISTORY("Import History", "/fxml/import-history.fxml"),
