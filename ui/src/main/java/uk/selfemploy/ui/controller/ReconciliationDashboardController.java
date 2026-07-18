@@ -89,7 +89,7 @@ public class ReconciliationDashboardController implements Initializable, MainCon
         setupKeyboardNavigation();
     }
 
-    /** Wires the real reconciliation data source and triggers an initial run if the year is set. */
+    /** Sets the reconciliation data source; the run itself happens lazily via {@link #refresh()}. */
     public void setCoordinator(ReconciliationCoordinator coordinator) {
         this.coordinator = coordinator;
     }

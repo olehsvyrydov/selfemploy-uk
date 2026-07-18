@@ -314,7 +314,7 @@ public class MainController implements Initializable {
             bank.selectTab(BankController.REVIEW_TAB);
             TransactionReviewController review = bank.getReviewController();
             if (review != null) {
-                review.refreshData();
+                // showImportSuccessBanner scopes to the batch and reloads, so no extra refresh here.
                 review.showImportSuccessBanner(message, batchId);
             }
         }
@@ -387,14 +387,18 @@ public class MainController implements Initializable {
      */
     @FXML
     void navigateToBank(ActionEvent event) {
+        // On first load the Review tab is populated by setTaxYear; only a re-entry needs to clear a
+        // lingering batch scope and reload.
+        boolean firstLoad = !controllerCache.containsKey(View.BANK);
         loadView(View.BANK);
         BankController bank = bankController();
         if (bank != null) {
             bank.selectTab(BankController.REVIEW_TAB);
-            TransactionReviewController review = bank.getReviewController();
-            if (review != null) {
-                // Sidebar entry clears any batch scope left by a prior import and reloads.
-                review.showAllTransactions();
+            if (!firstLoad) {
+                TransactionReviewController review = bank.getReviewController();
+                if (review != null) {
+                    review.showAllTransactions();
+                }
             }
         }
     }
@@ -425,16 +429,16 @@ public class MainController implements Initializable {
                 bank.selectTab(BankController.REVIEW_TAB);
                 TransactionReviewController review = bank.getReviewController();
                 if (review != null) {
-                    review.refreshData();
+                    // showImportSuccessBanner scopes to the batch and reloads.
                     review.showImportSuccessBanner(message, batchId);
                 }
             });
         });
 
-        // Load each tab's data lazily, when it is first shown, and refresh it on every re-entry so
-        // an action on one tab (e.g. an undo) can't leave stale rows on another.
+        // Refresh a tab's data whenever it becomes selected, so an action on one tab (e.g. an undo)
+        // can't leave stale rows on another. The initial Review tab is already loaded via setTaxYear,
+        // and the other tabs load lazily when first selected.
         bank.setOnTabSelected(tabIndex -> refreshBankTab(bank, tabIndex));
-        refreshBankTab(bank, bank.getSelectedTab()); // the listener won't fire for the initial tab
     }
 
     private void refreshBankTab(BankController bank, int tabIndex) {
@@ -526,7 +530,7 @@ public class MainController implements Initializable {
         reconController.setOnReviewDuplicates(() -> showBankTab(BankController.REVIEW_TAB));
         reconController.setOnFixCategories(() -> loadView(View.EXPENSES));
         reconController.setOnCheckGaps(() -> showBankTab(BankController.REVIEW_TAB));
-        reconController.setCoordinator(coordinator); // triggers the initial reconciliation run
+        reconController.setCoordinator(coordinator); // the run happens lazily when the tab is shown
     }
 
     @FXML

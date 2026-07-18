@@ -33,10 +33,12 @@ public class BankController implements Initializable, MainController.TaxYearAwar
     private Runnable onImportStatement;
     private IntConsumer onTabSelected;
 
+    /**
+     * Registers a listener that notifies {@link #setOnTabSelected} whenever the selected tab
+     * changes, so the newly-shown tab's data can be refreshed and never left stale.
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Refresh a tab's data whenever it becomes selected, so an action taken on one tab (e.g.
-        // undoing an import) can't leave stale rows showing on another.
         bankTabs.getSelectionModel().selectedIndexProperty().addListener((obs, oldIndex, newIndex) -> {
             if (onTabSelected != null) {
                 onTabSelected.accept(newIndex.intValue());
@@ -44,33 +46,65 @@ public class BankController implements Initializable, MainController.TaxYearAwar
         });
     }
 
-    /** Sets the callback invoked (with the tab index) whenever the selected tab changes. */
+    /**
+     * Sets the callback invoked with the tab index whenever the selected tab changes.
+     *
+     * @param onTabSelected the callback to run on tab selection
+     */
     public void setOnTabSelected(IntConsumer onTabSelected) {
         this.onTabSelected = onTabSelected;
     }
 
+    /**
+     * Returns the index of the currently selected tab.
+     *
+     * @return the selected tab index (see the {@code *_TAB} constants)
+     */
     public int getSelectedTab() {
         return bankTabs.getSelectionModel().getSelectedIndex();
     }
 
+    /**
+     * Returns the embedded Review Transactions controller, for wiring by the host.
+     *
+     * @return the review-tab controller
+     */
     public TransactionReviewController getReviewController() {
         return reviewController;
     }
 
+    /**
+     * Returns the embedded Imports controller, for wiring by the host.
+     *
+     * @return the imports-tab controller
+     */
     public ImportHistoryController getImportsController() {
         return importsController;
     }
 
+    /**
+     * Returns the embedded Records check controller, for wiring by the host.
+     *
+     * @return the records-check-tab controller
+     */
     public ReconciliationDashboardController getRecordsCheckController() {
         return recordsCheckController;
     }
 
-    /** Sets the action for the header "Import statement" button. */
+    /**
+     * Sets the action for the header "Import statement" button.
+     *
+     * @param onImportStatement the action to run when the button is pressed
+     */
     public void setOnImportStatement(Runnable onImportStatement) {
         this.onImportStatement = onImportStatement;
     }
 
-    /** Selects a tab by index (see the *_TAB constants). */
+    /**
+     * Selects a tab by index.
+     *
+     * @param index the tab index (see the {@code *_TAB} constants)
+     */
     public void selectTab(int index) {
         bankTabs.getSelectionModel().select(index);
     }
@@ -82,9 +116,14 @@ public class BankController implements Initializable, MainController.TaxYearAwar
         }
     }
 
+    /**
+     * Forwards the selected tax year to the year-scoped tabs (Review Transactions and Records check).
+     * Imports span tax years, so the Imports tab is intentionally left unchanged.
+     *
+     * @param taxYear the newly selected tax year
+     */
     @Override
     public void setTaxYear(TaxYear taxYear) {
-        // Imports span tax years, so only the year-scoped tabs receive the change.
         reviewController.setTaxYear(taxYear);
         recordsCheckController.setTaxYear(taxYear);
     }
