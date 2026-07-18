@@ -397,8 +397,14 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
 
     @FXML
     void handleNationalInsuranceClick(MouseEvent event) {
-        LOG.info("Help topic clicked: National Insurance");
+        LOG.info("Help topic clicked: NI Class 4");
         showHelpDialog(HelpTopic.NI_CLASS_4);
+    }
+
+    @FXML
+    void handleNationalInsuranceClass2Click(MouseEvent event) {
+        LOG.info("Help topic clicked: NI Class 2");
+        showHelpDialog(HelpTopic.NI_CLASS_2);
     }
 
     @FXML
