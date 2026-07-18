@@ -167,6 +167,24 @@ public class DeadlineNotificationService {
      * the user-configurable preference.
      */
     private List<Integer> offsetsFor(Deadline deadline) {
+        List<Integer> obligation = obligationOffsets(deadline);
+        List<Integer> configured = preferences.getTriggerDays();
+        if (obligation == null) {
+            // Unrecognised deadline: honour the configured trigger days as before.
+            return configured;
+        }
+        if (configured.equals(NotificationPreferences.DEFAULT_TRIGGER_DAYS)) {
+            // Default preference: use the obligation-specific schedule only.
+            return obligation;
+        }
+        // The user has customised their trigger days, so honour them alongside the obligation schedule.
+        Set<Integer> merged = new TreeSet<>(obligation);
+        merged.addAll(configured);
+        return new ArrayList<>(merged);
+    }
+
+    /** The obligation-specific offsets for a recognised deadline, or null if the type is unknown. */
+    private List<Integer> obligationOffsets(Deadline deadline) {
         String label = deadline.label().toLowerCase(Locale.ROOT);
         if (label.contains("mtd") || label.contains("quarter")) {
             return QUARTERLY_OFFSETS;
@@ -175,7 +193,7 @@ public class DeadlineNotificationService {
                 || label.contains("account") || label.contains("annual")) {
             return ANNUAL_OFFSETS;
         }
-        return preferences.getTriggerDays();
+        return null;
     }
 
     /**
@@ -413,8 +431,11 @@ public class DeadlineNotificationService {
     }
 
     private boolean hasActiveSnooze(Deadline deadline) {
+        // Match on label AND date: labels repeat every tax year, so a snooze from a prior year's
+        // same-named deadline must not suppress this year's reminders.
         return history.stream().anyMatch(n ->
             n.deadline().label().equals(deadline.label())
+                && n.deadline().date().equals(deadline.date())
                 && n.isSnoozed() && !n.isSnoozeExpired());
     }
 

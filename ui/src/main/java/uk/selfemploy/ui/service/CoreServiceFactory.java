@@ -193,7 +193,8 @@ public final class CoreServiceFactory {
                 getIncomeService(),
                 getExpenseService(),
                 getBankTransactionService(),
-                getDefaultBusinessId()
+                getDefaultBusinessId(),
+                new SqliteImportAuditRepository()
             );
         }
         return importOrchestrationService;

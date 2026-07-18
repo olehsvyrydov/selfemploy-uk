@@ -387,12 +387,21 @@ public class MainController implements Initializable {
         loadView(View.RECONCILIATION);
     }
 
+    // A single shared worker so import-history queries run off the FX thread (keeping the UI
+    // responsive) and reuse one SQLite connection rather than leaking one per spawned thread.
+    private static final java.util.concurrent.ExecutorService IMPORT_HISTORY_WORKER =
+        java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "import-history-worker");
+            t.setDaemon(true);
+            return t;
+        });
+
     @FXML
     void navigateToImportHistory(ActionEvent event) {
         // Reload the list on each visit so imports and undos made elsewhere are reflected.
         Object controller = controllerCache.get(View.IMPORT_HISTORY);
         if (controller instanceof ImportHistoryController importHistoryController) {
-            importHistoryController.setImports(newImportHistoryCoordinator().loadHistory());
+            loadImportHistoryAsync(importHistoryController);
         }
         loadView(View.IMPORT_HISTORY);
     }
@@ -406,17 +415,39 @@ public class MainController implements Initializable {
             SubmittedPeriodIndex.forBusiness(businessId));
     }
 
-    private void wireImportHistory(ImportHistoryController controller) {
-        controller.setImports(newImportHistoryCoordinator().loadHistory());
-        controller.setOnUndoImport(item -> {
-            ImportHistoryCoordinator.UndoResult result = newImportHistoryCoordinator().undo(item.getId());
-            if (result.success()) {
-                AppDialog.info("Import undone", result.message());
-            } else {
-                AppDialog.error("Cannot undo import", result.message());
+    private void loadImportHistoryAsync(ImportHistoryController controller) {
+        IMPORT_HISTORY_WORKER.submit(() -> {
+            try {
+                var items = newImportHistoryCoordinator().loadHistory();
+                Platform.runLater(() -> controller.setImports(items));
+            } catch (Exception e) {
+                LOG.severe("Failed to load import history: " + e.getMessage());
             }
-            controller.setImports(newImportHistoryCoordinator().loadHistory());
         });
+    }
+
+    private void wireImportHistory(ImportHistoryController controller) {
+        loadImportHistoryAsync(controller);
+        controller.setOnUndoImport(item -> IMPORT_HISTORY_WORKER.submit(() -> {
+            ImportHistoryCoordinator.UndoResult result;
+            try {
+                result = newImportHistoryCoordinator().undo(item.getId());
+            } catch (Exception e) {
+                LOG.warning("Undo import failed: " + e.getMessage());
+                Platform.runLater(() -> AppDialog.error("Cannot undo import",
+                    "Something went wrong. Please try again."));
+                loadImportHistoryAsync(controller);
+                return;
+            }
+            Platform.runLater(() -> {
+                if (result.success()) {
+                    AppDialog.info("Import undone", result.message());
+                } else {
+                    AppDialog.error("Cannot undo import", result.message());
+                }
+            });
+            loadImportHistoryAsync(controller);
+        }));
     }
 
     private void wireReconciliationDashboard(ReconciliationDashboardController reconController) {

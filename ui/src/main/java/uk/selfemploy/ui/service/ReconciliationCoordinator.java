@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -55,23 +56,39 @@ public class ReconciliationCoordinator {
         List<Expense> expenses = expenseService.findByTaxYear(businessId, taxYear);
         List<BankTransaction> bankTransactions = bankTransactionSupplier.get();
 
-        List<ReconciliationMatch> matches = ReconciliationService.reconcile(
+        List<ReconciliationMatch> candidates = ReconciliationService.reconcile(
             bankTransactions, incomes, expenses, businessId, Instant.now());
-        matchRepository.saveAll(matches);
+
+        // Persist only pairs not already recorded, so a match the user has confirmed or dismissed
+        // keeps its resolution instead of being reset to UNRESOLVED on every run.
+        Set<String> existing = matchRepository.findByBusinessId(businessId).stream()
+            .map(ReconciliationCoordinator::pairKey)
+            .collect(Collectors.toSet());
+        List<ReconciliationMatch> fresh = candidates.stream()
+            .filter(m -> !existing.contains(pairKey(m)))
+            .toList();
+        matchRepository.saveAll(fresh);
 
         BigDecimal totalIncome = sum(incomes.stream().map(Income::amount).toList());
         BigDecimal totalExpenses = sum(expenses.stream().map(Expense::amount).toList());
 
+        // Count only unresolved matches — dismissed/confirmed duplicates must not keep counting.
+        int unresolved = (int) matchRepository.countUnresolvedByBusinessId(businessId);
         List<ReconciliationIssue> issues = new ArrayList<>();
-        if (!matches.isEmpty()) {
-            issues.add(ReconciliationIssue.duplicates(matches.size(),
-                sampleDescriptions(matches, bankTransactions)));
+        if (unresolved > 0) {
+            issues.add(ReconciliationIssue.duplicates(unresolved,
+                sampleDescriptions(candidates, bankTransactions)));
         }
 
         // Every income/expense in this app carries a required category, so there is no
         // "uncategorized" backlog to surface here; the count stays zero by construction.
         return new ReconciliationSummary(totalIncome, totalExpenses,
-            incomes.size(), expenses.size(), matches.size(), 0, issues);
+            incomes.size(), expenses.size(), unresolved, 0, issues);
+    }
+
+    private static String pairKey(ReconciliationMatch match) {
+        return match.bankTransactionId() + "|" + match.manualTransactionId()
+            + "|" + match.manualTransactionType();
     }
 
     private static BigDecimal sum(List<BigDecimal> values) {

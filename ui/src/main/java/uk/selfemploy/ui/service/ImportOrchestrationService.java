@@ -64,6 +64,7 @@ public class ImportOrchestrationService {
     private final SqliteBankTransactionService bankTransactionService;
     private final DescriptionCategorizer categorizer = new DescriptionCategorizer();
     private final UUID businessId;
+    private final SqliteImportAuditRepository auditRepository;
 
     public ImportOrchestrationService(
             CsvTransactionParser csvParser,
@@ -71,11 +72,24 @@ public class ImportOrchestrationService {
             ExpenseService expenseService,
             SqliteBankTransactionService bankTransactionService,
             UUID businessId) {
+        // No audit repository → no import-history rows written. Unit tests use this constructor so
+        // they never touch the real audit table; production wires the repository via the overload.
+        this(csvParser, incomeService, expenseService, bankTransactionService, businessId, null);
+    }
+
+    public ImportOrchestrationService(
+            CsvTransactionParser csvParser,
+            IncomeService incomeService,
+            ExpenseService expenseService,
+            SqliteBankTransactionService bankTransactionService,
+            UUID businessId,
+            SqliteImportAuditRepository auditRepository) {
         this.csvParser = csvParser;
         this.incomeService = incomeService;
         this.expenseService = expenseService;
         this.bankTransactionService = bankTransactionService;
         this.businessId = businessId;
+        this.auditRepository = auditRepository;
     }
 
     /**
@@ -313,13 +327,13 @@ public class ImportOrchestrationService {
 
         // Record the import so it appears in Import History and can be undone. The audit id is the
         // batch id already stamped on each staged transaction (bank_transactions.import_audit_id).
-        if (staged > 0) {
+        if (staged > 0 && auditRepository != null) {
             ImportAudit audit = new ImportAudit(
                 batchId, businessId, now, fileName, null, ImportAuditType.BANK_CSV,
                 total, staged, skipped, List.copyOf(stagedIds),
                 ImportAuditStatus.ACTIVE, null, null, null, null, null, null);
             try {
-                new SqliteImportAuditRepository().save(audit);
+                auditRepository.save(audit);
             } catch (RuntimeException e) {
                 LOG.warn("Failed to record import audit for batch {}: {}", batchId, e.toString());
             }

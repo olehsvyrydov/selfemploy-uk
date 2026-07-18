@@ -10,6 +10,8 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.core.reconciliation.MatchTier;
+import uk.selfemploy.core.reconciliation.ReconciliationMatch;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.ReconciliationCoordinator.ReconciliationSummary;
@@ -50,6 +52,7 @@ class ReconciliationCoordinatorTest {
             .thenReturn(List.of(income(new BigDecimal("1850.00"), "Client payment")));
         when(expenseService.findByTaxYear(BUSINESS_ID, TAX_YEAR))
             .thenReturn(List.of(expense(new BigDecimal("500.00"))));
+        when(matchRepository.findByBusinessId(BUSINESS_ID)).thenReturn(List.of());
 
         ReconciliationSummary summary = coordinator(List.of()).reconcile(TAX_YEAR);
 
@@ -68,6 +71,8 @@ class ReconciliationCoordinatorTest {
         Income manualIncome = income(new BigDecimal("1850.00"), "Client payment");
         when(incomeService.findByTaxYear(BUSINESS_ID, TAX_YEAR)).thenReturn(List.of(manualIncome));
         when(expenseService.findByTaxYear(BUSINESS_ID, TAX_YEAR)).thenReturn(List.of());
+        when(matchRepository.findByBusinessId(BUSINESS_ID)).thenReturn(List.of());
+        when(matchRepository.countUnresolvedByBusinessId(BUSINESS_ID)).thenReturn(1L);
 
         BankTransaction credit = bankCredit(new BigDecimal("1850.00"), "Client payment");
 
@@ -78,6 +83,27 @@ class ReconciliationCoordinatorTest {
             .satisfies(issue -> assertThat(issue.getAffectedCount()).isEqualTo(1));
         verify(matchRepository).saveAll(org.mockito.ArgumentMatchers.argThat(
             list -> list != null && list.size() == 1));
+    }
+
+    @Test
+    @DisplayName("a match already recorded is not re-persisted, preserving its resolution")
+    void doesNotOverwriteExistingMatch() {
+        Income manualIncome = income(new BigDecimal("1850.00"), "Client payment");
+        when(incomeService.findByTaxYear(BUSINESS_ID, TAX_YEAR)).thenReturn(List.of(manualIncome));
+        when(expenseService.findByTaxYear(BUSINESS_ID, TAX_YEAR)).thenReturn(List.of());
+
+        BankTransaction credit = bankCredit(new BigDecimal("1850.00"), "Client payment");
+        ReconciliationMatch existing = ReconciliationMatch.create(
+            credit.id(), manualIncome.id(), "INCOME", 1.0, MatchTier.EXACT, BUSINESS_ID, java.time.Instant.now());
+        when(matchRepository.findByBusinessId(BUSINESS_ID)).thenReturn(List.of(existing));
+        when(matchRepository.countUnresolvedByBusinessId(BUSINESS_ID)).thenReturn(0L);
+
+        ReconciliationSummary summary = coordinator(List.of(credit)).reconcile(TAX_YEAR);
+
+        // The pair is already recorded, so nothing new is saved and the (dismissed) match stays out
+        // of the count.
+        verify(matchRepository).saveAll(org.mockito.ArgumentMatchers.argThat(List::isEmpty));
+        assertThat(summary.duplicateCount()).isZero();
     }
 
     private Income income(BigDecimal amount, String description) {

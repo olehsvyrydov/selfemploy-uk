@@ -59,15 +59,32 @@ public class ImportHistoryCoordinator {
         }
 
         List<BankTransaction> staged = bankRepository.findByImportAuditId(importId);
-        Optional<SubmissionRecord> lock = firstSubmittedLock(staged);
-        if (lock.isPresent()) {
+
+        // Refuse if any transaction was already committed to income/expense: removing the bank rows
+        // would orphan those accounting records (and they would still count towards tax).
+        boolean committed = staged.stream()
+            .anyMatch(tx -> tx.incomeId() != null || tx.expenseId() != null);
+        if (committed) {
+            return UndoResult.failure("Cannot undo — some of these transactions have already been "
+                + "added to your income or expenses. Remove those entries first.");
+        }
+
+        if (firstSubmittedLock(staged).isPresent()) {
             return UndoResult.failure(
                 "Cannot undo — some of these records are in a tax period you have already submitted.");
         }
 
+        // Only mark the import undone if every row was removed, so a partial failure can be retried.
+        boolean allRemoved = true;
         for (BankTransaction tx : staged) {
-            bankRepository.softDelete(tx.id());
+            if (!bankRepository.softDelete(tx.id())) {
+                allRemoved = false;
+            }
         }
+        if (!allRemoved) {
+            return UndoResult.failure("Some transactions could not be removed. Please try again.");
+        }
+
         auditRepository.updateStatus(importId, ImportAuditStatus.UNDONE, Instant.now(), "You");
         return UndoResult.success(staged.size());
     }
@@ -101,6 +118,12 @@ public class ImportHistoryCoordinator {
                     .map(s -> LocalDateTime.ofInstant(s.submittedAt(), ZoneId.systemDefault()))
                     .orElse(null);
             }
+        }
+
+        // An undone import's rows are soft-deleted, so findByImportAuditId returns none; fall back to
+        // the audit's stored count so the history still shows how many records the import contained.
+        if (staged.isEmpty() && audit.importedCount() > 0) {
+            incomeRecords = audit.importedCount();
         }
 
         ImportStatus status = audit.status() == ImportAuditStatus.UNDONE

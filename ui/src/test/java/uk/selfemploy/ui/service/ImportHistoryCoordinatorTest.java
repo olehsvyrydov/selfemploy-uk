@@ -46,6 +46,7 @@ class ImportHistoryCoordinatorTest {
         BankTransaction b = credit(new BigDecimal("50.00"));
         when(auditRepository.findById(IMPORT_ID)).thenReturn(Optional.of(activeAudit()));
         when(bankRepository.findByImportAuditId(IMPORT_ID)).thenReturn(List.of(a, b));
+        when(bankRepository.softDelete(any())).thenReturn(true);
 
         UndoResult result = coordinator(noSubmissions()).undo(IMPORT_ID);
 
@@ -53,6 +54,36 @@ class ImportHistoryCoordinatorTest {
         verify(bankRepository).softDelete(a.id());
         verify(bankRepository).softDelete(b.id());
         verify(auditRepository).updateStatus(eq(IMPORT_ID), eq(ImportAuditStatus.UNDONE), any(), any());
+    }
+
+    @Test
+    @DisplayName("undo is blocked when a transaction was already committed to income or expense")
+    void undoBlockedWhenCommitted() {
+        BankTransaction committed = credit(new BigDecimal("100.00"))
+            .withCategorizedAsIncome(UUID.randomUUID(), Instant.now());
+        when(auditRepository.findById(IMPORT_ID)).thenReturn(Optional.of(activeAudit()));
+        when(bankRepository.findByImportAuditId(IMPORT_ID)).thenReturn(List.of(committed));
+
+        UndoResult result = coordinator(noSubmissions()).undo(IMPORT_ID);
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.message()).contains("income or expenses");
+        verify(bankRepository, never()).softDelete(any());
+        verify(auditRepository, never()).updateStatus(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("a failed soft-delete leaves the import ACTIVE so it can be retried")
+    void undoNotMarkedOnPartialFailure() {
+        BankTransaction tx = credit(new BigDecimal("100.00"));
+        when(auditRepository.findById(IMPORT_ID)).thenReturn(Optional.of(activeAudit()));
+        when(bankRepository.findByImportAuditId(IMPORT_ID)).thenReturn(List.of(tx));
+        when(bankRepository.softDelete(any())).thenReturn(false);
+
+        UndoResult result = coordinator(noSubmissions()).undo(IMPORT_ID);
+
+        assertThat(result.success()).isFalse();
+        verify(auditRepository, never()).updateStatus(any(), any(), any(), any());
     }
 
     @Test

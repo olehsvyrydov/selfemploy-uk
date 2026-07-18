@@ -13,6 +13,7 @@ import javafx.scene.layout.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.ui.component.AppDialog;
 import uk.selfemploy.ui.service.ReconciliationCoordinator;
 import uk.selfemploy.ui.service.ReconciliationCoordinator.ReconciliationSummary;
 import uk.selfemploy.ui.viewmodel.*;
@@ -20,6 +21,8 @@ import uk.selfemploy.ui.viewmodel.*;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
@@ -102,6 +105,14 @@ public class ReconciliationDashboardController implements Initializable, MainCon
         }
     }
 
+    // A single shared worker so each run reuses one thread (and thus one SQLite connection) rather
+    // than leaking a connection per spawned thread.
+    private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "reconciliation-worker");
+        t.setDaemon(true);
+        return t;
+    });
+
     /** Runs reconciliation off the FX thread and applies the result back on it. */
     private void runReconciliation() {
         if (coordinator == null || taxYear == null) {
@@ -109,22 +120,21 @@ public class ReconciliationDashboardController implements Initializable, MainCon
         }
         TaxYear year = taxYear;
         viewModel.setLoading(true);
-        Thread worker = new Thread(() -> {
+        WORKER.submit(() -> {
             try {
                 ReconciliationSummary summary = coordinator.reconcile(year);
-                Platform.runLater(() -> {
-                    setData(summary.totalIncome(), summary.totalExpenses(),
-                        summary.incomeCount(), summary.expenseCount(),
-                        summary.duplicateCount(), summary.uncategorizedCount(), summary.issues());
-                    viewModel.setLoading(false);
-                });
-            } catch (RuntimeException e) {
+                Platform.runLater(() -> setData(summary.totalIncome(), summary.totalExpenses(),
+                    summary.incomeCount(), summary.expenseCount(),
+                    summary.duplicateCount(), summary.uncategorizedCount(), summary.issues()));
+            } catch (Exception e) {
                 LOG.warn("Reconciliation failed: {}", e.toString());
+                Platform.runLater(() -> AppDialog.error("Reconciliation failed",
+                    "Could not check your data right now. Please try again."));
+            } finally {
+                // Always clear the spinner, even on an unexpected error, so the view is never stuck.
                 Platform.runLater(() -> viewModel.setLoading(false));
             }
-        }, "reconciliation-worker");
-        worker.setDaemon(true);
-        worker.start();
+        });
     }
 
     /**
