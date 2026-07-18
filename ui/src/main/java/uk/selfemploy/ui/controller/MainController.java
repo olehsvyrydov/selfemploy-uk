@@ -221,7 +221,8 @@ public class MainController implements Initializable {
 
         if (viewNode == null) {
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource(view.getFxmlPath()));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource(view.getFxmlPath()),
+                    uk.selfemploy.ui.i18n.Messages.bundle());
                 viewNode = loader.load();
 
                 // Get and cache controller

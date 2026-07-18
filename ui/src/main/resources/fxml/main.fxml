@@ -23,20 +23,20 @@
             <!-- Logo & Title -->
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label text="SE" styleClass="logo-text"/>
-                <Label text="UK Self-Employment Manager" styleClass="app-title"/>
+                <Label text="%app.title" styleClass="app-title"/>
             </HBox>
 
             <Region HBox.hgrow="ALWAYS"/>
 
             <!-- Tax Year Selector -->
             <HBox alignment="CENTER" spacing="8">
-                <Label text="Tax Year:" styleClass="label-secondary"/>
+                <Label text="%app.taxYear.label" styleClass="label-secondary"/>
                 <ComboBox fx:id="taxYearSelector" styleClass="tax-year-selector" prefWidth="130"/>
             </HBox>
 
             <!-- Notification Bell (SE-309) -->
             <StackPane fx:id="notificationBell" styleClass="notification-bell" onMouseClicked="#handleNotificationsClick">
-                <Button fx:id="notificationButton" styleClass="header-icon-button" onAction="#handleNotificationsAction" accessibleText="Notifications">
+                <Button fx:id="notificationButton" styleClass="header-icon-button" onAction="#handleNotificationsAction" accessibleText="%app.action.notifications">
                     <graphic>
                         <StackPane styleClass="header-icon-circle, header-icon-notification">
                             <FontIcon iconLiteral="fas-bell" iconSize="16" styleClass="header-icon-fonticon"/>
@@ -49,14 +49,14 @@
             </StackPane>
 
             <!-- Action Buttons -->
-            <Button fx:id="helpButton" styleClass="header-icon-button" onAction="#handleHelp" accessibleText="Help">
+            <Button fx:id="helpButton" styleClass="header-icon-button" onAction="#handleHelp" accessibleText="%app.action.help">
                 <graphic>
                     <StackPane styleClass="header-icon-circle, header-icon-help">
                         <FontIcon iconLiteral="fas-question-circle" iconSize="16" styleClass="header-icon-fonticon"/>
                     </StackPane>
                 </graphic>
             </Button>
-            <Button fx:id="settingsButton" styleClass="header-icon-button" onAction="#handleSettings" accessibleText="Settings">
+            <Button fx:id="settingsButton" styleClass="header-icon-button" onAction="#handleSettings" accessibleText="%app.action.settings">
                 <graphic>
                     <StackPane styleClass="header-icon-circle, header-icon-settings">
                         <FontIcon iconLiteral="fas-cog" iconSize="16" styleClass="header-icon-fonticon"/>
@@ -72,34 +72,34 @@
             <padding><Insets top="20" right="12" bottom="20" left="12"/></padding>
 
             <!-- Main Navigation -->
-            <Label text="NAVIGATION" styleClass="nav-section-label"/>
+            <Label text="%nav.section" styleClass="nav-section-label"/>
 
-            <ToggleButton fx:id="navDashboard" text="Dashboard" styleClass="nav-button"
+            <ToggleButton fx:id="navDashboard" text="%nav.dashboard" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToDashboard" selected="true">
                 <toggleGroup><ToggleGroup fx:id="navGroup"/></toggleGroup>
             </ToggleButton>
 
-            <ToggleButton fx:id="navIncome" text="Income" styleClass="nav-button"
+            <ToggleButton fx:id="navIncome" text="%nav.income" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToIncome">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
-            <ToggleButton fx:id="navExpenses" text="Expenses" styleClass="nav-button"
+            <ToggleButton fx:id="navExpenses" text="%nav.expenses" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToExpenses">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
-            <ToggleButton fx:id="navBank" text="Bank" styleClass="nav-button"
+            <ToggleButton fx:id="navBank" text="%nav.bank" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToBank">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
-            <ToggleButton fx:id="navTax" text="Tax Summary" styleClass="nav-button"
+            <ToggleButton fx:id="navTax" text="%nav.taxSummary" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToTax">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
-            <ToggleButton fx:id="navHmrc" text="HMRC Submission" styleClass="nav-button"
+            <ToggleButton fx:id="navHmrc" text="%nav.hmrcSubmission" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToHmrc">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
@@ -109,7 +109,7 @@
             <!-- Secondary Navigation -->
             <Separator styleClass="nav-separator"/>
 
-            <Button fx:id="navHelp" text="Help &amp; Support" styleClass="nav-button-secondary"
+            <Button fx:id="navHelp" text="%nav.helpSupport" styleClass="nav-button-secondary"
                     maxWidth="Infinity" onAction="#handleHelp"/>
         </VBox>
     </left>

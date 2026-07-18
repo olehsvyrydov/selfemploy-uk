@@ -10,6 +10,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.stage.Stage;
 import uk.selfemploy.common.util.EnvLoader;
 import uk.selfemploy.ui.controller.MainController;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.controller.OnboardingController;
 import uk.selfemploy.ui.controller.SettingsController;
 import uk.selfemploy.ui.controller.TermsOfServiceController;
@@ -41,8 +42,8 @@ public class Launcher extends Application {
         SettingsController.loadAndApplyStoredEnvironment();
         SettingsController.loadAndApplyStoredCredentials();
 
-        // Load the main FXML layout
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
+        // Load the main FXML layout (with the message bundle so FXML can use %key text).
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"), Messages.bundle());
         Parent root = loader.load();
         MainController mainController = loader.getController();
 
