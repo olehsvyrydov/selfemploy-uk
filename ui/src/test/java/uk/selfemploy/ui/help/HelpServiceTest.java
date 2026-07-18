@@ -4,7 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import uk.selfemploy.core.config.NIClass2Rates;
+import uk.selfemploy.core.config.TaxRateConfiguration;
 
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -289,6 +294,87 @@ class HelpServiceTest {
                 assertThat(url)
                         .as("URL for topic %s should be a GOV.UK domain", topic)
                         .contains("gov.uk");
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Markdown resources and year-aware facts")
+    class MarkdownResources {
+
+        private static final int TAX_YEAR = 2025;
+
+        private final HelpService fixedYearService = new HelpService(TAX_YEAR);
+
+        @ParameterizedTest
+        @EnumSource(HelpTopic.class)
+        @DisplayName("every topic loads from its resource with no unresolved placeholders")
+        void everyTopicResolves(HelpTopic topic) {
+            HelpContent content = fixedYearService.getHelp(topic).orElseThrow(() ->
+                new AssertionError("No help content for topic " + topic));
+
+            assertThat(content.title()).isNotBlank();
+            assertThat(content.body()).isNotBlank();
+            assertThat(content.body())
+                .as("topic %s must have all placeholders resolved", topic)
+                .doesNotContain("{{");
+        }
+
+        @Test
+        @DisplayName("tax-year placeholders resolve to concrete dates for the configured year")
+        void resolvesYearPlaceholders() {
+            String body = fixedYearService.getHelp(HelpTopic.TAX_YEAR).orElseThrow().body();
+            assertThat(body).contains("6 April 2025");
+            assertThat(body).contains("31 January 2027");
+        }
+
+        @Test
+        @DisplayName("Class 2 NI figures come from the authoritative rate configuration")
+        void class2FiguresFromConfig() {
+            NIClass2Rates rates = TaxRateConfiguration.getInstance().getNIClass2Rates(TAX_YEAR);
+            String body = fixedYearService.getHelp(HelpTopic.NI_CLASS_2).orElseThrow().body();
+
+            assertThat(body).contains(rates.weeklyRate().stripTrailingZeros().toPlainString());
+            // Since April 2024 Class 2 is treated as paid above the SPT, not charged.
+            assertThat(body).contains("treated as having");
+        }
+
+        @Test
+        @DisplayName("SA103F threshold reflects the post-April-2024 VAT threshold of 90,000")
+        void sa103ThresholdCorrected() {
+            String body = fixedYearService.getHelp(HelpTopic.SA103_FORM).orElseThrow().body();
+            assertThat(body).contains("£90,000");
+            assertThat(body).doesNotContain("£85,000");
+        }
+
+        @Test
+        @DisplayName("the FAQ states the app covers Class 2 as well as Class 4 NI")
+        void faqMentionsClass2() {
+            String body = fixedYearService.getHelp(HelpTopic.FAQ).orElseThrow().body();
+            assertThat(body).contains("Class 2");
+        }
+
+        @Test
+        @DisplayName("the disconnect instructions point at the real Settings control")
+        void hmrcConnectionDisconnectPathCorrected() {
+            String body = fixedYearService.getHelp(HelpTopic.HMRC_CONNECTION).orElseThrow().body();
+            assertThat(body).contains("Settings → HMRC");
+            assertThat(body).doesNotContain("Settings > HMRC Connection > Disconnect");
+        }
+
+        @Test
+        @DisplayName("money figures use UK separators regardless of the JVM default locale")
+        void moneyFormattingIsLocaleIndependent() {
+            String dottedRate = "£" + TaxRateConfiguration.getInstance().getNIClass2Rates(2099)
+                .weeklyRate().stripTrailingZeros().toPlainString(); // e.g. "£3.45"
+            Locale original = Locale.getDefault();
+            try {
+                Locale.setDefault(Locale.GERMANY); // uses a comma as the decimal separator
+                // A tax year not exercised elsewhere, so it is not served from the shared cache.
+                String body = new HelpService(2099).getHelp(HelpTopic.NI_CLASS_2).orElseThrow().body();
+                assertThat(body).contains(dottedRate);
+            } finally {
+                Locale.setDefault(original);
             }
         }
     }

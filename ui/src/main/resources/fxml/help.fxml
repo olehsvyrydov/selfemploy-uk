@@ -135,12 +135,22 @@
                 <Label text="›" styleClass="help-topic-chevron"/>
             </HBox>
 
-            <!-- National Insurance -->
+            <!-- National Insurance Class 4 -->
             <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12" onMouseClicked="#handleNationalInsuranceClick">
-                <Label text="NI" styleClass="help-topic-badge, badge-teal"/>
+                <Label text="N4" styleClass="help-topic-badge, badge-teal"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="National Insurance" styleClass="help-topic-title"/>
-                    <Label text="National Insurance for self-employed profits" styleClass="help-topic-desc"/>
+                    <Label text="NI Class 4" styleClass="help-topic-title"/>
+                    <Label text="National Insurance on self-employed profits" styleClass="help-topic-desc"/>
+                </VBox>
+                <Label text="›" styleClass="help-topic-chevron"/>
+            </HBox>
+
+            <!-- National Insurance Class 2 -->
+            <HBox styleClass="help-topic-row" alignment="CENTER_LEFT" spacing="12" onMouseClicked="#handleNationalInsuranceClass2Click">
+                <Label text="N2" styleClass="help-topic-badge, badge-teal"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="NI Class 2" styleClass="help-topic-title"/>
+                    <Label text="Weekly National Insurance and your State Pension" styleClass="help-topic-desc"/>
                 </VBox>
                 <Label text="›" styleClass="help-topic-chevron"/>
             </HBox>

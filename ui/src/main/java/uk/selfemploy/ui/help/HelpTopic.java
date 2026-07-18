@@ -95,7 +95,12 @@ public enum HelpTopic {
      */
     SA103_FORM,
 
-    // === User Guide Topics (SE-9XX) ===
+    // === User Guide Topics ===
+
+    /**
+     * The comprehensive single-page User Guide.
+     */
+    USER_GUIDE,
 
     /**
      * Getting started with the application - overview and first steps.

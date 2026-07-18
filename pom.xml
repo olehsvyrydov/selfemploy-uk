@@ -62,6 +62,9 @@
              H2 is pinned to preserve on-disk format compatibility with existing user databases. -->
         <h2.version>2.3.232</h2.version>
 
+        <!-- Markdown (help system) -->
+        <commonmark.version>0.24.0</commonmark.version>
+
         <!-- Lombok -->
         <lombok.version>1.18.46</lombok.version>
 
@@ -163,6 +166,23 @@
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
+            </dependency>
+
+            <!-- Markdown parsing for the help system (rendered to JavaFX nodes, not HTML) -->
+            <dependency>
+                <groupId>org.commonmark</groupId>
+                <artifactId>commonmark</artifactId>
+                <version>${commonmark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.commonmark</groupId>
+                <artifactId>commonmark-ext-gfm-tables</artifactId>
+                <version>${commonmark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.commonmark</groupId>
+                <artifactId>commonmark-ext-yaml-front-matter</artifactId>
+                <version>${commonmark.version}</version>
             </dependency>
 
             <!-- Testing: junit-jupiter version comes from the Quarkus BOM; assertj-core is pinned below -->
