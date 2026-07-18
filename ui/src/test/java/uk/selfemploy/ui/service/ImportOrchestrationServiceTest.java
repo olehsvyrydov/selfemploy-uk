@@ -246,7 +246,7 @@ class ImportOrchestrationServiceTest {
                     LocalDate.of(2025, 1, 15), "Client Payment", new BigDecimal("2500.00"),
                     TransactionType.INCOME, null, false, 0);
 
-            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(incomeRow), null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(incomeRow), "test-import.csv", null);
 
             BankTransaction tx = firstSaved();
             assertThat(tx.businessId()).isEqualTo(businessId);
@@ -265,7 +265,7 @@ class ImportOrchestrationServiceTest {
                     LocalDate.of(2025, 1, 17), "Office Supplies", new BigDecimal("89.99"),
                     TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 0);
 
-            service.importTransactions(List.of(expenseRow), null);
+            service.importTransactions(List.of(expenseRow), "test-import.csv", null);
 
             BankTransaction tx = firstSaved();
             assertThat(tx.amount()).isEqualByComparingTo("-89.99");
@@ -281,7 +281,7 @@ class ImportOrchestrationServiceTest {
                     LocalDate.of(2025, 1, 17), "AMAZON MARKETPLACE", new BigDecimal("42.00"),
                     TransactionType.EXPENSE, null, false, 0);
 
-            service.importTransactions(List.of(expenseRow), null);
+            service.importTransactions(List.of(expenseRow), "test-import.csv", null);
 
             BankTransaction tx = firstSaved();
             assertThat(tx.suggestedCategory()).isEqualTo(ExpenseCategory.OFFICE_COSTS);
@@ -296,7 +296,7 @@ class ImportOrchestrationServiceTest {
                     LocalDate.of(2025, 1, 17), "Zzq unknown payee", new BigDecimal("42.00"),
                     TransactionType.EXPENSE, null, false, 0);
 
-            service.importTransactions(List.of(expenseRow), null);
+            service.importTransactions(List.of(expenseRow), "test-import.csv", null);
 
             BankTransaction tx = firstSaved();
             assertThat(tx.suggestedCategory()).isNull();
@@ -312,7 +312,7 @@ class ImportOrchestrationServiceTest {
                     ImportedTransactionRow.create(LocalDate.of(2025, 1, 16), "E1", new BigDecimal("50.00"), TransactionType.EXPENSE, ExpenseCategory.TRAVEL, false, 0),
                     ImportedTransactionRow.create(LocalDate.of(2025, 1, 17), "I2", new BigDecimal("200.00"), TransactionType.INCOME, null, false, 0));
 
-            ImportOrchestrationService.ImportResult result = service.importTransactions(transactions, null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(transactions, "test-import.csv", null);
 
             assertThat(result.importedCount()).isEqualTo(3);
             assertThat(result.errorCount()).isZero();
@@ -329,7 +329,7 @@ class ImportOrchestrationServiceTest {
             ImportedTransactionRow row = ImportedTransactionRow.create(
                     LocalDate.of(2025, 1, 15), "Dup", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
 
-            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), "test-import.csv", null);
 
             assertThat(result.importedCount()).isZero();
             assertThat(result.skippedCount()).isEqualTo(1);
@@ -343,7 +343,7 @@ class ImportOrchestrationServiceTest {
             ImportedTransactionRow row = ImportedTransactionRow.create(
                     LocalDate.of(2025, 1, 15), "Boom", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
 
-            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), "test-import.csv", null);
 
             assertThat(result.importedCount()).isZero();
             assertThat(result.errorCount()).isEqualTo(1);
@@ -359,7 +359,7 @@ class ImportOrchestrationServiceTest {
                     ImportedTransactionRow.create(LocalDate.of(2025, 1, 16), "FAIL", new BigDecimal("200.00"), TransactionType.INCOME, null, false, 0),
                     ImportedTransactionRow.create(LocalDate.of(2025, 1, 17), "OK2", new BigDecimal("300.00"), TransactionType.INCOME, null, false, 0));
 
-            ImportOrchestrationService.ImportResult result = service.importTransactions(transactions, null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(transactions, "test-import.csv", null);
 
             assertThat(result.importedCount()).isEqualTo(2);
             assertThat(result.errorCount()).isEqualTo(1);
@@ -374,7 +374,7 @@ class ImportOrchestrationServiceTest {
                     ImportedTransactionRow.create(LocalDate.of(2025, 1, 16), "T2", new BigDecimal("200.00"), TransactionType.INCOME, null, false, 0),
                     ImportedTransactionRow.create(LocalDate.of(2025, 1, 17), "T3", new BigDecimal("300.00"), TransactionType.INCOME, null, false, 0));
 
-            service.importTransactions(transactions, progress::add);
+            service.importTransactions(transactions, "test-import.csv", progress::add);
 
             assertThat(progress).hasSize(3);
             assertThat(progress.get(2)).isCloseTo(1.0, org.assertj.core.data.Offset.offset(0.001));
@@ -385,14 +385,14 @@ class ImportOrchestrationServiceTest {
         void handlesNullCallback() {
             ImportedTransactionRow row = ImportedTransactionRow.create(
                     LocalDate.of(2025, 1, 15), "Test", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
-            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(row), "test-import.csv", null);
             assertThat(result.importedCount()).isEqualTo(1);
         }
 
         @Test
         @DisplayName("returns zero counts for an empty list")
         void emptyList() {
-            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(), null);
+            ImportOrchestrationService.ImportResult result = service.importTransactions(List.of(), "test-import.csv", null);
             assertThat(result.importedCount()).isZero();
             assertThat(result.errorCount()).isZero();
             assertThat(result.hasErrors()).isFalse();
@@ -406,7 +406,7 @@ class ImportOrchestrationServiceTest {
             ImportedTransactionRow row = ImportedTransactionRow.create(
                     LocalDate.of(2025, 1, 15), "Fail", new BigDecimal("100.00"), TransactionType.INCOME, null, false, 0);
 
-            service.importTransactions(List.of(row), last::set);
+            service.importTransactions(List.of(row), "test-import.csv", last::set);
 
             assertThat(last.get()).isEqualTo(1.0);
         }

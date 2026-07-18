@@ -99,6 +99,11 @@
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
             </ToggleButton>
 
+            <ToggleButton fx:id="navImportHistory" text="Import History" styleClass="nav-button"
+                          maxWidth="Infinity" onAction="#navigateToImportHistory">
+                <toggleGroup><fx:reference source="navGroup"/></toggleGroup>
+            </ToggleButton>
+
             <ToggleButton fx:id="navTax" text="Tax Summary" styleClass="nav-button"
                           maxWidth="Infinity" onAction="#navigateToTax">
                 <toggleGroup><fx:reference source="navGroup"/></toggleGroup>

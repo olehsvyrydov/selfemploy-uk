@@ -170,7 +170,8 @@ public final class SqliteDataStore {
         return List.of(
             SqliteMigrationRunner.script(1, "baseline schema", "/db/migration-sqlite/V1__baseline.sql"),
             SqliteMigrationRunner.java(2, "legacy nullable columns", this::addLegacyColumns),
-            SqliteMigrationRunner.java(3, "honest submission history", this::migrateSubmissionHonesty)
+            SqliteMigrationRunner.java(3, "honest submission history", this::migrateSubmissionHonesty),
+            SqliteMigrationRunner.script(4, "import audit trail", "/db/migration-sqlite/V4__import_audit.sql")
         );
     }
 

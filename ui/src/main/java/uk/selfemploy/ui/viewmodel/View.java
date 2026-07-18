@@ -10,6 +10,7 @@ public enum View {
     EXPENSES("Expenses", "/fxml/expenses.fxml"),
     TRANSACTION_REVIEW("Bank Review", "/fxml/transaction-review.fxml"),
     RECONCILIATION("Reconciliation", "/fxml/reconciliation-dashboard.fxml"),
+    IMPORT_HISTORY("Import History", "/fxml/import-history.fxml"),
     TAX_SUMMARY("Tax Summary", "/fxml/tax-summary.fxml"),
     HMRC_SUBMISSION("HMRC Submission", "/fxml/hmrc-submission.fxml"),
     SETTINGS("Settings", "/fxml/settings.fxml"),

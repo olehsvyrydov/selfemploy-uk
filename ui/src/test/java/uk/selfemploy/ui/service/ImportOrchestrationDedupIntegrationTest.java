@@ -85,13 +85,13 @@ class ImportOrchestrationDedupIntegrationTest {
     void shouldSkipStagedRowsOnReimport() {
         List<ImportedTransactionRow> batch = sampleBatch();
 
-        ImportOrchestrationService.ImportResult first = service.importTransactions(batch, null);
+        ImportOrchestrationService.ImportResult first = service.importTransactions(batch, "test-import.csv", null);
         assertThat(first.importedCount()).isEqualTo(10);
         assertThat(first.errorCount()).isZero();
         assertThat(bankTransactionService.count()).isEqualTo(10);
 
         // Second import of the same file: every row's hash already exists in bank_transactions.
-        ImportOrchestrationService.ImportResult second = service.importTransactions(sampleBatch(), null);
+        ImportOrchestrationService.ImportResult second = service.importTransactions(sampleBatch(), "test-import.csv", null);
         assertThat(second.importedCount()).isZero();
         assertThat(second.skippedCount()).isEqualTo(10);
         assertThat(bankTransactionService.count()).isEqualTo(10);
@@ -106,7 +106,7 @@ class ImportOrchestrationDedupIntegrationTest {
             ImportedTransactionRow.create(DATE, "Widget", new BigDecimal("100.00"),
                 TransactionType.EXPENSE, ExpenseCategory.OFFICE_COSTS, false, 0));
 
-        ImportOrchestrationService.ImportResult result = service.importTransactions(rows, null);
+        ImportOrchestrationService.ImportResult result = service.importTransactions(rows, "test-import.csv", null);
 
         assertThat(result.importedCount()).isEqualTo(2);
         assertThat(result.skippedCount()).isZero();

@@ -18,9 +18,12 @@ import uk.selfemploy.ui.component.TourOverlay;
 import uk.selfemploy.ui.viewmodel.TourViewModel;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
+import uk.selfemploy.ui.service.ImportHistoryCoordinator;
 import uk.selfemploy.ui.service.ReconciliationCoordinator;
 import uk.selfemploy.ui.service.SqliteBankTransactionRepository;
+import uk.selfemploy.ui.service.SqliteImportAuditRepository;
 import uk.selfemploy.ui.service.SqliteReconciliationMatchRepository;
+import uk.selfemploy.ui.service.SubmittedPeriodIndex;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
 
@@ -51,6 +54,7 @@ public class MainController implements Initializable {
     @FXML private ToggleButton navExpenses;
     @FXML private ToggleButton navTransactionReview;
     @FXML private ToggleButton navReconciliation;
+    @FXML private ToggleButton navImportHistory;
     @FXML private ToggleButton navTax;
     @FXML private ToggleButton navHmrc;
     @FXML private ComboBox<TaxYear> taxYearSelector;
@@ -185,6 +189,7 @@ public class MainController implements Initializable {
             case EXPENSES -> navExpenses.setSelected(true);
             case TRANSACTION_REVIEW -> navTransactionReview.setSelected(true);
             case RECONCILIATION -> navReconciliation.setSelected(true);
+            case IMPORT_HISTORY -> navImportHistory.setSelected(true);
             case TAX_SUMMARY -> navTax.setSelected(true);
             case HMRC_SUBMISSION -> navHmrc.setSelected(true);
             default -> {} // Help and Settings don't have nav buttons
@@ -267,6 +272,11 @@ public class MainController implements Initializable {
                 // Wire the reconciliation dashboard to real data + deep-link its quick actions.
                 if (controller instanceof ReconciliationDashboardController reconController) {
                     wireReconciliationDashboard(reconController);
+                }
+
+                // Wire the import history screen to the real audit trail + undo.
+                if (controller instanceof ImportHistoryController importHistoryController) {
+                    wireImportHistory(importHistoryController);
                 }
 
                 viewCache.put(view, viewNode);
@@ -371,6 +381,38 @@ public class MainController implements Initializable {
     @FXML
     void navigateToReconciliation(ActionEvent event) {
         loadView(View.RECONCILIATION);
+    }
+
+    @FXML
+    void navigateToImportHistory(ActionEvent event) {
+        // Reload the list on each visit so imports and undos made elsewhere are reflected.
+        Object controller = controllerCache.get(View.IMPORT_HISTORY);
+        if (controller instanceof ImportHistoryController importHistoryController) {
+            importHistoryController.setImports(newImportHistoryCoordinator().loadHistory());
+        }
+        loadView(View.IMPORT_HISTORY);
+    }
+
+    private ImportHistoryCoordinator newImportHistoryCoordinator() {
+        UUID businessId = CoreServiceFactory.getDefaultBusinessId();
+        return new ImportHistoryCoordinator(
+            businessId,
+            new SqliteImportAuditRepository(),
+            new SqliteBankTransactionRepository(businessId),
+            SubmittedPeriodIndex.forBusiness(businessId));
+    }
+
+    private void wireImportHistory(ImportHistoryController controller) {
+        controller.setImports(newImportHistoryCoordinator().loadHistory());
+        controller.setOnUndoImport(item -> {
+            ImportHistoryCoordinator.UndoResult result = newImportHistoryCoordinator().undo(item.getId());
+            if (result.success()) {
+                AppDialog.info("Import undone", result.message());
+            } else {
+                AppDialog.error("Cannot undo import", result.message());
+            }
+            controller.setImports(newImportHistoryCoordinator().loadHistory());
+        });
     }
 
     private void wireReconciliationDashboard(ReconciliationDashboardController reconController) {

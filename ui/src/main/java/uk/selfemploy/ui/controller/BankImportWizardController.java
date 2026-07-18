@@ -937,8 +937,10 @@ public class BankImportWizardController implements Initializable {
         // Run import on a background thread to keep the UI responsive
         Thread importThread = new Thread(() -> {
             try {
+                File selectedFile = viewModel.getSelectedFile();
+                String fileName = selectedFile != null ? selectedFile.getName() : "Imported file";
                 ImportOrchestrationService.ImportResult result =
-                    orchestrationService.importTransactions(toImport, progress ->
+                    orchestrationService.importTransactions(toImport, fileName, progress ->
                         javafx.application.Platform.runLater(() ->
                             viewModel.setImportProgress(progress)));
 
