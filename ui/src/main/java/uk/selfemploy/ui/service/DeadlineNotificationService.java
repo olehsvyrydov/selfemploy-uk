@@ -51,6 +51,10 @@ public class DeadlineNotificationService {
     // Injectable time source so reminder scheduling can be tested deterministically.
     private Clock clock = Clock.systemDefaultZone();
 
+    // Persists read/snooze state across restarts; defaults to a no-op until a real store is wired in.
+    private NotificationStateStore stateStore = NotificationStateStore.NOOP;
+    private Map<String, NotificationStateStore.PersistedState> persistedState = new ConcurrentHashMap<>();
+
     public DeadlineNotificationService() {
         // Initialize with default preferences
     }
@@ -58,6 +62,41 @@ public class DeadlineNotificationService {
     /** Overrides the time source (tests only); production uses the system clock. */
     void setClock(Clock clock) {
         this.clock = clock;
+    }
+
+    /**
+     * Wires the store used to persist read/snooze state across restarts and loads any existing state
+     * so regenerated reminders inherit it.
+     */
+    public void setStateStore(NotificationStateStore stateStore) {
+        this.stateStore = stateStore != null ? stateStore : NotificationStateStore.NOOP;
+        this.persistedState = new ConcurrentHashMap<>(this.stateStore.loadAll());
+    }
+
+    private void persist(DeadlineNotification notification) {
+        NotificationStateStore.PersistedState state =
+            new NotificationStateStore.PersistedState(notification.isRead(), notification.snoozeUntil());
+        persistedState.put(notification.stableKey(), state);
+        try {
+            stateStore.save(notification.stableKey(), notification.isRead(), notification.snoozeUntil());
+        } catch (RuntimeException e) {
+            LOG.warning("Failed to persist notification state: " + e.getMessage());
+        }
+    }
+
+    private DeadlineNotification applyPersistedState(DeadlineNotification notification) {
+        NotificationStateStore.PersistedState state = persistedState.get(notification.stableKey());
+        if (state == null) {
+            return notification;
+        }
+        DeadlineNotification result = notification;
+        if (state.read()) {
+            result = result.markAsRead();
+        }
+        if (state.snoozeUntil() != null && LocalDateTime.now().isBefore(state.snoozeUntil())) {
+            result = result.snoozeUntil(state.snoozeUntil());
+        }
+        return result;
     }
 
     private LocalDate today() {
@@ -190,8 +229,10 @@ public class DeadlineNotificationService {
             return;
         }
 
-        // Create notification
-        DeadlineNotification notification = DeadlineNotification.create(deadline, triggerDays);
+        // Create notification, inheriting any read/snooze state persisted from a previous run so a
+        // dismissed or snoozed reminder does not re-nag after a restart.
+        DeadlineNotification notification = applyPersistedState(
+            DeadlineNotification.create(deadline, triggerDays));
 
         // Add to history
         history.add(0, notification); // Add at beginning (most recent first)
@@ -241,7 +282,9 @@ public class DeadlineNotificationService {
         for (int i = 0; i < history.size(); i++) {
             DeadlineNotification notification = history.get(i);
             if (notification.id().equals(notificationId)) {
-                history.set(i, notification.markAsRead());
+                DeadlineNotification updated = notification.markAsRead();
+                history.set(i, updated);
+                persist(updated);
                 updateUnreadCount();
                 break;
             }
@@ -255,7 +298,9 @@ public class DeadlineNotificationService {
         for (int i = 0; i < history.size(); i++) {
             DeadlineNotification notification = history.get(i);
             if (!notification.isRead()) {
-                history.set(i, notification.markAsRead());
+                DeadlineNotification updated = notification.markAsRead();
+                history.set(i, updated);
+                persist(updated);
             }
         }
         updateUnreadCount();
@@ -270,7 +315,9 @@ public class DeadlineNotificationService {
         for (int i = 0; i < history.size(); i++) {
             DeadlineNotification notification = history.get(i);
             if (notification.id().equals(notificationId)) {
-                history.set(i, notification.snoozeUntil(snoozeUntil));
+                DeadlineNotification updated = notification.snoozeUntil(snoozeUntil);
+                history.set(i, updated);
+                persist(updated);
                 updateUnreadCount();
                 break;
             }

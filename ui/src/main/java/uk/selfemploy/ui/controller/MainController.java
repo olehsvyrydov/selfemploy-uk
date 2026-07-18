@@ -22,6 +22,7 @@ import uk.selfemploy.ui.service.ImportHistoryCoordinator;
 import uk.selfemploy.ui.service.ReconciliationCoordinator;
 import uk.selfemploy.ui.service.SqliteBankTransactionRepository;
 import uk.selfemploy.ui.service.SqliteImportAuditRepository;
+import uk.selfemploy.ui.service.SqliteNotificationStateRepository;
 import uk.selfemploy.ui.service.SqliteReconciliationMatchRepository;
 import uk.selfemploy.ui.service.SubmittedPeriodIndex;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
@@ -90,6 +91,9 @@ public class MainController implements Initializable {
             notificationBadge.setVisible(count > 0);
             notificationBadge.setManaged(count > 0);
         });
+
+        // Persist read/snooze state so dismissed reminders don't re-nag after a restart.
+        notificationService.setStateStore(new SqliteNotificationStateRepository());
 
         // Start notification scheduler for current tax year
         TaxYear currentYear = navigationViewModel.getSelectedTaxYear();

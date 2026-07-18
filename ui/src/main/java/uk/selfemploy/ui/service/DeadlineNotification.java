@@ -64,6 +64,15 @@ public record DeadlineNotification(
     }
 
     /**
+     * A restart-stable identity for this reminder (deadline + offset), independent of the random
+     * per-instance id. Used to persist read/snooze state so a dismissed reminder does not re-nag
+     * after the app is relaunched and the notification is regenerated.
+     */
+    public String stableKey() {
+        return deadline.label() + "|" + deadline.date() + "|" + triggerDays;
+    }
+
+    /**
      * Checks if snooze has expired.
      */
     public boolean isSnoozeExpired() {

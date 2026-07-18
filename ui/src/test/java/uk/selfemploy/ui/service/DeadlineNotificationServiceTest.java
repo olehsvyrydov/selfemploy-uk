@@ -637,4 +637,63 @@ class DeadlineNotificationServiceTest {
     private static Clock fixedAt(LocalDate date) {
         return Clock.fixed(date.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC);
     }
+
+    @Nested
+    @DisplayName("Read/snooze state persistence across restarts")
+    class StatePersistence {
+
+        /** In-memory store standing in for the SQLite one, so persistence is tested without a DB. */
+        private final NotificationStateStore store = new NotificationStateStore() {
+            private final java.util.Map<String, PersistedState> map = new java.util.HashMap<>();
+
+            @Override
+            public void save(String key, boolean read, java.time.LocalDateTime snoozeUntil) {
+                map.put(key, new PersistedState(read, snoozeUntil));
+            }
+
+            @Override
+            public java.util.Map<String, PersistedState> loadAll() {
+                return new java.util.HashMap<>(map);
+            }
+        };
+
+        private final Deadline deadline = Deadline.of("Payment Due", LocalDate.now().plusDays(30));
+
+        @Test
+        @DisplayName("a dismissed reminder stays dismissed after the app restarts")
+        void dismissedReminderStaysDismissed() {
+            DeadlineNotificationService first = new DeadlineNotificationService();
+            first.setStateStore(store);
+            first.triggerNotification(deadline, 30);
+            first.markAsRead(first.getNotificationHistory().get(0).id());
+
+            // Simulate a restart: a fresh service loading the same store regenerates the reminder.
+            DeadlineNotificationService restarted = new DeadlineNotificationService();
+            restarted.setStateStore(store);
+            restarted.triggerNotification(deadline, 30);
+
+            assertThat(restarted.getNotificationHistory().get(0).isRead()).isTrue();
+            assertThat(restarted.getUnreadCount()).isZero();
+            restarted.shutdown();
+            first.shutdown();
+        }
+
+        @Test
+        @DisplayName("a snoozed reminder stays snoozed after the app restarts")
+        void snoozedReminderStaysSnoozed() {
+            DeadlineNotificationService first = new DeadlineNotificationService();
+            first.setStateStore(store);
+            first.triggerNotification(deadline, 30);
+            first.snooze(first.getNotificationHistory().get(0).id(), 168); // one week
+
+            DeadlineNotificationService restarted = new DeadlineNotificationService();
+            restarted.setStateStore(store);
+            restarted.triggerNotification(deadline, 30);
+
+            assertThat(restarted.getNotificationHistory().get(0).isSnoozed()).isTrue();
+            assertThat(restarted.getUnreadCount()).isZero();
+            restarted.shutdown();
+            first.shutdown();
+        }
+    }
 }
