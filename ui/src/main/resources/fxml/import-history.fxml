@@ -18,30 +18,30 @@
         <!-- Header -->
         <HBox alignment="CENTER_LEFT" spacing="12" maxWidth="1200">
             <VBox spacing="4" HBox.hgrow="ALWAYS">
-                <Label text="Imports" styleClass="page-title"/>
-                <Label fx:id="headerSubtitle" text="View and manage past bank statement imports"
+                <Label text="%importHistory.title" styleClass="page-title"/>
+                <Label fx:id="headerSubtitle" text="%importHistory.subtitle"
                        styleClass="page-subtitle"/>
             </VBox>
-            <Button fx:id="newImportBtn" text="New Import" styleClass="button-primary"
+            <Button fx:id="newImportBtn" text="%importHistory.newImport" styleClass="button-primary"
                     onAction="#handleNewImport"
-                    accessibleText="Start a new bank import"/>
+                    accessibleText="%importHistory.newImport.a11y"/>
         </HBox>
 
         <!-- Filter Bar -->
         <HBox styleClass="filters-bar" alignment="CENTER_LEFT" spacing="16" maxWidth="1200">
-            <Label text="Filter by:" styleClass="filter-label"/>
-            <ToggleButton fx:id="allTimeFilter" text="All Time" styleClass="filter-chip"
+            <Label text="%importHistory.filterBy" styleClass="filter-label"/>
+            <ToggleButton fx:id="allTimeFilter" text="%importHistory.filter.allTime" styleClass="filter-chip"
                           onAction="#handleFilterChange"
-                          accessibleText="Show all imports"/>
-            <ToggleButton fx:id="last7DaysFilter" text="Last 7 Days" styleClass="filter-chip"
+                          accessibleText="%importHistory.filter.allTime.a11y"/>
+            <ToggleButton fx:id="last7DaysFilter" text="%importHistory.filter.last7Days" styleClass="filter-chip"
                           onAction="#handleFilterChange"
-                          accessibleText="Show imports from last 7 days"/>
-            <ToggleButton fx:id="last30DaysFilter" text="Last 30 Days" styleClass="filter-chip"
+                          accessibleText="%importHistory.filter.last7Days.a11y"/>
+            <ToggleButton fx:id="last30DaysFilter" text="%importHistory.filter.last30Days" styleClass="filter-chip"
                           onAction="#handleFilterChange"
-                          accessibleText="Show imports from last 30 days"/>
-            <ToggleButton fx:id="thisTaxYearFilter" text="This Tax Year" styleClass="filter-chip"
+                          accessibleText="%importHistory.filter.last30Days.a11y"/>
+            <ToggleButton fx:id="thisTaxYearFilter" text="%importHistory.filter.thisTaxYear" styleClass="filter-chip"
                           onAction="#handleFilterChange"
-                          accessibleText="Show imports from current tax year"/>
+                          accessibleText="%importHistory.filter.thisTaxYear.a11y"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="resultCountLabel" text="0 imports" styleClass="result-count"/>
         </HBox>
@@ -50,17 +50,17 @@
         <VBox fx:id="loadingState" styleClass="loading-state" alignment="CENTER" spacing="16"
               managed="false" visible="false" maxWidth="1200" VBox.vgrow="ALWAYS">
             <ProgressIndicator prefWidth="48" prefHeight="48"/>
-            <Label text="Loading import history..." styleClass="loading-message"/>
+            <Label text="%importHistory.loading" styleClass="loading-message"/>
         </VBox>
 
         <!-- Empty State -->
         <VBox fx:id="emptyState" styleClass="empty-state-container" alignment="CENTER" spacing="16"
               managed="false" visible="false" maxWidth="1200">
             <Label text="[folder]" styleClass="empty-state-icon"/>
-            <Label text="No import history yet" styleClass="empty-state-title"/>
-            <Label text="Import your first bank statement to see it here"
+            <Label text="%importHistory.empty.title" styleClass="empty-state-title"/>
+            <Label text="%importHistory.empty.message"
                    styleClass="empty-state-message" wrapText="true"/>
-            <Button text="Import Bank Statement" styleClass="button-primary"
+            <Button text="%importHistory.empty.action" styleClass="button-primary"
                     onAction="#handleNewImport"/>
         </VBox>
 
@@ -68,8 +68,8 @@
         <VBox fx:id="noResultsState" styleClass="empty-state-container" alignment="CENTER" spacing="16"
               managed="false" visible="false" maxWidth="1200">
             <Label text="[search]" styleClass="empty-state-icon"/>
-            <Label text="No imports found for this filter" styleClass="empty-state-title"/>
-            <Label text="Try selecting a different time period"
+            <Label text="%importHistory.noResults.title" styleClass="empty-state-title"/>
+            <Label text="%importHistory.noResults.message"
                    styleClass="empty-state-message" wrapText="true"/>
         </VBox>
 

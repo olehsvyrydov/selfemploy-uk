@@ -17,11 +17,11 @@
     <!-- Header -->
     <HBox alignment="CENTER_LEFT" spacing="12">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Import Review" styleClass="page-title"/>
+            <Label text="%importReview.title" styleClass="page-title"/>
             <Label fx:id="headerSubtitle" text="Review 0 transactions before importing"
                    styleClass="page-subtitle"/>
         </VBox>
-        <Button fx:id="cancelImportBtn" text="Cancel Import" styleClass="button-secondary"
+        <Button fx:id="cancelImportBtn" text="%importReview.cancel" styleClass="button-secondary"
                 onAction="#handleCancelImport"/>
     </HBox>
 
@@ -29,9 +29,9 @@
     <VBox fx:id="loadingState" styleClass="loading-state" alignment="CENTER" spacing="16"
           managed="false" visible="false">
         <ProgressIndicator prefWidth="48" prefHeight="48"/>
-        <Label fx:id="loadingLabel" text="Checking for duplicates..."
+        <Label fx:id="loadingLabel" text="%importReview.loading"
                styleClass="loading-message"/>
-        <Label text="Analyzing transactions" styleClass="loading-hint"/>
+        <Label text="%importReview.loadingHint" styleClass="loading-hint"/>
     </VBox>
 
     <!-- All Clear State (no duplicates found) -->
@@ -40,10 +40,10 @@
         <StackPane styleClass="all-clear-icon">
             <Label text="[check]" styleClass="all-clear-icon-text"/>
         </StackPane>
-        <Label text="All Clear!" styleClass="all-clear-title"/>
-        <Label text="No duplicate transactions detected in this import."
+        <Label text="%importReview.allClear.title" styleClass="all-clear-title"/>
+        <Label text="%importReview.allClear.message"
                styleClass="all-clear-message" wrapText="true"/>
-        <Button fx:id="continueImportBtn" text="Continue to Import" styleClass="button-primary"
+        <Button fx:id="continueImportBtn" text="%importReview.continue" styleClass="button-primary"
                 onAction="#handleContinueImport"/>
     </VBox>
 
@@ -57,7 +57,7 @@
                 <Label text="[total]" styleClass="summary-icon"/>
                 <VBox spacing="2">
                     <Label fx:id="totalCountLabel" text="0" styleClass="import-summary-count"/>
-                    <Label text="Total" styleClass="import-summary-label"/>
+                    <Label text="%importReview.summary.total" styleClass="import-summary-label"/>
                 </VBox>
             </HBox>
             <Region styleClass="import-summary-divider"/>
@@ -65,7 +65,7 @@
                 <Label text="+" styleClass="summary-icon, text-success"/>
                 <VBox spacing="2">
                     <Label fx:id="newCountLabel" text="0" styleClass="import-summary-count, text-success"/>
-                    <Label text="New" styleClass="import-summary-label"/>
+                    <Label text="%importReview.summary.new" styleClass="import-summary-label"/>
                 </VBox>
             </HBox>
             <Region styleClass="import-summary-divider"/>
@@ -73,7 +73,7 @@
                 <Label text="!" styleClass="summary-icon, text-danger"/>
                 <VBox spacing="2">
                     <Label fx:id="exactCountLabel" text="0" styleClass="import-summary-count, text-danger"/>
-                    <Label text="Exact Match" styleClass="import-summary-label"/>
+                    <Label text="%importReview.summary.exactMatch" styleClass="import-summary-label"/>
                 </VBox>
             </HBox>
             <Region styleClass="import-summary-divider"/>
@@ -81,7 +81,7 @@
                 <Label text="?" styleClass="summary-icon, text-warning"/>
                 <VBox spacing="2">
                     <Label fx:id="likelyCountLabel" text="0" styleClass="import-summary-count, text-warning"/>
-                    <Label text="Likely Match" styleClass="import-summary-label"/>
+                    <Label text="%importReview.summary.likelyMatch" styleClass="import-summary-label"/>
                 </VBox>
             </HBox>
             <Region styleClass="import-summary-divider"/>
@@ -89,7 +89,7 @@
                 <Label text="~" styleClass="summary-icon, text-info"/>
                 <VBox spacing="2">
                     <Label fx:id="similarCountLabel" text="0" styleClass="import-summary-count, text-info"/>
-                    <Label text="Similar" styleClass="import-summary-label"/>
+                    <Label text="%importReview.summary.similar" styleClass="import-summary-label"/>
                 </VBox>
             </HBox>
         </HBox>
@@ -97,16 +97,16 @@
         <!-- Bulk Actions Bar -->
         <HBox fx:id="bulkActionBar" styleClass="bulk-action-bar" alignment="CENTER_LEFT" spacing="12"
               minHeight="48" prefHeight="48">
-            <Button fx:id="importAllNewBtn" text="Import All New"
+            <Button fx:id="importAllNewBtn" text="%importReview.importAllNew"
                     styleClass="button-success-outline"
                     onAction="#handleImportAllNew"
                     minWidth="120" minHeight="36"
-                    accessibleText="Set all new transactions to import"/>
-            <Button fx:id="skipAllDuplicatesBtn" text="Skip All Duplicates"
+                    accessibleText="%importReview.importAllNew.a11y"/>
+            <Button fx:id="skipAllDuplicatesBtn" text="%importReview.skipAllDuplicates"
                     styleClass="button-secondary"
                     onAction="#handleSkipAllDuplicates"
                     minWidth="140" minHeight="36"
-                    accessibleText="Set all exact matches to skip"/>
+                    accessibleText="%importReview.skipAllDuplicates.a11y"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="selectionLabel" text="0 selected" styleClass="selection-label"/>
         </HBox>
@@ -114,17 +114,17 @@
         <!-- Review Table -->
         <TableView fx:id="reviewTable" styleClass="import-table, data-table" VBox.vgrow="ALWAYS"
                    minHeight="200" prefHeight="400"
-                   accessibleText="Import review table with transaction candidates">
+                   accessibleText="%importReview.table.a11y">
             <columns>
                 <TableColumn fx:id="selectColumn" prefWidth="40" sortable="false"/>
-                <TableColumn fx:id="dateColumn" text="Date" prefWidth="100"/>
-                <TableColumn fx:id="descriptionColumn" text="Description" minWidth="200"/>
-                <TableColumn fx:id="amountColumn" text="Amount" prefWidth="120"/>
-                <TableColumn fx:id="matchColumn" text="Match" prefWidth="120" minWidth="100"/>
-                <TableColumn fx:id="actionColumn" text="Action" prefWidth="140" sortable="false"/>
+                <TableColumn fx:id="dateColumn" text="%importReview.col.date" prefWidth="100"/>
+                <TableColumn fx:id="descriptionColumn" text="%importReview.col.description" minWidth="200"/>
+                <TableColumn fx:id="amountColumn" text="%importReview.col.amount" prefWidth="120"/>
+                <TableColumn fx:id="matchColumn" text="%importReview.col.match" prefWidth="120" minWidth="100"/>
+                <TableColumn fx:id="actionColumn" text="%importReview.col.action" prefWidth="140" sortable="false"/>
             </columns>
             <placeholder>
-                <Label text="No transactions to review" styleClass="empty-table-message"/>
+                <Label text="%importReview.table.empty" styleClass="empty-table-message"/>
             </placeholder>
         </TableView>
 
@@ -132,16 +132,16 @@
 
     <!-- Footer -->
     <HBox alignment="CENTER_RIGHT" spacing="12">
-        <Button fx:id="backBtn" text="Back to Mapping" styleClass="button-secondary"
+        <Button fx:id="backBtn" text="%importReview.back" styleClass="button-secondary"
                 onAction="#handleBack"/>
         <Region HBox.hgrow="ALWAYS"/>
         <HBox alignment="CENTER_RIGHT" spacing="8">
             <Label fx:id="importCountLabel" text="0 items will be imported"
                    styleClass="import-count-label"/>
-            <Button fx:id="importBtn" text="Import Selected" styleClass="button-primary"
+            <Button fx:id="importBtn" text="%importReview.import" styleClass="button-primary"
                     onAction="#handleImport"
                     disable="true"
-                    accessibleText="Import selected transactions"/>
+                    accessibleText="%importReview.import.a11y"/>
         </HBox>
     </HBox>
 

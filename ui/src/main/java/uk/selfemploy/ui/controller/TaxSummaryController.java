@@ -24,6 +24,7 @@ import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
 import java.io.File;
@@ -186,7 +187,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
      */
     private void initializeDisclaimers() {
         if (taxDisclaimerText != null) {
-            taxDisclaimerText.setText("Based on the information you've entered. Review before submitting to HMRC.");
+            taxDisclaimerText.setText(Messages.get("taxSummary.disclaimer"));
         }
     }
 

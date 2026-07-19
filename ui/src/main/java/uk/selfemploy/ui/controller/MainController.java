@@ -28,6 +28,7 @@ import uk.selfemploy.ui.service.SqliteReconciliationMatchRepository;
 import uk.selfemploy.ui.service.SubmittedPeriodIndex;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.io.IOException;
 import java.net.URL;
@@ -111,7 +112,7 @@ public class MainController implements Initializable {
      */
     private void setupNotificationPanel() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/notification-panel.fxml"));
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/notification-panel.fxml"));
             Node panel = loader.load();
             notificationPanelController = loader.getController();
             notificationPanelController.initializeWithService(notificationService);
@@ -221,7 +222,7 @@ public class MainController implements Initializable {
 
         if (viewNode == null) {
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource(view.getFxmlPath()));
+                FXMLLoader loader = Messages.loader(getClass().getResource(view.getFxmlPath()));
                 viewNode = loader.load();
 
                 // Get and cache controller

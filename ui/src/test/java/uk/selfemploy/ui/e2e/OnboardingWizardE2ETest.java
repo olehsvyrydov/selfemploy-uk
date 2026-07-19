@@ -15,6 +15,7 @@ import org.testfx.framework.junit5.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;
 import uk.selfemploy.ui.controller.OnboardingController;
 import uk.selfemploy.ui.viewmodel.OnboardingViewModel;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.util.concurrent.TimeoutException;
 
@@ -54,7 +55,7 @@ class OnboardingWizardE2ETest extends ApplicationTest {
     public void start(Stage stage) throws Exception {
         this.primaryStage = stage;
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/onboarding-wizard.fxml"));
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/onboarding-wizard.fxml"));
         Parent root = loader.load();
         controller = loader.getController();
 

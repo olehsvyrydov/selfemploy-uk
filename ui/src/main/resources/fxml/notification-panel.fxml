@@ -17,9 +17,9 @@
     <!-- Panel Header -->
     <HBox styleClass="notification-panel-header" alignment="CENTER_LEFT" spacing="12">
         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-        <Label text="Notifications" styleClass="panel-title"/>
+        <Label text="%notifications.title" styleClass="panel-title"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="markAllReadBtn" text="Mark all read" styleClass="button-link"
+        <Button fx:id="markAllReadBtn" text="%notifications.markAllRead" styleClass="button-link"
                 onAction="#handleMarkAllRead"/>
         <Button fx:id="settingsBtn" text="⚙" styleClass="settings-button"
                 onAction="#handleOpenSettings"/>
@@ -27,11 +27,11 @@
 
     <!-- Filter Tabs -->
     <HBox fx:id="filterTabs" styleClass="notification-filter-tabs" spacing="0">
-        <ToggleButton fx:id="allTab" text="All" styleClass="filter-tab" selected="true"
+        <ToggleButton fx:id="allTab" text="%notifications.filter.all" styleClass="filter-tab" selected="true"
                       onAction="#handleFilterAll"/>
-        <ToggleButton fx:id="unreadTab" text="Unread" styleClass="filter-tab"
+        <ToggleButton fx:id="unreadTab" text="%notifications.filter.unread" styleClass="filter-tab"
                       onAction="#handleFilterUnread"/>
-        <ToggleButton fx:id="deadlinesTab" text="Deadlines" styleClass="filter-tab"
+        <ToggleButton fx:id="deadlinesTab" text="%notifications.filter.deadlines" styleClass="filter-tab"
                       onAction="#handleFilterDeadlines"/>
     </HBox>
 
@@ -47,14 +47,14 @@
     <VBox fx:id="emptyState" styleClass="notification-empty" alignment="CENTER"
           spacing="12" managed="false" visible="false">
         <Label text="🔔" styleClass="empty-icon"/>
-        <Label text="No notifications" styleClass="empty-title"/>
-        <Label text="You're all caught up!" styleClass="empty-subtitle"/>
+        <Label text="%notifications.empty.title" styleClass="empty-title"/>
+        <Label text="%notifications.empty.subtitle" styleClass="empty-subtitle"/>
     </VBox>
 
     <!-- Panel Footer -->
     <HBox styleClass="notification-panel-footer" alignment="CENTER">
         <padding><Insets top="12" right="16" bottom="12" left="16"/></padding>
-        <Hyperlink text="View notification history" styleClass="link"
+        <Hyperlink text="%notifications.viewHistory" styleClass="link"
                    onAction="#handleViewHistory"/>
     </HBox>
 

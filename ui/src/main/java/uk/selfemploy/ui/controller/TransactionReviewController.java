@@ -30,6 +30,7 @@ import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.SqliteBankTransactionService;
 import uk.selfemploy.ui.viewmodel.TransactionReviewTableRow;
 import uk.selfemploy.ui.viewmodel.TransactionReviewViewModel;
+import uk.selfemploy.ui.i18n.Messages;
 
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
@@ -726,7 +727,7 @@ public class TransactionReviewController implements Initializable, MainControlle
     @FXML
     private void handleGoToImport(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
             Parent root = loader.load();
             BankImportWizardController wizard = loader.getController();
 

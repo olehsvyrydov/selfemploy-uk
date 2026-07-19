@@ -21,28 +21,28 @@
                 <StackPane styleClass="step-circle">
                     <Label text="1" styleClass="step-number"/>
                 </StackPane>
-                <Label text="Welcome" styleClass="step-label"/>
+                <Label text="%onboarding.stepWelcome" styleClass="step-label"/>
             </VBox>
             <HBox styleClass="step-connector"/>
             <VBox fx:id="step2Circle" styleClass="progress-step" alignment="CENTER" spacing="4">
                 <StackPane styleClass="step-circle">
                     <Label text="2" styleClass="step-number"/>
                 </StackPane>
-                <Label text="Details" styleClass="step-label"/>
+                <Label text="%onboarding.stepDetails" styleClass="step-label"/>
             </VBox>
             <HBox styleClass="step-connector"/>
             <VBox fx:id="step3Circle" styleClass="progress-step" alignment="CENTER" spacing="4">
                 <StackPane styleClass="step-circle">
                     <Label text="3" styleClass="step-number"/>
                 </StackPane>
-                <Label text="Tax Year" styleClass="step-label"/>
+                <Label text="%onboarding.stepTaxYear" styleClass="step-label"/>
             </VBox>
             <HBox styleClass="step-connector"/>
             <VBox fx:id="step4Circle" styleClass="progress-step" alignment="CENTER" spacing="4">
                 <StackPane styleClass="step-circle">
                     <Label text="4" styleClass="step-number"/>
                 </StackPane>
-                <Label text="Business" styleClass="step-label"/>
+                <Label text="%onboarding.stepBusiness" styleClass="step-label"/>
             </VBox>
         </HBox>
 
@@ -58,8 +58,8 @@
 
                 <!-- Welcome Title -->
                 <VBox alignment="CENTER" spacing="8">
-                    <Label text="Welcome to UK Self-Employment Manager" styleClass="onboarding-title"/>
-                    <Label text="Your free, open-source accounting companion for UK self-employed individuals."
+                    <Label text="%onboarding.welcomeTitle" styleClass="onboarding-title"/>
+                    <Label text="%onboarding.welcomeSubtitle"
                            styleClass="onboarding-subtitle" wrapText="true" textAlignment="CENTER"/>
                 </VBox>
 
@@ -67,14 +67,14 @@
                 <VBox styleClass="privacy-assurance-box" spacing="8" maxWidth="500">
                     <HBox alignment="CENTER_LEFT" spacing="12">
                         <Label text="LOCK" styleClass="privacy-icon"/>
-                        <Label text="Your Data Stays Local" styleClass="privacy-assurance-title"/>
+                        <Label text="%onboarding.privacyTitle" styleClass="privacy-assurance-title"/>
                     </HBox>
                     <Label styleClass="privacy-assurance-text" wrapText="true"
-                           text="All your financial data is stored locally on YOUR device. Your HMRC credentials and National Insurance number are encrypted (AES-256-GCM). We never see or store your information."/>
+                           text="%onboarding.privacyText"/>
                 </VBox>
 
                 <!-- Get Started Button -->
-                <Button fx:id="getStartedBtn" text="Get Started" styleClass="button-primary, button-large"
+                <Button fx:id="getStartedBtn" text="%onboarding.getStartedButton" styleClass="button-primary, button-large"
                         onAction="#handleGetStarted"/>
             </VBox>
 
@@ -83,24 +83,24 @@
                 <padding><Insets top="32" right="48" bottom="32" left="48"/></padding>
 
                 <VBox spacing="4">
-                    <Label text="Step 2 of 4: Your Details" styleClass="step-title"/>
-                    <Label text="Tell us a bit about yourself" styleClass="step-subtitle"/>
+                    <Label text="%onboarding.step2Title" styleClass="step-title"/>
+                    <Label text="%onboarding.step2Subtitle" styleClass="step-subtitle"/>
                 </VBox>
 
                 <!-- Name Field -->
                 <VBox styleClass="form-field" spacing="8">
                     <HBox alignment="CENTER_LEFT" spacing="4">
-                        <Label text="Name" styleClass="field-label"/>
+                        <Label text="%onboarding.nameLabel" styleClass="field-label"/>
                         <Label text="*" styleClass="required-indicator"/>
                     </HBox>
-                    <TextField fx:id="nameField" styleClass="form-input" promptText="Enter your name"/>
-                    <Label text="This is how we'll address you in the app" styleClass="field-hint"/>
+                    <TextField fx:id="nameField" styleClass="form-input" promptText="%onboarding.namePrompt"/>
+                    <Label text="%onboarding.nameHint" styleClass="field-hint"/>
                 </VBox>
 
                 <!-- UTR Field (Segmented) -->
                 <VBox styleClass="form-field" spacing="8">
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label text="Unique Taxpayer Reference (UTR)" styleClass="field-label"/>
+                        <Label text="%onboarding.utrLabel" styleClass="field-label"/>
                         <Label text="[?]" styleClass="help-icon"/>
                     </HBox>
                     <HBox styleClass="segmented-input" spacing="8" alignment="CENTER_LEFT">
@@ -111,8 +111,8 @@
                         <TextField fx:id="utrSegment3" styleClass="segment-field" prefColumnCount="3"/>
                     </HBox>
                     <HBox spacing="8">
-                        <Label text="Your 10-digit UTR from HMRC" styleClass="field-hint"/>
-                        <Hyperlink fx:id="skipUtrLink" text="Don't have one yet? Skip for now"
+                        <Label text="%onboarding.utrHint" styleClass="field-hint"/>
+                        <Hyperlink fx:id="skipUtrLink" text="%onboarding.utrSkipLink"
                                    styleClass="skip-link"/>
                     </HBox>
                 </VBox>
@@ -120,12 +120,12 @@
                 <!-- NI Number Field -->
                 <VBox styleClass="form-field" spacing="8">
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label text="National Insurance Number" styleClass="field-label"/>
-                        <Label text="(Optional)" styleClass="optional-indicator"/>
+                        <Label text="%onboarding.niLabel" styleClass="field-label"/>
+                        <Label text="%onboarding.niOptional" styleClass="optional-indicator"/>
                         <Label text="[?]" styleClass="help-icon"/>
                     </HBox>
-                    <TextField fx:id="niNumberField" styleClass="form-input" promptText="e.g., AB 12 34 56 C"/>
-                    <Label text="Needed for HMRC submission" styleClass="field-hint"/>
+                    <TextField fx:id="niNumberField" styleClass="form-input" promptText="%onboarding.niPrompt"/>
+                    <Label text="%onboarding.niHint" styleClass="field-hint"/>
                 </VBox>
             </VBox>
 
@@ -134,8 +134,8 @@
                 <padding><Insets top="32" right="48" bottom="32" left="48"/></padding>
 
                 <VBox spacing="4">
-                    <Label text="Step 3 of 4: Tax Year" styleClass="step-title"/>
-                    <Label text="Which tax year are you setting up?" styleClass="step-subtitle"/>
+                    <Label text="%onboarding.step3Title" styleClass="step-title"/>
+                    <Label text="%onboarding.step3Subtitle" styleClass="step-subtitle"/>
                 </VBox>
 
                 <!-- Tax Year Cards -->
@@ -146,7 +146,7 @@
                 <!-- Info Box -->
                 <HBox styleClass="info-box" alignment="CENTER_LEFT" spacing="12">
                     <Label text="[i]" styleClass="info-icon"/>
-                    <Label text="You can add more tax years later from Settings" styleClass="info-text"/>
+                    <Label text="%onboarding.taxYearInfo" styleClass="info-text"/>
                 </HBox>
             </VBox>
 
@@ -155,8 +155,8 @@
                 <padding><Insets top="32" right="48" bottom="32" left="48"/></padding>
 
                 <VBox spacing="4">
-                    <Label text="Step 4 of 4: Business Type" styleClass="step-title"/>
-                    <Label text="How would you describe your self-employment?" styleClass="step-subtitle"/>
+                    <Label text="%onboarding.step4Title" styleClass="step-title"/>
+                    <Label text="%onboarding.step4Subtitle" styleClass="step-subtitle"/>
                 </VBox>
 
                 <!-- Business Type Cards -->
@@ -176,24 +176,24 @@
                 <!-- Personalized Welcome -->
                 <VBox alignment="CENTER" spacing="8">
                     <Label fx:id="completionTitle" text="You're all set!" styleClass="completion-title"/>
-                    <Label text="Your UK Self-Employment Manager is ready." styleClass="completion-subtitle"/>
+                    <Label text="%onboarding.completionSubtitle" styleClass="completion-subtitle"/>
                 </VBox>
 
                 <!-- What's Next Box -->
                 <VBox styleClass="whats-next-box" spacing="12" maxWidth="400">
-                    <Label text="What's Next?" styleClass="whats-next-title"/>
+                    <Label text="%onboarding.whatsNextTitle" styleClass="whats-next-title"/>
                     <VBox spacing="8">
-                        <Hyperlink fx:id="addIncomeLink" text="Add your first income entry"
+                        <Hyperlink fx:id="addIncomeLink" text="%onboarding.addIncomeLink"
                                    styleClass="next-step-link" onAction="#handleAddIncome"/>
-                        <Hyperlink fx:id="addExpenseLink" text="Record a business expense"
+                        <Hyperlink fx:id="addExpenseLink" text="%onboarding.addExpenseLink"
                                    styleClass="next-step-link" onAction="#handleAddExpense"/>
-                        <Hyperlink fx:id="importCsvLink" text="Import bank statement"
+                        <Hyperlink fx:id="importCsvLink" text="%onboarding.importCsvLink"
                                    styleClass="next-step-link" onAction="#handleImportCsv"/>
                     </VBox>
                 </VBox>
 
                 <!-- Go to Dashboard Button -->
-                <Button fx:id="goToDashboardBtn" text="Go to Dashboard" styleClass="button-primary, button-large"
+                <Button fx:id="goToDashboardBtn" text="%onboarding.goToDashboardButton" styleClass="button-primary, button-large"
                         onAction="#handleGoToDashboard"/>
             </VBox>
 
@@ -202,12 +202,12 @@
         <!-- Footer (navigation buttons) -->
         <HBox fx:id="footerContainer" styleClass="onboarding-footer" alignment="CENTER_RIGHT" spacing="12"
               managed="false" visible="false">
-            <Hyperlink fx:id="skipSetupLink" text="Skip Setup" styleClass="skip-link"
+            <Hyperlink fx:id="skipSetupLink" text="%onboarding.skipSetupLink" styleClass="skip-link"
                        onAction="#handleSkipSetup"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="backBtn" text="Back" styleClass="button-secondary"
+            <Button fx:id="backBtn" text="%onboarding.backButton" styleClass="button-secondary"
                     onAction="#handleBack"/>
-            <Button fx:id="continueBtn" text="Continue" styleClass="button-primary"
+            <Button fx:id="continueBtn" text="%onboarding.continueButton" styleClass="button-primary"
                     onAction="#handleContinue"/>
         </HBox>
 

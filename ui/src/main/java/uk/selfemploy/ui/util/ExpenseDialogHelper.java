@@ -15,6 +15,7 @@ import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.ReceiptStorageService;
 import uk.selfemploy.ui.controller.ExpenseDialogController;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -113,8 +114,7 @@ public final class ExpenseDialogHelper {
 
         try {
             // Load FXML
-            FXMLLoader loader = new FXMLLoader(
-                    ExpenseDialogHelper.class.getResource("/fxml/expense-dialog.fxml"));
+            FXMLLoader loader = Messages.loader(ExpenseDialogHelper.class.getResource("/fxml/expense-dialog.fxml"));
             VBox dialogContent = loader.load();
 
             // Configure controller

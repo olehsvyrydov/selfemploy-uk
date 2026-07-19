@@ -15,11 +15,11 @@
 
         <!-- Page Header -->
         <HBox alignment="CENTER_LEFT" spacing="15">
-            <Label text="Income" styleClass="page-title"/>
+            <Label text="%income.title" styleClass="page-title"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Import CSV" styleClass="button-secondary"
+            <Button text="%income.importButton" styleClass="button-secondary"
                     onAction="#handleImportBankStatement"/>
-            <Button fx:id="addIncomeBtn" text="+ Add Income"
+            <Button fx:id="addIncomeBtn" text="%income.addButton"
                     styleClass="button-success" onAction="#handleAddIncome"/>
         </HBox>
 
@@ -28,7 +28,7 @@
             <!-- Total Income Card - SE-810: Focusable for screen readers -->
             <VBox styleClass="summary-card, summary-card-income-total" HBox.hgrow="ALWAYS" spacing="8"
                   focusTraversable="true">
-                <Label text="TOTAL INCOME" styleClass="metric-label"/>
+                <Label text="%income.totalIncomeLabel" styleClass="metric-label"/>
                 <Label fx:id="totalValue" text="£0.00" styleClass="summary-card-value, summary-card-value-income"/>
                 <Label fx:id="totalCount" text="0 entries" styleClass="label-secondary"/>
             </VBox>
@@ -37,12 +37,12 @@
             <VBox styleClass="summary-card, summary-card-income-paid" HBox.hgrow="ALWAYS" spacing="8"
                   focusTraversable="true">
                 <HBox alignment="CENTER_LEFT" spacing="6">
-                    <Label text="PAID" styleClass="metric-label"/>
+                    <Label text="%income.paidLabel" styleClass="metric-label"/>
                     <Label fx:id="paidHelpIcon" text="i" styleClass="info-icon-circle"
                            onMouseClicked="#handlePaidHelp" focusTraversable="true"
                            onKeyPressed="#handlePaidHelpKeyPress">
                         <cursor><Cursor fx:constant="HAND"/></cursor>
-                        <tooltip><Tooltip text="Click to learn more about paid income"/></tooltip>
+                        <tooltip><Tooltip text="%income.paidTooltip"/></tooltip>
                     </Label>
                 </HBox>
                 <Label fx:id="paidValue" text="£0.00" styleClass="summary-card-value, summary-card-value-paid"/>
@@ -53,12 +53,12 @@
             <VBox styleClass="summary-card, summary-card-income-unpaid" HBox.hgrow="ALWAYS" spacing="8"
                   focusTraversable="true">
                 <HBox alignment="CENTER_LEFT" spacing="6">
-                    <Label text="UNPAID" styleClass="metric-label"/>
+                    <Label text="%income.unpaidLabel" styleClass="metric-label"/>
                     <Label fx:id="unpaidHelpIcon" text="i" styleClass="info-icon-circle"
                            onMouseClicked="#handleUnpaidHelp" focusTraversable="true"
                            onKeyPressed="#handleUnpaidHelpKeyPress">
                         <cursor><Cursor fx:constant="HAND"/></cursor>
-                        <tooltip><Tooltip text="Click to learn more about unpaid income"/></tooltip>
+                        <tooltip><Tooltip text="%income.unpaidTooltip"/></tooltip>
                     </Label>
                 </HBox>
                 <Label fx:id="unpaidValue" text="£0.00" styleClass="summary-card-value, summary-card-value-unpaid"/>
@@ -68,9 +68,9 @@
 
         <!-- Filters Bar -->
         <HBox styleClass="filters-bar" alignment="CENTER_LEFT" spacing="16">
-            <ComboBox fx:id="statusFilter" promptText="All Status" prefWidth="140"/>
+            <ComboBox fx:id="statusFilter" promptText="%income.statusFilterPrompt" prefWidth="140"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <TextField fx:id="searchField" promptText="Search by client or description..."
+            <TextField fx:id="searchField" promptText="%income.searchPrompt"
                        prefWidth="280" styleClass="search-field"/>
         </HBox>
 
@@ -80,14 +80,14 @@
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
             </columnResizePolicy>
             <columns>
-                <TableColumn fx:id="dateColumn" text="DATE" prefWidth="100" minWidth="100"/>
-                <TableColumn fx:id="clientColumn" text="CLIENT NAME" prefWidth="180"/>
-                <TableColumn fx:id="descriptionColumn" text="DESCRIPTION" prefWidth="240"/>
-                <TableColumn fx:id="amountColumn" text="AMOUNT" prefWidth="120" minWidth="100"/>
-                <TableColumn fx:id="statusColumn" text="STATUS" prefWidth="90" minWidth="90"/>
+                <TableColumn fx:id="dateColumn" text="%income.columnDate" prefWidth="100" minWidth="100"/>
+                <TableColumn fx:id="clientColumn" text="%income.columnClient" prefWidth="180"/>
+                <TableColumn fx:id="descriptionColumn" text="%income.columnDescription" prefWidth="240"/>
+                <TableColumn fx:id="amountColumn" text="%income.columnAmount" prefWidth="120" minWidth="100"/>
+                <TableColumn fx:id="statusColumn" text="%income.columnStatus" prefWidth="90" minWidth="90"/>
             </columns>
             <placeholder>
-                <Label text="No income entries found" styleClass="empty-table-message"/>
+                <Label text="%income.tablePlaceholder" styleClass="empty-table-message"/>
             </placeholder>
         </TableView>
 
@@ -95,9 +95,9 @@
         <HBox fx:id="paginationBar" styleClass="pagination-bar" alignment="CENTER" spacing="20">
             <Label fx:id="resultCount" text="Showing 0 entries" styleClass="label-secondary"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="prevBtn" text="&lt; Previous" styleClass="button-secondary"
+            <Button fx:id="prevBtn" text="%income.prevButton" styleClass="button-secondary"
                     onAction="#handlePrevPage" disable="true"/>
-            <Button fx:id="nextBtn" text="Next &gt;" styleClass="button-secondary"
+            <Button fx:id="nextBtn" text="%income.nextButton" styleClass="button-secondary"
                     onAction="#handleNextPage" disable="true"/>
         </HBox>
 
@@ -105,12 +105,12 @@
         <VBox fx:id="emptyState" styleClass="empty-state-container"
               alignment="CENTER" spacing="16" managed="false" visible="false">
             <padding><Insets topRightBottomLeft="60"/></padding>
-            <Label text="No Income Recorded" styleClass="empty-state-title"/>
-            <Label text="Start tracking your earnings by adding your first income entry."
+            <Label text="%income.emptyStateTitle" styleClass="empty-state-title"/>
+            <Label text="%income.emptyStateMessage"
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
             <HBox alignment="CENTER" spacing="12">
-                <Button text="+ Add Income" styleClass="button-success" onAction="#handleAddIncome"/>
-                <Button text="Import CSV" styleClass="button-secondary" onAction="#handleImportBankStatement"/>
+                <Button text="%income.emptyAddButton" styleClass="button-success" onAction="#handleAddIncome"/>
+                <Button text="%income.emptyImportButton" styleClass="button-secondary" onAction="#handleImportBankStatement"/>
             </HBox>
         </VBox>
 

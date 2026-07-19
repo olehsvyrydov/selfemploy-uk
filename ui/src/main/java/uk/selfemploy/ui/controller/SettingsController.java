@@ -51,6 +51,7 @@ import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.UiDuplicateDetectionService;
 import uk.selfemploy.ui.viewmodel.ImportAction;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
+import uk.selfemploy.ui.i18n.Messages;
 import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
@@ -1476,7 +1477,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                                          UUID businessId,
                                          Path filePath) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/import-review.fxml"));
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/import-review.fxml"));
             Parent root = loader.load();
 
             Stage stage = new Stage();
@@ -1608,7 +1609,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showLegalDocument(String fxmlPath, String title, boolean settingsMode) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            FXMLLoader loader = Messages.loader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
 
             Stage stage = new Stage();

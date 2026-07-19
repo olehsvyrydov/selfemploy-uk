@@ -13,25 +13,25 @@
     <HBox styleClass="bank-header" alignment="CENTER_LEFT" spacing="12">
         <padding><Insets top="24" right="32" bottom="8" left="32"/></padding>
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Bank" styleClass="page-title"/>
-            <Label text="Import, review and reconcile your bank statements" styleClass="page-subtitle"/>
+            <Label text="%bank.title" styleClass="page-title"/>
+            <Label text="%bank.subtitle" styleClass="page-subtitle"/>
         </VBox>
-        <Button text="Import statement" styleClass="button-primary" onAction="#handleImportStatement"/>
+        <Button text="%bank.action.importStatement" styleClass="button-primary" onAction="#handleImportStatement"/>
     </HBox>
 
     <TabPane fx:id="bankTabs" VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE" styleClass="bank-tabs">
         <tabs>
-            <Tab text="Review Transactions">
+            <Tab text="%bank.tab.review">
                 <content>
                     <fx:include fx:id="review" source="transaction-review.fxml"/>
                 </content>
             </Tab>
-            <Tab text="Imports">
+            <Tab text="%bank.tab.imports">
                 <content>
                     <fx:include fx:id="imports" source="import-history.fxml"/>
                 </content>
             </Tab>
-            <Tab text="Records check">
+            <Tab text="%bank.tab.recordsCheck">
                 <content>
                     <fx:include fx:id="recordsCheck" source="reconciliation-dashboard.fxml"/>
                 </content>
