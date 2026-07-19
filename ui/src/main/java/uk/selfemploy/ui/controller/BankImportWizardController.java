@@ -9,6 +9,7 @@ import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.input.DragEvent;
@@ -18,12 +19,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.service.CoreServiceFactory;
+import uk.selfemploy.ui.util.PopupPlacement;
 import uk.selfemploy.ui.service.CsvTransactionParser;
 import uk.selfemploy.ui.service.ImportOrchestrationService;
 import uk.selfemploy.ui.viewmodel.*;
@@ -479,14 +483,23 @@ public class BankImportWizardController implements Initializable {
         if (categoryColumn != null) {
             categoryColumn.setCellFactory(col -> new TableCell<>() {
                 private final ComboBox<ExpenseCategory> combo = new ComboBox<>();
+                private final Button helpBtn = new Button("?");
+                private final HBox box = new HBox(4, combo, helpBtn);
 
                 {
                     combo.getItems().addAll(ExpenseCategory.values());
+                    combo.setMaxWidth(Double.MAX_VALUE);
+                    HBox.setHgrow(combo, javafx.scene.layout.Priority.ALWAYS);
                     combo.setOnAction(e -> {
                         ImportedTransactionRow row = getTableView().getItems().get(getIndex());
                         viewModel.updateTransactionCategory(row.id(), combo.getValue());
                         refreshSummaryStats();
                     });
+                    helpBtn.getStyleClass().add("category-help-btn");
+                    helpBtn.setFocusTraversable(false);
+                    helpBtn.setTooltip(new Tooltip(Messages.get("bankImport.categoryHelp.button")));
+                    helpBtn.setAccessibleText(Messages.get("bankImport.categoryHelp.accessible"));
+                    helpBtn.setOnAction(e -> showCategoryHelp(helpBtn, combo.getValue()));
                 }
 
                 @Override
@@ -496,7 +509,7 @@ public class BankImportWizardController implements Initializable {
                         setGraphic(null);
                     } else {
                         combo.setValue(item);
-                        setGraphic(combo);
+                        setGraphic(box);
                     }
                 }
             });
@@ -779,6 +792,51 @@ public class BankImportWizardController implements Initializable {
         if (filterCombo != null) {
             filterCombo.setValue(TransactionFilter.DUPLICATES);
         }
+    }
+
+    /**
+     * Shows a small guidance popover explaining how {@code category} maps to Self Assessment, anchored
+     * to {@code anchor}. The popover flips above the anchor when a bottom-of-table row leaves no room
+     * below, so it never renders off-screen.
+     *
+     * @param anchor   the node the popover points at (a category cell's help button)
+     * @param category the row's current category, or {@code null} if none is chosen yet
+     */
+    private void showCategoryHelp(Node anchor, ExpenseCategory category) {
+        VBox content = new VBox(4);
+        content.getStyleClass().add("category-help-popover");
+        content.setStyle(
+                "-fx-background-color: #1e293b;"
+                + "-fx-background-radius: 8;"
+                + "-fx-border-color: #475569;"
+                + "-fx-border-width: 1;"
+                + "-fx-border-radius: 8;"
+                + "-fx-padding: 12;"
+                + "-fx-max-width: 260;"
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 5);");
+
+        if (category == null) {
+            Label none = new Label(Messages.get("bankImport.categoryHelp.none"));
+            none.setWrapText(true);
+            none.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 12px;");
+            content.getChildren().add(none);
+        } else {
+            Label title = new Label(category.getShortDisplayName());
+            title.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 13px; -fx-font-weight: bold;");
+            Label sa103 = new Label(Messages.format("bankImport.categoryHelp.sa103", category.getSa103Box()));
+            sa103.setStyle("-fx-text-fill: #cbd5e1; -fx-font-size: 12px;");
+            Label allowable = new Label(Messages.get(category.isAllowable()
+                    ? "bankImport.categoryHelp.allowable"
+                    : "bankImport.categoryHelp.notAllowable"));
+            allowable.setWrapText(true);
+            allowable.setStyle("-fx-text-fill: #cbd5e1; -fx-font-size: 12px;");
+            content.getChildren().addAll(title, sa103, allowable);
+        }
+
+        Popup popup = new Popup();
+        popup.setAutoHide(true);
+        popup.getContent().add(content);
+        PopupPlacement.showBelowOrAbove(popup, anchor);
     }
 
     @FXML
