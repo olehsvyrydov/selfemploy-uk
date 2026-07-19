@@ -6,6 +6,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.stage.PopupWindow;
 import javafx.stage.Screen;
+import javafx.stage.Window;
 
 /**
  * Positions a transient popup below its anchor, flipping it above when there is not enough room near
@@ -34,22 +35,28 @@ public final class PopupPlacement {
 
     /**
      * The screen Y coordinate for the popup's top edge: directly below the anchor when it fits,
-     * otherwise flipped so the popup sits just above the anchor.
+     * otherwise flipped so the popup sits just above the anchor. The result is clamped to the usable
+     * screen area so a flipped popup taller than the space above the anchor never runs off the top
+     * edge (a popup taller than the whole screen is pinned to the top, its overflow clipped at the
+     * bottom rather than hidden above).
      *
      * @param anchorMinY   the anchor's top edge, in screen coordinates
      * @param anchorHeight the anchor's height
      * @param popupHeight  the popup's height
+     * @param screenMinY   the top edge of the usable screen area, in screen coordinates
      * @param screenMaxY   the bottom edge of the usable screen area, in screen coordinates
      * @return the Y coordinate at which to place the popup's top edge
      */
     public static double resolveTopY(double anchorMinY, double anchorHeight, double popupHeight,
-                                     double screenMaxY) {
+                                     double screenMinY, double screenMaxY) {
         double belowY = anchorMinY + anchorHeight;
         double spaceBelow = screenMaxY - belowY;
-        if (shouldFlipUp(spaceBelow, popupHeight)) {
-            return anchorMinY - popupHeight;
+        double y = shouldFlipUp(spaceBelow, popupHeight) ? anchorMinY - popupHeight : belowY;
+        double highestTop = screenMaxY - popupHeight; // top position that still keeps the bottom on-screen
+        if (highestTop < screenMinY) {
+            return screenMinY; // popup taller than the screen: pin its top to the top edge
         }
-        return belowY;
+        return Math.max(screenMinY, Math.min(y, highestTop));
     }
 
     /**
@@ -63,27 +70,30 @@ public final class PopupPlacement {
     public static void showBelowOrAbove(PopupWindow popup, Node anchor) {
         Bounds anchorBounds = anchor.localToScreen(anchor.getBoundsInLocal());
         if (anchorBounds == null) {
-            // Anchor is not on a shown scene; fall back to the platform's default placement.
-            popup.show(anchor.getScene() != null ? anchor.getScene().getWindow() : null);
+            // Anchor is not on a shown scene: without an owner window the popup can be neither placed
+            // nor safely shown, so skip it rather than call show(null) (which throws).
+            Window owner = anchor.getScene() != null ? anchor.getScene().getWindow() : null;
+            if (owner != null) {
+                popup.show(owner);
+            }
             return;
         }
-        double screenMaxY = screenMaxYFor(anchorBounds);
+        Rectangle2D visual = visualBoundsFor(anchorBounds);
         // Show below first so the popup lays out and reports a real height, then flip up if needed.
         popup.show(anchor, anchorBounds.getMinX(), anchorBounds.getMaxY());
         double y = resolveTopY(anchorBounds.getMinY(), anchorBounds.getHeight(), popup.getHeight(),
-                screenMaxY);
+                visual.getMinY(), visual.getMaxY());
         popup.setX(anchorBounds.getMinX());
         popup.setY(y);
     }
 
-    /** The bottom edge of the screen's visible area that hosts the given anchor bounds. */
-    private static double screenMaxYFor(Bounds anchorBounds) {
+    /** The visible bounds of the screen that hosts the given anchor bounds. */
+    private static Rectangle2D visualBoundsFor(Bounds anchorBounds) {
         List<Screen> screens = Screen.getScreensForRectangle(
                 anchorBounds.getMinX(), anchorBounds.getMinY(),
                 Math.max(1, anchorBounds.getWidth()), Math.max(1, anchorBounds.getHeight()));
-        Rectangle2D visual = screens.isEmpty()
+        return screens.isEmpty()
                 ? Screen.getPrimary().getVisualBounds()
                 : screens.get(0).getVisualBounds();
-        return visual.getMaxY();
     }
 }
