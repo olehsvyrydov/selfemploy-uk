@@ -47,7 +47,7 @@
         <HBox fx:id="taxDisclaimerBanner" alignment="CENTER_LEFT" spacing="8" managed="true" visible="true"
               style="-fx-padding: 8 16;">
             <Label fx:id="taxDisclaimerText"
-                   text="Based on the information you've entered. Review before submitting to HMRC."
+                   text="%taxSummary.disclaimer"
                    style="-fx-text-fill: #6b7280; -fx-font-size: 13px;" wrapText="true"/>
         </HBox>
 

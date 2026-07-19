@@ -71,15 +71,44 @@ class MessagesTest {
     @DisplayName("a pack applies even when the active locale carries a country variant")
     void languagePackAppliesToCountryVariant() {
         Locale uk = Locale.forLanguageTag("uk");
-        Messages.register(new LanguagePackSource(new LanguagePack() {
-            @Override public Locale locale() { return uk; }
-            @Override public String displayName() { return "Українська"; }
-            @Override public Map<String, String> translations() {
-                return Map.of("nav.dashboard", "Панель");
-            }
-        }));
+        Messages.register(pack(uk, "Українська", Map.of("nav.dashboard", "Панель")));
 
         Messages.setLocale(Locale.forLanguageTag("uk-UA"));
         assertThat(Messages.get("nav.dashboard")).isEqualTo("Панель");
+    }
+
+    @Test
+    @DisplayName("a pack cannot shadow the built-in English text")
+    void englishPackIsIgnored() {
+        Messages.register(pack(Locale.forLanguageTag("en-GB"), "English (GB)",
+                Map.of("nav.dashboard", "Dashboard (tampered)")));
+
+        Messages.setLocale(Locale.ENGLISH);
+        assertThat(Messages.get("nav.dashboard")).isEqualTo("Dashboard");
+        assertThat(Messages.availableLanguages()).containsOnlyKeys(Locale.ENGLISH);
+    }
+
+    @Test
+    @DisplayName("two regional packs for one language coexist rather than evicting each other")
+    void regionalPacksCoexist() {
+        Locale ptPt = Locale.forLanguageTag("pt-PT");
+        Locale ptBr = Locale.forLanguageTag("pt-BR");
+        Messages.register(pack(ptPt, "Português (PT)", Map.of("nav.dashboard", "Painel")));
+        Messages.register(pack(ptBr, "Português (BR)", Map.of("nav.dashboard", "Painel (BR)")));
+
+        assertThat(Messages.availableLanguages()).containsKeys(ptPt, ptBr);
+
+        Messages.setLocale(ptPt);
+        assertThat(Messages.get("nav.dashboard")).isEqualTo("Painel");
+        Messages.setLocale(ptBr);
+        assertThat(Messages.get("nav.dashboard")).isEqualTo("Painel (BR)");
+    }
+
+    private static LanguagePackSource pack(Locale locale, String name, Map<String, String> translations) {
+        return new LanguagePackSource(new LanguagePack() {
+            @Override public Locale locale() { return locale; }
+            @Override public String displayName() { return name; }
+            @Override public Map<String, String> translations() { return translations; }
+        });
     }
 }
