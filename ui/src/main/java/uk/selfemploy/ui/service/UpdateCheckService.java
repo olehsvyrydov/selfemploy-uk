@@ -99,9 +99,8 @@ public class UpdateCheckService {
      * @return a future of the result, empty when disabled or when no update information is available
      */
     public CompletableFuture<Optional<UpdateCheckResult>> checkForUpdateAsync() {
-        if (!enabledSupplier.getAsBoolean()) {
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
+        // The enabled check reads persisted settings (a blocking store read that can fail), so it runs
+        // on the executor with the rest of the work — never on the caller's (FX) thread.
         return CompletableFuture.supplyAsync(this::checkForUpdate, EXECUTOR);
     }
 
@@ -113,21 +112,28 @@ public class UpdateCheckService {
      * @return the result, or empty when no update information is available
      */
     Optional<UpdateCheckResult> checkForUpdate() {
-        if (!enabledSupplier.getAsBoolean()) {
+        try {
+            if (!enabledSupplier.getAsBoolean()) {
+                return Optional.empty();
+            }
+            Optional<String> body = fetcher.fetchLatestReleaseJson();
+            if (body.isEmpty()) {
+                return Optional.empty();
+            }
+            Optional<String> tag = parseTagName(body.get());
+            if (tag.isEmpty()) {
+                return Optional.empty();
+            }
+            String current = currentVersionSupplier.get();
+            String latest = tag.get();
+            boolean available = isUpdateAvailable(current, latest);
+            return Optional.of(new UpdateCheckResult(stripLeadingV(current), stripLeadingV(latest), available));
+        } catch (RuntimeException e) {
+            // Fail silent: a settings-store read failure, fetcher error, or parse issue must never
+            // surface to the UI — the check simply yields no information.
+            LOG.log(Level.FINE, "Update check failed", e);
             return Optional.empty();
         }
-        Optional<String> body = fetcher.fetchLatestReleaseJson();
-        if (body.isEmpty()) {
-            return Optional.empty();
-        }
-        Optional<String> tag = parseTagName(body.get());
-        if (tag.isEmpty()) {
-            return Optional.empty();
-        }
-        String current = currentVersionSupplier.get();
-        String latest = tag.get();
-        boolean available = isUpdateAvailable(current, latest);
-        return Optional.of(new UpdateCheckResult(stripLeadingV(current), stripLeadingV(latest), available));
     }
 
     /**

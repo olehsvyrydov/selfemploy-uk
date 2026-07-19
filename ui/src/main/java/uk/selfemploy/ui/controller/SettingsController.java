@@ -61,9 +61,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.javafx.FontIcon;
-
-import java.awt.Desktop;
-import java.net.URI;
+import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -1332,7 +1330,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         if (githubLabel != null) {
             String url = VersionInfo.getGitHubUrl();
             githubLabel.setText(url);
-            githubLabel.setOnMouseClicked(e -> openInBrowser(url));
+            githubLabel.setOnMouseClicked(e -> BrowserUtil.openUrl(url));
         }
         initUpdateCheck();
     }
@@ -1358,30 +1356,54 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     private void runUpdateCheck() {
+        // Skip (and clear any notice) when the user has opted out, without a settings-store read here.
+        if (updateCheckToggle != null && !updateCheckToggle.isSelected()) {
+            hideUpdateNotice();
+            return;
+        }
+        showUpdateStatus(Messages.get("settings.about.updateChecking"));
         new UpdateCheckService().checkForUpdateAsync()
                 .thenAccept(result -> Platform.runLater(() -> applyUpdateResult(result)))
                 .exceptionally(ex -> {
                     LOG.log(Level.FINE, "Update check failed", ex);
+                    Platform.runLater(this::hideUpdateNotice);
                     return null;
                 });
     }
 
     private void applyUpdateResult(java.util.Optional<UpdateCheckService.UpdateCheckResult> result) {
-        if (result.isEmpty() || !result.get().updateAvailable()) {
+        if (result.isEmpty()) {
+            // Could not determine (offline / failed): show nothing rather than a false "up to date".
             hideUpdateNotice();
             return;
         }
         UpdateCheckService.UpdateCheckResult update = result.get();
-        if (updateStatusLabel != null) {
-            updateStatusLabel.setText(Messages.format("settings.about.updateAvailable", update.latestVersion()));
-            updateStatusLabel.setVisible(true);
-            updateStatusLabel.setManaged(true);
+        if (!update.updateAvailable()) {
+            showUpdateStatus(Messages.get("settings.about.updateUpToDate"));
+            hideGuidance();
+            return;
         }
+        showUpdateStatus(Messages.format("settings.about.updateAvailable", update.latestVersion()));
         if (updateGuidanceLabel != null) {
             updateGuidanceLabel.setText(Messages.get(InstallType.detect().guidanceKey()));
             updateGuidanceLabel.setVisible(true);
             updateGuidanceLabel.setManaged(true);
-            updateGuidanceLabel.setOnMouseClicked(e -> openInBrowser(VersionInfo.getGitHubUrl() + "/releases"));
+            updateGuidanceLabel.setOnMouseClicked(e -> BrowserUtil.openUrl(VersionInfo.getGitHubUrl() + "/releases"));
+        }
+    }
+
+    private void showUpdateStatus(String text) {
+        if (updateStatusLabel != null) {
+            updateStatusLabel.setText(text);
+            updateStatusLabel.setVisible(true);
+            updateStatusLabel.setManaged(true);
+        }
+    }
+
+    private void hideGuidance() {
+        if (updateGuidanceLabel != null) {
+            updateGuidanceLabel.setVisible(false);
+            updateGuidanceLabel.setManaged(false);
         }
     }
 
@@ -1391,14 +1413,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 label.setVisible(false);
                 label.setManaged(false);
             }
-        }
-    }
-
-    private void openInBrowser(String url) {
-        try {
-            Desktop.getDesktop().browse(new URI(url));
-        } catch (Exception ex) {
-            LOG.log(Level.WARNING, "Failed to open URL: " + url, ex);
         }
     }
 
