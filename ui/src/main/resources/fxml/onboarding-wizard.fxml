@@ -55,7 +55,9 @@
                 <padding><Insets top="48" right="48" bottom="32" left="48"/></padding>
 
                 <!-- Shield Icon -->
-                <FontIcon iconLiteral="fas-shield-alt" iconSize="48" styleClass="onboarding-icon"/>
+                <StackPane styleClass="onboarding-icon">
+                    <FontIcon iconLiteral="fas-shield-alt" iconSize="48" styleClass="onboarding-glyph"/>
+                </StackPane>
 
                 <!-- Welcome Title -->
                 <VBox alignment="CENTER" spacing="8">
@@ -172,7 +174,9 @@
                 <padding><Insets top="48" right="48" bottom="32" left="48"/></padding>
 
                 <!-- Success Icon -->
-                <FontIcon iconLiteral="fas-check-circle" iconSize="48" styleClass="completion-icon"/>
+                <StackPane styleClass="completion-icon">
+                    <FontIcon iconLiteral="fas-check-circle" iconSize="48" styleClass="completion-glyph"/>
+                </StackPane>
 
                 <!-- Personalized Welcome -->
                 <VBox alignment="CENTER" spacing="8">

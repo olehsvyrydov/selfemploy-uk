@@ -67,7 +67,9 @@
         <VBox fx:id="dropZone" styleClass="drop-zone" alignment="CENTER" spacing="16"
               onDragOver="#handleDragOver" onDragDropped="#handleDragDropped"
               onDragExited="#handleDragExited">
-            <FontIcon iconLiteral="fas-file-csv" iconSize="48" styleClass="drop-zone-icon"/>
+            <StackPane styleClass="drop-zone-icon">
+                <FontIcon iconLiteral="fas-file-csv" iconSize="48" styleClass="drop-zone-glyph"/>
+            </StackPane>
             <VBox alignment="CENTER" spacing="8">
                 <Label text="%bankImport.dropZone.title" styleClass="drop-zone-title"/>
                 <Label text="%bankImport.dropZone.separator" styleClass="drop-zone-separator"/>
@@ -82,7 +84,9 @@
         <VBox fx:id="fileSelectedBox" styleClass="file-selected-box" spacing="12"
               managed="false" visible="false">
             <HBox alignment="CENTER_LEFT" spacing="12">
-                <FontIcon iconLiteral="fas-file-csv" iconSize="20" styleClass="file-icon"/>
+                <StackPane styleClass="file-icon">
+                    <FontIcon iconLiteral="fas-file-csv" iconSize="20" styleClass="file-glyph"/>
+                </StackPane>
                 <VBox spacing="2" HBox.hgrow="ALWAYS">
                     <Label fx:id="fileNameLabel" text="bank-statement.csv"
                            styleClass="file-name"/>
@@ -138,7 +142,9 @@
 
         <!-- Instructions -->
         <HBox styleClass="info-banner" alignment="CENTER_LEFT" spacing="12">
-            <FontIcon iconLiteral="fas-info-circle" iconSize="16" styleClass="info-banner-icon"/>
+            <StackPane styleClass="info-banner-icon">
+                <FontIcon iconLiteral="fas-info-circle" iconSize="16" styleClass="info-banner-glyph"/>
+            </StackPane>
             <VBox spacing="2">
                 <Label text="%bankImport.step2.instruction.title"
                        styleClass="info-banner-title"/>
@@ -343,7 +349,9 @@
 
         <!-- Success Pre-check -->
         <VBox styleClass="confirm-header" alignment="CENTER" spacing="16">
-            <FontIcon iconLiteral="fas-check-circle" iconSize="48" styleClass="confirm-icon"/>
+            <StackPane styleClass="confirm-icon">
+                <FontIcon iconLiteral="fas-check-circle" iconSize="48" styleClass="confirm-glyph"/>
+            </StackPane>
             <Label text="%bankImport.confirm.title" styleClass="confirm-title"/>
             <Label text="%bankImport.confirm.subtitle"
                    styleClass="confirm-subtitle"/>

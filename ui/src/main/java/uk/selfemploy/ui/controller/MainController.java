@@ -365,6 +365,12 @@ public class MainController implements Initializable {
         if (node instanceof ScrollPane scrollPane) {
             out.add(scrollPane);
             collectScrollPanes(scrollPane.getContent(), out);
+        } else if (node instanceof TabPane tabPane) {
+            // Tab content is not reachable through getChildrenUnmodifiable() before the skin builds,
+            // so descend into each tab's content directly (the Bank view embeds scroll panes in tabs).
+            for (Tab tab : tabPane.getTabs()) {
+                collectScrollPanes(tab.getContent(), out);
+            }
         } else if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 collectScrollPanes(child, out);
