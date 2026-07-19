@@ -457,6 +457,22 @@ public final class SqliteDataStore {
         return "true".equals(loadSetting("onboarding_completed"));
     }
 
+    // === Update Check Operations ===
+
+    /**
+     * Records whether the app may check GitHub for newer releases (the update-check opt-out).
+     */
+    public synchronized void saveUpdateCheckEnabled(boolean enabled) {
+        saveSetting("update_check_enabled", enabled ? "true" : "false");
+    }
+
+    /**
+     * Returns whether automatic update checks are enabled. Enabled by default until the user opts out.
+     */
+    public synchronized boolean isUpdateCheckEnabled() {
+        return !"false".equals(loadSetting("update_check_enabled"));
+    }
+
     /**
      * Saves the tax year chosen during onboarding (e.g. "2025/26"), or null to clear.
      */

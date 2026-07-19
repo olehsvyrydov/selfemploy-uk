@@ -7,6 +7,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.geometry.Rectangle2D;
@@ -47,8 +48,10 @@ import uk.selfemploy.ui.service.HmrcRegistrationGuide;
 import uk.selfemploy.ui.service.HmrcCredentialValidator;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
+import uk.selfemploy.ui.service.InstallType;
 import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.UiDuplicateDetectionService;
+import uk.selfemploy.ui.service.UpdateCheckService;
 import uk.selfemploy.ui.viewmodel.ImportAction;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import uk.selfemploy.ui.i18n.Messages;
@@ -151,6 +154,9 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private Label buildDateLabel;
     @FXML private Label licenseLabel;
     @FXML private Label githubLabel;
+    @FXML private CheckBox updateCheckToggle;
+    @FXML private Label updateStatusLabel;
+    @FXML private Label updateGuidanceLabel;
 
     // HMRC API Credentials FXML fields
     @FXML private Label hmrcCredentialsStatusLabel;
@@ -1326,13 +1332,73 @@ public class SettingsController implements Initializable, MainController.TaxYear
         if (githubLabel != null) {
             String url = VersionInfo.getGitHubUrl();
             githubLabel.setText(url);
-            githubLabel.setOnMouseClicked(e -> {
-                try {
-                    Desktop.getDesktop().browse(new URI(url));
-                } catch (Exception ex) {
-                    LOG.log(Level.WARNING, "Failed to open GitHub URL", ex);
+            githubLabel.setOnMouseClicked(e -> openInBrowser(url));
+        }
+        initUpdateCheck();
+    }
+
+    /**
+     * Wires the update-check opt-out toggle and, when enabled, kicks off a background check whose
+     * result is rendered in the About section. The check is non-blocking and fails silently, so an
+     * offline user simply sees no update notice.
+     */
+    private void initUpdateCheck() {
+        if (updateCheckToggle != null) {
+            updateCheckToggle.setSelected(SqliteDataStore.getInstance().isUpdateCheckEnabled());
+            updateCheckToggle.selectedProperty().addListener((obs, oldValue, enabled) -> {
+                SqliteDataStore.getInstance().saveUpdateCheckEnabled(enabled);
+                if (enabled) {
+                    runUpdateCheck();
+                } else {
+                    hideUpdateNotice();
                 }
             });
+        }
+        runUpdateCheck();
+    }
+
+    private void runUpdateCheck() {
+        new UpdateCheckService().checkForUpdateAsync()
+                .thenAccept(result -> Platform.runLater(() -> applyUpdateResult(result)))
+                .exceptionally(ex -> {
+                    LOG.log(Level.FINE, "Update check failed", ex);
+                    return null;
+                });
+    }
+
+    private void applyUpdateResult(java.util.Optional<UpdateCheckService.UpdateCheckResult> result) {
+        if (result.isEmpty() || !result.get().updateAvailable()) {
+            hideUpdateNotice();
+            return;
+        }
+        UpdateCheckService.UpdateCheckResult update = result.get();
+        if (updateStatusLabel != null) {
+            updateStatusLabel.setText(Messages.format("settings.about.updateAvailable", update.latestVersion()));
+            updateStatusLabel.setVisible(true);
+            updateStatusLabel.setManaged(true);
+        }
+        if (updateGuidanceLabel != null) {
+            updateGuidanceLabel.setText(Messages.get(InstallType.detect().guidanceKey()));
+            updateGuidanceLabel.setVisible(true);
+            updateGuidanceLabel.setManaged(true);
+            updateGuidanceLabel.setOnMouseClicked(e -> openInBrowser(VersionInfo.getGitHubUrl() + "/releases"));
+        }
+    }
+
+    private void hideUpdateNotice() {
+        for (Label label : new Label[]{updateStatusLabel, updateGuidanceLabel}) {
+            if (label != null) {
+                label.setVisible(false);
+                label.setManaged(false);
+            }
+        }
+    }
+
+    private void openInBrowser(String url) {
+        try {
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception ex) {
+            LOG.log(Level.WARNING, "Failed to open URL: " + url, ex);
         }
     }
 
