@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.awt.Desktop;
 import uk.selfemploy.core.service.ReceiptMetadata;
 import uk.selfemploy.ui.util.ExpenseDialogHelper;
+import uk.selfemploy.ui.i18n.Messages;
 
 /**
  * Controller for the Expense List view.
@@ -491,7 +492,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     @FXML
     void handleImportBankStatement(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
             Parent root = loader.load();
 
             BankImportWizardController controller = loader.getController();

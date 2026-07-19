@@ -25,6 +25,7 @@ import org.testfx.framework.junit5.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.controller.AnnualSubmissionController;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -82,7 +83,7 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
     public void start(Stage stage) throws Exception {
         this.dialogStage = stage;
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/annual-submission.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/annual-submission.fxml"));
         Parent root = loader.load();
         controller = loader.getController();
 

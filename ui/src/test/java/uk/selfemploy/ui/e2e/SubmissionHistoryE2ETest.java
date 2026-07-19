@@ -34,6 +34,7 @@ import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.util.HmrcErrorGuidance;
 import uk.selfemploy.ui.viewmodel.SubmissionHistoryViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionTableRow;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -84,8 +85,7 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
             System.setProperty("monocle.platform", "Headless");
         }
 
-        FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/fxml/submission-history.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/submission-history.fxml"));
         Parent root = loader.load();
         controller = loader.getController();
 

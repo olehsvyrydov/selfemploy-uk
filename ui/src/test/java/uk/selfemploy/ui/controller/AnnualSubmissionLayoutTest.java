@@ -4,6 +4,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -16,6 +17,7 @@ import org.testfx.framework.junit5.ApplicationExtension;
 import org.testfx.framework.junit5.Start;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import uk.selfemploy.ui.i18n.Messages;
 
 /**
  * Layout tests for the annual submission wizard (T1.8): the content must not
@@ -36,7 +38,7 @@ class AnnualSubmissionLayoutTest {
 
     @Start
     void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/annual-submission.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/annual-submission.fxml"));
         root = loader.load();
         scroll = (ScrollPane) root.lookup("#rootScroll");
         Scene scene = new Scene(root, DESIGN_WIDTH, 950);
@@ -75,6 +77,20 @@ class AnnualSubmissionLayoutTest {
         Node done = root.lookup("#doneButton");
         assertThat(done).isInstanceOf(Button.class);
         assertThat(((Button) done).getText()).isEqualTo("Done");
+    }
+
+    @Test
+    @DisplayName("resolves the legal declaration labels from the message bundle, not raw keys")
+    void resolvesDeclarationText() {
+        for (int row = 1; row <= 6; row++) {
+            Node node = root.lookup("#decl" + row + "Text");
+            assertThat(node).as("declaration row %d label", row).isInstanceOf(Label.class);
+            String text = ((Label) node).getText();
+            assertThat(text)
+                .as("declaration row %d must show real wording, not the %%key", row)
+                .doesNotStartWith("%")
+                .isEqualTo(Messages.get("annual.declaration.row" + row));
+        }
     }
 
     private static boolean isDescendantOf(Node node, Node ancestor) {

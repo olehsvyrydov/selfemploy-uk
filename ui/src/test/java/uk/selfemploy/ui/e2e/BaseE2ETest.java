@@ -14,6 +14,7 @@ import org.testfx.framework.junit5.ApplicationTest;
 import org.testfx.util.WaitForAsyncUtils;
 
 import java.util.concurrent.TimeoutException;
+import uk.selfemploy.ui.i18n.Messages;
 
 /**
  * Base class for E2E tests using TestFX.
@@ -45,7 +46,7 @@ public abstract class BaseE2ETest extends ApplicationTest {
     public void start(Stage stage) throws Exception {
         this.primaryStage = stage;
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/main.fxml"));
         Parent root = loader.load();
 
         Scene scene = new Scene(root, 1200, 800);

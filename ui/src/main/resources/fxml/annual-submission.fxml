@@ -233,54 +233,42 @@
                         <HBox fx:id="decl1Row" styleClass="declaration-row, hmrc-official" alignment="TOP_LEFT" spacing="16">
                             <CheckBox fx:id="decl1Checkbox" styleClass="declaration-checkbox"
                                       onAction="#handleDeclarationChange"/>
-                            <Label fx:id="decl1Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
-                                <text>%annual.declaration.row1</text>
-                            </Label>
+                            <Label fx:id="decl1Text" text="%annual.declaration.row1" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS"/>
                         </HBox>
 
                         <!-- Row 2: Penalties Warning (HMRC Official) -->
                         <HBox fx:id="decl2Row" styleClass="declaration-row, hmrc-official" alignment="TOP_LEFT" spacing="16">
                             <CheckBox fx:id="decl2Checkbox" styleClass="declaration-checkbox"
                                       onAction="#handleDeclarationChange"/>
-                            <Label fx:id="decl2Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
-                                <text>%annual.declaration.row2</text>
-                            </Label>
+                            <Label fx:id="decl2Text" text="%annual.declaration.row2" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS"/>
                         </HBox>
 
                         <!-- Row 3: Record Keeping -->
                         <HBox fx:id="decl3Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
                             <CheckBox fx:id="decl3Checkbox" styleClass="declaration-checkbox"
                                       onAction="#handleDeclarationChange"/>
-                            <Label fx:id="decl3Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
-                                <text>%annual.declaration.row3</text>
-                            </Label>
+                            <Label fx:id="decl3Text" text="%annual.declaration.row3" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS"/>
                         </HBox>
 
                         <!-- Row 4: Calculation Verification -->
                         <HBox fx:id="decl4Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
                             <CheckBox fx:id="decl4Checkbox" styleClass="declaration-checkbox"
                                       onAction="#handleDeclarationChange"/>
-                            <Label fx:id="decl4Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
-                                <text>%annual.declaration.row4</text>
-                            </Label>
+                            <Label fx:id="decl4Text" text="%annual.declaration.row4" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS"/>
                         </HBox>
 
                         <!-- Row 5: Legal Effect -->
                         <HBox fx:id="decl5Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
                             <CheckBox fx:id="decl5Checkbox" styleClass="declaration-checkbox"
                                       onAction="#handleDeclarationChange"/>
-                            <Label fx:id="decl5Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
-                                <text>%annual.declaration.row5</text>
-                            </Label>
+                            <Label fx:id="decl5Text" text="%annual.declaration.row5" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS"/>
                         </HBox>
 
                         <!-- Row 6: Identity Confirmation -->
                         <HBox fx:id="decl6Row" styleClass="declaration-row" alignment="TOP_LEFT" spacing="16">
                             <CheckBox fx:id="decl6Checkbox" styleClass="declaration-checkbox"
                                       onAction="#handleDeclarationChange"/>
-                            <Label fx:id="decl6Text" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS">
-                                <text>%annual.declaration.row6</text>
-                            </Label>
+                            <Label fx:id="decl6Text" text="%annual.declaration.row6" styleClass="declaration-text" wrapText="true" HBox.hgrow="ALWAYS"/>
                         </HBox>
 
                     </VBox>

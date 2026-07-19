@@ -43,7 +43,7 @@ public class Launcher extends Application {
         SettingsController.loadAndApplyStoredCredentials();
 
         // Load the main FXML layout (with the message bundle so FXML can use %key text).
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"), Messages.bundle());
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/main.fxml"));
         Parent root = loader.load();
         MainController mainController = loader.getController();
 
@@ -96,7 +96,7 @@ public class Launcher extends Application {
      */
     private boolean requireTermsAcceptance(Stage owner, List<String> stylesheets) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/terms-of-service.fxml"), Messages.bundle());
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/terms-of-service.fxml"));
             Parent root = loader.load();
             TermsOfServiceController controller = loader.getController();
             // The controller builds its view model only when given the acceptance service; without
@@ -141,7 +141,7 @@ public class Launcher extends Application {
             return false;
         }
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/onboarding-wizard.fxml"), Messages.bundle());
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/onboarding-wizard.fxml"));
             Parent root = loader.load();
             OnboardingController controller = loader.getController();
 

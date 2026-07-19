@@ -48,6 +48,7 @@ import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import uk.selfemploy.ui.util.IncomeDialogHelper;
+import uk.selfemploy.ui.i18n.Messages;
 
 /**
  * Controller for the Income List View.
@@ -396,7 +397,7 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     @FXML
     void handleImportBankStatement(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
             Parent root = loader.load();
 
             BankImportWizardController controller = loader.getController();

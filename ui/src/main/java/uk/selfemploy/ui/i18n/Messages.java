@@ -1,16 +1,18 @@
 package uk.selfemploy.ui.i18n;
 
+import javafx.fxml.FXMLLoader;
+
+import java.net.URL;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -19,7 +21,7 @@ import java.util.logging.Logger;
  *
  * <p>Resolution order for a key, in the active {@link #locale()}:</p>
  * <ol>
- *   <li>any registered {@link TranslationSource} for that locale (e.g. a language-pack plugin);</li>
+ *   <li>a registered {@link TranslationSource} whose language matches (e.g. a language-pack plugin);</li>
  *   <li>the built-in {@code /i18n/messages*.properties} bundle for that locale;</li>
  *   <li>the base English bundle;</li>
  *   <li>otherwise the key itself, bracketed, so a gap is visible rather than fatal.</li>
@@ -29,8 +31,9 @@ import java.util.logging.Logger;
  * {@code messages_<lang>.properties} dropped on the classpath, or a plugin that registers a
  * {@link TranslationSource} at runtime (see the {@code LanguagePack} plugin extension).</p>
  *
- * <p>Pass {@link #bundle()} to an {@link javafx.fxml.FXMLLoader} so FXML can reference keys with the
- * {@code %key} syntax; use {@link #get(String)} / {@link #format(String, Object...)} from code.</p>
+ * <p>Load FXML with {@link #loader(URL)} (or pass {@link #bundle()} to an {@link FXMLLoader}) so FXML
+ * can reference keys with the {@code %key} syntax; use {@link #get(String)} /
+ * {@link #format(String, Object...)} from code.</p>
  */
 public final class Messages {
 
@@ -51,9 +54,16 @@ public final class Messages {
         Optional<String> translate(String key);
     }
 
-    private static final List<TranslationSource> sources = new CopyOnWriteArrayList<>();
-    private static volatile Locale locale = Locale.getDefault();
-    private static volatile ResourceBundle builtin = loadBuiltin(locale);
+    /**
+     * The active locale paired with its built-in bundle. Swapped as a single reference so a reader
+     * never sees the new locale against the old bundle (or vice versa).
+     */
+    private record Active(Locale locale, ResourceBundle builtin) {
+    }
+
+    /** Registered sources keyed by language tag, so re-registering a language replaces it. */
+    private static final Map<String, TranslationSource> sources = new ConcurrentHashMap<>();
+    private static volatile Active active = activeFor(Locale.getDefault());
     private static final ResourceBundle FX_BUNDLE = new ResolvingBundle();
 
     private Messages() {
@@ -61,20 +71,26 @@ public final class Messages {
 
     // === Language registration & selection ===
 
-    /** Registers a translation source (e.g. from a discovered language-pack plugin). */
+    /**
+     * Registers a translation source (e.g. from a discovered language-pack plugin). A source for a
+     * language already registered replaces the previous one.
+     *
+     * @throws NullPointerException if the source or its locale is {@code null}
+     */
     public static void register(TranslationSource source) {
-        sources.add(source);
+        Objects.requireNonNull(source, "source");
+        Locale sourceLocale = Objects.requireNonNull(source.locale(), "source.locale()");
+        sources.put(sourceLocale.getLanguage(), source);
     }
 
     /** Switches the active language; reload any already-shown FXML for it to take effect. */
     public static void setLocale(Locale newLocale) {
-        locale = newLocale;
-        builtin = loadBuiltin(newLocale);
+        active = activeFor(Objects.requireNonNull(newLocale, "newLocale"));
     }
 
     /** The active locale. */
     public static Locale locale() {
-        return locale;
+        return active.locale();
     }
 
     /**
@@ -84,7 +100,7 @@ public final class Messages {
     public static Map<Locale, String> availableLanguages() {
         Map<Locale, String> languages = new LinkedHashMap<>();
         languages.put(Locale.ENGLISH, "English");
-        for (TranslationSource source : sources) {
+        for (TranslationSource source : sources.values()) {
             languages.putIfAbsent(source.locale(), source.displayName());
         }
         return languages;
@@ -92,9 +108,18 @@ public final class Messages {
 
     // === Lookups ===
 
-    /** The resource bundle to hand to an {@link javafx.fxml.FXMLLoader} for {@code %key} text. */
+    /** The resource bundle to hand to an {@link FXMLLoader} for {@code %key} text. */
     public static ResourceBundle bundle() {
         return FX_BUNDLE;
+    }
+
+    /**
+     * An {@link FXMLLoader} for {@code url} with the active message bundle already attached, so the
+     * view's {@code %key} text resolves. Prefer this over constructing {@code FXMLLoader} directly:
+     * an FXML that uses {@code %key} but is loaded without a bundle throws at load time.
+     */
+    public static FXMLLoader loader(URL url) {
+        return new FXMLLoader(url, FX_BUNDLE);
     }
 
     /**
@@ -108,49 +133,56 @@ public final class Messages {
         });
     }
 
-    /** A {@link MessageFormat}-formatted message for a key. */
+    /** A {@link MessageFormat}-formatted message for a key, formatted in the active {@link #locale()}. */
     public static String format(String key, Object... args) {
-        return MessageFormat.format(get(key), args);
+        return new MessageFormat(get(key), locale()).format(args);
     }
 
     private static Optional<String> resolve(String key) {
-        for (TranslationSource source : sources) {
-            if (source.locale().equals(locale)) {
-                Optional<String> translation = source.translate(key);
-                if (translation.isPresent()) {
-                    return translation;
-                }
+        Active current = active; // one read → a consistent (locale, bundle) pair
+        TranslationSource source = sources.get(current.locale().getLanguage());
+        if (source != null) {
+            Optional<String> translation = source.translate(key);
+            if (translation.isPresent()) {
+                return translation;
             }
         }
         try {
-            return Optional.of(builtin.getString(key));
+            return Optional.of(current.builtin().getString(key));
         } catch (MissingResourceException e) {
             return Optional.empty();
         }
     }
 
-    private static ResourceBundle loadBuiltin(Locale forLocale) {
-        return ResourceBundle.getBundle(BUNDLE_BASE_NAME, forLocale);
+    private static Active activeFor(Locale locale) {
+        return new Active(locale, ResourceBundle.getBundle(BUNDLE_BASE_NAME, locale));
+    }
+
+    /** Test hook: forgets all registered sources and resets to English, for test isolation. */
+    static void resetForTesting() {
+        sources.clear();
+        setLocale(Locale.ENGLISH);
     }
 
     /** A live view over the resolution chain, so FXML and code always read the current language. */
     private static final class ResolvingBundle extends ResourceBundle {
         @Override
         protected Object handleGetObject(String key) {
-            return resolve(key).orElse(null);
+            // Never null: a missing key resolves to a visible "!key!" marker rather than throwing.
+            return get(key);
+        }
+
+        @Override
+        public boolean containsKey(String key) {
+            // Every key resolves (to a translation or a visible marker), so an FXML %key never fails
+            // the loader's containsKey precheck — the resolution chain, not this bundle's own keys,
+            // decides the value.
+            return true;
         }
 
         @Override
         public Enumeration<String> getKeys() {
-            List<String> keys = new ArrayList<>();
-            for (TranslationSource source : sources) {
-                if (source.locale().equals(locale)) {
-                    // Sources expose only translate(); their keys are surfaced lazily via resolve().
-                    break;
-                }
-            }
-            keys.addAll(java.util.Collections.list(builtin.getKeys()));
-            return java.util.Collections.enumeration(keys);
+            return active.builtin().getKeys();
         }
     }
 }

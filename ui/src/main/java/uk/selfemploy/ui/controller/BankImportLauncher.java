@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import uk.selfemploy.ui.component.AppDialog;
 import uk.selfemploy.ui.util.DialogBounds;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -32,9 +33,7 @@ public final class BankImportLauncher {
      */
     public static void launch(Window owner, BiConsumer<String, UUID> onImported) {
         try {
-            FXMLLoader loader = new FXMLLoader(
-                BankImportLauncher.class.getResource("/fxml/bank-import-wizard.fxml"),
-                uk.selfemploy.ui.i18n.Messages.bundle());
+            FXMLLoader loader = Messages.loader(BankImportLauncher.class.getResource("/fxml/bank-import-wizard.fxml"));
             Parent root = loader.load();
             BankImportWizardController wizard = loader.getController();
 

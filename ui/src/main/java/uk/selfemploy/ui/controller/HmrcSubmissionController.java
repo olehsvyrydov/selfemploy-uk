@@ -18,6 +18,7 @@ import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.SubmissionEnvironment;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -289,7 +290,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     private void openQuarterlyUpdates() {
         LOG.info("Opening Quarterly Updates view");
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/quarterly-updates.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/quarterly-updates.fxml"));
             Parent root = loader.load();
 
             Stage stage = new Stage();
@@ -350,7 +351,7 @@ public class HmrcSubmissionController implements Initializable, MainController.T
 
     private void openSubmissionView(String fxmlPath, String title) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath), uk.selfemploy.ui.i18n.Messages.bundle());
+            FXMLLoader loader = Messages.loader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
 
             // Pass tax year if controller supports it

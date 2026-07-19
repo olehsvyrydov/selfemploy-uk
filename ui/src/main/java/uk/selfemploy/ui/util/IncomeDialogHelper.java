@@ -14,6 +14,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.controller.IncomeDialogController;
+import uk.selfemploy.ui.i18n.Messages;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -118,9 +119,7 @@ public final class IncomeDialogHelper {
 
         try {
             // Load FXML
-            FXMLLoader loader = new FXMLLoader(
-                    IncomeDialogHelper.class.getResource("/fxml/income-dialog.fxml"),
-                    uk.selfemploy.ui.i18n.Messages.bundle());
+            FXMLLoader loader = Messages.loader(IncomeDialogHelper.class.getResource("/fxml/income-dialog.fxml"));
             VBox dialogContent = loader.load();
 
             // Configure controller

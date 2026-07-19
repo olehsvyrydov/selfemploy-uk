@@ -4,6 +4,7 @@ import uk.selfemploy.plugin.extension.LanguagePack;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -20,8 +21,9 @@ public final class LanguagePackSource implements Messages.TranslationSource {
     private final Map<String, String> translations;
 
     public LanguagePackSource(LanguagePack pack) {
-        this.locale = pack.locale();
-        this.displayName = pack.displayName();
+        Objects.requireNonNull(pack, "pack");
+        this.locale = Objects.requireNonNull(pack.locale(), "pack.locale()");
+        this.displayName = Objects.requireNonNull(pack.displayName(), "pack.displayName()");
         this.translations = Map.copyOf(pack.translations());
     }
 

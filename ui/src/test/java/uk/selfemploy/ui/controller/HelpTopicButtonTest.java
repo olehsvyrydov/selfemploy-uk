@@ -15,6 +15,7 @@ import org.testfx.framework.junit5.ApplicationExtension;
 import org.testfx.framework.junit5.Start;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import uk.selfemploy.ui.i18n.Messages;
 
 /**
  * Test to verify Help Topics cards are clickable.
@@ -30,7 +31,7 @@ class HelpTopicButtonTest {
 
     @Start
     private void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/help.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/help.fxml"));
         Parent root = loader.load();
         controller = loader.getController();
 
