@@ -712,3 +712,15 @@
     -fx-font-size: 13px;
     -fx-text-fill: -fx-text-secondary;
 }
+
+/* ===== Category help button (per-row guidance trigger) ===== */
+.category-help-btn {
+    -fx-min-width: 24px;
+    -fx-max-width: 24px;
+    -fx-min-height: 24px;
+    -fx-max-height: 24px;
+    -fx-padding: 0;
+    -fx-background-radius: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
