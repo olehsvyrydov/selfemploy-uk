@@ -2293,3 +2293,30 @@
 .tour-card-button {
     -fx-min-width: 72;
 }
+
+/* Colours for glyphs migrated from text Labels to FontIcon. A FontIcon is a Text node coloured by
+   -fx-icon-color, not -fx-text-fill, so each icon's former colour is mirrored here. */
+.drop-zone-icon { -fx-icon-color: -fx-primary; }
+.file-icon { -fx-icon-color: -fx-primary; }
+.detection-icon { -fx-icon-color: -fx-success; }
+.warning-icon { -fx-icon-color: #856404; }
+.info-banner-icon { -fx-icon-color: -fx-primary; }
+.warning-banner-icon { -fx-icon-color: #856404; }
+.suggestion-icon { -fx-icon-color: -fx-primary; }
+.confirm-icon { -fx-icon-color: -fx-success; }
+.info-icon { -fx-icon-color: -fx-primary; }
+.consumer-rights-icon-text { -fx-icon-color: #0066cc; }
+.receipt-dropzone-icon { -fx-icon-color: -fx-text-muted; }
+.receipt-error-icon { -fx-icon-color: #721c24; }
+.all-clear-icon-text { -fx-icon-color: #155724; }
+.text-success { -fx-icon-color: -fx-success; }
+.text-danger { -fx-icon-color: -fx-danger; }
+.text-warning { -fx-icon-color: -fx-warning; }
+.text-info { -fx-icon-color: #5a2d82; }
+.onboarding-icon { -fx-icon-color: -fx-primary; }
+.privacy-icon { -fx-icon-color: -fx-primary; }
+.help-icon { -fx-icon-color: #0066cc; }
+.help-icon:hover { -fx-icon-color: -fx-primary; }
+.completion-icon { -fx-icon-color: -fx-success; }
+.section-toggle { -fx-icon-color: -fx-text-secondary; }
+.pension-insight-icon { -fx-icon-color: #f59e0b; }

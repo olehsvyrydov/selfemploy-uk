@@ -35,7 +35,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
@@ -342,27 +344,32 @@ public class MainController implements Initializable {
      * @param viewNode the root node of the view just placed in the content area
      */
     private void resetScroll(Node viewNode) {
-        ScrollPane scrollPane = findScrollPane(viewNode);
-        if (scrollPane != null) {
+        List<ScrollPane> scrollPanes = new ArrayList<>();
+        collectScrollPanes(viewNode, scrollPanes);
+        for (ScrollPane scrollPane : scrollPanes) {
             scrollPane.setVvalue(0);
             scrollPane.setHvalue(0);
         }
     }
 
-    /** Depth-first search for the first {@link ScrollPane} at or under {@code node}. */
-    private static ScrollPane findScrollPane(Node node) {
-        if (node instanceof ScrollPane scrollPane) {
-            return scrollPane;
+    /**
+     * Collects every {@link ScrollPane} at or under {@code node} — including those nested inside
+     * another ScrollPane's content — so a cached view with more than one scroll region resets fully.
+     * Traverses {@link ScrollPane#getContent()} directly rather than relying on the skin, since this
+     * runs before the view is laid out.
+     */
+    private static void collectScrollPanes(Node node, List<ScrollPane> out) {
+        if (node == null) {
+            return;
         }
-        if (node instanceof Parent parent) {
+        if (node instanceof ScrollPane scrollPane) {
+            out.add(scrollPane);
+            collectScrollPanes(scrollPane.getContent(), out);
+        } else if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                ScrollPane found = findScrollPane(child);
-                if (found != null) {
-                    return found;
-                }
+                collectScrollPanes(child, out);
             }
         }
-        return null;
     }
 
     /**
