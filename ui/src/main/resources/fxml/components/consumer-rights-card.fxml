@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!--
   Consumer Rights Disclaimer Card - SE-513
@@ -20,7 +21,7 @@
     <!-- Header -->
     <HBox styleClass="consumer-rights-header" alignment="CENTER_LEFT" spacing="12">
         <StackPane styleClass="consumer-rights-icon">
-            <Label text="[=]" styleClass="consumer-rights-icon-text"/>
+            <FontIcon iconLiteral="fas-balance-scale" iconSize="20" styleClass="consumer-rights-icon-text"/>
         </StackPane>
         <Label fx:id="consumerRightsTitle" text="Software Accuracy &amp; Your Rights"
                styleClass="consumer-rights-title"/>

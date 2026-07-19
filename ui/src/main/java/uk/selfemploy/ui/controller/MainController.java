@@ -9,6 +9,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
@@ -187,15 +188,47 @@ public class MainController implements Initializable {
     }
 
     private void selectNavButton(View view) {
-        switch (view) {
+        switch (highlightFor(view)) {
             case DASHBOARD -> navDashboard.setSelected(true);
             case INCOME -> navIncome.setSelected(true);
             case EXPENSES -> navExpenses.setSelected(true);
-            case BANK, TRANSACTION_REVIEW, RECONCILIATION, IMPORT_HISTORY -> navBank.setSelected(true);
-            case TAX_SUMMARY -> navTax.setSelected(true);
-            case HMRC_SUBMISSION -> navHmrc.setSelected(true);
-            default -> {} // Help and Settings don't have nav buttons
+            case BANK -> navBank.setSelected(true);
+            case TAX -> navTax.setSelected(true);
+            case HMRC -> navHmrc.setSelected(true);
+            // Help and Settings have no sidebar button: drop the previous item's highlight
+            // instead of leaving it falsely marked as the current view.
+            case NONE -> clearNavSelection();
         }
+    }
+
+    /** Clears the sidebar highlight so no navigation item appears selected. */
+    private void clearNavSelection() {
+        if (navGroup != null) {
+            navGroup.selectToggle(null);
+        }
+    }
+
+    /** The sidebar nav button (if any) that represents a view. */
+    enum NavHighlight { DASHBOARD, INCOME, EXPENSES, BANK, TAX, HMRC, NONE }
+
+    /**
+     * Maps a view to the sidebar button that should be highlighted while it is showing.
+     * Sub-views of the Bank section share its button; Help and Settings own no sidebar button
+     * and therefore clear the highlight ({@link NavHighlight#NONE}).
+     *
+     * @param view the view being shown
+     * @return the nav button to highlight, or {@link NavHighlight#NONE} to clear the highlight
+     */
+    static NavHighlight highlightFor(View view) {
+        return switch (view) {
+            case DASHBOARD -> NavHighlight.DASHBOARD;
+            case INCOME -> NavHighlight.INCOME;
+            case EXPENSES -> NavHighlight.EXPENSES;
+            case BANK, TRANSACTION_REVIEW, RECONCILIATION, IMPORT_HISTORY -> NavHighlight.BANK;
+            case TAX_SUMMARY -> NavHighlight.TAX;
+            case HMRC_SUBMISSION -> NavHighlight.HMRC;
+            case SETTINGS, HELP -> NavHighlight.NONE;
+        };
     }
 
     private void updateStatusBar() {
@@ -299,6 +332,37 @@ public class MainController implements Initializable {
         }
 
         contentPane.getChildren().setAll(viewNode);
+        resetScroll(viewNode);
+    }
+
+    /**
+     * Scrolls a freshly shown view back to the top. Views are cached and reused, so without this a
+     * revisited screen would reappear at its previous scroll position.
+     *
+     * @param viewNode the root node of the view just placed in the content area
+     */
+    private void resetScroll(Node viewNode) {
+        ScrollPane scrollPane = findScrollPane(viewNode);
+        if (scrollPane != null) {
+            scrollPane.setVvalue(0);
+            scrollPane.setHvalue(0);
+        }
+    }
+
+    /** Depth-first search for the first {@link ScrollPane} at or under {@code node}. */
+    private static ScrollPane findScrollPane(Node node) {
+        if (node instanceof ScrollPane scrollPane) {
+            return scrollPane;
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                ScrollPane found = findScrollPane(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /**

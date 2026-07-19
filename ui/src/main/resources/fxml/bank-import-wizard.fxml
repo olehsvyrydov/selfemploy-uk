@@ -4,6 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
@@ -66,7 +67,7 @@
         <VBox fx:id="dropZone" styleClass="drop-zone" alignment="CENTER" spacing="16"
               onDragOver="#handleDragOver" onDragDropped="#handleDragDropped"
               onDragExited="#handleDragExited">
-            <Label text="CSV" styleClass="drop-zone-icon"/>
+            <FontIcon iconLiteral="fas-file-csv" iconSize="48" styleClass="drop-zone-icon"/>
             <VBox alignment="CENTER" spacing="8">
                 <Label text="%bankImport.dropZone.title" styleClass="drop-zone-title"/>
                 <Label text="%bankImport.dropZone.separator" styleClass="drop-zone-separator"/>
@@ -81,7 +82,7 @@
         <VBox fx:id="fileSelectedBox" styleClass="file-selected-box" spacing="12"
               managed="false" visible="false">
             <HBox alignment="CENTER_LEFT" spacing="12">
-                <Label text="[CSV]" styleClass="file-icon"/>
+                <FontIcon iconLiteral="fas-file-csv" iconSize="20" styleClass="file-icon"/>
                 <VBox spacing="2" HBox.hgrow="ALWAYS">
                     <Label fx:id="fileNameLabel" text="bank-statement.csv"
                            styleClass="file-name"/>
@@ -95,7 +96,7 @@
             <!-- Bank Format Detection -->
             <HBox fx:id="bankDetectedBox" styleClass="bank-detected-box"
                   alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
-                <Label text="[check]" styleClass="detection-icon"/>
+                <FontIcon iconLiteral="fas-check-circle" iconSize="16" styleClass="detection-icon"/>
                 <VBox spacing="2">
                     <Label fx:id="bankNameLabel" text="Barclays format detected"
                            styleClass="detection-title"/>
@@ -107,7 +108,7 @@
             <!-- Unknown Format Warning -->
             <HBox fx:id="unknownFormatBox" styleClass="unknown-format-box"
                   alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
-                <Label text="[?]" styleClass="warning-icon"/>
+                <FontIcon iconLiteral="fas-question-circle" iconSize="16" styleClass="warning-icon"/>
                 <VBox spacing="2">
                     <Label text="%bankImport.unknownFormat.title" styleClass="warning-title"/>
                     <Label text="%bankImport.unknownFormat.hint"
@@ -137,7 +138,7 @@
 
         <!-- Instructions -->
         <HBox styleClass="info-banner" alignment="CENTER_LEFT" spacing="12">
-            <Label text="i" styleClass="info-banner-icon"/>
+            <FontIcon iconLiteral="fas-info-circle" iconSize="16" styleClass="info-banner-icon"/>
             <VBox spacing="2">
                 <Label text="%bankImport.step2.instruction.title"
                        styleClass="info-banner-title"/>
@@ -281,7 +282,7 @@
         <!-- Duplicate Warning (conditional) -->
         <HBox fx:id="duplicateWarning" styleClass="warning-banner"
               alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
-            <Label text="!" styleClass="warning-banner-icon"/>
+            <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="16" styleClass="warning-banner-icon"/>
             <VBox spacing="2" HBox.hgrow="ALWAYS">
                 <Label fx:id="duplicateWarningTitle" text="3 potential duplicates found"
                        styleClass="warning-banner-title"/>
@@ -321,7 +322,7 @@
         <!-- Category Suggestion Panel (shows on row selection) -->
         <HBox fx:id="suggestionPanel" styleClass="suggestion-panel"
               alignment="CENTER_LEFT" spacing="12" managed="false" visible="false">
-            <Label text="[lightbulb]" styleClass="suggestion-icon"/>
+            <FontIcon iconLiteral="fas-lightbulb" iconSize="16" styleClass="suggestion-icon"/>
             <VBox spacing="2" HBox.hgrow="ALWAYS">
                 <Label fx:id="suggestionText" text="Suggested: Office Supplies (85% confidence)"
                        styleClass="suggestion-title"/>
@@ -342,7 +343,7 @@
 
         <!-- Success Pre-check -->
         <VBox styleClass="confirm-header" alignment="CENTER" spacing="16">
-            <Label text="[checkmark]" styleClass="confirm-icon"/>
+            <FontIcon iconLiteral="fas-check-circle" iconSize="48" styleClass="confirm-icon"/>
             <Label text="%bankImport.confirm.title" styleClass="confirm-title"/>
             <Label text="%bankImport.confirm.subtitle"
                    styleClass="confirm-subtitle"/>
@@ -402,7 +403,7 @@
 
             <!-- Skipped Items -->
             <HBox fx:id="skippedSection" alignment="CENTER_LEFT" spacing="8">
-                <Label text="[info]" styleClass="info-icon"/>
+                <FontIcon iconLiteral="fas-info-circle" iconSize="16" styleClass="info-icon"/>
                 <Label fx:id="skippedLabel" text="0 duplicate transactions will be skipped"
                        styleClass="info-text"/>
             </HBox>

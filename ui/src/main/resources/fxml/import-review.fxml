@@ -3,6 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!--
     Import Review Page - SE-10B-005
@@ -38,7 +39,7 @@
     <VBox fx:id="allClearState" styleClass="all-clear-state" alignment="CENTER" spacing="16"
           managed="false" visible="false">
         <StackPane styleClass="all-clear-icon">
-            <Label text="[check]" styleClass="all-clear-icon-text"/>
+            <FontIcon iconLiteral="fas-check-circle" iconSize="48" styleClass="all-clear-icon-text"/>
         </StackPane>
         <Label text="%importReview.allClear.title" styleClass="all-clear-title"/>
         <Label text="%importReview.allClear.message"
@@ -54,7 +55,7 @@
         <!-- Summary Bar -->
         <HBox fx:id="summaryBar" styleClass="import-summary-bar" alignment="CENTER_LEFT" spacing="24">
             <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
-                <Label text="[total]" styleClass="summary-icon"/>
+                <FontIcon iconLiteral="fas-list" iconSize="16" styleClass="summary-icon"/>
                 <VBox spacing="2">
                     <Label fx:id="totalCountLabel" text="0" styleClass="import-summary-count"/>
                     <Label text="%importReview.summary.total" styleClass="import-summary-label"/>
@@ -62,7 +63,7 @@
             </HBox>
             <Region styleClass="import-summary-divider"/>
             <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
-                <Label text="+" styleClass="summary-icon, text-success"/>
+                <FontIcon iconLiteral="fas-plus-circle" iconSize="16" styleClass="summary-icon, text-success"/>
                 <VBox spacing="2">
                     <Label fx:id="newCountLabel" text="0" styleClass="import-summary-count, text-success"/>
                     <Label text="%importReview.summary.new" styleClass="import-summary-label"/>
@@ -70,7 +71,7 @@
             </HBox>
             <Region styleClass="import-summary-divider"/>
             <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
-                <Label text="!" styleClass="summary-icon, text-danger"/>
+                <FontIcon iconLiteral="fas-exclamation-circle" iconSize="16" styleClass="summary-icon, text-danger"/>
                 <VBox spacing="2">
                     <Label fx:id="exactCountLabel" text="0" styleClass="import-summary-count, text-danger"/>
                     <Label text="%importReview.summary.exactMatch" styleClass="import-summary-label"/>
@@ -78,7 +79,7 @@
             </HBox>
             <Region styleClass="import-summary-divider"/>
             <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
-                <Label text="?" styleClass="summary-icon, text-warning"/>
+                <FontIcon iconLiteral="fas-question-circle" iconSize="16" styleClass="summary-icon, text-warning"/>
                 <VBox spacing="2">
                     <Label fx:id="likelyCountLabel" text="0" styleClass="import-summary-count, text-warning"/>
                     <Label text="%importReview.summary.likelyMatch" styleClass="import-summary-label"/>
@@ -86,7 +87,7 @@
             </HBox>
             <Region styleClass="import-summary-divider"/>
             <HBox styleClass="import-summary-item" alignment="CENTER_LEFT" spacing="8">
-                <Label text="~" styleClass="summary-icon, text-info"/>
+                <FontIcon iconLiteral="fas-clone" iconSize="16" styleClass="summary-icon, text-info"/>
                 <VBox spacing="2">
                     <Label fx:id="similarCountLabel" text="0" styleClass="import-summary-count, text-info"/>
                     <Label text="%importReview.summary.similar" styleClass="import-summary-label"/>

@@ -4,6 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!-- Stylesheets loaded programmatically to avoid JPMS issues -->
 <VBox xmlns:fx="http://javafx.com/fxml/1"
@@ -54,7 +55,7 @@
                 <padding><Insets top="48" right="48" bottom="32" left="48"/></padding>
 
                 <!-- Shield Icon -->
-                <Label styleClass="onboarding-icon" text="SHIELD"/>
+                <FontIcon iconLiteral="fas-shield-alt" iconSize="48" styleClass="onboarding-icon"/>
 
                 <!-- Welcome Title -->
                 <VBox alignment="CENTER" spacing="8">
@@ -66,7 +67,7 @@
                 <!-- Privacy Assurance Box -->
                 <VBox styleClass="privacy-assurance-box" spacing="8" maxWidth="500">
                     <HBox alignment="CENTER_LEFT" spacing="12">
-                        <Label text="LOCK" styleClass="privacy-icon"/>
+                        <FontIcon iconLiteral="fas-lock" iconSize="20" styleClass="privacy-icon"/>
                         <Label text="%onboarding.privacyTitle" styleClass="privacy-assurance-title"/>
                     </HBox>
                     <Label styleClass="privacy-assurance-text" wrapText="true"
@@ -101,7 +102,7 @@
                 <VBox styleClass="form-field" spacing="8">
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <Label text="%onboarding.utrLabel" styleClass="field-label"/>
-                        <Label text="[?]" styleClass="help-icon"/>
+                        <FontIcon iconLiteral="fas-question-circle" iconSize="14" styleClass="help-icon"/>
                     </HBox>
                     <HBox styleClass="segmented-input" spacing="8" alignment="CENTER_LEFT">
                         <TextField fx:id="utrSegment1" styleClass="segment-field" prefColumnCount="4"/>
@@ -122,7 +123,7 @@
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <Label text="%onboarding.niLabel" styleClass="field-label"/>
                         <Label text="%onboarding.niOptional" styleClass="optional-indicator"/>
-                        <Label text="[?]" styleClass="help-icon"/>
+                        <FontIcon iconLiteral="fas-question-circle" iconSize="14" styleClass="help-icon"/>
                     </HBox>
                     <TextField fx:id="niNumberField" styleClass="form-input" promptText="%onboarding.niPrompt"/>
                     <Label text="%onboarding.niHint" styleClass="field-hint"/>
@@ -145,7 +146,7 @@
 
                 <!-- Info Box -->
                 <HBox styleClass="info-box" alignment="CENTER_LEFT" spacing="12">
-                    <Label text="[i]" styleClass="info-icon"/>
+                    <FontIcon iconLiteral="fas-info-circle" iconSize="16" styleClass="info-icon"/>
                     <Label text="%onboarding.taxYearInfo" styleClass="info-text"/>
                 </HBox>
             </VBox>
@@ -171,7 +172,7 @@
                 <padding><Insets top="48" right="48" bottom="32" left="48"/></padding>
 
                 <!-- Success Icon -->
-                <Label styleClass="completion-icon" text="CHECK"/>
+                <FontIcon iconLiteral="fas-check-circle" iconSize="48" styleClass="completion-icon"/>
 
                 <!-- Personalized Welcome -->
                 <VBox alignment="CENTER" spacing="8">
