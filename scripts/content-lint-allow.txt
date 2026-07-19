@@ -1,41 +1,36 @@
 # content-lint allowlist — documented waivers for pre-existing violations that belong to
-# OTHER in-flight epic tasks. The lint still catches every NEW violation; these entries only
-# keep the gate green on the current tree without editing files owned by another task's PR.
+# OTHER, still-pending work. The lint catches every NEW violation; these entries only keep the
+# gate green on the current tree without editing files owned by another change.
 #
 # Format: <rule> | <path-substring> | <content-substring>
 #   - a violation is waived when its rule matches AND the reported "path:line:content"
-#     contains both substrings (an empty content-substring matches any line).
-# When the owning task lands its fix the placeholder/token simply disappears and the waiver
-# becomes a harmless no-op; delete the stale line at that point.
+#     contains both substrings. An empty content-substring waives the whole file for that rule
+#     and is used ONLY where an entire, tracked set is pending replacement (noted per line).
+# When the owning work lands, the placeholder/token disappears and the waiver becomes a no-op;
+# delete the stale line at that point.
 
-# --- fxml-placeholder: leftover [icon] text placeholders owned by the epic-07 icon migration.
-# The icon migration replaces these Label text="[x]" stubs with real FontIcon nodes; until it
-# lands these FXML files legitimately still carry the stubs. New FXML files are still guarded.
-fxml-placeholder | fxml/components/consumer-rights-card.fxml |
-fxml-placeholder | fxml/onboarding-wizard.fxml |
+# --- fxml-placeholder ---------------------------------------------------------------------
+# Orphaned column-mapping wizard, pending removal — deliberately not migrated.
 fxml-placeholder | fxml/column-mapping-wizard.fxml |
-fxml-placeholder | fxml/bank-import-wizard.fxml |
+# Screens whose whole icon set is not yet migrated to FontIcon (a later icon pass replaces all).
 fxml-placeholder | fxml/reconciliation-dashboard.fxml |
-fxml-placeholder | fxml/import-review.fxml |
 fxml-placeholder | fxml/import-history.fxml |
-fxml-placeholder | fxml/submission-history.fxml |
-fxml-placeholder | fxml/tax-summary.fxml |
-fxml-placeholder | fxml/expense-dialog.fxml |
+# Partially migrated: only these controller-swapped glyphs remain (set on the node at runtime),
+# so waive the specific token — a new, different placeholder in these files is still caught.
+fxml-placeholder | fxml/tax-summary.fxml | [v]
+fxml-placeholder | fxml/submission-history.fxml | [check]
+fxml-placeholder | fxml/expense-dialog.fxml | [i]
 
-# --- enum-token: the BANK_IMPORT source hint is being reworded by the bank-import copy task.
-enum-token | i18n/messages.properties | bankImport.source.hint
-
-# --- gbp-rate: hardcoded £ amounts owned by the tax-year data-externalisation tasks.
-# Tax-band boundary labels — moving to {{taxYear}}-driven bands (see 07-epic-ux-polish T7.14).
+# --- gbp-rate: hardcoded £ amounts pending the tax-year data externalisation ---------------
+# Tax-band boundary labels — the whole set moves to tax-year-driven bands.
 gbp-rate | controller/TaxSummaryController.java |
-# HMRC use-of-home / entertainment flat rates — externalised with the expense-copy task.
+# HMRC use-of-home / entertainment flat rates — the whole set moves with the expense copy.
 gbp-rate | viewmodel/ExpenseDialogViewModel.java |
-# Statutory record-keeping penalty (fixed legal figure) — owned by the legal-disclaimers copy.
+# Single fixed legal figures — waived by their exact amount so nothing else slips through.
 gbp-rate | legal/Disclaimers.java | £3,000
-# Payments-on-account threshold description — owned by the calculator copy externalisation.
 gbp-rate | calculator/PaymentsOnAccountResult.java | £1,000
 
-# --- todo: pre-existing markers tracked outside this task; new TODO/XXX/FIXME are still caught.
+# --- todo: pre-existing markers tracked outside this change; new TODO/XXX/FIXME are caught ---
 todo | calculator/NationalInsuranceCalculator.java | TODO (2028 Release)
 todo | calculator/NationalInsuranceCalculator.java | TODO (2044 Release)
 todo | runtime/PluginHotReloader.java | preserveStateOnReload

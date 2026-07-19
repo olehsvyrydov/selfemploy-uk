@@ -21,9 +21,9 @@ permissions:
   checks: write
 
 jobs:
-  # Fast, dependency-free content gate (epic 09 T9.4 + T9.5): rejects raw JavaFX Alerts,
-  # leftover [icon] FXML placeholders, internal enum tokens in user copy, hardcoded £ rate
-  # literals, and stray TODO/XXX/FIXME markers. Grep-based; runs in seconds.
+  # Fast, dependency-free content gate: rejects raw JavaFX Alerts, leftover [icon] FXML
+  # placeholders, internal enum tokens in user copy, hardcoded £ rate literals, and stray
+  # TODO/XXX/FIXME markers. Grep-based; runs in seconds.
   content-lint:
     name: Content Lint
     runs-on: ubuntu-latest

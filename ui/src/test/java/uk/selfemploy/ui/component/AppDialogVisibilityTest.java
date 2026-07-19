@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * PR-CI regression guard for the invisible-dialog defect (B6).
+ * PR-CI regression guard against the invisible-dialog defect.
  *
  * <p>The original bug was a {@link javafx.scene.control.Alert} that blocked the app while
  * rendering nothing on screen. {@link AppDialog} replaces it with a real, owned {@link Stage}.
@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AppDialogVisibilityTest {
 
     private static boolean fxReady;
+    private static String skipReason = "";
 
     @BeforeAll
     static void initToolkit() {
@@ -40,16 +41,22 @@ class AppDialogVisibilityTest {
             CountDownLatch latch = new CountDownLatch(1);
             Platform.startup(latch::countDown);
             fxReady = latch.await(15, TimeUnit.SECONDS);
+            if (!fxReady) {
+                skipReason = "JavaFX toolkit did not start within 15s";
+            }
         } catch (IllegalStateException alreadyStarted) {
             // Toolkit was initialised by another test in the same JVM — fine to reuse.
             fxReady = true;
-        } catch (Throwable noDisplay) {
+        } catch (Exception noDisplay) {
+            // A missing display fails here; a linkage/assertion Error is NOT swallowed (it propagates
+            // and fails the build) so a real regression can't hide as a skipped test.
             fxReady = false;
+            skipReason = "JavaFX toolkit unavailable: " + noDisplay;
         }
         if (fxReady) {
             Platform.setImplicitExit(false);
         }
-        Assumptions.assumeTrue(fxReady, "JavaFX toolkit unavailable (no display); skipping visibility guard");
+        Assumptions.assumeTrue(fxReady, "Skipping visibility guard — " + skipReason);
     }
 
     @AfterAll
@@ -70,15 +77,17 @@ class AppDialogVisibilityTest {
                 AppDialog dialog = new AppDialog(AppDialog.Kind.INFO, "Saved",
                         "Your changes were saved.", "OK", null);
                 Stage stage = dialog.stageForTest();
-                stage.show();
+                // Count down only once the window is actually shown and laid out, so the size
+                // assertions do not race the first pulse (a just-shown Stage can still read 0x0).
+                stage.setOnShown(e -> shown.countDown());
                 stageRef.set(stage);
+                stage.show();
             } catch (Throwable t) {
                 errorRef.set(t);
-            } finally {
                 shown.countDown();
             }
         });
-        assertThat(shown.await(15, TimeUnit.SECONDS)).as("dialog construction ran on FX thread").isTrue();
+        assertThat(shown.await(15, TimeUnit.SECONDS)).as("dialog was shown on the FX thread").isTrue();
         if (errorRef.get() != null) {
             throw new AssertionError("AppDialog failed to build/show", errorRef.get());
         }

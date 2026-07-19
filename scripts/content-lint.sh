@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Content lint — fails the build on user-facing content defects that the live UI review
-# turned up and that must not silently return (epic 09, tasks T9.4 + T9.5).
+# turned up and that must not silently return.
 #
 # Rules enforced (each prints `file:line: [rule] reason`):
 #   alert            raw `new Alert(` under src/main outside AppDialog.java (invisible-dialog risk)
@@ -82,7 +82,7 @@ for dir in "${MAIN_DIRS[@]}"; do
     # digit (so "£0.00" empty-value fallbacks are not flagged).
     emit "gbp-rate" "hardcoded £ amount in a user string — drive it from tax-year data" < <(
         grep -rnIE '£[0-9,.]*[1-9]' --include='*.java' "$dir" 2>/dev/null \
-            | grep -vE ':[[:space:]]*(\*|//|/\*)'
+            | grep -vE ':[0-9]+:[[:space:]]*(\*|//|/\*)'
     )
 
     # --- todo: leftover markers in shipped source ----------------------------------------
