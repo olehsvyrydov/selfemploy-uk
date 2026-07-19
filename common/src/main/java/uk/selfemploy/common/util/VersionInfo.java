@@ -70,7 +70,7 @@ public final class VersionInfo {
      * Returns the GitHub API URL for the latest release, used by the update check.
      */
     public static String getReleasesApiUrl() {
-        return PROPS.getProperty("github.releasesApiUrl",
+        return PROPS.getProperty("github.releases.api.url",
                 "https://api.github.com/repos/olehsvyrydov/selfemploy-uk/releases/latest");
     }
 }

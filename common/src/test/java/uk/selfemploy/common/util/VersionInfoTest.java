@@ -33,8 +33,16 @@ class VersionInfoTest {
     }
 
     @Test
-    @DisplayName("should return GitHub URL")
+    @DisplayName("should return GitHub URL from properties")
     void shouldReturnGitHubUrl() {
-        assertThat(VersionInfo.getGitHubUrl()).contains("github.com");
+        assertThat(VersionInfo.getGitHubUrl())
+                .isEqualTo("https://github.com/olehsvyrydov/selfemploy-uk");
+    }
+
+    @Test
+    @DisplayName("should return the releases API URL from properties")
+    void shouldReturnReleasesApiUrl() {
+        assertThat(VersionInfo.getReleasesApiUrl())
+                .isEqualTo("https://api.github.com/repos/olehsvyrydov/selfemploy-uk/releases/latest");
     }
 }
