@@ -1372,6 +1372,11 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     private void applyUpdateResult(java.util.Optional<UpdateCheckService.UpdateCheckResult> result) {
+        // The check is async: if the user disabled updates while it was in flight, honour that.
+        if (updateCheckToggle != null && !updateCheckToggle.isSelected()) {
+            hideUpdateNotice();
+            return;
+        }
         if (result.isEmpty()) {
             // Could not determine (offline / failed): show nothing rather than a false "up to date".
             hideUpdateNotice();

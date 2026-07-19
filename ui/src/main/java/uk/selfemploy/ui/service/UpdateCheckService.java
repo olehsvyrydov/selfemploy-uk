@@ -163,6 +163,9 @@ public class UpdateCheckService {
                     .uri(URI.create(LATEST_RELEASE_URL))
                     .timeout(HTTP_TIMEOUT)
                     .header("Accept", "application/vnd.github+json")
+                    // GitHub rejects requests without a User-Agent (403); pin the API version too.
+                    .header("User-Agent", "selfemploy-uk")
+                    .header("X-GitHub-Api-Version", "2022-11-28")
                     .GET()
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -238,7 +241,12 @@ public class UpdateCheckService {
         int[] release = new int[coreTokens.length];
         for (int i = 0; i < coreTokens.length; i++) {
             String token = coreTokens[i].trim();
-            int value = Integer.parseInt(token);
+            int value;
+            try {
+                value = Integer.parseInt(token);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("non-numeric version segment: " + token, e);
+            }
             if (value < 0) {
                 throw new IllegalArgumentException("negative version segment: " + token);
             }
