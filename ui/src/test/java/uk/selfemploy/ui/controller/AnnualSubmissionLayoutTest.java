@@ -36,7 +36,7 @@ class AnnualSubmissionLayoutTest {
 
     @Start
     void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/annual-submission.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/annual-submission.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
         root = loader.load();
         scroll = (ScrollPane) root.lookup("#rootScroll");
         Scene scene = new Scene(root, DESIGN_WIDTH, 950);

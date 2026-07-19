@@ -19,12 +19,12 @@
     <!-- Header -->
     <HBox fx:id="headerRow" styleClass="dialog-header" alignment="CENTER_LEFT">
         <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
-        <Label text="Privacy Notice" styleClass="dialog-title"/>
+        <Label text="%privacy.header.title" styleClass="dialog-title"/>
         <Region HBox.hgrow="ALWAYS"/>
         <!-- Settings mode close button (X) - hidden by default -->
         <Button fx:id="headerCloseBtn" text="X" styleClass="close-button"
                 onAction="#handleClose" visible="false" managed="false"
-                accessibleText="Close privacy notice dialog"/>
+                accessibleText="%privacy.header.close.accessible"/>
     </HBox>
 
     <!-- Content -->
@@ -34,11 +34,11 @@
         <!-- Privacy Header -->
         <VBox styleClass="privacy-header" alignment="CENTER" spacing="12">
             <Label text="🛡" styleClass="privacy-icon"/>
-            <Label text="Your Privacy Matters" styleClass="privacy-title"/>
+            <Label text="%privacy.hero.title" styleClass="privacy-title"/>
             <HBox alignment="CENTER" spacing="8">
-                <Label fx:id="versionLabel" text="Version 2.0" styleClass="privacy-version"/>
+                <Label fx:id="versionLabel" text="%privacy.hero.version" styleClass="privacy-version"/>
                 <Label text="|" styleClass="privacy-separator"/>
-                <Label fx:id="effectiveDateLabel" text="Effective: 8 February 2026"
+                <Label fx:id="effectiveDateLabel" text="%privacy.hero.effective"
                        styleClass="privacy-effective-date"/>
             </HBox>
         </VBox>
@@ -51,194 +51,194 @@
 
                 <!-- Section 1: Who We Are -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="1. Who We Are" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section1.title" styleClass="privacy-section-title"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="This application is developed and maintained as open-source software under the Apache License 2.0. This privacy notice explains how your data is handled when you use UK Self-Employment Manager."/>
+                           text="%privacy.section1.p1"/>
                     <Label styleClass="privacy-section-text privacy-important" wrapText="true"
-                           text="Important: Because all your data is stored locally on your device, YOU are the data controller for your own information. We (the software developers) do not have access to your data."/>
+                           text="%privacy.section1.p2"/>
                 </VBox>
 
                 <!-- Section 2: Data We Process -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="2. Data We Process" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section2.title" styleClass="privacy-section-title"/>
 
                     <!-- 2.1 Financial and Tax Data -->
-                    <Label text="2.1 Financial and Tax Data (Stored Locally)" styleClass="privacy-subsection-title"/>
+                    <Label text="%privacy.section2.sub1.title" styleClass="privacy-subsection-title"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Income records: Dates, amounts, descriptions, sources"
+                        <Label text="%privacy.section2.sub1.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Expense records: Dates, amounts, categories, descriptions"
+                        <Label text="%privacy.section2.sub1.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Bank transactions: Imported CSV data from your bank statements"
+                        <Label text="%privacy.section2.sub1.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Tax calculations: Computed tax liabilities based on your data"
+                        <Label text="%privacy.section2.sub1.item4"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Receipt attachments: Images or PDFs you attach to transactions"
+                        <Label text="%privacy.section2.sub1.item5"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Unique Taxpayer Reference (UTR): Your HMRC identifier"
+                        <Label text="%privacy.section2.sub1.item6"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-storage" wrapText="true"
-                           text="Where stored: A local database on your device only"/>
+                           text="%privacy.section2.sub1.stored"/>
                     <Label styleClass="privacy-section-text privacy-retention" wrapText="true"
-                           text="Retention: You control retention; HMRC requires 6 years minimum"/>
+                           text="%privacy.section2.sub1.retention"/>
 
                     <!-- 2.2 Bank Statement Data -->
-                    <Label text="2.2 Bank Statement Data (When You Import)" styleClass="privacy-subsection-title"/>
+                    <Label text="%privacy.section2.sub2.title" styleClass="privacy-subsection-title"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="When you use the Bank Statement Import feature, the following data is extracted from your CSV files and stored locally:"/>
+                           text="%privacy.section2.sub2.intro"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Transaction date (required for tax year allocation)"
+                        <Label text="%privacy.section2.sub2.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Transaction amount (required for income/expense calculation)"
+                        <Label text="%privacy.section2.sub2.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Transaction description (required for categorisation)"
+                        <Label text="%privacy.section2.sub2.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Account last 4 digits (minimal identifier for audit trail)"
+                        <Label text="%privacy.section2.sub2.item4"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-important" wrapText="true"
-                           text="Data minimisation: We do NOT store full account numbers, sort codes, account holder names, running balances, or bank branch details. Only the minimum data required for tax preparation is retained."/>
+                           text="%privacy.section2.sub2.minimisation"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="Original CSV files are not retained by the Software after import. Categorisation suggestions are algorithmic and are not tax advice."/>
+                           text="%privacy.section2.sub2.csv"/>
 
                     <!-- 2.3 HMRC Connection Data -->
-                    <Label text="2.3 HMRC Connection Data (When You Connect)" styleClass="privacy-subsection-title"/>
+                    <Label text="%privacy.section2.sub3.title" styleClass="privacy-subsection-title"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="When you connect to HMRC for Making Tax Digital submissions, the following data is collected and transmitted:"/>
+                           text="%privacy.section2.sub3.intro"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Device information: Unique device ID (UUID), operating system, screen configuration"
+                        <Label text="%privacy.section2.sub3.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Network information: Local IP addresses, MAC addresses, timezone"
+                        <Label text="%privacy.section2.sub3.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- User information: Operating system username"
+                        <Label text="%privacy.section2.sub3.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Authentication tokens: Access and refresh tokens for HMRC API"
+                        <Label text="%privacy.section2.sub3.item4"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-important" wrapText="true"
-                           text="Why: This is legally required by HMRC under the Finance Act 2022 and Transaction Monitoring Regulations. We cannot submit your tax returns without this data."/>
+                           text="%privacy.section2.sub3.why"/>
                 </VBox>
 
                 <!-- Section 3: How We Use Your Data -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="3. How We Use Your Data" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section3.title" styleClass="privacy-section-title"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Calculate your tax liability (Legal basis: Contract performance)"
+                        <Label text="%privacy.section3.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Import and categorise bank transactions (Legal basis: Contract performance)"
+                        <Label text="%privacy.section3.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Submit returns to HMRC (Legal basis: Contract performance)"
+                        <Label text="%privacy.section3.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Comply with HMRC fraud prevention (Legal basis: Legal obligation)"
+                        <Label text="%privacy.section3.item4"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Store HMRC access tokens (Legal basis: Legitimate interests)"
+                        <Label text="%privacy.section3.item5"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Maintain audit trail (Legal basis: Legitimate interests)"
+                        <Label text="%privacy.section3.item6"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                 </VBox>
 
                 <!-- Section 4: Data Storage and Security -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="4. Data Storage and Security" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section4.title" styleClass="privacy-section-title"/>
                     <Label styleClass="privacy-section-text privacy-important" wrapText="true"
-                           text="All your financial data is stored ONLY on your device."/>
+                           text="%privacy.section4.p1"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="We implement the following security measures:"/>
+                           text="%privacy.section4.p2"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- AES-256-GCM encryption for your HMRC credentials and National Insurance number"
+                        <Label text="%privacy.section4.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Your financial data file is stored locally but is not yet encrypted at rest"
+                        <Label text="%privacy.section4.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- TLS 1.2+ encryption for all communications with HMRC"
+                        <Label text="%privacy.section4.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="We do NOT: Store your data on any remote servers, have access to your financial information, share your data with third parties (except HMRC when you initiate a submission), or use your data for analytics, advertising, or any other purpose."/>
+                           text="%privacy.section4.p3"/>
                 </VBox>
 
                 <!-- Section 5: Data Retention -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="5. Data Retention" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section5.title" styleClass="privacy-section-title"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Financial records and imported bank transactions: You decide (HMRC requires 6 years minimum)"
+                        <Label text="%privacy.section5.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- HMRC tokens: Until you disconnect"
+                        <Label text="%privacy.section5.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Acknowledgment records: Indefinite (audit trail)"
+                        <Label text="%privacy.section5.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-important" wrapText="true"
-                           text="Your responsibility: HMRC requires you to keep records for at least 6 years from the 31 January following the tax year (s.12B Taxes Management Act 1970). Penalties for inadequate records can be up to £3,000 per tax year. This application helps you meet this requirement, but the legal responsibility remains yours."/>
+                           text="%privacy.section5.responsibility"/>
                 </VBox>
 
                 <!-- Section 6: Your Rights -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="6. Your Rights Under UK GDPR" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section6.title" styleClass="privacy-section-title"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Access: Request a copy of your data (Export feature in Settings)"
+                        <Label text="%privacy.section6.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Rectification: Correct inaccurate data (Edit records in the application)"
+                        <Label text="%privacy.section6.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Erasure: Delete your data (Delete records or uninstall application)"
+                        <Label text="%privacy.section6.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Restriction: Limit how data is processed (Contact us)"
+                        <Label text="%privacy.section6.item4"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Portability: Receive data in portable format (Export to JSON/CSV)"
+                        <Label text="%privacy.section6.item5"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Object: Object to processing (Contact us)"
+                        <Label text="%privacy.section6.item6"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Complain: Lodge complaint with ICO (ico.org.uk)"
+                        <Label text="%privacy.section6.item7"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="Note: Because your data is stored locally on your device, you already have full control. You can view, edit, export, or delete any data at any time."/>
+                           text="%privacy.section6.note"/>
                 </VBox>
 
                 <!-- Section 7: HMRC Fraud Prevention -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="7. HMRC Fraud Prevention" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section7.title" styleClass="privacy-section-title"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="When you connect to HMRC, certain device information is collected and transmitted as required by law. This includes device identifiers (UUID), operating system information, network information (local IP, MAC addresses), and timezone and screen configuration."/>
+                           text="%privacy.section7.p1"/>
                     <Label styleClass="privacy-section-text privacy-important" wrapText="true"
-                           text="This is not optional. HMRC will reject submissions without this information."/>
+                           text="%privacy.section7.p2"/>
                 </VBox>
 
                 <!-- Section 8: Changes to This Notice -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="8. Changes to This Notice" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section8.title" styleClass="privacy-section-title"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="We may update this privacy notice to reflect changes in the application or legal requirements. If we make material changes, the privacy notice version number will change, you will be asked to acknowledge the updated notice, and a summary of changes will be provided."/>
+                           text="%privacy.section8.p1"/>
                 </VBox>
 
                 <!-- Section 9: Contact -->
                 <VBox styleClass="privacy-section" spacing="8">
-                    <Label text="9. Contact" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.section9.title" styleClass="privacy-section-title"/>
                     <Label styleClass="privacy-section-text" wrapText="true"
-                           text="For privacy-related questions, please visit GitHub Issues. To complain about data protection, contact the Information Commissioner's Office (ICO) at ico.org.uk or call the ICO Helpline at 0303 123 1113."/>
+                           text="%privacy.section9.p1"/>
                 </VBox>
 
                 <!-- Legal Basis Summary -->
                 <VBox styleClass="privacy-section privacy-summary" spacing="8">
-                    <Label text="Legal Basis Summary" styleClass="privacy-section-title"/>
+                    <Label text="%privacy.legalBasis.title" styleClass="privacy-section-title"/>
                     <VBox styleClass="privacy-list" spacing="4">
-                        <Label text="- Core functionality: Contract performance (Article 6(1)(b))"
+                        <Label text="%privacy.legalBasis.item1"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Bank statement import: Contract performance (Article 6(1)(b))"
+                        <Label text="%privacy.legalBasis.item2"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- HMRC fraud prevention: Legal obligation (Article 6(1)(c))"
+                        <Label text="%privacy.legalBasis.item3"
                                styleClass="privacy-list-item" wrapText="true"/>
-                        <Label text="- Token storage and audit trail: Legitimate interests (Article 6(1)(f))"
+                        <Label text="%privacy.legalBasis.item4"
                                styleClass="privacy-list-item" wrapText="true"/>
                     </VBox>
                     <Label styleClass="privacy-section-text privacy-compliance" wrapText="true"
-                           text="This privacy notice complies with UK GDPR Articles 13 and 14."/>
+                           text="%privacy.legalBasis.compliance"/>
                 </VBox>
 
                 <!-- Full Privacy Policy Link -->
                 <HBox alignment="CENTER" styleClass="privacy-link-container">
-                    <Hyperlink fx:id="fullPolicyLink" text="Read Full Privacy Policy"
+                    <Hyperlink fx:id="fullPolicyLink" text="%privacy.fullPolicyLink"
                                styleClass="privacy-full-link" onAction="#handleOpenFullPolicy"/>
                 </HBox>
             </VBox>
@@ -248,9 +248,9 @@
         <HBox styleClass="acknowledgment-row" alignment="CENTER_LEFT" spacing="12">
             <CheckBox fx:id="acknowledgeCheckbox" styleClass="legal-checkbox"
                       onAction="#handleAcknowledgeChange"
-                      accessibleText="Acknowledge privacy notice, required to continue"/>
+                      accessibleText="%privacy.checkbox.accessible"/>
             <Label fx:id="acknowledgmentLabel"
-                   text="I acknowledge I have been provided with this privacy notice"
+                   text="%privacy.acknowledgment.label"
                    styleClass="acknowledgment-label" wrapText="true"
                    labelFor="$acknowledgeCheckbox"/>
         </HBox>
@@ -259,20 +259,20 @@
     <!-- Footer - First Launch Mode (default) -->
     <HBox fx:id="firstLaunchFooter" styleClass="dialog-footer" alignment="CENTER">
         <padding><Insets top="16" right="24" bottom="24" left="24"/></padding>
-        <Button fx:id="continueBtn" text="Continue" styleClass="button-primary"
+        <Button fx:id="continueBtn" text="%privacy.button.continue" styleClass="button-primary"
                 onAction="#handleContinue" disable="true" prefWidth="200"
-                accessibleText="Continue to application"/>
+                accessibleText="%privacy.button.continue.accessible"/>
     </HBox>
 
     <!-- Footer - Settings Mode (hidden by default) -->
     <HBox fx:id="settingsFooter" styleClass="dialog-footer, privacy-footer-settings"
           alignment="CENTER" spacing="12" visible="false" managed="false">
         <padding><Insets top="16" right="24" bottom="24" left="24"/></padding>
-        <Button fx:id="closeBtn" text="Close" styleClass="button-secondary"
+        <Button fx:id="closeBtn" text="%privacy.button.close" styleClass="button-secondary"
                 onAction="#handleClose" prefWidth="100"
-                accessibleText="Close without changes"/>
-        <Button fx:id="acknowledgeBtn" text="Acknowledge" styleClass="button-primary"
+                accessibleText="%privacy.button.close.accessible"/>
+        <Button fx:id="acknowledgeBtn" text="%privacy.button.acknowledge" styleClass="button-primary"
                 onAction="#handleAcknowledge" disable="true" prefWidth="140"
-                accessibleText="Save acknowledgment"/>
+                accessibleText="%privacy.button.acknowledge.accessible"/>
     </HBox>
 </VBox>

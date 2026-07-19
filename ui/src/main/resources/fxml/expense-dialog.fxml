@@ -12,10 +12,10 @@
     <!-- Dialog Header -->
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT" spacing="10">
         <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
-        <Label fx:id="dialogTitle" text="Add Expense" styleClass="dialog-title"/>
+        <Label fx:id="dialogTitle" text="%expenseDialog.title.add" styleClass="dialog-title"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Button fx:id="closeBtn" text="X" styleClass="close-button"
-                onAction="#handleClose" accessibleText="Close dialog"/>
+                onAction="#handleClose" accessibleText="%expenseDialog.close.accessible"/>
     </HBox>
 
     <!-- Scrollable Form Content -->
@@ -27,7 +27,7 @@
         <!-- Date Field -->
         <VBox styleClass="form-field" spacing="6">
             <HBox alignment="CENTER_LEFT" spacing="4">
-                <Label text="Date" styleClass="field-label"/>
+                <Label text="%expenseDialog.field.date" styleClass="field-label"/>
                 <Label text="*" styleClass="required-indicator"/>
             </HBox>
             <DatePicker fx:id="dateField" maxWidth="Infinity" styleClass="form-input"/>
@@ -37,10 +37,10 @@
         <!-- Description Field -->
         <VBox styleClass="form-field" spacing="6">
             <HBox alignment="CENTER_LEFT" spacing="4">
-                <Label text="Description" styleClass="field-label"/>
+                <Label text="%expenseDialog.field.description" styleClass="field-label"/>
                 <Label text="*" styleClass="required-indicator"/>
             </HBox>
-            <TextField fx:id="descriptionField" promptText="e.g., Office supplies from Staples"
+            <TextField fx:id="descriptionField" promptText="%expenseDialog.description.prompt"
                        styleClass="form-input"/>
             <Label fx:id="descriptionError" styleClass="field-error" managed="false" visible="false"/>
         </VBox>
@@ -50,7 +50,7 @@
             <!-- Amount Field -->
             <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
                 <HBox alignment="CENTER_LEFT" spacing="4">
-                    <Label text="Amount" styleClass="field-label"/>
+                    <Label text="%expenseDialog.field.amount" styleClass="field-label"/>
                     <Label text="*" styleClass="required-indicator"/>
                 </HBox>
                 <HBox styleClass="currency-input" spacing="0">
@@ -64,11 +64,11 @@
             <!-- Category Field -->
             <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
                 <HBox alignment="CENTER_LEFT" spacing="4">
-                    <Label text="Category" styleClass="field-label"/>
+                    <Label text="%expenseDialog.field.category" styleClass="field-label"/>
                     <Label text="*" styleClass="required-indicator"/>
                 </HBox>
                 <ComboBox fx:id="categoryField" maxWidth="Infinity" styleClass="form-input"
-                          promptText="Select category..." minHeight="44"/>
+                          promptText="%expenseDialog.category.prompt" minHeight="44"/>
                 <Label fx:id="categoryError" styleClass="field-error" managed="false" visible="false"/>
             </VBox>
         </HBox>
@@ -78,7 +78,7 @@
               managed="false" visible="false">
             <HBox alignment="CENTER_LEFT" spacing="8">
                 <Label fx:id="categoryHelpIcon" text="[i]" styleClass="help-box-icon"/>
-                <Label fx:id="categoryHelpTitle" text="Category Help" styleClass="help-box-title"/>
+                <Label fx:id="categoryHelpTitle" text="%expenseDialog.categoryHelp.title" styleClass="help-box-title"/>
             </HBox>
             <Label fx:id="categoryHelpText" styleClass="help-box-text" wrapText="true"/>
             <VBox fx:id="categoryHelpExamples" styleClass="help-box-examples" spacing="4">
@@ -90,8 +90,8 @@
         <HBox fx:id="deductibleRow" styleClass="deductible-row" alignment="CENTER_LEFT" spacing="12">
             <CheckBox fx:id="deductibleCheckbox" selected="true"/>
             <VBox spacing="2">
-                <Label fx:id="deductibleLabel" text="Tax Deductible" styleClass="checkbox-label"/>
-                <Label fx:id="deductibleHelper" text="This expense will reduce your taxable profit"
+                <Label fx:id="deductibleLabel" text="%expenseDialog.deductible.label" styleClass="checkbox-label"/>
+                <Label fx:id="deductibleHelper" text="%expenseDialog.deductible.helper"
                        styleClass="checkbox-helper"/>
             </VBox>
         </HBox>
@@ -99,10 +99,10 @@
         <!-- Notes Field -->
         <VBox styleClass="form-field" spacing="6">
             <HBox alignment="CENTER_LEFT" spacing="4">
-                <Label text="Notes" styleClass="field-label"/>
-                <Label text="(Optional)" styleClass="optional-indicator"/>
+                <Label text="%expenseDialog.field.notes" styleClass="field-label"/>
+                <Label text="%expenseDialog.optional" styleClass="optional-indicator"/>
             </HBox>
-            <TextArea fx:id="notesField" promptText="Additional notes about this expense..."
+            <TextArea fx:id="notesField" promptText="%expenseDialog.notes.prompt"
                       styleClass="form-input" prefRowCount="3" wrapText="true" minHeight="80"/>
         </VBox>
 
@@ -110,8 +110,8 @@
         <VBox fx:id="receiptSection" styleClass="receipt-section" spacing="8">
             <!-- Section Header -->
             <HBox alignment="CENTER_LEFT" spacing="8">
-                <Label text="Receipts" styleClass="field-label"/>
-                <Label text="(Optional)" styleClass="optional-indicator"/>
+                <Label text="%expenseDialog.field.receipts" styleClass="field-label"/>
+                <Label text="%expenseDialog.optional" styleClass="optional-indicator"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="receiptCount" text="0 of 5" styleClass="receipt-count"/>
             </HBox>
@@ -123,10 +123,10 @@
                       alignment="CENTER" onDragOver="#handleDragOver" onDragDropped="#handleDragDropped"
                       onDragExited="#handleDragExited">
                     <Label text="+" styleClass="receipt-dropzone-icon"/>
-                    <Button fx:id="attachBtn" text="+ Attach Receipt" styleClass="button-attach"
+                    <Button fx:id="attachBtn" text="%expenseDialog.attachReceipt" styleClass="button-attach"
                             onAction="#handleAttachReceipt"/>
-                    <Label text="Drag &amp; drop files here" styleClass="receipt-dropzone-text"/>
-                    <Label text="JPG, PNG, PDF, GIF up to 10MB each" styleClass="receipt-dropzone-formats"/>
+                    <Label text="%expenseDialog.dropzone.text" styleClass="receipt-dropzone-text"/>
+                    <Label text="%expenseDialog.dropzone.formats" styleClass="receipt-dropzone-formats"/>
                 </VBox>
 
                 <!-- Receipt Grid (shown when receipts exist) -->
@@ -156,12 +156,12 @@
     <HBox styleClass="dialog-footer" alignment="CENTER_RIGHT" spacing="12" minHeight="60">
         <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
 
-        <Button fx:id="deleteBtn" text="Delete" styleClass="button-danger"
+        <Button fx:id="deleteBtn" text="%expenseDialog.button.delete" styleClass="button-danger"
                 onAction="#handleDelete" managed="false" visible="false"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="cancelBtn" text="Cancel" styleClass="button-secondary"
+        <Button fx:id="cancelBtn" text="%expenseDialog.button.cancel" styleClass="button-secondary"
                 onAction="#handleCancel"/>
-        <Button fx:id="saveBtn" text="Save Expense" styleClass="button-warning"
+        <Button fx:id="saveBtn" text="%expenseDialog.button.save" styleClass="button-warning"
                 onAction="#handleSave" disable="true"/>
     </HBox>
 

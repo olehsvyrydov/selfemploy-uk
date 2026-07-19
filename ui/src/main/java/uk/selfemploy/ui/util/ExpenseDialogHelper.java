@@ -114,7 +114,8 @@ public final class ExpenseDialogHelper {
         try {
             // Load FXML
             FXMLLoader loader = new FXMLLoader(
-                    ExpenseDialogHelper.class.getResource("/fxml/expense-dialog.fxml"));
+                    ExpenseDialogHelper.class.getResource("/fxml/expense-dialog.fxml"),
+                    uk.selfemploy.ui.i18n.Messages.bundle());
             VBox dialogContent = loader.load();
 
             // Configure controller

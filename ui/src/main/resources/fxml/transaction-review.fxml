@@ -14,14 +14,14 @@
 
         <!-- Page Header -->
         <HBox alignment="CENTER_LEFT" spacing="15">
-            <Label text="Review transactions" styleClass="page-title"/>
+            <Label text="%review.title" styleClass="page-title"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="undoBtn" text="Undo" styleClass="button-secondary"
+            <Button fx:id="undoBtn" text="%review.undo" styleClass="button-secondary"
                     onAction="#handleUndo" disable="true"/>
-            <MenuButton fx:id="exportBtn" text="Export" styleClass="button-secondary">
+            <MenuButton fx:id="exportBtn" text="%review.export" styleClass="button-secondary">
                 <items>
-                    <MenuItem text="Export as CSV" onAction="#handleExportCsv"/>
-                    <MenuItem text="Export as JSON" onAction="#handleExportJson"/>
+                    <MenuItem text="%review.exportCsv" onAction="#handleExportCsv"/>
+                    <MenuItem text="%review.exportJson" onAction="#handleExportJson"/>
                 </items>
             </MenuButton>
         </HBox>
@@ -45,55 +45,55 @@
         <HBox styleClass="summary-cards-container" spacing="16">
             <VBox styleClass="summary-card" HBox.hgrow="ALWAYS" spacing="8"
                   focusTraversable="true">
-                <Label text="TOTAL" styleClass="metric-label"/>
+                <Label text="%review.summary.total" styleClass="metric-label"/>
                 <Label fx:id="totalValue" text="0" styleClass="summary-card-value"/>
-                <Label text="transactions" styleClass="label-secondary"/>
+                <Label text="%review.summary.transactions" styleClass="label-secondary"/>
             </VBox>
 
             <VBox styleClass="summary-card, summary-card-pending" HBox.hgrow="ALWAYS" spacing="8"
                   focusTraversable="true">
-                <Label text="PENDING" styleClass="metric-label"/>
+                <Label text="%review.summary.pending" styleClass="metric-label"/>
                 <Label fx:id="pendingValue" text="0" styleClass="summary-card-value"/>
-                <Label text="need review" styleClass="label-secondary"/>
+                <Label text="%review.summary.needReview" styleClass="label-secondary"/>
             </VBox>
 
             <VBox styleClass="summary-card, summary-card-categorized" HBox.hgrow="ALWAYS" spacing="8"
                   focusTraversable="true">
-                <Label text="CATEGORIZED" styleClass="metric-label"/>
+                <Label text="%review.summary.categorized" styleClass="metric-label"/>
                 <Label fx:id="categorizedValue" text="0" styleClass="summary-card-value"/>
-                <Label text="linked" styleClass="label-secondary"/>
+                <Label text="%review.summary.linked" styleClass="label-secondary"/>
             </VBox>
 
             <VBox styleClass="summary-card, summary-card-excluded" HBox.hgrow="ALWAYS" spacing="8"
                   focusTraversable="true">
-                <Label text="EXCLUDED" styleClass="metric-label"/>
+                <Label text="%review.summary.excluded" styleClass="metric-label"/>
                 <Label fx:id="excludedValue" text="0" styleClass="summary-card-value"/>
-                <Label text="excluded" styleClass="label-secondary"/>
+                <Label text="%review.summary.excludedSub" styleClass="label-secondary"/>
             </VBox>
         </HBox>
 
         <!-- Filters Bar -->
         <HBox styleClass="filters-bar" alignment="CENTER_LEFT" spacing="12">
-            <ComboBox fx:id="statusFilterCombo" promptText="All Status" prefWidth="140"/>
-            <DatePicker fx:id="dateFromPicker" promptText="From" prefWidth="130"/>
-            <DatePicker fx:id="dateToPicker" promptText="To" prefWidth="130"/>
-            <TextField fx:id="amountMinField" promptText="Min £" prefWidth="80"/>
-            <TextField fx:id="amountMaxField" promptText="Max £" prefWidth="80"/>
+            <ComboBox fx:id="statusFilterCombo" promptText="%review.filter.allStatus" prefWidth="140"/>
+            <DatePicker fx:id="dateFromPicker" promptText="%review.filter.from" prefWidth="130"/>
+            <DatePicker fx:id="dateToPicker" promptText="%review.filter.to" prefWidth="130"/>
+            <TextField fx:id="amountMinField" promptText="%review.filter.minAmount" prefWidth="80"/>
+            <TextField fx:id="amountMaxField" promptText="%review.filter.maxAmount" prefWidth="80"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <TextField fx:id="searchField" promptText="Search description..."
+            <TextField fx:id="searchField" promptText="%review.filter.search"
                        prefWidth="250" styleClass="search-field"/>
         </HBox>
 
         <!-- Batch Action Bar -->
         <HBox fx:id="batchBar" styleClass="batch-action-bar" alignment="CENTER_LEFT" spacing="12">
-            <Button text="Select All" styleClass="button-secondary" onAction="#handleSelectAll"/>
-            <Button text="Select Pending" styleClass="button-secondary" onAction="#handleSelectPending"/>
+            <Button text="%review.batch.selectAll" styleClass="button-secondary" onAction="#handleSelectAll"/>
+            <Button text="%review.batch.selectPending" styleClass="button-secondary" onAction="#handleSelectPending"/>
             <Separator orientation="VERTICAL"/>
-            <Button fx:id="batchBusinessBtn" text="Business" styleClass="button-secondary"
+            <Button fx:id="batchBusinessBtn" text="%review.batch.business" styleClass="button-secondary"
                     onAction="#handleBatchBusiness" disable="true"/>
-            <Button fx:id="batchPersonalBtn" text="Personal" styleClass="button-secondary"
+            <Button fx:id="batchPersonalBtn" text="%review.batch.personal" styleClass="button-secondary"
                     onAction="#handleBatchPersonal" disable="true"/>
-            <Button fx:id="batchExcludeBtn" text="Exclude" styleClass="button-secondary"
+            <Button fx:id="batchExcludeBtn" text="%review.batch.exclude" styleClass="button-secondary"
                     onAction="#handleBatchExclude" disable="true"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="selectedCountLabel" text="0 selected" styleClass="label-secondary"/>
@@ -106,17 +106,17 @@
             </columnResizePolicy>
             <columns>
                 <TableColumn fx:id="selectCol" text="" prefWidth="40" minWidth="40" maxWidth="40" sortable="false"/>
-                <TableColumn fx:id="dateCol" text="DATE" prefWidth="100" minWidth="90"/>
-                <TableColumn fx:id="descCol" text="DESCRIPTION" prefWidth="220"/>
-                <TableColumn fx:id="amountCol" text="AMOUNT" prefWidth="110" minWidth="90"/>
-                <TableColumn fx:id="categoryCol" text="CATEGORY" prefWidth="130" minWidth="100"/>
-                <TableColumn fx:id="confidenceCol" text="CONFIDENCE" prefWidth="100" minWidth="80"/>
-                <TableColumn fx:id="businessCol" text="BUS/PERS" prefWidth="100" minWidth="80" sortable="false"/>
-                <TableColumn fx:id="statusCol" text="STATUS" prefWidth="100" minWidth="80"/>
-                <TableColumn fx:id="actionCol" text="ACTIONS" prefWidth="150" minWidth="140" sortable="false"/>
+                <TableColumn fx:id="dateCol" text="%review.col.date" prefWidth="100" minWidth="90"/>
+                <TableColumn fx:id="descCol" text="%review.col.description" prefWidth="220"/>
+                <TableColumn fx:id="amountCol" text="%review.col.amount" prefWidth="110" minWidth="90"/>
+                <TableColumn fx:id="categoryCol" text="%review.col.category" prefWidth="130" minWidth="100"/>
+                <TableColumn fx:id="confidenceCol" text="%review.col.confidence" prefWidth="100" minWidth="80"/>
+                <TableColumn fx:id="businessCol" text="%review.col.busPers" prefWidth="100" minWidth="80" sortable="false"/>
+                <TableColumn fx:id="statusCol" text="%review.col.status" prefWidth="100" minWidth="80"/>
+                <TableColumn fx:id="actionCol" text="%review.col.actions" prefWidth="150" minWidth="140" sortable="false"/>
             </columns>
             <placeholder>
-                <Label text="No transactions to review" styleClass="empty-table-message"/>
+                <Label text="%review.table.empty" styleClass="empty-table-message"/>
             </placeholder>
         </TableView>
 
@@ -124,9 +124,9 @@
         <HBox fx:id="paginationBar" styleClass="pagination-bar" alignment="CENTER" spacing="20">
             <Label fx:id="resultCount" text="Showing 0 entries" styleClass="label-secondary"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="prevBtn" text="&lt; Previous" styleClass="button-secondary"
+            <Button fx:id="prevBtn" text="%review.prev" styleClass="button-secondary"
                     onAction="#handlePrevPage" disable="true"/>
-            <Button fx:id="nextBtn" text="Next &gt;" styleClass="button-secondary"
+            <Button fx:id="nextBtn" text="%review.next" styleClass="button-secondary"
                     onAction="#handleNextPage" disable="true"/>
         </HBox>
 
@@ -134,11 +134,11 @@
         <VBox fx:id="emptyState" styleClass="empty-state-container"
               alignment="CENTER" spacing="16" managed="false" visible="false">
             <padding><Insets topRightBottomLeft="60"/></padding>
-            <Label text="No Imported Transactions" styleClass="empty-state-title"/>
-            <Label text="Import a bank statement CSV to review your transactions and turn them into income and expenses."
+            <Label text="%review.empty.title" styleClass="empty-state-title"/>
+            <Label text="%review.empty.message"
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER" maxWidth="400"/>
             <HBox alignment="CENTER" spacing="12">
-                <Button text="Import a Bank Statement" styleClass="button-success" onAction="#handleGoToImport"/>
+                <Button text="%review.empty.action" styleClass="button-success" onAction="#handleGoToImport"/>
             </HBox>
         </VBox>
 

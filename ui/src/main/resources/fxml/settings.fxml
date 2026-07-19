@@ -23,31 +23,31 @@
 
         <!-- Page Header -->
         <VBox spacing="8">
-            <Label text="Settings" styleClass="page-title"/>
-            <Label text="Configure your preferences and manage your data" styleClass="page-subtitle"/>
+            <Label text="%settings.page.title" styleClass="page-title"/>
+            <Label text="%settings.page.subtitle" styleClass="page-subtitle"/>
         </VBox>
 
         <!-- Profile Section -->
         <VBox styleClass="settings-section, settings-section-profile" spacing="16">
-            <Label text="Profile" styleClass="section-title"/>
+            <Label text="%settings.profile.title" styleClass="section-title"/>
 
             <!-- Display Name Setting (optional, personalization) -->
             <VBox styleClass="settings-card, settings-card-profile" spacing="12">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <FontIcon iconLiteral="fas-user" iconSize="20" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Display Name" styleClass="settings-label"/>
-                        <Label fx:id="displayNameLabel" text="Not set" styleClass="settings-value"/>
+                        <Label text="%settings.displayName.label" styleClass="settings-label"/>
+                        <Label fx:id="displayNameLabel" text="%settings.value.notSet" styleClass="settings-value"/>
                     </VBox>
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
                     <TextField fx:id="displayNameField"
-                               promptText="e.g., Sarah, John Smith, or just your first name"
+                               promptText="%settings.displayName.prompt"
                                styleClass="utr-field" HBox.hgrow="ALWAYS"
-                               accessibleText="Enter your preferred display name"/>
-                    <Button fx:id="saveDisplayNameButton" text="Save" styleClass="button-secondary" onAction="#handleSaveDisplayName"/>
+                               accessibleText="%settings.displayName.accessible"/>
+                    <Button fx:id="saveDisplayNameButton" text="%settings.button.save" styleClass="button-secondary" onAction="#handleSaveDisplayName"/>
                 </HBox>
-                <Label text="Optional. How would you like to be addressed? This appears on your dashboard greeting and PDF reports."
+                <Label text="%settings.displayName.hint"
                        styleClass="settings-hint" wrapText="true"/>
             </VBox>
 
@@ -56,17 +56,17 @@
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <FontIcon iconLiteral="fas-clipboard" iconSize="20" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Unique Taxpayer Reference (UTR)" styleClass="settings-label"/>
-                        <Label fx:id="utrLabel" text="Not set" styleClass="settings-value"/>
+                        <Label text="%settings.utr.label" styleClass="settings-label"/>
+                        <Label fx:id="utrLabel" text="%settings.value.notSet" styleClass="settings-value"/>
                     </VBox>
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <TextField fx:id="utrField" promptText="Enter 10-digit UTR"
+                    <TextField fx:id="utrField" promptText="%settings.utr.prompt"
                                styleClass="utr-field" HBox.hgrow="ALWAYS"
-                               accessibleText="Enter your 10-digit Unique Taxpayer Reference"/>
-                    <Button fx:id="saveUtrButton" text="Save" styleClass="button-secondary" onAction="#handleSaveUtr"/>
+                               accessibleText="%settings.utr.accessible"/>
+                    <Button fx:id="saveUtrButton" text="%settings.button.save" styleClass="button-secondary" onAction="#handleSaveUtr"/>
                 </HBox>
-                <Label text="Optional. Your UTR may be required for future annual Self Assessment submissions. Currently, MTD quarterly updates use NINO instead. Find your UTR on Self Assessment notices or your HMRC online account."
+                <Label text="%settings.utr.hint"
                        styleClass="settings-hint" wrapText="true"/>
             </VBox>
 
@@ -75,131 +75,131 @@
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <FontIcon iconLiteral="fas-id-card" iconSize="20" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="National Insurance Number (NINO)" styleClass="settings-label"/>
-                        <Label fx:id="ninoLabel" text="Not set" styleClass="settings-value"/>
+                        <Label text="%settings.nino.label" styleClass="settings-label"/>
+                        <Label fx:id="ninoLabel" text="%settings.value.notSet" styleClass="settings-value"/>
                     </VBox>
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <TextField fx:id="ninoField" promptText="e.g. QQ 12 34 56 A"
+                    <TextField fx:id="ninoField" promptText="%settings.nino.prompt"
                                styleClass="utr-field" HBox.hgrow="ALWAYS"
-                               accessibleText="Enter your National Insurance Number"/>
-                    <Button fx:id="saveNinoButton" text="Save" styleClass="button-secondary" onAction="#handleSaveNino"/>
+                               accessibleText="%settings.nino.accessible"/>
+                    <Button fx:id="saveNinoButton" text="%settings.button.save" styleClass="button-secondary" onAction="#handleSaveNino"/>
                 </HBox>
-                <Label text="Required. Your NINO is essential for all MTD submissions to HMRC. Find it on payslips, P60, tax letters, or the HMRC app."
+                <Label text="%settings.nino.hint"
                        styleClass="settings-hint" wrapText="true"/>
             </VBox>
         </VBox>
 
         <!-- HMRC API Credentials Section (BYO Model) -->
         <VBox styleClass="settings-section, settings-section-hmrc" spacing="16">
-            <Label text="HMRC API Credentials" styleClass="section-title"/>
+            <Label text="%settings.hmrcCredentials.title" styleClass="section-title"/>
 
             <VBox styleClass="settings-card, settings-card-hmrc" spacing="12">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <FontIcon iconLiteral="fas-key" iconSize="20" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="API Credentials" styleClass="settings-label"/>
-                        <Label fx:id="hmrcCredentialsStatusLabel" text="Not configured" styleClass="settings-value"/>
+                        <Label text="%settings.hmrcCredentials.label" styleClass="settings-label"/>
+                        <Label fx:id="hmrcCredentialsStatusLabel" text="%settings.hmrcCredentials.notConfigured" styleClass="settings-value"/>
                     </VBox>
                 </HBox>
 
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <Label text="Register your application on the HMRC Developer Hub to obtain credentials. Each user must register their own app. Credentials are encrypted and stored locally."
+                    <Label text="%settings.hmrcCredentials.hint"
                            styleClass="settings-hint" wrapText="true" HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="hmrcRegistrationHelpButton" text="How to set up" styleClass="button-secondary" onAction="#handleShowRegistrationHelp"/>
+                    <Button fx:id="hmrcRegistrationHelpButton" text="%settings.hmrcCredentials.help" styleClass="button-secondary" onAction="#handleShowRegistrationHelp"/>
                 </HBox>
 
                 <!-- Redirect URI (read-only, shown first as users need it during registration) -->
                 <VBox spacing="4">
-                    <Label text="Redirect URI (use this when registering your app)" styleClass="settings-label"
+                    <Label text="%settings.hmrcCredentials.redirectUri.label" styleClass="settings-label"
                            labelFor="$hmrcRedirectUriField"/>
                     <HBox spacing="8" alignment="CENTER_LEFT">
                         <TextField fx:id="hmrcRedirectUriField"
                                    text="http://localhost:8088/oauth/callback"
                                    styleClass="utr-field" editable="false" HBox.hgrow="ALWAYS"
-                                   accessibleText="OAuth redirect URI to configure on HMRC Developer Hub"/>
-                        <Button fx:id="copyRedirectUriButton" text="Copy" styleClass="button-secondary" onAction="#handleCopyRedirectUri"/>
+                                   accessibleText="%settings.hmrcCredentials.redirectUri.accessible"/>
+                        <Button fx:id="copyRedirectUriButton" text="%settings.button.copy" styleClass="button-secondary" onAction="#handleCopyRedirectUri"/>
                     </HBox>
                 </VBox>
 
                 <!-- Client ID -->
                 <VBox spacing="4">
-                    <Label text="Client ID" styleClass="settings-label"
+                    <Label text="%settings.hmrcCredentials.clientId.label" styleClass="settings-label"
                            labelFor="$hmrcClientIdField"/>
                     <TextField fx:id="hmrcClientIdField"
-                               promptText="Enter your HMRC Developer Hub Client ID"
+                               promptText="%settings.hmrcCredentials.clientId.prompt"
                                styleClass="utr-field"
-                               accessibleText="Enter your HMRC API Client ID"/>
+                               accessibleText="%settings.hmrcCredentials.clientId.accessible"/>
                 </VBox>
 
                 <!-- Client Secret -->
                 <VBox spacing="4">
-                    <Label text="Client Secret" styleClass="settings-label"
+                    <Label text="%settings.hmrcCredentials.clientSecret.label" styleClass="settings-label"
                            labelFor="$hmrcClientSecretField"/>
                     <PasswordField fx:id="hmrcClientSecretField"
-                                   promptText="Enter your HMRC Developer Hub Client Secret"
+                                   promptText="%settings.hmrcCredentials.clientSecret.prompt"
                                    styleClass="utr-field"
-                                   accessibleText="Enter your HMRC API Client Secret"/>
+                                   accessibleText="%settings.hmrcCredentials.clientSecret.accessible"/>
                 </VBox>
 
                 <!-- Action Buttons -->
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <Button fx:id="saveCredentialsButton" text="Save Credentials" styleClass="button-primary" onAction="#handleSaveHmrcCredentials"/>
-                    <Button fx:id="clearCredentialsButton" text="Clear" styleClass="button-secondary" onAction="#handleClearHmrcCredentials"/>
+                    <Button fx:id="saveCredentialsButton" text="%settings.hmrcCredentials.save" styleClass="button-primary" onAction="#handleSaveHmrcCredentials"/>
+                    <Button fx:id="clearCredentialsButton" text="%settings.button.clear" styleClass="button-secondary" onAction="#handleClearHmrcCredentials"/>
                 </HBox>
             </VBox>
         </VBox>
 
         <!-- HMRC Connection Setup Section -->
         <VBox styleClass="settings-section, settings-section-hmrc" spacing="16">
-            <Label text="HMRC Connection Setup" styleClass="section-title"/>
+            <Label text="%settings.hmrcConnection.title" styleClass="section-title"/>
 
             <VBox styleClass="settings-card, settings-card-hmrc" spacing="12">
                 <!-- Status Display -->
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <FontIcon fx:id="hmrcStatusIcon" iconLiteral="fas-link" iconSize="20" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Connection Status" styleClass="settings-label"/>
-                        <Label fx:id="hmrcConnectionStatusLabel" text="Not set up" styleClass="settings-value"/>
+                        <Label text="%settings.hmrcConnection.statusLabel" styleClass="settings-label"/>
+                        <Label fx:id="hmrcConnectionStatusLabel" text="%settings.hmrcConnection.notSetUp" styleClass="settings-value"/>
                     </VBox>
                 </HBox>
 
                 <!-- Environment Toggle -->
                 <VBox spacing="4">
-                    <Label text="Environment" styleClass="settings-label"
+                    <Label text="%settings.hmrcConnection.environment.label" styleClass="settings-label"
                            labelFor="$hmrcEnvironmentCombo"/>
                     <ComboBox fx:id="hmrcEnvironmentCombo"
                               styleClass="utr-field" maxWidth="250"
-                              accessibleText="Select HMRC environment: Sandbox for testing or Production for live submissions"/>
+                              accessibleText="%settings.hmrcConnection.environment.accessible"/>
                     <Label fx:id="hmrcEnvironmentHint"
-                           text="Sandbox is for testing. Switch to Production only after HMRC approves your application."
+                           text="%settings.hmrcConnection.environment.hint"
                            styleClass="settings-hint" wrapText="true"/>
                 </VBox>
 
                 <!-- Setup Instructions -->
                 <Label fx:id="hmrcSetupInstructions"
-                       text="Set up your HMRC connection to enable MTD submissions. This is a one-time setup that verifies your NINO and connects to your HMRC account."
+                       text="%settings.hmrcConnection.instructions"
                        styleClass="settings-hint" wrapText="true"/>
 
                 <!-- Action Buttons -->
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <Button fx:id="hmrcSetupButton" text="Connect &amp; Verify" styleClass="button-primary" onAction="#handleHmrcSetup"/>
-                    <Button fx:id="hmrcDisconnectButton" text="Disconnect" styleClass="button-secondary" onAction="#handleHmrcDisconnect" visible="false" managed="false"/>
+                    <Button fx:id="hmrcSetupButton" text="%settings.hmrcConnection.connect" styleClass="button-primary" onAction="#handleHmrcSetup"/>
+                    <Button fx:id="hmrcDisconnectButton" text="%settings.hmrcConnection.disconnect" styleClass="button-secondary" onAction="#handleHmrcDisconnect" visible="false" managed="false"/>
                 </HBox>
 
                 <!-- Setup Checklist (shows progress) -->
                 <VBox fx:id="hmrcSetupChecklist" spacing="4" visible="false" managed="false">
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <FontIcon fx:id="checkNino" iconLiteral="fas-circle" iconSize="12"/>
-                        <Label text="NINO saved" styleClass="settings-hint"/>
+                        <Label text="%settings.hmrcConnection.check.nino" styleClass="settings-hint"/>
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <FontIcon fx:id="checkOAuth" iconLiteral="fas-circle" iconSize="12"/>
-                        <Label text="HMRC connected" styleClass="settings-hint"/>
+                        <Label text="%settings.hmrcConnection.check.oauth" styleClass="settings-hint"/>
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <FontIcon fx:id="checkProfile" iconLiteral="fas-circle" iconSize="12"/>
-                        <Label text="Business profile synced" styleClass="settings-hint"/>
+                        <Label text="%settings.hmrcConnection.check.profile" styleClass="settings-hint"/>
                     </HBox>
                 </VBox>
             </VBox>
@@ -207,26 +207,26 @@
 
         <!-- Legal Section -->
         <VBox styleClass="settings-section, settings-section-legal" spacing="16">
-            <Label text="Legal" styleClass="section-title"/>
+            <Label text="%settings.legal.title" styleClass="section-title"/>
 
             <!-- Terms of Service -->
             <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
                 <FontIcon iconLiteral="fas-file-alt" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Terms of Service" styleClass="settings-label"/>
-                    <Label text="View the application terms and conditions" styleClass="settings-description"/>
+                    <Label text="%settings.legal.terms.label" styleClass="settings-label"/>
+                    <Label text="%settings.legal.terms.description" styleClass="settings-description"/>
                 </VBox>
-                <Button fx:id="termsButton" text="View" styleClass="button-secondary" onAction="#handleShowTerms"/>
+                <Button fx:id="termsButton" text="%settings.button.view" styleClass="button-secondary" onAction="#handleShowTerms"/>
             </HBox>
 
             <!-- Privacy Notice -->
             <HBox styleClass="settings-card-row, settings-card-legal" alignment="CENTER_LEFT" spacing="12">
                 <FontIcon iconLiteral="fas-shield-alt" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Privacy Notice" styleClass="settings-label"/>
-                    <Label text="View how your data is handled" styleClass="settings-description"/>
+                    <Label text="%settings.legal.privacy.label" styleClass="settings-label"/>
+                    <Label text="%settings.legal.privacy.description" styleClass="settings-description"/>
                 </VBox>
-                <Button fx:id="privacyButton" text="View" styleClass="button-secondary" onAction="#handleShowPrivacy"/>
+                <Button fx:id="privacyButton" text="%settings.button.view" styleClass="button-secondary" onAction="#handleShowPrivacy"/>
             </HBox>
 
             <!-- Disclaimer removed per SLFEMPUK-22: ToS covers liability -->
@@ -234,45 +234,45 @@
 
         <!-- Data Management Section -->
         <VBox styleClass="settings-section, settings-section-data" spacing="16">
-            <Label text="Data Management" styleClass="section-title"/>
+            <Label text="%settings.data.title" styleClass="section-title"/>
 
             <!-- Back up data -->
             <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
                 <FontIcon iconLiteral="fas-upload" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Back up data" styleClass="settings-label"/>
-                    <Label text="Save a copy of your income, expenses and settings to a file (not bank statements — import those from the Bank section)" styleClass="settings-description"/>
+                    <Label text="%settings.data.backup.label" styleClass="settings-label"/>
+                    <Label text="%settings.data.backup.description" styleClass="settings-description"/>
                 </VBox>
-                <Button fx:id="exportButton" text="Back up" styleClass="button-secondary" onAction="#handleExportData"/>
+                <Button fx:id="exportButton" text="%settings.data.backup.button" styleClass="button-secondary" onAction="#handleExportData"/>
             </HBox>
 
             <!-- Restore from backup -->
             <HBox styleClass="settings-card-row, settings-card-data" alignment="CENTER_LEFT" spacing="12">
                 <FontIcon iconLiteral="fas-download" iconSize="20" styleClass="settings-icon"/>
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Restore from backup" styleClass="settings-label"/>
-                    <Label text="Replace your data with a previously saved backup file" styleClass="settings-description"/>
+                    <Label text="%settings.data.restore.label" styleClass="settings-label"/>
+                    <Label text="%settings.data.restore.description" styleClass="settings-description"/>
                 </VBox>
-                <Button fx:id="importButton" text="Restore" styleClass="button-secondary" onAction="#handleImportData"/>
+                <Button fx:id="importButton" text="%settings.data.restore.button" styleClass="button-secondary" onAction="#handleImportData"/>
             </HBox>
         </VBox>
 
         <!-- About Section -->
         <VBox styleClass="settings-section" spacing="16">
-            <Label text="About" styleClass="section-title"/>
+            <Label text="%settings.about.title" styleClass="section-title"/>
 
             <VBox styleClass="settings-card" spacing="8">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <FontIcon iconLiteral="fas-info-circle" iconSize="20" styleClass="settings-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="UK Self-Employment Manager" styleClass="settings-label"/>
-                        <Label fx:id="versionLabel" text="Version loading..." styleClass="settings-value"/>
+                        <Label text="%settings.about.appName" styleClass="settings-label"/>
+                        <Label fx:id="versionLabel" text="%settings.about.versionLoading" styleClass="settings-value"/>
                     </VBox>
                 </HBox>
                 <Label fx:id="buildDateLabel" text="" styleClass="settings-hint"/>
                 <Label fx:id="licenseLabel" text="" styleClass="settings-hint"/>
                 <Label fx:id="githubLabel" text="" styleClass="settings-hint" style="-fx-text-fill: #3b82f6; -fx-cursor: hand;"
-                       accessibleText="Open project GitHub page"/>
+                       accessibleText="%settings.about.github.accessible"/>
             </VBox>
         </VBox>
 

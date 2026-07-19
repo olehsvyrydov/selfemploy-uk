@@ -82,7 +82,7 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
     public void start(Stage stage) throws Exception {
         this.dialogStage = stage;
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/annual-submission.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/annual-submission.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
         Parent root = loader.load();
         controller = loader.getController();
 

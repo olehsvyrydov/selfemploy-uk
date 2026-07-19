@@ -11,10 +11,10 @@
     <!-- Dialog Header -->
     <HBox styleClass="dialog-header" alignment="CENTER_LEFT" spacing="10">
         <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
-        <Label fx:id="dialogTitle" text="Add Income" styleClass="dialog-title"/>
+        <Label fx:id="dialogTitle" text="%incomeDialog.title.add" styleClass="dialog-title"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Button fx:id="closeBtn" text="X" styleClass="close-button"
-                onAction="#handleClose" accessibleText="Close dialog"/>
+                onAction="#handleClose" accessibleText="%incomeDialog.close.accessible"/>
     </HBox>
 
     <!-- Form Content -->
@@ -24,7 +24,7 @@
         <!-- Date Field -->
         <VBox styleClass="form-field" spacing="6">
             <HBox spacing="2">
-                <Label text="Date" styleClass="field-label"/>
+                <Label text="%incomeDialog.field.date" styleClass="field-label"/>
                 <Label text="*" styleClass="required-indicator"/>
             </HBox>
             <DatePicker fx:id="dateField" maxWidth="Infinity" styleClass="form-input"/>
@@ -34,10 +34,10 @@
         <!-- Client Name Field -->
         <VBox styleClass="form-field" spacing="6">
             <HBox spacing="2">
-                <Label text="Client Name" styleClass="field-label"/>
+                <Label text="%incomeDialog.field.clientName" styleClass="field-label"/>
                 <Label text="*" styleClass="required-indicator"/>
             </HBox>
-            <TextField fx:id="clientNameField" promptText="e.g., Acme Corporation"
+            <TextField fx:id="clientNameField" promptText="%incomeDialog.clientName.prompt"
                        styleClass="form-input"/>
             <Label fx:id="clientNameError" styleClass="field-error" managed="false" visible="false"/>
         </VBox>
@@ -45,10 +45,10 @@
         <!-- Description Field -->
         <VBox styleClass="form-field" spacing="6">
             <HBox spacing="2">
-                <Label text="Description" styleClass="field-label"/>
+                <Label text="%incomeDialog.field.description" styleClass="field-label"/>
                 <Label text="*" styleClass="required-indicator"/>
             </HBox>
-            <TextField fx:id="descriptionField" promptText="e.g., Website design and development"
+            <TextField fx:id="descriptionField" promptText="%incomeDialog.description.prompt"
                        styleClass="form-input"/>
             <Label fx:id="descriptionError" styleClass="field-error" managed="false" visible="false"/>
         </VBox>
@@ -58,7 +58,7 @@
             <!-- Amount Field -->
             <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
                 <HBox spacing="2">
-                    <Label text="Amount" styleClass="field-label"/>
+                    <Label text="%incomeDialog.field.amount" styleClass="field-label"/>
                     <Label text="*" styleClass="required-indicator"/>
                 </HBox>
                 <HBox styleClass="currency-input" spacing="0">
@@ -71,7 +71,7 @@
 
             <!-- Category Field -->
             <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
-                <Label text="Category" styleClass="field-label"/>
+                <Label text="%incomeDialog.field.category" styleClass="field-label"/>
                 <ComboBox fx:id="categoryField" maxWidth="Infinity" styleClass="form-input"/>
             </VBox>
         </HBox>
@@ -80,17 +80,17 @@
         <HBox spacing="16">
             <!-- Status Field -->
             <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
-                <Label text="Status" styleClass="field-label"/>
+                <Label text="%incomeDialog.field.status" styleClass="field-label"/>
                 <ComboBox fx:id="statusField" maxWidth="Infinity" styleClass="form-input"/>
             </VBox>
 
             <!-- Reference Field -->
             <VBox styleClass="form-field" spacing="6" HBox.hgrow="ALWAYS">
                 <HBox spacing="4">
-                    <Label text="Reference" styleClass="field-label"/>
-                    <Label text="(Optional)" styleClass="optional-indicator"/>
+                    <Label text="%incomeDialog.field.reference" styleClass="field-label"/>
+                    <Label text="%incomeDialog.optional" styleClass="optional-indicator"/>
                 </HBox>
-                <TextField fx:id="referenceField" promptText="e.g., INV-001"
+                <TextField fx:id="referenceField" promptText="%incomeDialog.reference.prompt"
                            styleClass="form-input"/>
                 <Label fx:id="referenceError" styleClass="field-error" managed="false" visible="false"/>
             </VBox>
@@ -102,12 +102,12 @@
     <HBox styleClass="dialog-footer" alignment="CENTER_RIGHT" spacing="12">
         <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
 
-        <Button fx:id="deleteBtn" text="Delete" styleClass="button-danger"
+        <Button fx:id="deleteBtn" text="%incomeDialog.button.delete" styleClass="button-danger"
                 onAction="#handleDelete" managed="false" visible="false"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="cancelBtn" text="Cancel" styleClass="button-secondary"
+        <Button fx:id="cancelBtn" text="%incomeDialog.button.cancel" styleClass="button-secondary"
                 onAction="#handleCancel"/>
-        <Button fx:id="saveBtn" text="Save Income" styleClass="button-success"
+        <Button fx:id="saveBtn" text="%incomeDialog.button.save" styleClass="button-success"
                 onAction="#handleSave" disable="true"/>
     </HBox>
 

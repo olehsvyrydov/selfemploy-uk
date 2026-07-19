@@ -33,7 +33,8 @@ public final class BankImportLauncher {
     public static void launch(Window owner, BiConsumer<String, UUID> onImported) {
         try {
             FXMLLoader loader = new FXMLLoader(
-                BankImportLauncher.class.getResource("/fxml/bank-import-wizard.fxml"));
+                BankImportLauncher.class.getResource("/fxml/bank-import-wizard.fxml"),
+                uk.selfemploy.ui.i18n.Messages.bundle());
             Parent root = loader.load();
             BankImportWizardController wizard = loader.getController();
 

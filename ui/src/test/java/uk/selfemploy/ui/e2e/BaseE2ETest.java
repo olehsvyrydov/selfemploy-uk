@@ -45,7 +45,7 @@ public abstract class BaseE2ETest extends ApplicationTest {
     public void start(Stage stage) throws Exception {
         this.primaryStage = stage;
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
         Parent root = loader.load();
 
         Scene scene = new Scene(root, 1200, 800);

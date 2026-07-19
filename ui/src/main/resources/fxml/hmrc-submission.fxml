@@ -19,30 +19,30 @@
 
         <!-- Page Header -->
         <VBox spacing="8">
-            <Label text="HMRC Submission" styleClass="page-title"/>
-            <Label text="Submit your tax returns to HMRC via Making Tax Digital" styleClass="page-subtitle"/>
+            <Label text="%hmrcSubmission.title" styleClass="page-title"/>
+            <Label text="%hmrcSubmission.subtitle" styleClass="page-subtitle"/>
         </VBox>
 
         <!-- Submission Options -->
         <VBox spacing="16">
-            <Label text="Submission Options" styleClass="section-title"/>
+            <Label text="%hmrcSubmission.options.heading" styleClass="section-title"/>
 
             <!-- Annual Self Assessment Card -->
             <VBox fx:id="annualCard" styleClass="feature-card" spacing="12"
                   focusTraversable="true"
                   onMouseClicked="#handleAnnualSubmission"
                   onKeyPressed="#handleAnnualSubmissionKey"
-                  accessibleText="Annual Self Assessment - Submit your annual tax return">
+                  accessibleText="%hmrcSubmission.annual.accessible">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="📋" styleClass="feature-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Annual Self Assessment" styleClass="feature-title"/>
-                        <Label text="Submit your annual tax return (SA100/SA103)" styleClass="feature-description"/>
+                        <Label text="%hmrcSubmission.annual.title" styleClass="feature-title"/>
+                        <Label text="%hmrcSubmission.annual.description" styleClass="feature-description"/>
                     </VBox>
                     <Label text="›" styleClass="feature-arrow"/>
                 </HBox>
                 <HBox spacing="8">
-                    <Label fx:id="annualDeadlineLabel" text="Deadline: 31 January 2027" styleClass="deadline-label"/>
+                    <Label fx:id="annualDeadlineLabel" text="%hmrcSubmission.annual.deadline" styleClass="deadline-label"/>
                 </HBox>
             </VBox>
 
@@ -51,17 +51,17 @@
                   focusTraversable="true"
                   onMouseClicked="#handleQuarterlySubmission"
                   onKeyPressed="#handleQuarterlySubmissionKey"
-                  accessibleText="Quarterly Updates - Submit quarterly income and expense updates to HMRC">
+                  accessibleText="%hmrcSubmission.quarterly.accessible">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="&#128197;" styleClass="feature-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Quarterly Updates" styleClass="feature-title"/>
-                        <Label text="Submit quarterly income/expense updates (MTD ITSA)" styleClass="feature-description"/>
+                        <Label text="%hmrcSubmission.quarterly.title" styleClass="feature-title"/>
+                        <Label text="%hmrcSubmission.quarterly.description" styleClass="feature-description"/>
                     </VBox>
                     <Label text="&#8250;" styleClass="feature-arrow"/>
                 </HBox>
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <Label fx:id="quarterlyStatusLabel" text="Required from April 2026 for income &gt; £50,000" styleClass="mtd-info-label"/>
+                    <Label fx:id="quarterlyStatusLabel" text="%hmrcSubmission.quarterly.status" styleClass="mtd-info-label"/>
                 </HBox>
             </VBox>
 
@@ -70,27 +70,27 @@
                   focusTraversable="true"
                   onMouseClicked="#handleSubmissionHistory"
                   onKeyPressed="#handleSubmissionHistoryKey"
-                  accessibleText="Submission History - View past submissions and their status">
+                  accessibleText="%hmrcSubmission.history.accessible">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Label text="📜" styleClass="feature-icon"/>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Submission History" styleClass="feature-title"/>
-                        <Label text="View past submissions and their status" styleClass="feature-description"/>
+                        <Label text="%hmrcSubmission.history.title" styleClass="feature-title"/>
+                        <Label text="%hmrcSubmission.history.description" styleClass="feature-description"/>
                     </VBox>
                     <Label text="›" styleClass="feature-arrow"/>
                 </HBox>
                 <HBox spacing="8">
-                    <Label fx:id="historyCountLabel" text="0 submissions on record" styleClass="info-label"/>
+                    <Label fx:id="historyCountLabel" text="%hmrcSubmission.history.count" styleClass="info-label"/>
                 </HBox>
             </VBox>
         </VBox>
 
         <!-- Important Information -->
         <VBox styleClass="info-box" spacing="8">
-            <Label text="ℹ Important Information" styleClass="info-title"/>
-            <Label fx:id="submissionChannelInfoLabel" text="• Quarterly updates and annual declarations both use the HMRC Making Tax Digital APIs" styleClass="info-text" wrapText="true"/>
-            <Label text="• All calculations are estimates - verify with a qualified accountant" styleClass="info-text" wrapText="true"/>
-            <Label text="• You are responsible for the accuracy of any information you submit" styleClass="info-text" wrapText="true"/>
+            <Label text="%hmrcSubmission.info.title" styleClass="info-title"/>
+            <Label fx:id="submissionChannelInfoLabel" text="%hmrcSubmission.info.channel" styleClass="info-text" wrapText="true"/>
+            <Label text="%hmrcSubmission.info.estimates" styleClass="info-text" wrapText="true"/>
+            <Label text="%hmrcSubmission.info.responsibility" styleClass="info-text" wrapText="true"/>
         </VBox>
 
     </VBox>

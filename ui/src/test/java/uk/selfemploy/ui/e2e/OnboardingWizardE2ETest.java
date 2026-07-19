@@ -54,7 +54,7 @@ class OnboardingWizardE2ETest extends ApplicationTest {
     public void start(Stage stage) throws Exception {
         this.primaryStage = stage;
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/onboarding-wizard.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/onboarding-wizard.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
         Parent root = loader.load();
         controller = loader.getController();
 

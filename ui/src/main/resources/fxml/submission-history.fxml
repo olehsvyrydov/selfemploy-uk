@@ -18,12 +18,12 @@
 
         <!-- Page Header -->
         <HBox alignment="CENTER_LEFT" spacing="15">
-            <Label text="Submission History" styleClass="page-title"/>
+            <Label text="%submissionHistory.pageTitle" styleClass="page-title"/>
             <Region HBox.hgrow="ALWAYS"/>
             <HBox alignment="CENTER_RIGHT" spacing="12">
-                <Label text="Tax Year:" styleClass="filter-label"/>
+                <Label text="%submissionHistory.taxYearFilterLabel" styleClass="filter-label"/>
                 <ComboBox fx:id="taxYearFilter" styleClass="filter-dropdown"
-                          promptText="All Years" onAction="#handleTaxYearFilter">
+                          promptText="%submissionHistory.taxYearFilterPrompt" onAction="#handleTaxYearFilter">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
                             <String fx:value="All Years"/>
@@ -33,7 +33,7 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
-                <Button fx:id="refreshBtn" text="Refresh" styleClass="button-secondary"
+                <Button fx:id="refreshBtn" text="%submissionHistory.refreshButton" styleClass="button-secondary"
                         onAction="#handleRefresh"/>
             </HBox>
         </HBox>
@@ -42,22 +42,22 @@
         <HBox fx:id="statsRow" styleClass="stats-row" spacing="16" alignment="CENTER_LEFT">
             <VBox styleClass="stat-item" alignment="CENTER" spacing="4">
                 <Label fx:id="totalSubmissionsLabel" text="0" styleClass="stat-value"/>
-                <Label text="Total Submissions" styleClass="stat-label"/>
+                <Label text="%submissionHistory.statTotalSubmissions" styleClass="stat-label"/>
             </VBox>
             <Separator orientation="VERTICAL" styleClass="stat-separator"/>
             <VBox styleClass="stat-item" alignment="CENTER" spacing="4">
                 <Label fx:id="acceptedCountLabel" text="0" styleClass="stat-value, stat-accepted"/>
-                <Label text="Accepted" styleClass="stat-label"/>
+                <Label text="%submissionHistory.statAccepted" styleClass="stat-label"/>
             </VBox>
             <Separator orientation="VERTICAL" styleClass="stat-separator"/>
             <VBox styleClass="stat-item" alignment="CENTER" spacing="4">
                 <Label fx:id="pendingCountLabel" text="0" styleClass="stat-value, stat-pending"/>
-                <Label text="Pending" styleClass="stat-label"/>
+                <Label text="%submissionHistory.statPending" styleClass="stat-label"/>
             </VBox>
             <Separator orientation="VERTICAL" styleClass="stat-separator"/>
             <VBox styleClass="stat-item" alignment="CENTER" spacing="4">
                 <Label fx:id="rejectedCountLabel" text="0" styleClass="stat-value, stat-rejected"/>
-                <Label text="Rejected" styleClass="stat-label"/>
+                <Label text="%submissionHistory.statRejected" styleClass="stat-label"/>
             </VBox>
         </HBox>
 
@@ -66,7 +66,7 @@
               managed="false" visible="false">
             <padding><Insets topRightBottomLeft="40"/></padding>
             <ProgressIndicator fx:id="loadingIndicator" prefWidth="40" prefHeight="40"/>
-            <Label text="Loading submissions..." styleClass="loading-text"/>
+            <Label text="%submissionHistory.loadingText" styleClass="loading-text"/>
         </VBox>
 
         <!-- Submissions List Container -->
@@ -79,25 +79,25 @@
               spacing="16" managed="false" visible="false">
             <!-- Document Icon - using Ikonli FontAwesome5 -->
             <FontIcon iconLiteral="fas-inbox" iconSize="48" styleClass="empty-state-icon"/>
-            <Label text="No Submissions Yet" styleClass="empty-state-title"/>
-            <Label text="Your HMRC submission history will appear here once you submit your first quarterly or annual return."
+            <Label text="%submissionHistory.emptyStateTitle" styleClass="empty-state-title"/>
+            <Label text="%submissionHistory.emptyStateMessage"
                    styleClass="empty-state-message" wrapText="true" textAlignment="CENTER"/>
 
             <!-- Info Box explaining prerequisites - using Ikonli -->
             <HBox fx:id="infoBox" styleClass="info-box" spacing="12" alignment="CENTER_LEFT" maxWidth="400">
                 <FontIcon iconLiteral="fas-info-circle" iconSize="16" styleClass="info-icon"/>
                 <VBox spacing="4">
-                    <Label text="Getting Started" styleClass="info-title"/>
+                    <Label text="%submissionHistory.infoTitle" styleClass="info-title"/>
                     <Label fx:id="infoBoxMessage"
-                           text="To submit returns, first connect to HMRC from the HMRC Submission page."
+                           text="%submissionHistory.infoMessage"
                            styleClass="info-text" wrapText="true"/>
                 </VBox>
             </HBox>
 
             <!-- Primary action button - navigates to HMRC Submission -->
-            <Button fx:id="goToHmrcBtn" text="Go to HMRC Submission" styleClass="button-primary"
+            <Button fx:id="goToHmrcBtn" text="%submissionHistory.goToHmrcButton" styleClass="button-primary"
                     onAction="#handleGoToHmrcSubmission"
-                    accessibleText="Navigate to HMRC Submission page to connect your account"/>
+                    accessibleText="%submissionHistory.goToHmrcAccessible"/>
         </VBox>
 
         <!-- Detail Panel (shown when a submission is selected) -->
@@ -107,8 +107,8 @@
 
             <!-- Detail Header -->
             <HBox alignment="CENTER_LEFT" spacing="12">
-                <Button fx:id="backBtn" text="Back" styleClass="back-button" onAction="#handleBack"/>
-                <Label text="Submission Details" styleClass="panel-title"/>
+                <Button fx:id="backBtn" text="%submissionHistory.backButton" styleClass="back-button" onAction="#handleBack"/>
+                <Label text="%submissionHistory.detailTitle" styleClass="panel-title"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="detailTypeBadge" text="Annual" styleClass="type-badge, type-annual"/>
             </HBox>
@@ -125,27 +125,27 @@
 
             <!-- Reference Section -->
             <VBox styleClass="detail-section" spacing="8">
-                <Label text="HMRC Reference" styleClass="detail-section-label"/>
+                <Label text="%submissionHistory.referenceLabel" styleClass="detail-section-label"/>
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label fx:id="detailReference" text="SA-2025-123456789" styleClass="detail-reference"/>
-                    <Button text="Copy" styleClass="copy-button" onAction="#handleCopyReference"/>
+                    <Button text="%submissionHistory.copyButton" styleClass="copy-button" onAction="#handleCopyReference"/>
                 </HBox>
             </VBox>
 
             <!-- Key Information Grid -->
             <VBox styleClass="detail-section" spacing="12">
-                <Label text="Submission Summary" styleClass="detail-section-label"/>
+                <Label text="%submissionHistory.summaryLabel" styleClass="detail-section-label"/>
 
                 <GridPane styleClass="detail-grid" hgap="16" vgap="8">
-                    <Label text="Tax Year:" styleClass="grid-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <Label text="%submissionHistory.gridTaxYear" styleClass="grid-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                     <Label fx:id="detailTaxYear" text="2025/26" styleClass="grid-value"
                            GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                    <Label text="Submission Type:" styleClass="grid-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <Label text="%submissionHistory.gridSubmissionType" styleClass="grid-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
                     <Label fx:id="detailType" text="Annual Self Assessment" styleClass="grid-value"
                            GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                    <Label text="Submitted:" styleClass="grid-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <Label text="%submissionHistory.gridSubmitted" styleClass="grid-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
                     <Label fx:id="detailSubmitted" text="24 Jan 2026 14:32:15" styleClass="grid-value"
                            GridPane.rowIndex="2" GridPane.columnIndex="1"/>
                 </GridPane>
@@ -153,27 +153,27 @@
 
             <!-- Financial Summary -->
             <VBox styleClass="detail-section" spacing="12">
-                <Label text="Financial Summary" styleClass="detail-section-label"/>
+                <Label text="%submissionHistory.financialSummaryLabel" styleClass="detail-section-label"/>
 
                 <VBox styleClass="financial-summary-card" spacing="8">
                     <HBox alignment="CENTER_LEFT">
-                        <Label text="Total Income" styleClass="summary-label"/>
+                        <Label text="%submissionHistory.totalIncome" styleClass="summary-label"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Label fx:id="detailIncome" text="£45,000.00" styleClass="summary-value, income"/>
                     </HBox>
                     <HBox alignment="CENTER_LEFT">
-                        <Label text="Total Expenses" styleClass="summary-label"/>
+                        <Label text="%submissionHistory.totalExpenses" styleClass="summary-label"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Label fx:id="detailExpenses" text="£13,000.00" styleClass="summary-value, expense"/>
                     </HBox>
                     <Separator/>
                     <HBox alignment="CENTER_LEFT">
-                        <Label text="Net Profit" styleClass="summary-label, bold"/>
+                        <Label text="%submissionHistory.netProfit" styleClass="summary-label, bold"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Label fx:id="detailProfit" text="£32,000.00" styleClass="summary-value, profit"/>
                     </HBox>
                     <HBox alignment="CENTER_LEFT">
-                        <Label text="Tax Due" styleClass="summary-label, bold"/>
+                        <Label text="%submissionHistory.taxDue" styleClass="summary-label, bold"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Label fx:id="detailTaxDue" text="£5,051.80" styleClass="summary-value, tax"/>
                     </HBox>
@@ -183,7 +183,7 @@
             <!-- Error Message (only for rejected submissions) - using Ikonli icons -->
             <VBox fx:id="errorSection" styleClass="error-section" spacing="12"
                   managed="false" visible="false">
-                <Label text="Error Details" styleClass="detail-section-label"/>
+                <Label text="%submissionHistory.errorDetailsLabel" styleClass="detail-section-label"/>
                 <HBox styleClass="error-box" alignment="CENTER_LEFT" spacing="8">
                     <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="14" styleClass="error-icon"/>
                     <Label fx:id="detailErrorMessage" text="Invalid calculation reference"
@@ -195,25 +195,25 @@
                       managed="true" visible="true">
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <FontIcon iconLiteral="fas-lightbulb" iconSize="14" styleClass="guidance-icon"/>
-                        <Label text="How to resolve this" styleClass="guidance-title"/>
+                        <Label text="%submissionHistory.howToResolve" styleClass="guidance-title"/>
                     </HBox>
                     <Label fx:id="errorGuidanceText"
                            text="Check your submission details and try again."
                            styleClass="guidance-text" wrapText="true"/>
-                    <Hyperlink fx:id="learnMoreLink" text="Learn more on GOV.UK"
+                    <Hyperlink fx:id="learnMoreLink" text="%submissionHistory.learnMoreLink"
                                styleClass="guidance-link" onAction="#handleLearnMore"
-                               accessibleText="Open HMRC guidance on Self Assessment corrections"/>
+                               accessibleText="%submissionHistory.learnMoreAccessible"/>
                 </VBox>
 
-                <Button fx:id="retryBtn" text="Retry Submission" styleClass="button-warning"
+                <Button fx:id="retryBtn" text="%submissionHistory.retryButton" styleClass="button-warning"
                         onAction="#handleRetry" disable="true"/>
             </VBox>
 
             <!-- Actions -->
             <HBox alignment="CENTER" spacing="12">
-                <Button fx:id="downloadPdfBtn" text="Download PDF" styleClass="button-secondary"
+                <Button fx:id="downloadPdfBtn" text="%submissionHistory.downloadPdfButton" styleClass="button-secondary"
                         onAction="#handleDownloadPDF"
-                        accessibleText="Download PDF confirmation for this submission"/>
+                        accessibleText="%submissionHistory.downloadPdfAccessible"/>
             </HBox>
         </VBox>
 

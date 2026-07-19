@@ -96,7 +96,7 @@ public class Launcher extends Application {
      */
     private boolean requireTermsAcceptance(Stage owner, List<String> stylesheets) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/terms-of-service.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/terms-of-service.fxml"), Messages.bundle());
             Parent root = loader.load();
             TermsOfServiceController controller = loader.getController();
             // The controller builds its view model only when given the acceptance service; without
@@ -141,7 +141,7 @@ public class Launcher extends Application {
             return false;
         }
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/onboarding-wizard.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/onboarding-wizard.fxml"), Messages.bundle());
             Parent root = loader.load();
             OnboardingController controller = loader.getController();
 

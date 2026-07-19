@@ -726,7 +726,7 @@ public class TransactionReviewController implements Initializable, MainControlle
     @FXML
     private void handleGoToImport(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
             Parent root = loader.load();
             BankImportWizardController wizard = loader.getController();
 

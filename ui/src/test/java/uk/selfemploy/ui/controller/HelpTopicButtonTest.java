@@ -30,7 +30,7 @@ class HelpTopicButtonTest {
 
     @Start
     private void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/help.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/help.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
         Parent root = loader.load();
         controller = loader.getController();
 

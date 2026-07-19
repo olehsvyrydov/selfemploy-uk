@@ -491,7 +491,7 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
     @FXML
     void handleImportBankStatement(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/bank-import-wizard.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
             Parent root = loader.load();
 
             BankImportWizardController controller = loader.getController();

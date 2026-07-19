@@ -119,7 +119,8 @@ public final class IncomeDialogHelper {
         try {
             // Load FXML
             FXMLLoader loader = new FXMLLoader(
-                    IncomeDialogHelper.class.getResource("/fxml/income-dialog.fxml"));
+                    IncomeDialogHelper.class.getResource("/fxml/income-dialog.fxml"),
+                    uk.selfemploy.ui.i18n.Messages.bundle());
             VBox dialogContent = loader.load();
 
             // Configure controller

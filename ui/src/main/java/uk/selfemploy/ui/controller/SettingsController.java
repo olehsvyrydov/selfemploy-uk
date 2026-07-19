@@ -1476,7 +1476,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
                                          UUID businessId,
                                          Path filePath) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/import-review.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/import-review.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
             Parent root = loader.load();
 
             Stage stage = new Stage();
@@ -1608,7 +1608,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private void showLegalDocument(String fxmlPath, String title, boolean settingsMode) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath), uk.selfemploy.ui.i18n.Messages.bundle());
             Parent root = loader.load();
 
             Stage stage = new Stage();

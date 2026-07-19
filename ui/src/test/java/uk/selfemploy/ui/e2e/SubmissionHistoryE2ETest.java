@@ -85,7 +85,7 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         }
 
         FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/fxml/submission-history.fxml"));
+                getClass().getResource("/fxml/submission-history.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
         Parent root = loader.load();
         controller = loader.getController();
 

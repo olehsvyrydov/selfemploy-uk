@@ -111,7 +111,7 @@ public class MainController implements Initializable {
      */
     private void setupNotificationPanel() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/notification-panel.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/notification-panel.fxml"), uk.selfemploy.ui.i18n.Messages.bundle());
             Node panel = loader.load();
             notificationPanelController = loader.getController();
             notificationPanelController.initializeWithService(notificationService);
