@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -21,15 +22,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>The original bug was a {@link javafx.scene.control.Alert} that blocked the app while
  * rendering nothing on screen. {@link AppDialog} replaces it with a real, owned {@link Stage}.
- * This test boots the JavaFX toolkit directly (no TestFX / Monocle dependency) so it runs in the
- * ordinary PR test job under a virtual display (Xvfb in CI), and asserts that a shown AppDialog is
- * a genuine, on-screen, non-degenerate window built on the transparent application-modal Stage
- * recipe — the properties a raw Alert regression would violate.</p>
+ * This test boots the JavaFX toolkit directly (no TestFX / Monocle dependency) and asserts that a
+ * shown AppDialog is a genuine, on-screen, non-degenerate window built on the transparent
+ * application-modal Stage recipe — the properties a raw Alert regression would violate.</p>
  *
- * <p>If no JavaFX-capable display is available at all (a truly headless box with no Xvfb), the
- * toolkit cannot start and the assertions are skipped rather than failing the build.</p>
+ * <p>Tagged {@code e2e} because booting the real toolkit is process-global and perturbs the shared
+ * unit-test JVM; it therefore runs alongside the other display-backed tests, not in the plain PR
+ * unit fork. The PR-CI guard against a raw {@code new Alert(} returning is the content-lint gate.</p>
+ *
+ * <p>If no JavaFX-capable display is available at all, the toolkit cannot start and the assertions
+ * are skipped rather than failing the build.</p>
  */
-@DisplayName("AppDialog visibility (PR CI)")
+@Tag("e2e")
+@DisplayName("AppDialog visibility")
 class AppDialogVisibilityTest {
 
     private static boolean fxReady;
