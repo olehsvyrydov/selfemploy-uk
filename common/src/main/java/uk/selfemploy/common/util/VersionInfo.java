@@ -63,6 +63,14 @@ public final class VersionInfo {
      * Returns the GitHub repository URL.
      */
     public static String getGitHubUrl() {
-        return "https://github.com/olehsvyrydov/selfemploy-uk";
+        return PROPS.getProperty("github.url", "https://github.com/olehsvyrydov/selfemploy-uk");
+    }
+
+    /**
+     * Returns the GitHub API URL for the latest release, used by the update check.
+     */
+    public static String getReleasesApiUrl() {
+        return PROPS.getProperty("github.releases.api.url",
+                "https://api.github.com/repos/olehsvyrydov/selfemploy-uk/releases/latest");
     }
 }

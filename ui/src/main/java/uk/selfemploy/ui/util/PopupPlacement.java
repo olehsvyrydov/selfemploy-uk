@@ -52,9 +52,9 @@ public final class PopupPlacement {
         double belowY = anchorMinY + anchorHeight;
         double spaceBelow = screenMaxY - belowY;
         double y = shouldFlipUp(spaceBelow, popupHeight) ? anchorMinY - popupHeight : belowY;
-        double highestTop = screenMaxY - popupHeight; // top position that still keeps the bottom on-screen
+        double highestTop = screenMaxY - popupHeight;
         if (highestTop < screenMinY) {
-            return screenMinY; // popup taller than the screen: pin its top to the top edge
+            return screenMinY;
         }
         return Math.max(screenMinY, Math.min(y, highestTop));
     }
@@ -70,16 +70,13 @@ public final class PopupPlacement {
     public static void showBelowOrAbove(PopupWindow popup, Node anchor) {
         Bounds anchorBounds = anchor.localToScreen(anchor.getBoundsInLocal());
         if (anchorBounds == null) {
-            // Anchor is not on a shown scene: without an owner window the popup can be neither placed
-            // nor safely shown, so skip it rather than call show(null) (which throws).
             Window owner = anchor.getScene() != null ? anchor.getScene().getWindow() : null;
             if (owner != null) {
-                popup.show(owner);
+                popup.show(owner); // guard: PopupWindow.show(null) throws
             }
             return;
         }
         Rectangle2D visual = visualBoundsFor(anchorBounds);
-        // Show below first so the popup lays out and reports a real height, then flip up if needed.
         popup.show(anchor, anchorBounds.getMinX(), anchorBounds.getMaxY());
         double y = resolveTopY(anchorBounds.getMinY(), anchorBounds.getHeight(), popup.getHeight(),
                 visual.getMinY(), visual.getMaxY());
