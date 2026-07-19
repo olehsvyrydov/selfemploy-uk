@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   version-bump:
@@ -15,26 +15,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine version bump type
         id: bump
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_BODY="${{ github.event.pull_request.body }}"
-          COMMITS=$(git log --format="%s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
-
-          # Check for major (breaking changes)
-          if echo "$COMMITS" | grep -qiE "BREAKING CHANGE|!:" || echo "$PR_TITLE" | grep -qiE "BREAKING CHANGE|!:"; then
-            echo "bump=major" >> $GITHUB_OUTPUT
-          # Check for minor (features) - match per-line with grep
-          elif echo "$COMMITS" | grep -qiE "^feat:|^feature:" || echo "$PR_TITLE" | grep -qiE "^feat:|^feature:"; then
-            echo "bump=minor" >> $GITHUB_OUTPUT
-          # Default to patch (fixes, chores, etc.)
+          if printf '%s\n%s' "$PR_TITLE" "$PR_BODY" | grep -qiE "BREAKING CHANGE|!:"; then
+            echo "bump=major" >> "$GITHUB_OUTPUT"
+          elif echo "$PR_TITLE" | grep -qiE "^(feat|feature)(\(.+\))?:"; then
+            echo "bump=minor" >> "$GITHUB_OUTPUT"
           else
-            echo "bump=patch" >> $GITHUB_OUTPUT
+            echo "bump=patch" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Java
@@ -47,40 +40,25 @@ jobs:
         id: current
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          # Strip any -SNAPSHOT or pre-release suffix for calculation
           BASE=$(echo "$VERSION" | sed 's/-.*$//')
-          echo "base=$BASE" >> $GITHUB_OUTPUT
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
 
-      - name: Calculate next version
-        id: next
+      - name: Report suggested next version
+        env:
+          BASE: ${{ steps.current.outputs.base }}
+          BUMP: ${{ steps.bump.outputs.bump }}
         run: |
-          BASE="${{ steps.current.outputs.base }}"
-          BUMP="${{ steps.bump.outputs.bump }}"
-
           IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
-
           case "$BUMP" in
             major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
             minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
             patch) PATCH=$((PATCH + 1)) ;;
           esac
-
           NEXT="${MAJOR}.${MINOR}.${PATCH}"
-          echo "version=$NEXT" >> $GITHUB_OUTPUT
-          echo "Bumping $BUMP: $BASE -> $NEXT"
-
-      - name: Update pom.xml versions
-        run: |
-          NEXT="${{ steps.next.outputs.version }}"
-          mvn versions:set -DnewVersion="$NEXT" -DgenerateBackupPoms=false -q
-
-      - name: Commit and tag
-        run: |
-          NEXT="${{ steps.next.outputs.version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A '*.xml'
-          git commit -m "chore: bump version to ${NEXT} [skip ci]"
-          git tag -a "v${NEXT}" -m "Release v${NEXT}"
-          git push origin main --tags
+          {
+            echo "### Suggested next version"
+            echo ""
+            echo "Bump **$BUMP**: \`$BASE\` → \`$NEXT\`"
+            echo ""
+            echo "_Advisory only — no commit, tag, or push is made. Set the version manually at release time._"
+          } >> "$GITHUB_STEP_SUMMARY"
