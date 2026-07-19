@@ -287,16 +287,24 @@ public class TransactionReviewController implements Initializable, MainControlle
         });
         confidenceCol.setStyle("-fx-alignment: CENTER;");
 
-        // Business/Personal column - toggle buttons
+        // Business/Personal column - segmented toggle that classifies THIS row (single-row control).
+        // The batch bar above the table applies the same two states to the checkbox selection; the two
+        // are deliberately distinct (one row here vs. the current selection there), not duplicates.
         businessCol.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getBusinessLabel()));
         businessCol.setCellFactory(col -> new TableCell<>() {
-            private final ToggleButton busBtn = new ToggleButton("Bus");
-            private final ToggleButton persBtn = new ToggleButton("Pers");
+            private final ToggleButton busBtn = new ToggleButton(Messages.get("review.toggle.business"));
+            private final ToggleButton persBtn = new ToggleButton(Messages.get("review.toggle.personal"));
             private final HBox box = new HBox(4, busBtn, persBtn);
             {
                 busBtn.getStyleClass().add("toggle-business");
                 persBtn.getStyleClass().add("toggle-personal");
+                applyLabelledControl(busBtn, "review.toggle.business.hint");
+                applyLabelledControl(persBtn, "review.toggle.personal.hint");
+                busBtn.setMaxWidth(Double.MAX_VALUE);
+                persBtn.setMaxWidth(Double.MAX_VALUE);
+                HBox.setHgrow(busBtn, javafx.scene.layout.Priority.ALWAYS);
+                HBox.setHgrow(persBtn, javafx.scene.layout.Priority.ALWAYS);
                 busBtn.setOnAction(e -> {
                     TransactionReviewTableRow row = getTableView().getItems().get(getIndex());
                     if (viewModel != null) {
@@ -347,12 +355,14 @@ public class TransactionReviewController implements Initializable, MainControlle
 
         // Actions column - buttons
         actionCol.setCellFactory(col -> new TableCell<>() {
-            private final Button excludeBtn = new Button("Exclude");
-            private final Button skipBtn = new Button("Skip");
+            private final Button excludeBtn = new Button(Messages.get("review.action.exclude"));
+            private final Button skipBtn = new Button(Messages.get("review.action.skip"));
             private final HBox box = new HBox(4, excludeBtn, skipBtn);
             {
                 excludeBtn.getStyleClass().addAll("action-btn", "action-btn-exclude");
                 skipBtn.getStyleClass().addAll("action-btn", "action-btn-skip");
+                applyLabelledControl(excludeBtn, "review.action.exclude.hint");
+                applyLabelledControl(skipBtn, "review.action.skip.hint");
                 excludeBtn.setOnAction(e -> {
                     TransactionReviewTableRow row = getTableView().getItems().get(getIndex());
                     handleExcludeSingle(row);
@@ -381,6 +391,20 @@ public class TransactionReviewController implements Initializable, MainControlle
                 }
             }
         });
+    }
+
+    /**
+     * Attaches a hover tooltip and a screen-reader label (both from the given message key) to a control
+     * whose visible text is too terse to stand alone, so the intent is available to sighted and
+     * assistive-technology users alike.
+     *
+     * @param control the button or toggle to label
+     * @param hintKey the message-bundle key for the tooltip and accessible text
+     */
+    private static void applyLabelledControl(Control control, String hintKey) {
+        String hint = Messages.get(hintKey);
+        control.setTooltip(new Tooltip(hint));
+        control.setAccessibleText(hint);
     }
 
     private void setupKeyboardShortcuts() {

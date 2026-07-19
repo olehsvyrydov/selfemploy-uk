@@ -111,7 +111,7 @@
                 <TableColumn fx:id="amountCol" text="%review.col.amount" prefWidth="110" minWidth="90"/>
                 <TableColumn fx:id="categoryCol" text="%review.col.category" prefWidth="130" minWidth="100"/>
                 <TableColumn fx:id="confidenceCol" text="%review.col.confidence" prefWidth="100" minWidth="80"/>
-                <TableColumn fx:id="businessCol" text="%review.col.busPers" prefWidth="100" minWidth="80" sortable="false"/>
+                <TableColumn fx:id="businessCol" text="%review.col.busPers" prefWidth="190" minWidth="180" sortable="false"/>
                 <TableColumn fx:id="statusCol" text="%review.col.status" prefWidth="100" minWidth="80"/>
                 <TableColumn fx:id="actionCol" text="%review.col.actions" prefWidth="150" minWidth="140" sortable="false"/>
             </columns>

@@ -9,6 +9,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
@@ -34,7 +35,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
@@ -187,15 +190,47 @@ public class MainController implements Initializable {
     }
 
     private void selectNavButton(View view) {
-        switch (view) {
+        switch (highlightFor(view)) {
             case DASHBOARD -> navDashboard.setSelected(true);
             case INCOME -> navIncome.setSelected(true);
             case EXPENSES -> navExpenses.setSelected(true);
-            case BANK, TRANSACTION_REVIEW, RECONCILIATION, IMPORT_HISTORY -> navBank.setSelected(true);
-            case TAX_SUMMARY -> navTax.setSelected(true);
-            case HMRC_SUBMISSION -> navHmrc.setSelected(true);
-            default -> {} // Help and Settings don't have nav buttons
+            case BANK -> navBank.setSelected(true);
+            case TAX -> navTax.setSelected(true);
+            case HMRC -> navHmrc.setSelected(true);
+            // Help and Settings have no sidebar button: drop the previous item's highlight
+            // instead of leaving it falsely marked as the current view.
+            case NONE -> clearNavSelection();
         }
+    }
+
+    /** Clears the sidebar highlight so no navigation item appears selected. */
+    private void clearNavSelection() {
+        if (navGroup != null) {
+            navGroup.selectToggle(null);
+        }
+    }
+
+    /** The sidebar nav button (if any) that represents a view. */
+    enum NavHighlight { DASHBOARD, INCOME, EXPENSES, BANK, TAX, HMRC, NONE }
+
+    /**
+     * Maps a view to the sidebar button that should be highlighted while it is showing.
+     * Sub-views of the Bank section share its button; Help and Settings own no sidebar button
+     * and therefore clear the highlight ({@link NavHighlight#NONE}).
+     *
+     * @param view the view being shown
+     * @return the nav button to highlight, or {@link NavHighlight#NONE} to clear the highlight
+     */
+    static NavHighlight highlightFor(View view) {
+        return switch (view) {
+            case DASHBOARD -> NavHighlight.DASHBOARD;
+            case INCOME -> NavHighlight.INCOME;
+            case EXPENSES -> NavHighlight.EXPENSES;
+            case BANK, TRANSACTION_REVIEW, RECONCILIATION, IMPORT_HISTORY -> NavHighlight.BANK;
+            case TAX_SUMMARY -> NavHighlight.TAX;
+            case HMRC_SUBMISSION -> NavHighlight.HMRC;
+            case SETTINGS, HELP -> NavHighlight.NONE;
+        };
     }
 
     private void updateStatusBar() {
@@ -299,6 +334,48 @@ public class MainController implements Initializable {
         }
 
         contentPane.getChildren().setAll(viewNode);
+        resetScroll(viewNode);
+    }
+
+    /**
+     * Scrolls a freshly shown view back to the top. Views are cached and reused, so without this a
+     * revisited screen would reappear at its previous scroll position.
+     *
+     * @param viewNode the root node of the view just placed in the content area
+     */
+    private void resetScroll(Node viewNode) {
+        List<ScrollPane> scrollPanes = new ArrayList<>();
+        collectScrollPanes(viewNode, scrollPanes);
+        for (ScrollPane scrollPane : scrollPanes) {
+            scrollPane.setVvalue(0);
+            scrollPane.setHvalue(0);
+        }
+    }
+
+    /**
+     * Collects every {@link ScrollPane} at or under {@code node} — including those nested inside
+     * another ScrollPane's content — so a cached view with more than one scroll region resets fully.
+     * Traverses {@link ScrollPane#getContent()} directly rather than relying on the skin, since this
+     * runs before the view is laid out.
+     */
+    private static void collectScrollPanes(Node node, List<ScrollPane> out) {
+        if (node == null) {
+            return;
+        }
+        if (node instanceof ScrollPane scrollPane) {
+            out.add(scrollPane);
+            collectScrollPanes(scrollPane.getContent(), out);
+        } else if (node instanceof TabPane tabPane) {
+            // Tab content is not reachable through getChildrenUnmodifiable() before the skin builds,
+            // so descend into each tab's content directly (the Bank view embeds scroll panes in tabs).
+            for (Tab tab : tabPane.getTabs()) {
+                collectScrollPanes(tab.getContent(), out);
+            }
+        } else if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                collectScrollPanes(child, out);
+            }
+        }
     }
 
     /**

@@ -3,6 +3,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="uk.selfemploy.ui.controller.ExpenseDialogController"
@@ -122,7 +123,7 @@
                 <VBox fx:id="receiptDropzone" styleClass="receipt-dropzone" spacing="12"
                       alignment="CENTER" onDragOver="#handleDragOver" onDragDropped="#handleDragDropped"
                       onDragExited="#handleDragExited">
-                    <Label text="+" styleClass="receipt-dropzone-icon"/>
+                    <FontIcon iconLiteral="fas-plus" iconSize="32" styleClass="receipt-dropzone-icon"/>
                     <Button fx:id="attachBtn" text="%expenseDialog.attachReceipt" styleClass="button-attach"
                             onAction="#handleAttachReceipt"/>
                     <Label text="%expenseDialog.dropzone.text" styleClass="receipt-dropzone-text"/>
@@ -139,7 +140,7 @@
             <!-- Error Message (conditional) -->
             <HBox fx:id="receiptError" styleClass="receipt-error" spacing="8"
                   alignment="CENTER_LEFT" managed="false" visible="false">
-                <Label text="!" styleClass="receipt-error-icon"/>
+                <FontIcon iconLiteral="fas-exclamation-circle" iconSize="16" styleClass="receipt-error-icon"/>
                 <VBox spacing="2" HBox.hgrow="ALWAYS">
                     <Label fx:id="receiptErrorText" text="" styleClass="receipt-error-text"/>
                     <Label fx:id="receiptErrorHelper" text="" styleClass="receipt-error-helper"/>

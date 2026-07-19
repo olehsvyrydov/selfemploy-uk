@@ -7,6 +7,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.geometry.Rectangle2D;
@@ -47,8 +48,10 @@ import uk.selfemploy.ui.service.HmrcRegistrationGuide;
 import uk.selfemploy.ui.service.HmrcCredentialValidator;
 import uk.selfemploy.ui.service.HmrcConnectionService;
 import uk.selfemploy.ui.service.OAuthServiceFactory;
+import uk.selfemploy.ui.service.InstallType;
 import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.UiDuplicateDetectionService;
+import uk.selfemploy.ui.service.UpdateCheckService;
 import uk.selfemploy.ui.viewmodel.ImportAction;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import uk.selfemploy.ui.i18n.Messages;
@@ -58,9 +61,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.javafx.FontIcon;
-
-import java.awt.Desktop;
-import java.net.URI;
+import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -151,6 +152,9 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private Label buildDateLabel;
     @FXML private Label licenseLabel;
     @FXML private Label githubLabel;
+    @FXML private CheckBox updateCheckToggle;
+    @FXML private Label updateStatusLabel;
+    @FXML private Label updateGuidanceLabel;
 
     // HMRC API Credentials FXML fields
     @FXML private Label hmrcCredentialsStatusLabel;
@@ -1326,13 +1330,94 @@ public class SettingsController implements Initializable, MainController.TaxYear
         if (githubLabel != null) {
             String url = VersionInfo.getGitHubUrl();
             githubLabel.setText(url);
-            githubLabel.setOnMouseClicked(e -> {
-                try {
-                    Desktop.getDesktop().browse(new URI(url));
-                } catch (Exception ex) {
-                    LOG.log(Level.WARNING, "Failed to open GitHub URL", ex);
+            githubLabel.setOnMouseClicked(e -> BrowserUtil.openUrl(url));
+        }
+        initUpdateCheck();
+    }
+
+    /**
+     * Wires the update-check opt-out toggle and, when enabled, kicks off a background check whose
+     * result is rendered in the About section. The check is non-blocking and fails silently, so an
+     * offline user simply sees no update notice.
+     */
+    private void initUpdateCheck() {
+        if (updateCheckToggle != null) {
+            updateCheckToggle.setSelected(SqliteDataStore.getInstance().isUpdateCheckEnabled());
+            updateCheckToggle.selectedProperty().addListener((obs, oldValue, enabled) -> {
+                SqliteDataStore.getInstance().saveUpdateCheckEnabled(enabled);
+                if (enabled) {
+                    runUpdateCheck();
+                } else {
+                    hideUpdateNotice();
                 }
             });
+        }
+        runUpdateCheck();
+    }
+
+    private void runUpdateCheck() {
+        // Skip (and clear any notice) when the user has opted out, without a settings-store read here.
+        if (updateCheckToggle != null && !updateCheckToggle.isSelected()) {
+            hideUpdateNotice();
+            return;
+        }
+        showUpdateStatus(Messages.get("settings.about.updateChecking"));
+        new UpdateCheckService().checkForUpdateAsync()
+                .thenAccept(result -> Platform.runLater(() -> applyUpdateResult(result)))
+                .exceptionally(ex -> {
+                    LOG.log(Level.FINE, "Update check failed", ex);
+                    Platform.runLater(this::hideUpdateNotice);
+                    return null;
+                });
+    }
+
+    private void applyUpdateResult(java.util.Optional<UpdateCheckService.UpdateCheckResult> result) {
+        // The check is async: if the user disabled updates while it was in flight, honour that.
+        if (updateCheckToggle != null && !updateCheckToggle.isSelected()) {
+            hideUpdateNotice();
+            return;
+        }
+        if (result.isEmpty()) {
+            // Could not determine (offline / failed): show nothing rather than a false "up to date".
+            hideUpdateNotice();
+            return;
+        }
+        UpdateCheckService.UpdateCheckResult update = result.get();
+        if (!update.updateAvailable()) {
+            showUpdateStatus(Messages.get("settings.about.updateUpToDate"));
+            hideGuidance();
+            return;
+        }
+        showUpdateStatus(Messages.format("settings.about.updateAvailable", update.latestVersion()));
+        if (updateGuidanceLabel != null) {
+            updateGuidanceLabel.setText(Messages.get(InstallType.detect().guidanceKey()));
+            updateGuidanceLabel.setVisible(true);
+            updateGuidanceLabel.setManaged(true);
+            updateGuidanceLabel.setOnMouseClicked(e -> BrowserUtil.openUrl(VersionInfo.getGitHubUrl() + "/releases"));
+        }
+    }
+
+    private void showUpdateStatus(String text) {
+        if (updateStatusLabel != null) {
+            updateStatusLabel.setText(text);
+            updateStatusLabel.setVisible(true);
+            updateStatusLabel.setManaged(true);
+        }
+    }
+
+    private void hideGuidance() {
+        if (updateGuidanceLabel != null) {
+            updateGuidanceLabel.setVisible(false);
+            updateGuidanceLabel.setManaged(false);
+        }
+    }
+
+    private void hideUpdateNotice() {
+        for (Label label : new Label[]{updateStatusLabel, updateGuidanceLabel}) {
+            if (label != null) {
+                label.setVisible(false);
+                label.setManaged(false);
+            }
         }
     }
 
