@@ -496,8 +496,6 @@ public class BankImportWizardController implements Initializable {
                         refreshSummaryStats();
                     });
                     helpBtn.getStyleClass().add("category-help-btn");
-                    // Keep it keyboard-reachable (default focus traversal) so keyboard-only users can
-                    // open the category help.
                     helpBtn.setTooltip(new Tooltip(Messages.get("bankImport.categoryHelp.button")));
                     helpBtn.setAccessibleText(Messages.get("bankImport.categoryHelp.accessible"));
                     helpBtn.setOnAction(e -> showCategoryHelp(helpBtn, combo.getValue()));

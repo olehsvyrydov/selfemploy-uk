@@ -353,10 +353,11 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Collects every {@link ScrollPane} at or under {@code node} — including those nested inside
-     * another ScrollPane's content — so a cached view with more than one scroll region resets fully.
-     * Traverses {@link ScrollPane#getContent()} directly rather than relying on the skin, since this
-     * runs before the view is laid out.
+     * Collects every {@link ScrollPane} at or under {@code node} — including panes nested inside
+     * another pane's content or a tab — so a cached view with more than one scroll region resets
+     * fully. Descends through {@link ScrollPane#getContent()} and {@link javafx.scene.control.Tab}
+     * content directly, because neither is reachable through {@code getChildrenUnmodifiable()} until
+     * the skin builds and this runs before the view is laid out.
      */
     private static void collectScrollPanes(Node node, List<ScrollPane> out) {
         if (node == null) {
@@ -366,8 +367,6 @@ public class MainController implements Initializable {
             out.add(scrollPane);
             collectScrollPanes(scrollPane.getContent(), out);
         } else if (node instanceof TabPane tabPane) {
-            // Tab content is not reachable through getChildrenUnmodifiable() before the skin builds,
-            // so descend into each tab's content directly (the Bank view embeds scroll panes in tabs).
             for (Tab tab : tabPane.getTabs()) {
                 collectScrollPanes(tab.getContent(), out);
             }

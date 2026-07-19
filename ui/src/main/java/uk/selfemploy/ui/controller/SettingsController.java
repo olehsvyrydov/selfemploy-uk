@@ -1356,7 +1356,6 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     private void runUpdateCheck() {
-        // Skip (and clear any notice) when the user has opted out, without a settings-store read here.
         if (updateCheckToggle != null && !updateCheckToggle.isSelected()) {
             hideUpdateNotice();
             return;
@@ -1372,7 +1371,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
     }
 
     private void applyUpdateResult(java.util.Optional<UpdateCheckService.UpdateCheckResult> result) {
-        // The check is async: if the user disabled updates while it was in flight, honour that.
+        // Re-check: the user may have opted out while this async result was in flight.
         if (updateCheckToggle != null && !updateCheckToggle.isSelected()) {
             hideUpdateNotice();
             return;

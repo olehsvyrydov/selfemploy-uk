@@ -2294,9 +2294,8 @@
     -fx-min-width: 72;
 }
 
-/* Colours for glyphs migrated from text Labels to FontIcon. A FontIcon is a Text node coloured by
-   -fx-icon-color, not -fx-text-fill, so each icon's former colour is mirrored here. */
-/* Plain glyphs: colour the FontIcon directly. */
+/* FontIcon is a Text node coloured by -fx-icon-color (not -fx-text-fill). Badge glyphs keep their
+   chrome on the wrapping StackPane and colour a -glyph child. */
 .detection-icon { -fx-icon-color: -fx-success; }
 .warning-icon { -fx-icon-color: #856404; }
 .warning-banner-icon { -fx-icon-color: #856404; }
@@ -2316,8 +2315,6 @@
 .section-toggle { -fx-icon-color: -fx-text-secondary; }
 .pension-insight-icon { -fx-icon-color: #f59e0b; }
 
-/* Badge glyphs: the badge chrome (background/padding/radius) stays on the StackPane wrapper; the
-   FontIcon child carries only the glyph colour. */
 .drop-zone-glyph { -fx-icon-color: -fx-primary; }
 .file-glyph { -fx-icon-color: -fx-primary; }
 .info-banner-glyph { -fx-icon-color: -fx-primary; }

@@ -30,10 +30,6 @@ public class UpdateCheckService {
 
     private static final Logger LOG = Logger.getLogger(UpdateCheckService.class.getName());
 
-    /** The GitHub API endpoint returning the latest published release for the project repository. */
-    static final String LATEST_RELEASE_URL =
-            "https://api.github.com/repos/olehsvyrydov/selfemploy-uk/releases/latest";
-
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(15);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -93,14 +89,13 @@ public class UpdateCheckService {
     }
 
     /**
-     * Runs {@link #checkForUpdate()} off the calling thread. When checks are disabled the fetcher is
-     * never invoked and the future completes with an empty result.
+     * Runs {@link #checkForUpdate()} off the calling thread. The whole check — including the enabled
+     * flag, which is a blocking settings read that may fail — runs on the executor, never on the
+     * caller's (FX) thread. When checks are disabled the fetcher is never invoked.
      *
      * @return a future of the result, empty when disabled or when no update information is available
      */
     public CompletableFuture<Optional<UpdateCheckResult>> checkForUpdateAsync() {
-        // The enabled check reads persisted settings (a blocking store read that can fail), so it runs
-        // on the executor with the rest of the work — never on the caller's (FX) thread.
         return CompletableFuture.supplyAsync(this::checkForUpdate, EXECUTOR);
     }
 
@@ -129,8 +124,7 @@ public class UpdateCheckService {
             boolean available = isUpdateAvailable(current, latest);
             return Optional.of(new UpdateCheckResult(stripLeadingV(current), stripLeadingV(latest), available));
         } catch (RuntimeException e) {
-            // Fail silent: a settings-store read failure, fetcher error, or parse issue must never
-            // surface to the UI — the check simply yields no information.
+            // Intentionally swallowed: the check must never surface a failure to the UI.
             LOG.log(Level.FINE, "Update check failed", e);
             return Optional.empty();
         }
@@ -160,10 +154,9 @@ public class UpdateCheckService {
     private static Optional<String> httpFetch(HttpClient client) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(LATEST_RELEASE_URL))
+                    .uri(URI.create(VersionInfo.getReleasesApiUrl()))
                     .timeout(HTTP_TIMEOUT)
                     .header("Accept", "application/vnd.github+json")
-                    // GitHub rejects requests without a User-Agent (403); pin the API version too.
                     .header("User-Agent", "selfemploy-uk")
                     .header("X-GitHub-Api-Version", "2022-11-28")
                     .GET()
