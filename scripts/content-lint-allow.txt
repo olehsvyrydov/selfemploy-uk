@@ -1,0 +1,40 @@
+# content-lint allowlist — documented waivers for pre-existing violations that belong to
+# OTHER, still-pending work. The lint catches every NEW violation; these entries only keep the
+# gate green on the current tree without editing files owned by another change.
+#
+# Format: <rule> | <path-substring> | <content-substring>
+#   - a violation is waived when its rule matches AND the reported "path:line:content"
+#     contains both substrings. An empty content-substring waives the whole file for that rule
+#     and is used ONLY where an entire, tracked set is pending replacement (noted per line).
+# When the owning work lands, the placeholder/token disappears and the waiver becomes a no-op;
+# delete the stale line at that point.
+
+# --- fxml-placeholder ---------------------------------------------------------------------
+# Orphaned column-mapping wizard, pending removal — deliberately not migrated.
+fxml-placeholder | fxml/column-mapping-wizard.fxml |
+# Screens whose whole icon set is not yet migrated to FontIcon (a later icon pass replaces all).
+fxml-placeholder | fxml/reconciliation-dashboard.fxml |
+fxml-placeholder | fxml/import-history.fxml |
+# Partially migrated: only these controller-swapped glyphs remain (set on the node at runtime),
+# so waive the specific token — a new, different placeholder in these files is still caught.
+fxml-placeholder | fxml/tax-summary.fxml | [v]
+fxml-placeholder | fxml/submission-history.fxml | [check]
+fxml-placeholder | fxml/expense-dialog.fxml | [i]
+
+# --- gbp-rate: hardcoded £ amounts pending the tax-year data externalisation ---------------
+# Tax-band boundary labels — the whole set moves to tax-year-driven bands.
+gbp-rate | controller/TaxSummaryController.java |
+# HMRC use-of-home / entertainment flat rates — the whole set moves with the expense copy.
+gbp-rate | viewmodel/ExpenseDialogViewModel.java |
+# Single fixed legal figures — waived by their exact amount so nothing else slips through.
+gbp-rate | legal/Disclaimers.java | £3,000
+gbp-rate | calculator/PaymentsOnAccountResult.java | £1,000
+
+# --- todo: pre-existing markers tracked outside this change; new TODO/XXX/FIXME are caught ---
+todo | calculator/NationalInsuranceCalculator.java | TODO (2028 Release)
+todo | calculator/NationalInsuranceCalculator.java | TODO (2044 Release)
+todo | runtime/PluginHotReloader.java | preserveStateOnReload
+todo | runtime/PluginHotReloader.java | state retrieval when Plugin
+todo | runtime/PluginHotReloader.java | state restoration when Plugin
+todo | controller/TermsOfServiceController.java | Implement actual PDF generation
+todo | controller/QuarterlyUpdatesController.java | Open quarter detail view
