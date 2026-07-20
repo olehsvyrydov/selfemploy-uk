@@ -46,10 +46,10 @@
 
         <!-- Neutral tax summary note -->
         <HBox fx:id="taxDisclaimerBanner" alignment="CENTER_LEFT" spacing="8" managed="true" visible="true"
-              style="-fx-padding: 8 16;">
+              styleClass="tax-disclaimer-banner">
             <Label fx:id="taxDisclaimerText"
                    text="%taxSummary.disclaimer"
-                   style="-fx-text-fill: #6b7280; -fx-font-size: 13px;" wrapText="true"/>
+                   styleClass="tax-disclaimer-text" wrapText="true"/>
         </HBox>
 
         <!-- Tax At A Glance -->
@@ -142,7 +142,7 @@
                 </HBox>
                 <Separator styleClass="calc-divider"/>
                 <HBox styleClass="calc-row" alignment="CENTER_LEFT">
-                    <Label text="%taxSummary.netProfitBox31" styleClass="calc-label" style="-fx-font-weight: bold;"/>
+                    <Label text="%taxSummary.netProfitBox31" styleClass="calc-label, calc-label-bold"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label fx:id="netProfitCalcValue" text="£0.00" styleClass="calc-result"/>
                 </HBox>
