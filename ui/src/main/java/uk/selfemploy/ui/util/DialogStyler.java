@@ -189,9 +189,10 @@ public final class DialogStyler {
      */
     public static StackPane createShadowWrapper(Region content) {
         StackPane wrapper = new StackPane(content);
-        wrapper.setStyle("-fx-background-color: transparent;");
+        wrapper.getStyleClass().add("shell-dialog-shadow-wrapper");
         wrapper.setPadding(new Insets(SHADOW_PADDING));
         wrapper.setEffect(createStandardShadow());
+        Stylesheets.attachComponents(wrapper);
         return wrapper;
     }
 
