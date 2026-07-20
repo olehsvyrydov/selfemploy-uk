@@ -47,7 +47,7 @@ class ComponentCssContentTest {
     void toastCompiled() throws IOException {
         String css = read("/css/components.css");
 
-        assertThat(css).contains(".toast");
+        assertThat(css).contains(".toast {");
         assertThat(css).contains(".toast .toast-message");
         assertThat(css).contains(".toast .toast-icon-success");
         assertThat(css).contains("-fx-text-fill: #4ade80");

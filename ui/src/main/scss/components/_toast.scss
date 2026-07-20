@@ -2,10 +2,10 @@
 
 .toast {
   -fx-background-color: t.$slate-900;
-  -fx-background-radius: 8;
+  -fx-background-radius: t.$radius-sm;
   -fx-border-color: t.$slate-600;
   -fx-border-width: 1;
-  -fx-border-radius: 8;
+  -fx-border-radius: t.$radius-sm;
   -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0, 0, 5);
   -fx-min-width: 250;
   -fx-min-height: 50;
