@@ -48,6 +48,7 @@ import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import uk.selfemploy.ui.util.IncomeDialogHelper;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.i18n.Messages;
 
 /**
@@ -193,6 +194,8 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
     }
 
     private void setupTableColumns() {
+        Stylesheets.attachComponents(incomeTable);
+
         // Date column
         dateColumn.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getFormattedDate()));
@@ -206,10 +209,12 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setStyle("");
+                    getStyleClass().remove("income-cell-client");
                 } else {
                     setText(item);
-                    setStyle("-fx-font-weight: bold;");
+                    if (!getStyleClass().contains("income-cell-client")) {
+                        getStyleClass().add("income-cell-client");
+                    }
                 }
             }
         });
@@ -223,10 +228,12 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setStyle("");
+                    getStyleClass().remove("income-cell-description");
                 } else {
                     setText(item);
-                    setStyle("-fx-text-fill: -fx-text-secondary;");
+                    if (!getStyleClass().contains("income-cell-description")) {
+                        getStyleClass().add("income-cell-description");
+                    }
                 }
             }
         });
@@ -235,24 +242,33 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
         amountColumn.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getFormattedAmount()));
         amountColumn.setCellFactory(column -> new TableCell<>() {
+            {
+                getStyleClass().add("income-cell-amount-align");
+            }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setStyle("");
+                    getStyleClass().remove("income-cell-amount");
                 } else {
                     setText(item);
-                    setStyle("-fx-font-weight: bold; -fx-text-fill: -fx-success; -fx-alignment: CENTER-RIGHT;");
+                    if (!getStyleClass().contains("income-cell-amount")) {
+                        getStyleClass().add("income-cell-amount");
+                    }
                 }
             }
         });
-        amountColumn.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // Status column
         statusColumn.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getStatusDisplay()));
         statusColumn.setCellFactory(column -> new TableCell<>() {
+            {
+                getStyleClass().add("income-cell-status-align");
+            }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -272,7 +288,6 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
                 }
             }
         });
-        statusColumn.setStyle("-fx-alignment: CENTER;");
     }
 
     private void setupTableInteractions() {

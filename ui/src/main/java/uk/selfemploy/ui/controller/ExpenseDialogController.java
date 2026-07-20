@@ -28,6 +28,7 @@ import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.ReceiptMetadata;
 import uk.selfemploy.core.service.ReceiptStorageService;
 import uk.selfemploy.ui.service.DataStoreException;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.ExpenseDialogViewModel;
 
 import java.awt.Desktop;
@@ -115,6 +116,7 @@ public class ExpenseDialogController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        Stylesheets.attachComponents(dateField);
         setupDatePicker();
         setupAmountFormatter();
     }
@@ -175,10 +177,11 @@ public class ExpenseDialogController implements Initializable {
 
                     setDisable(outsideTaxYear || inFuture);
 
+                    getStyleClass().removeAll("expense-date-outside", "expense-date-future");
                     if (outsideTaxYear) {
-                        setStyle("-fx-background-color: #ffc0c0;");
+                        getStyleClass().add("expense-date-outside");
                     } else if (inFuture) {
-                        setStyle("-fx-background-color: #e0e0e0;");
+                        getStyleClass().add("expense-date-future");
                     }
                 }
             }
@@ -203,6 +206,8 @@ public class ExpenseDialogController implements Initializable {
             LOG.warn("viewModel is NULL - returning early!");
             return;
         }
+
+        Stylesheets.attachComponents(categoryField);
 
         var categories = viewModel.getAvailableCategories();
         LOG.debug("Available categories count: {}", categories.size());
@@ -242,13 +247,14 @@ public class ExpenseDialogController implements Initializable {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
+                    getStyleClass().remove("expense-category-warning");
                 } else {
                     setText(converter.toString(item));
-                    // Warning style for non-allowable
-                    if (!item.isAllowable()) {
-                        setStyle("-fx-text-fill: #856404;");
-                    } else {
-                        setStyle("");
+                    boolean warning = !item.isAllowable();
+                    if (warning && !getStyleClass().contains("expense-category-warning")) {
+                        getStyleClass().add("expense-category-warning");
+                    } else if (!warning) {
+                        getStyleClass().remove("expense-category-warning");
                     }
                 }
             }
