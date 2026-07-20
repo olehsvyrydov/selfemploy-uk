@@ -8,7 +8,7 @@
 /* ===== CSS Variables ===== */
 .root {
     -fx-primary: t.$primary;
-    -fx-primary-dark: t.$primary-dark;
+    -fx-primary-dark: #004d99;
     -fx-primary-light: t.$primary-light;
     -fx-secondary: t.$gray-500;
     -fx-success: t.$success;
@@ -21,7 +21,7 @@
 
     -fx-text-primary: t.$text;
     -fx-text-secondary: t.$gray-500;
-    -fx-text-muted: t.$gray-450;  /* Darkened for WCAG AA contrast compliance */
+    -fx-text-muted: #868e96;  /* Darkened for WCAG AA contrast compliance */
 
     -fx-border-color: t.$border;
     -fx-shadow: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
@@ -38,28 +38,28 @@
 
     /* ----- Color Tokens: Primary Palette (Brand Blue) ----- */
     -fx-color-primary-50: t.$primary-light;
-    -fx-color-primary-100: t.$purple-bg;
-    -fx-color-primary-200: t.$gray-450;
-    -fx-color-primary-300: t.$primary;
-    -fx-color-primary-400: t.$primary;
+    -fx-color-primary-100: #cce0ff;
+    -fx-color-primary-200: #99c2ff;
+    -fx-color-primary-300: #66a3ff;
+    -fx-color-primary-400: #3385ff;
     -fx-color-primary-500: t.$primary;
-    -fx-color-primary-600: t.$primary-dark;
-    -fx-color-primary-700: t.$primary-dark;
-    -fx-color-primary-800: t.$gray-800;
-    -fx-color-primary-900: t.$gray-900;
+    -fx-color-primary-600: #0052a3;
+    -fx-color-primary-700: #003d7a;
+    -fx-color-primary-800: #002952;
+    -fx-color-primary-900: #001429;
 
     /* ----- Color Tokens: Semantic Colors ----- */
-    -fx-color-success-50: t.$success-bg;
+    -fx-color-success-50: #e8f5e9;
     -fx-color-success-500: t.$success;
-    -fx-color-success-700: t.$success-dark;
+    -fx-color-success-700: #1e7e34;
 
-    -fx-color-warning-50: t.$warning-bg;
+    -fx-color-warning-50: #fff8e1;
     -fx-color-warning-500: t.$warning;
-    -fx-color-warning-700: t.$warning;
+    -fx-color-warning-700: #c79100;
 
-    -fx-color-danger-50: t.$gray-100;
+    -fx-color-danger-50: #ffebee;
     -fx-color-danger-500: t.$danger;
-    -fx-color-danger-700: t.$danger;
+    -fx-color-danger-700: #bd2130;
 
     -fx-color-info-500: t.$info;
     -fx-color-accent-500: t.$accent;
@@ -81,7 +81,7 @@
 
     -fx-hmrc-info-bg: t.$primary-light;
     -fx-hmrc-info-border: t.$primary;
-    -fx-hmrc-info-text: t.$primary-dark;
+    -fx-hmrc-info-text: #004085;
 
     -fx-hmrc-session-expired-text: t.$warning-text;
 
@@ -251,7 +251,7 @@
 }
 
 .header-icon-button:hover .header-icon-help {
-    -fx-background-color: t.$purple-bg;
+    -fx-background-color: derive(t.$primary-light, -8%);
 }
 
 .header-icon-settings {

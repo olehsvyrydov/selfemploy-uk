@@ -58,7 +58,7 @@
 
 /* ===== User Guide Button - Prominent call to action ===== */
 .user-guide-btn {
-    -fx-background-color: linear-gradient(to right, t.$purple, t.$purple);
+    -fx-background-color: linear-gradient(to right, t.$purple, derive(t.$purple, 18%));
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
@@ -69,11 +69,11 @@
 }
 
 .user-guide-btn:hover {
-    -fx-background-color: linear-gradient(to right, t.$purple, t.$purple);
+    -fx-background-color: linear-gradient(to right, derive(t.$purple, -12%), t.$purple);
 }
 
 .user-guide-btn:focused {
-    -fx-border-color: t.$purple;
+    -fx-border-color: derive(t.$purple, -30%);
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
@@ -300,11 +300,11 @@
 }
 
 .help-btn-primary:hover {
-    -fx-background-color: t.$teal;
+    -fx-background-color: derive(t.$teal, 25%);
 }
 
 .help-btn-primary:focused {
-    -fx-background-color: t.$teal;
+    -fx-background-color: derive(t.$teal, 25%);
     -fx-border-color: t.$teal;
     -fx-border-width: 2;
     -fx-border-radius: 6;
@@ -542,11 +542,11 @@
 }
 
 .oauth-btn-continue:hover {
-    -fx-background-color: t.$primary-bright;
+    -fx-background-color: derive(t.$primary-bright, -12%);
 }
 
 .oauth-btn-continue:focused {
-    -fx-background-color: t.$primary-bright;
+    -fx-background-color: derive(t.$primary-bright, -12%);
     -fx-border-color: t.$primary-bright;
     -fx-border-width: 2;
     -fx-border-radius: 6;

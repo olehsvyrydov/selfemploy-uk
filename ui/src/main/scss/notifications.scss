@@ -218,11 +218,11 @@
 }
 
 .notification-btn-primary:hover {
-    -fx-background-color: t.$teal;
+    -fx-background-color: derive(t.$teal, 25%);
 }
 
 .notification-btn-primary:focused {
-    -fx-background-color: t.$teal;
+    -fx-background-color: derive(t.$teal, 25%);
     -fx-border-color: t.$teal;
     -fx-border-width: 2;
     -fx-border-radius: 6;
@@ -531,7 +531,7 @@
 }
 
 .button-primary-small:hover {
-    -fx-background-color: t.$primary-bright;
+    -fx-background-color: derive(t.$primary-bright, -12%);
 }
 
 .button-secondary-small {
