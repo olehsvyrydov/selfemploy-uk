@@ -42,10 +42,10 @@
   -fx-background-color: linear-gradient(to right, #dc3545, #e4606d);
 }
 
-// Dynamic header gradient: the runtime category colour and its lightened partner are set inline on
-// the node as looked-up colours; the class assembles the gradient from them.
+// Dynamic header gradient: only the runtime category colour is set inline as the -fx-header-accent
+// looked-up colour; the lighter gradient end is derived from it here.
 .shell-dialog-gradient-header {
-  -fx-background-color: linear-gradient(to right, -fx-header-accent, -fx-header-accent-end);
+  -fx-background-color: linear-gradient(to right, -fx-header-accent, derive(-fx-header-accent, 20%));
 }
 
 // AppDialog body message text.
@@ -61,8 +61,9 @@
   -fx-line-spacing: 4;
 }
 
-// HelpDialog "Learn more" link button. Its accent (and darker hover accent) come from the category
-// colour set inline as looked-up colours; the hover is a pure CSS pseudo-class, not a mouse handler.
+// HelpDialog "Learn more" link button. Only the runtime category colour is set inline as the
+// -fx-link-accent looked-up colour; the darker hover shade is derived from it, as a pure CSS
+// pseudo-class rather than a mouse handler.
 .shell-dialog-link-btn {
   -fx-background-color: -fx-link-accent;
   -fx-text-fill: white;
@@ -73,7 +74,7 @@
 }
 
 .shell-dialog-link-btn:hover {
-  -fx-background-color: -fx-link-accent-hover;
+  -fx-background-color: derive(-fx-link-accent, -15%);
 }
 
 // Transparent shadow wrapper produced by DialogStyler.createShadowWrapper for every dialog.

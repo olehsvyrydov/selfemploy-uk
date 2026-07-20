@@ -226,9 +226,9 @@ public class HelpDialog {
         header.getStyleClass().addAll("help-dialog-header", "shell-dialog-gradient-header");
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 20, 16, 20));
-        // Category colour and its lightened partner are exposed as looked-up colours; the
-        // shell-dialog-gradient-header class assembles the header gradient from them.
-        header.setStyle("-fx-header-accent: " + categoryColor + "; -fx-header-accent-end: " + adjustColor(categoryColor, 20) + ";");
+        // The runtime category colour is the one dynamic value; expose it as a looked-up colour and let
+        // the shell-dialog-gradient-header class build the gradient (deriving the lighter end in CSS).
+        header.setStyle("-fx-header-accent: " + categoryColor + ";");
 
         // Icon circle with FontIcon
         StackPane iconWrapper = new StackPane();
@@ -284,28 +284,13 @@ public class HelpDialog {
     private Button createLinkButton() {
         Button learnMoreBtn = new Button(content.linkText() + " ↗");
         learnMoreBtn.getStyleClass().addAll("help-dialog-link-btn", "shell-dialog-link-btn");
-        // Category colour and its darker hover partner are exposed as looked-up colours; the
-        // shell-dialog-link-btn class (and its :hover) drive the background from them.
-        learnMoreBtn.setStyle("-fx-link-accent: " + categoryColor + "; -fx-link-accent-hover: " + adjustColor(categoryColor, -15) + ";");
+        // The runtime category colour is the one dynamic value; expose it as a looked-up colour and let
+        // the shell-dialog-link-btn class (and its :hover) drive the background, deriving the hover in CSS.
+        learnMoreBtn.setStyle("-fx-link-accent: " + categoryColor + ";");
         learnMoreBtn.setOnAction(e -> {
             helpService.openHmrcGuidance(content.hmrcLink(), content.title());
         });
         return learnMoreBtn;
-    }
-
-    /**
-     * Adjusts a hex color by the given amount (positive = lighter, negative = darker).
-     */
-    private String adjustColor(String hexColor, int amount) {
-        try {
-            String hex = hexColor.replace("#", "");
-            int r = Math.min(255, Math.max(0, Integer.parseInt(hex.substring(0, 2), 16) + amount));
-            int g = Math.min(255, Math.max(0, Integer.parseInt(hex.substring(2, 4), 16) + amount));
-            int b = Math.min(255, Math.max(0, Integer.parseInt(hex.substring(4, 6), 16) + amount));
-            return String.format("#%02x%02x%02x", r, g, b);
-        } catch (Exception e) {
-            return hexColor;
-        }
     }
 
     /**
