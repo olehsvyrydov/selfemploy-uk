@@ -24,8 +24,13 @@ class HmrcBusinessProfileServiceTest {
 
     private static final String NINO = "AB123456C";
     private static final String OTHER_NINO = "CD654321B";
+    // Real HMRC Business Details API v2 shape: self-employment income sources in `businessData`,
+    // each carrying `incomeSourceId` (what other MTD APIs call the businessId).
     private static final String BUSINESS_JSON =
-            "{\"selfEmployments\":[{\"businessId\":\"XAIS12345678901\",\"tradingName\":\"Test\"}]}";
+            "{\"nino\":\"AB123456C\",\"mtdbsa\":\"XQIT00000000001\","
+            + "\"businessData\":[{\"incomeSourceId\":\"XAIS12345678901\","
+            + "\"incomeSourceType\":\"self-employment\",\"tradingName\":\"Test\"}],"
+            + "\"propertyData\":[]}";
 
     private HmrcBusinessProfileService service;
 
@@ -69,11 +74,25 @@ class HmrcBusinessProfileServiceTest {
         @Test
         @DisplayName("200 with no business reports no-business and does not persist the NINO")
         void okWithoutBusiness() {
-            Result result = service.applyResponse(200, "{\"selfEmployments\":[]}", NINO, false);
+            Result result = service.applyResponse(200,
+                    "{\"businessData\":[],\"propertyData\":[]}", NINO, false);
 
             assertThat(result.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
             assertThat(store().loadNino()).isNull();
             assertThat(store().isNinoVerified()).isFalse();
+        }
+
+        @Test
+        @DisplayName("200 with only a property business (no self-employment) reports no-business")
+        void okWithPropertyOnly() {
+            String propertyOnly =
+                    "{\"businessData\":[],\"propertyData\":[{\"incomeSourceId\":\"XPIS12345678901\","
+                    + "\"incomeSourceType\":\"uk-property\"}]}";
+
+            Result result = service.applyResponse(200, propertyOnly, NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
+            assertThat(store().loadNino()).isNull();
         }
 
         @Test
@@ -150,25 +169,16 @@ class HmrcBusinessProfileServiceTest {
         }
 
         @Test
-        @DisplayName("a parsed-but-empty array body is a genuine no-business rejection, not sync-pending")
-        void emptyArrayIsRejection() {
+        @DisplayName("a body that is not a business-details object is sync-pending and does not wipe a verified profile")
+        void nonObjectBodyIsSyncPending() {
             store().saveHmrcBusinessId("XAIS12345678901");
+            store().saveConnectedNino(NINO);
 
             Result result = service.applyResponse(200, "[]", NINO, false);
 
-            assertThat(result.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
-            assertThat(store().loadHmrcBusinessId()).isNull();
-        }
-
-        @Test
-        @DisplayName("a top-level array of businesses is understood and verifies")
-        void topLevelArrayOfBusinessesVerifies() {
-            Result result = service.applyResponse(200,
-                    "[{\"businessId\":\"XAIS12345678901\"}]", NINO, false);
-
-            assertThat(result.outcome()).isEqualTo(Outcome.VERIFIED);
-            assertThat(result.businessId()).isEqualTo("XAIS12345678901");
+            assertThat(result.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
             assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
+            assertThat(store().loadConnectedNino()).isEqualTo(NINO);
         }
 
         @Test
@@ -253,7 +263,9 @@ class HmrcBusinessProfileServiceTest {
         @DisplayName("parses and validates the business ID from a response")
         void parsesBusinessId() {
             assertThat(HmrcBusinessProfileService.parseBusinessId(BUSINESS_JSON)).isEqualTo("XAIS12345678901");
-            assertThat(HmrcBusinessProfileService.parseBusinessId("{\"businessId\":\"nope\"}")).isNull();
+            assertThat(HmrcBusinessProfileService.parseBusinessId(
+                    "{\"businessData\":[{\"incomeSourceId\":\"nope\"}]}")).isNull();
+            assertThat(HmrcBusinessProfileService.parseBusinessId("{}")).isNull();
             assertThat(HmrcBusinessProfileService.parseBusinessId(null)).isNull();
         }
     }

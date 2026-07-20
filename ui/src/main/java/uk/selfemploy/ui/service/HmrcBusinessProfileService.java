@@ -1,8 +1,9 @@
 package uk.selfemploy.ui.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import uk.selfemploy.hmrc.client.dto.BusinessDetailsV2Response;
 import uk.selfemploy.hmrc.logging.HmrcPiiRedactor;
 
 import java.net.URI;
@@ -42,7 +43,8 @@ public class HmrcBusinessProfileService {
     private static final String SANDBOX_FALLBACK_BUSINESS_ID = "XAIS12345678901";
     private static final String BUSINESS_ID_PATTERN = "^X[A-Z0-9]{1}IS[0-9]{11}$";
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(30);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    // JavaTimeModule so the LocalDate fields on BusinessDetailsV2Response deserialise.
+    private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
 
     /** Shared across instances so multiple controllers do not each spawn a connection pool. */
     private static final HttpClient SHARED_CLIENT =
@@ -103,17 +105,20 @@ public class HmrcBusinessProfileService {
     public Result fetchAndPersist(String nino, String accessToken) {
         String apiBaseUrl = System.getProperty("HMRC_API_BASE_URL", DEFAULT_API_BASE_URL);
         boolean sandbox = isSandbox(apiBaseUrl);
-        String url = apiBaseUrl + "/individuals/business/self-employment/" + nino;
+        // Business Details API v2: lists the customer's MTD income sources. Each self-employment
+        // business's incomeSourceId is the businessId every other MTD ITSA API refers to.
+        String url = apiBaseUrl + "/individuals/business/details/" + nino;
         LOG.info("Fetching business details from: " + HmrcPiiRedactor.redact(url));
 
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .timeout(HTTP_TIMEOUT)
                     .header("Authorization", "Bearer " + accessToken)
                     .header("Accept", "application/vnd.hmrc.2.0+json")
-                    .GET()
-                    .build();
+                    .GET();
+            HmrcFraudHeaders.apply(builder);
+            HttpRequest request = builder.build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             LOG.info("Business details response: " + response.statusCode());
@@ -176,26 +181,25 @@ public class HmrcBusinessProfileService {
      * body. The former is a definitive rejection; the latter is a transient content problem that must
      * not wipe a previously-verified profile.
      *
-     * <p>Only a JSON object or array is a real business list. An empty body parses to a missing node
-     * and an unexpected scalar (say {@code "OK"}, or a number) is not a list, so both are treated as
-     * sync-pending. A container node — even an empty one — falls through to extraction, so a genuine
-     * no-business result still clears the profile.
+     * <p>Only a Business Details document (a JSON object) is a real business list. An empty body, an
+     * unexpected scalar ({@code "OK"}), or any non-object shape fails to deserialise and is treated as
+     * sync-pending so a transient content problem does not wipe a verified profile. A well-formed
+     * document with no self-employment business is a genuine no-business result and clears the profile.
      */
     private Result handleOkResponse(String body, String nino, boolean sandbox) {
-        JsonNode root;
+        BusinessDetailsV2Response profile;
         try {
-            root = MAPPER.readTree(body);
+            profile = MAPPER.readValue(body, BusinessDetailsV2Response.class);
         } catch (Exception e) {
-            LOG.warning("200 response body could not be parsed; treating as sync-pending");
+            LOG.warning("200 response body was not a Business Details document; treating as sync-pending");
             return persistPending(nino, sandbox);
         }
 
-        if (root == null || !root.isContainerNode()) {
-            LOG.warning("200 response body was empty or not a JSON object/array; treating as sync-pending");
+        if (profile == null) {
             return persistPending(nino, sandbox);
         }
 
-        String businessId = extractBusinessId(root);
+        String businessId = firstSelfEmploymentBusinessId(profile);
         if (businessId != null) {
             SqliteDataStore store = SqliteDataStore.getInstance();
             store.saveHmrcBusinessId(businessId);
@@ -242,18 +246,19 @@ public class HmrcBusinessProfileService {
     }
 
     /**
-     * Parses the business ID from an HMRC self-employment response, validating its format. Reads the
-     * JSON structurally so a reordered or differently-shaped-but-valid response is not rejected.
+     * Parses the self-employment business ID from an HMRC Business Details API v2 response, validating
+     * its format.
      *
      * @param jsonResponse the response body
-     * @return the first valid business ID, or {@code null} if absent or malformed
+     * @return the first valid self-employment business ID, or {@code null} if absent or malformed
      */
     public static String parseBusinessId(String jsonResponse) {
         if (jsonResponse == null || jsonResponse.isBlank()) {
             return null;
         }
         try {
-            return extractBusinessId(MAPPER.readTree(jsonResponse));
+            BusinessDetailsV2Response profile = MAPPER.readValue(jsonResponse, BusinessDetailsV2Response.class);
+            return profile == null ? null : firstSelfEmploymentBusinessId(profile);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to parse business ID from response", e);
             return null;
@@ -261,36 +266,18 @@ public class HmrcBusinessProfileService {
     }
 
     /**
-     * Extracts the first valid business ID from a parsed response. The documented shape is
-     * {@code { "selfEmployments": [ { "businessId": ... } ] }}; a top-level array of businesses and a
-     * direct {@code businessId} field are also accepted.
+     * Returns the first self-employment business ID from a Business Details response. Self-employment
+     * income sources are carried in {@code businessData} (property businesses are in {@code propertyData}
+     * and are ignored); each source's {@code incomeSourceId} is the MTD businessId.
      *
-     * @param root the parsed response body
-     * @return the first business ID matching the expected format, or {@code null} if there is none
+     * @param profile the parsed Business Details document
+     * @return the first {@code incomeSourceId} matching the expected format, or {@code null} if none
      */
-    private static String extractBusinessId(JsonNode root) {
-        String id = firstBusinessIdIn(root.path("selfEmployments"));
-        if (id != null) {
-            return id;
-        }
-        id = firstBusinessIdIn(root);
-        if (id != null) {
-            return id;
-        }
-        String direct = root.path("businessId").asText(null);
-        if (direct != null && direct.matches(BUSINESS_ID_PATTERN)) {
-            return direct;
-        }
-        return null;
-    }
-
-    private static String firstBusinessIdIn(JsonNode arrayNode) {
-        if (arrayNode != null && arrayNode.isArray()) {
-            for (JsonNode business : arrayNode) {
-                String id = business.path("businessId").asText(null);
-                if (id != null && id.matches(BUSINESS_ID_PATTERN)) {
-                    return id;
-                }
+    private static String firstSelfEmploymentBusinessId(BusinessDetailsV2Response profile) {
+        for (BusinessDetailsV2Response.IncomeSource business : profile.businessesOrEmpty()) {
+            String id = business.incomeSourceId();
+            if (id != null && id.matches(BUSINESS_ID_PATTERN)) {
+                return id;
             }
         }
         return null;
