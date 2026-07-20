@@ -383,6 +383,10 @@ public class BankImportWizardController implements Initializable {
     private void setupTransactionsTable() {
         if (transactionsTable == null) return;
 
+        // The wizard scene loads main + bank-import CSS but not the SCSS component sheet, so the
+        // amount cells' style classes are attached to the table directly.
+        Stylesheets.attachComponents(transactionsTable);
+
         // Select column with checkboxes
         if (selectColumn != null) {
             selectColumn.setCellFactory(col -> new CheckBoxTableCell<>() {
@@ -443,17 +447,14 @@ public class BankImportWizardController implements Initializable {
                 @Override
                 protected void updateItem(String item, boolean empty) {
                     super.updateItem(item, empty);
+                    getStyleClass().removeAll("import-amount-income", "import-amount-expense");
                     if (empty || item == null) {
                         setText(null);
-                        setStyle("");
                     } else {
                         setText(item);
                         ImportedTransactionRow row = getTableView().getItems().get(getIndex());
-                        if (row.type() == TransactionType.INCOME) {
-                            setStyle("-fx-text-fill: -fx-success; -fx-font-weight: bold;");
-                        } else {
-                            setStyle("-fx-text-fill: #fd7e14; -fx-font-weight: bold;");
-                        }
+                        getStyleClass().add(row.type() == TransactionType.INCOME
+                                ? "import-amount-income" : "import-amount-expense");
                     }
                 }
             });
@@ -525,9 +526,9 @@ public class BankImportWizardController implements Initializable {
                 @Override
                 protected void updateItem(String item, boolean empty) {
                     super.updateItem(item, empty);
+                    getStyleClass().removeAll("confidence-low", "confidence-medium", "confidence-high");
                     if (empty || item == null) {
                         setText(null);
-                        setStyle("");
                     } else {
                         setText(item);
                         ImportedTransactionRow row = getTableView().getItems().get(getIndex());
