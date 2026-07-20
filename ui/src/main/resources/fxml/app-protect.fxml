@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+           fx:controller="uk.selfemploy.ui.controller.AppProtectController"
+           styleClass="onboarding-container" prefWidth="560" prefHeight="560">
+
+    <!-- Step 1: choose a passphrase -->
+    <VBox fx:id="setupPane" styleClass="onboarding-card" alignment="CENTER" spacing="14" maxWidth="460">
+        <StackPane styleClass="onboarding-icon-circle" minWidth="56" minHeight="56"
+                   maxWidth="56" maxHeight="56">
+            <FontIcon iconLiteral="fas-shield-alt" iconSize="24" styleClass="onboarding-icon"/>
+        </StackPane>
+        <Label text="%protect.title" styleClass="onboarding-title"/>
+        <Label text="%protect.subtitle" styleClass="onboarding-subtitle" wrapText="true"/>
+
+        <VBox styleClass="privacy-assurance-box" spacing="6" maxWidth="400">
+            <Label text="%protect.warning.title" styleClass="field-label"/>
+            <Label text="%protect.warning.body" styleClass="field-hint" wrapText="true"/>
+        </VBox>
+
+        <VBox styleClass="form-field" spacing="6" maxWidth="380">
+            <PasswordField fx:id="passphraseField" styleClass="form-input"
+                           promptText="%protect.passphrase.prompt"/>
+            <PasswordField fx:id="confirmField" styleClass="form-input"
+                           promptText="%protect.confirm.prompt" onAction="#handleEnable"/>
+            <Label fx:id="errorLabel" styleClass="field-error" wrapText="true"
+                   visible="false" managed="false"/>
+        </VBox>
+
+        <Button fx:id="enableButton" text="%protect.enable" styleClass="button-primary, button-large"
+                maxWidth="380" onAction="#handleEnable"/>
+        <Hyperlink text="%protect.skip" onAction="#handleSkip"/>
+    </VBox>
+
+    <!-- Step 2: one-time recovery code -->
+    <VBox fx:id="recoveryPane" styleClass="onboarding-card" alignment="CENTER" spacing="14"
+          maxWidth="460" visible="false" managed="false">
+        <StackPane styleClass="onboarding-icon-circle" minWidth="56" minHeight="56"
+                   maxWidth="56" maxHeight="56">
+            <FontIcon iconLiteral="fas-key" iconSize="24" styleClass="onboarding-icon"/>
+        </StackPane>
+        <Label text="%protect.recovery.title" styleClass="onboarding-title"/>
+        <Label text="%protect.recovery.subtitle" styleClass="onboarding-subtitle" wrapText="true"/>
+
+        <HBox alignment="CENTER" spacing="10">
+            <Label fx:id="recoveryCodeLabel" styleClass="recovery-code"/>
+            <Button fx:id="copyButton" text="%protect.recovery.copy" styleClass="button-secondary"
+                    onAction="#handleCopy"/>
+        </HBox>
+
+        <CheckBox fx:id="savedCheckbox" text="%protect.recovery.saved" onAction="#handleSavedToggled"/>
+        <Button fx:id="continueButton" text="%protect.recovery.continue"
+                styleClass="button-primary, button-large" maxWidth="380" disable="true"
+                onAction="#handleContinue"/>
+    </VBox>
+</StackPane>
