@@ -1,6 +1,7 @@
 // Compiled entry for SCSS-authored components → /css/components.css.
 // Loaded per-node/scene where its component classes are used.
 
+@use 'components/comparison';
 @use 'components/popover';
 @use 'components/toast';
 @use 'components/dialog';

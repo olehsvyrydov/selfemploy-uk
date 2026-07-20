@@ -1,0 +1,46 @@
+@use '../tokens' as t;
+
+.comparison-dialog-title {
+  -fx-font-size: 18px;
+  -fx-font-weight: bold;
+}
+
+.comparison-close-button {
+  -fx-background-color: transparent;
+  -fx-font-size: 16px;
+  -fx-cursor: hand;
+}
+
+.comparison-no-record {
+  -fx-text-fill: #868e96;
+  -fx-font-style: italic;
+}
+
+.comparison-difference-icon {
+  -fx-font-weight: bold;
+}
+
+.comparison-difference-text {
+  -fx-font-size: t.$font-sm;
+}
+
+.submission-progress-title {
+  -fx-font-size: 16px;
+  -fx-font-weight: bold;
+}
+
+.submission-progress-message {
+  -fx-font-size: t.$font-sm;
+}
+
+.submission-progress-indicator-complete {
+  -fx-accent: green;
+}
+
+.submission-progress-indicator-failed {
+  -fx-accent: red;
+}
+
+.column-amount {
+  -fx-alignment: CENTER-RIGHT;
+}
