@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ComponentStylesheetTest {
 
     private static boolean fxReady;
+    private static String skipReason = "";
 
     @BeforeAll
     static void initToolkit() {
@@ -39,10 +40,16 @@ class ComponentStylesheetTest {
             fxReady = latch.await(15, TimeUnit.SECONDS);
         } catch (IllegalStateException alreadyStarted) {
             fxReady = true;
-        } catch (Exception noDisplay) {
+        } catch (Throwable noDisplay) {
+            // A missing display can surface as an Error (native/GTK link failure), not just an
+            // Exception; treat any startup failure as "no toolkit" and skip rather than fail red.
             fxReady = false;
+            skipReason = String.valueOf(noDisplay);
         }
-        Assumptions.assumeTrue(fxReady, "JavaFX toolkit unavailable (no display); skipping");
+        if (fxReady) {
+            Platform.setImplicitExit(false);
+        }
+        Assumptions.assumeTrue(fxReady, "JavaFX toolkit unavailable; skipping — " + skipReason);
     }
 
     @Test
@@ -57,7 +64,9 @@ class ComponentStylesheetTest {
             try {
                 VBox box = new VBox();
                 box.getStyleClass().add("category-help-popover");
-                box.getStylesheets().add(getClass().getResource("/css/components.css").toExternalForm());
+                var css = getClass().getResource("/css/components.css");
+                assertThat(css).as("compiled /css/components.css on the classpath").isNotNull();
+                box.getStylesheets().add(css.toExternalForm());
                 Label title = new Label("Title");
                 title.getStyleClass().add("popover-title");
                 box.getChildren().add(title);
@@ -78,8 +87,11 @@ class ComponentStylesheetTest {
             throw new AssertionError("styling the popover failed", errorRef.get());
         }
 
+        assertThat(boxRef.get().getBackground())
+                .as("popover background applied from compiled SCSS (null means the class did not match)")
+                .isNotNull();
         Color background = (Color) boxRef.get().getBackground().getFills().get(0).getFill();
-        assertThat(background).as("popover background from compiled SCSS").isEqualTo(Color.web("#1e293b"));
+        assertThat(background).as("popover background colour").isEqualTo(Color.web("#1e293b"));
         assertThat((Color) titleRef.get().getTextFill())
                 .as("popover title colour from compiled SCSS").isEqualTo(Color.web("#f8fafc"));
     }

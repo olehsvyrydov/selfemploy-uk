@@ -28,6 +28,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.PopupPlacement;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.service.CsvTransactionParser;
 import uk.selfemploy.ui.service.ImportOrchestrationService;
 import uk.selfemploy.ui.viewmodel.*;
@@ -804,8 +805,7 @@ public class BankImportWizardController implements Initializable {
     private void showCategoryHelp(Node anchor, ExpenseCategory category) {
         VBox content = new VBox(4);
         content.getStyleClass().add("category-help-popover");
-        // A Popup has its own scene, so attach the compiled component stylesheet to the content root.
-        content.getStylesheets().add(getClass().getResource("/css/components.css").toExternalForm());
+        Stylesheets.attachComponents(content);
 
         if (category == null) {
             Label none = new Label(Messages.get("bankImport.categoryHelp.none"));
