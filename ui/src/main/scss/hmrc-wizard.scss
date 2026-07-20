@@ -15,7 +15,7 @@
 
 /* ===== Header (Blue Authorization Theme) ===== */
 .hmrc-wizard-header {
-    -fx-background-color: linear-gradient(to right, t.$blue-800, t.$blue-500);
+    -fx-background-color: linear-gradient(to right, t.$primary-bright, t.$primary);
     -fx-background-radius: 12 12 0 0;
 }
 
@@ -26,7 +26,7 @@
 }
 
 .hmrc-wizard-header-icon {
-    -fx-icon-color: t.$blue-800;
+    -fx-icon-color: t.$primary-bright;
     -fx-icon-size: 20;
 }
 
@@ -59,8 +59,8 @@
 
 /* ===== Progress Indicator ===== */
 .wizard-progress-container {
-    -fx-background-color: t.$bg-secondary;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 0 0 1 0;
 }
 
@@ -87,10 +87,10 @@
 
 .wizard-step-circle.pending {
     -fx-background-color: transparent;
-    -fx-border-color: t.$bs-gray-500;
+    -fx-border-color: t.$gray-400;
     -fx-border-width: 2;
     -fx-border-radius: 16;
-    -fx-text-fill: t.$bs-gray-500;
+    -fx-text-fill: t.$gray-400;
 }
 
 .wizard-step-circle.completed {
@@ -103,7 +103,7 @@
     -fx-max-width: 40;
     -fx-min-height: 2;
     -fx-max-height: 2;
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
 }
 
 .wizard-step-connector.completed {
@@ -118,13 +118,13 @@
 
 .hmrc-wizard-step-description {
     -fx-font-size: 14px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-padding: 0 0 8 0;
 }
 
 .hmrc-wizard-placeholder {
     -fx-font-size: 16px;
-    -fx-text-fill: t.$bs-gray-500;
+    -fx-text-fill: t.$gray-400;
     -fx-padding: 40;
     -fx-alignment: center;
 }
@@ -146,12 +146,12 @@
 }
 
 .hmrc-wizard-scroll .scroll-bar:vertical .thumb {
-    -fx-background-color: t.$bs-gray-400;
+    -fx-background-color: t.$gray-300;
     -fx-background-radius: 4;
 }
 
 .hmrc-wizard-scroll .scroll-bar:vertical .thumb:hover {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
 }
 
 .hmrc-wizard-scroll .scroll-bar:vertical .increment-button,
@@ -162,13 +162,13 @@
 
 /* ===== Prerequisite Items ===== */
 .prerequisite-item {
-    -fx-background-color: t.$bg-secondary;
+    -fx-background-color: t.$gray-50;
     -fx-background-radius: 8;
     -fx-padding: 12 16;
 }
 
 .prerequisite-item:hover {
-    -fx-background-color: #f1f3f5;
+    -fx-background-color: t.$gray-100;
 }
 
 .prerequisite-icon-wrapper {
@@ -181,38 +181,38 @@
 }
 
 .prerequisite-icon-wrapper.teal {
-    -fx-background-color: t.$teal-50;
+    -fx-background-color: t.$teal-bg;
 }
 
 .prerequisite-icon-wrapper.teal .prerequisite-icon {
-    -fx-icon-color: t.$teal-700;
+    -fx-icon-color: t.$teal;
 }
 
 .prerequisite-icon-wrapper.blue {
-    -fx-background-color: #dbeafe;
+    -fx-background-color: t.$primary-light;
 }
 
 .prerequisite-icon-wrapper.blue .prerequisite-icon {
-    -fx-icon-color: t.$sky-800;
+    -fx-icon-color: t.$sky;
 }
 
 .prerequisite-icon-wrapper.violet {
-    -fx-background-color: #ede9fe;
+    -fx-background-color: t.$purple-bg;
 }
 
 .prerequisite-icon-wrapper.violet .prerequisite-icon {
-    -fx-icon-color: #6d28d9;
+    -fx-icon-color: t.$purple;
 }
 
 .prerequisite-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
 }
 
 .prerequisite-description {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-wrap-text: true;
 }
 
@@ -238,7 +238,7 @@
 
 .prerequisite-checkbox .box {
     -fx-background-color: white;
-    -fx-border-color: t.$bs-gray-400;
+    -fx-border-color: t.$gray-300;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
     -fx-pref-width: 20;
@@ -265,15 +265,15 @@
 
 /* ===== Footer ===== */
 .hmrc-wizard-footer {
-    -fx-background-color: t.$bg-secondary;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1 0 0 0;
     -fx-background-radius: 0 0 12 12;
 }
 
 .hmrc-wizard-step-label {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
 }
 
 /* ===== Buttons ===== */
@@ -288,23 +288,23 @@
 }
 
 .hmrc-wizard-btn-primary:hover {
-    -fx-background-color: #0052a3;
+    -fx-background-color: t.$primary-dark;
 }
 
 .hmrc-wizard-btn-primary:focused {
-    -fx-border-color: #003d7a;
+    -fx-border-color: t.$primary-dark;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
 
 .hmrc-wizard-btn-primary:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 
 .hmrc-wizard-btn-secondary {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-font-size: 14px;
     -fx-padding: 10 24;
     -fx-background-radius: 6;
@@ -315,8 +315,8 @@
 }
 
 .hmrc-wizard-btn-secondary:hover {
-    -fx-background-color: t.$bg-tertiary;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-background-color: t.$gray-150;
+    -fx-text-fill: t.$gray-600;
 }
 
 .hmrc-wizard-btn-secondary:focused {
@@ -347,7 +347,7 @@
 .hmrc-wizard-section-title {
     -fx-font-size: 16px;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
     -fx-padding: 0 0 8 0;
 }
 
@@ -358,7 +358,7 @@
 
 .nino-text-field {
     -fx-background-color: white;
-    -fx-border-color: t.$bs-gray-400;
+    -fx-border-color: t.$gray-300;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -375,8 +375,8 @@
 }
 
 .nino-text-field:disabled {
-    -fx-background-color: t.$bg-tertiary;
-    -fx-text-fill: t.$secondary;
+    -fx-background-color: t.$gray-150;
+    -fx-text-fill: t.$gray-500;
 }
 
 /* Validation Icon */
@@ -411,7 +411,7 @@
 
 /* Pre-filled from Settings hint */
 .nino-prefilled-hint {
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-font-size: 12px;
     -fx-font-style: italic;
     -fx-padding: 2 0 0 0;
@@ -424,9 +424,9 @@
 
 /* NINO vs UTR Info Box */
 .nino-info-box {
-    -fx-background-color: t.$blue-bg-lighter;
+    -fx-background-color: t.$gray-100;
     -fx-background-radius: 8;
-    -fx-border-color: t.$blue-bg-light;
+    -fx-border-color: t.$primary-light;
     -fx-border-radius: 8;
     -fx-border-width: 1;
 }
@@ -443,7 +443,7 @@
 
 .nino-info-description {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
     -fx-wrap-text: true;
 }
 
@@ -456,12 +456,12 @@
 .nino-bullet-main {
     -fx-font-size: 13px;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
 }
 
 .nino-bullet-sub {
     -fx-font-size: 12px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
 }
 
 /* GOV.UK Link */
@@ -490,9 +490,9 @@
 
 /* Privacy Reminder (FIN-003) */
 .oauth-privacy-reminder {
-    -fx-background-color: t.$blue-bg-lighter;
+    -fx-background-color: t.$gray-100;
     -fx-background-radius: 8;
-    -fx-border-color: t.$blue-bg-light;
+    -fx-border-color: t.$primary-light;
     -fx-border-radius: 8;
     -fx-border-width: 1;
 }
@@ -503,12 +503,12 @@
 
 .oauth-privacy-text {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
 }
 
 .oauth-description {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-text-alignment: center;
 }
 
@@ -540,14 +540,14 @@
 .oauth-browser-title {
     -fx-font-size: 18px;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$blue-800;
+    -fx-text-fill: t.$primary-bright;
     -fx-text-alignment: center;
 }
 
 /* Browser Waiting Description */
 .oauth-browser-desc {
     -fx-font-size: 14px;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
     -fx-text-alignment: center;
     -fx-wrap-text: true;
     -fx-padding: 0 20;
@@ -556,7 +556,7 @@
 /* Browser Waiting Hint */
 .oauth-browser-hint {
     -fx-font-size: 12px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-font-style: italic;
     -fx-text-alignment: center;
     -fx-wrap-text: true;
@@ -575,7 +575,7 @@
 .oauth-status-text {
     -fx-font-size: 14px;
     -fx-font-weight: 500;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-padding: 8 0;
 }
 
@@ -628,7 +628,7 @@
 
 .oauth-guidance-text {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-text-alignment: center;
     -fx-padding: 0 0 16 0;
 }
@@ -667,16 +667,16 @@
 
 /* Info Card Container */
 .info-card {
-    -fx-background-color: t.$bg-secondary;
+    -fx-background-color: t.$gray-50;
     -fx-background-radius: 8;
     -fx-padding: 16;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-border-color: t.$gray-150;
     -fx-border-radius: 8;
     -fx-border-width: 1;
 }
 
 .info-card:hover {
-    -fx-background-color: #f1f3f5;
+    -fx-background-color: t.$gray-100;
 }
 
 /* Info Card Icon Wrapper */
@@ -696,13 +696,13 @@
 .info-card-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
 }
 
 /* Info Card Description */
 .info-card-description {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
     -fx-wrap-text: true;
 }
 
@@ -729,7 +729,7 @@
 /* Info Card List Item */
 .info-card-list-item {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
 }
 
 /* Focus indicator for info cards */
@@ -742,27 +742,27 @@
 
 /* Success Header (Green Theme) */
 .hmrc-wizard-header-success {
-    -fx-background-color: linear-gradient(to right, #059669, #10b981);
+    -fx-background-color: linear-gradient(to right, t.$success-dark, t.$success);
     -fx-background-radius: 12 12 0 0;
 }
 
 /* Success Card */
 .success-card {
-    -fx-background-color: #f0fdf4;
+    -fx-background-color: t.$gray-50;
     -fx-background-radius: 12;
-    -fx-border-color: #bbf7d0;
+    -fx-border-color: t.$success-bg;
     -fx-border-radius: 12;
     -fx-border-width: 1;
 }
 
 .success-icon-large {
-    -fx-icon-color: t.$green-600;
+    -fx-icon-color: t.$success;
 }
 
 .success-title {
     -fx-font-size: 18px;
     -fx-font-weight: 700;
-    -fx-text-fill: #166534;
+    -fx-text-fill: t.$success-text;
 }
 
 .success-description {
@@ -779,7 +779,7 @@
 }
 
 .next-step-check {
-    -fx-icon-color: t.$green-600;
+    -fx-icon-color: t.$success;
 }
 
 .next-step-text {
@@ -789,10 +789,10 @@
 
 /* Retention Reminder (FIN-002) */
 .retention-reminder {
-    -fx-background-color: t.$amber-100;
-    -fx-border-color: #fcd34d;
+    -fx-background-color: t.$warning-bg;
+    -fx-border-color: t.$warning;
 }
 
 .retention-reminder .info-card-icon {
-    -fx-icon-color: t.$amber-600;
+    -fx-icon-color: t.$accent;
 }

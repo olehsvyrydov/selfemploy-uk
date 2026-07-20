@@ -8,23 +8,23 @@
   }
 
   .header-green {
-    -fx-background-color: linear-gradient(to right, t.$success, #48c664);
+    -fx-background-color: linear-gradient(to right, t.$success, t.$success);
   }
 
   .header-red {
-    -fx-background-color: linear-gradient(to right, t.$danger, #e4606d);
+    -fx-background-color: linear-gradient(to right, t.$danger, t.$danger);
   }
 
   .header-blue {
-    -fx-background-color: linear-gradient(to right, t.$primary, #3385d6);
+    -fx-background-color: linear-gradient(to right, t.$primary, t.$sky);
   }
 
   .header-gray {
-    -fx-background-color: linear-gradient(to right, t.$secondary, #868e96);
+    -fx-background-color: linear-gradient(to right, t.$gray-500, t.$gray-450);
   }
 
   .header-orange {
-    -fx-background-color: linear-gradient(to right, #e67e22, #f39c12);
+    -fx-background-color: linear-gradient(to right, t.$accent, t.$warning);
   }
 
   .header-icon {
@@ -55,8 +55,8 @@
 
   // ---- Summary / data cards ----
   .summary-card {
-    -fx-background-color: t.$bg-secondary;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: t.$radius-sm;
     -fx-background-radius: t.$radius-sm;
@@ -66,29 +66,29 @@
   .card-title {
     -fx-font-size: t.$font-sm;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
   }
 
   .financial-card-title {
     -fx-font-size: t.$font-xs;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
   }
 
   .data-label {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
   }
 
   .data-value {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
     -fx-font-weight: 500;
   }
 
   .data-suffix {
     -fx-font-size: t.$font-2xs;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
   }
 
   .total-row {
@@ -97,24 +97,24 @@
 
   .no-expenses {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-font-style: italic;
   }
 
   .category-name {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
   }
 
   .category-amount {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
     -fx-font-weight: 500;
   }
 
   .category-count {
     -fx-font-size: t.$font-2xs;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
   }
 
   // ---- Net profit / loss card (review dialog) ----
@@ -124,8 +124,8 @@
     -fx-background-radius: t.$radius-sm;
 
     &.net-profit {
-      -fx-background-color: #f0fdf4;
-      -fx-border-color: #86efac;
+      -fx-background-color: t.$gray-50;
+      -fx-border-color: t.$success;
 
       .net-label,
       .net-amount {
@@ -134,8 +134,8 @@
     }
 
     &.net-loss {
-      -fx-background-color: #fff5f5;
-      -fx-border-color: #feb2b2;
+      -fx-background-color: t.$gray-50;
+      -fx-border-color: t.$danger-bg;
 
       .net-label,
       .net-amount {
@@ -156,15 +156,15 @@
 
   // ---- Confirmations ----
   .confirmations-section {
-    -fx-background-color: t.$bg-secondary;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1 0 0 0;
   }
 
   .section-heading {
     -fx-font-size: t.$font-md;
     -fx-font-weight: 600;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
   }
 
   .confirmation-checkbox {
@@ -173,8 +173,8 @@
 
   // ---- Buttons ----
   .btn-cancel {
-    -fx-background-color: t.$bg-tertiary;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-background-color: t.$gray-150;
+    -fx-text-fill: t.$gray-600;
     -fx-font-size: t.$font-sm;
     -fx-padding: 10 20;
     -fx-background-radius: 6;
@@ -243,24 +243,24 @@
   .progress-message {
     -fx-font-size: t.$font-md;
     -fx-font-weight: 500;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
   }
 
   .progress-submessage {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
   }
 
   // ---- Success dialog ----
   .success-label {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
   }
 
   .success-ref-value {
     -fx-font-size: 16px;
     -fx-font-weight: 700;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
   }
 
   .success-message {
@@ -284,31 +284,31 @@
 
   .error-message {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
   }
 
   .retry-hint {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: #e67e22;
+    -fx-text-fill: t.$accent;
     -fx-font-weight: 600;
   }
 
   .error-code-row {
-    -fx-background-color: t.$bg-secondary;
+    -fx-background-color: t.$gray-50;
     -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
   }
 
   .error-code {
     -fx-font-size: t.$font-2xs;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-font-family: monospace;
   }
 
   // ---- Status description & badge (info dialog) ----
   .status-description {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
   }
 
   .status-badge {
@@ -333,14 +333,14 @@
     }
 
     &.badge-future {
-      -fx-background-color: t.$bg-tertiary;
-      -fx-text-fill: t.$secondary;
+      -fx-background-color: t.$gray-150;
+      -fx-text-fill: t.$gray-500;
     }
   }
 
   // ---- Net value cell (info dialog financial card) ----
   .net-value-neutral {
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
   }
 
   .net-value-positive {
@@ -361,28 +361,28 @@
     -fx-padding: t.$space-3;
 
     &.deadline-overdue {
-      -fx-background-color: #fff5f5;
-      -fx-border-color: #feb2b2;
+      -fx-background-color: t.$gray-50;
+      -fx-border-color: t.$danger-bg;
 
       .deadline-date {
         -fx-text-fill: t.$danger;
       }
 
       .deadline-countdown {
-        -fx-text-fill: #ef4444;
+        -fx-text-fill: t.$danger;
       }
     }
 
     &.deadline-normal {
-      -fx-background-color: #f0fdf4;
-      -fx-border-color: #86efac;
+      -fx-background-color: t.$gray-50;
+      -fx-border-color: t.$success;
 
       .deadline-date {
-        -fx-text-fill: #166534;
+        -fx-text-fill: t.$success-text;
       }
 
       .deadline-countdown {
-        -fx-text-fill: t.$green-500;
+        -fx-text-fill: t.$success;
       }
     }
   }

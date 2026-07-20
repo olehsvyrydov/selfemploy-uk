@@ -31,12 +31,12 @@ class ComponentCssContentTest {
         String css = read("/css/components.css");
 
         assertThat(css).contains(".category-help-popover");
-        // Token values compiled to the expected literals.
-        assertThat(css).contains("-fx-background-color: #1e293b");
-        assertThat(css).contains("-fx-border-color: #475569");
+        // Consolidated token values compiled to the expected literals.
+        assertThat(css).contains("-fx-background-color: #1f2937");
+        assertThat(css).contains("-fx-border-color: #495057");
         // Nested rule flattened by Sass, and the JavaFX effect function passed through intact.
         assertThat(css).contains(".category-help-popover .popover-title");
-        assertThat(css).contains("-fx-text-fill: #f8fafc");
+        assertThat(css).contains("-fx-text-fill: #f9fafb");
         assertThat(css).contains("-fx-effect: dropshadow(");
         // --no-charset was honoured (JavaFX's parser can warn on @charset).
         assertThat(css).doesNotContain("@charset");
@@ -50,7 +50,7 @@ class ComponentCssContentTest {
         assertThat(css).contains(".toast {");
         assertThat(css).contains(".toast .toast-message");
         assertThat(css).contains(".toast .toast-icon-success");
-        assertThat(css).contains("-fx-text-fill: #4ade80");
-        assertThat(css).contains("-fx-text-fill: #94a3b8");
+        assertThat(css).contains("-fx-text-fill: #28a745");
+        assertThat(css).contains("-fx-text-fill: #9ca3af");
     }
 }

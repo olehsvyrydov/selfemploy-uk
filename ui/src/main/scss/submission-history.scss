@@ -148,12 +148,12 @@
 }
 
 .status-submitted {
-    -fx-background-color: t.$blue-bg-light;
+    -fx-background-color: t.$primary-light;
 }
 
 .status-submitted .status-icon,
 .status-submitted .status-text {
-    -fx-text-fill: #004085;
+    -fx-text-fill: t.$primary-dark;
 }
 
 .status-pending {
@@ -184,12 +184,12 @@
 }
 
 .status-not_submitted {
-    -fx-background-color: #e2e3e5;
+    -fx-background-color: t.$border;
 }
 
 .status-not_submitted .status-icon,
 .status-not_submitted .status-text {
-    -fx-text-fill: #41464b;
+    -fx-text-fill: t.$gray-600;
 }
 
 .status-icon {
@@ -289,7 +289,7 @@
 
 /* ===== Disabled Button Styling (PS11-005) ===== */
 .button-primary:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-text-fill: t.$white;
     -fx-cursor: default;
     -fx-opacity: 1.0;
@@ -305,7 +305,7 @@
 
 /* ===== Tooltip Styling for Disabled Buttons (PS11-005) ===== */
 .tooltip.disabled-button-tooltip {
-    -fx-background-color: #343a40;
+    -fx-background-color: t.$gray-700;
     -fx-background-radius: 6;
     -fx-text-fill: t.$white;
     -fx-font-size: 13px;
@@ -350,7 +350,7 @@
 }
 
 .detail-status-card.status-submitted {
-    -fx-background-color: t.$blue-bg-light;
+    -fx-background-color: t.$primary-light;
 }
 
 .detail-status-card.status-pending {
@@ -366,7 +366,7 @@
 }
 
 .detail-status-card.status-not_submitted {
-    -fx-background-color: #e2e3e5;
+    -fx-background-color: t.$border;
 }
 
 .detail-status-icon {
@@ -504,7 +504,7 @@
 }
 
 .button-warning:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 

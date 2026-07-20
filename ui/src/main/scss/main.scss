@@ -10,17 +10,17 @@
     -fx-primary: t.$primary;
     -fx-primary-dark: #004d99;
     -fx-primary-light: t.$primary-light;
-    -fx-secondary: t.$secondary;
+    -fx-secondary: t.$gray-500;
     -fx-success: t.$success;
     -fx-warning: t.$warning;
     -fx-danger: t.$danger;
 
     -fx-bg-primary: t.$white;
-    -fx-bg-secondary: t.$bg-secondary;
-    -fx-bg-tertiary: t.$bg-tertiary;
+    -fx-bg-secondary: t.$gray-50;
+    -fx-bg-tertiary: t.$gray-150;
 
-    -fx-text-primary: t.$text-primary;
-    -fx-text-secondary: t.$secondary;
+    -fx-text-primary: t.$text;
+    -fx-text-secondary: t.$gray-500;
     -fx-text-muted: #868e96;  /* Darkened for WCAG AA contrast compliance */
 
     -fx-border-color: t.$border;
@@ -195,7 +195,7 @@
 }
 
 .header-icon-button:hover .header-icon-circle {
-    -fx-background-color: t.$gray-200;
+    -fx-background-color: t.$gray-150;
 }
 
 .header-icon-button:pressed .header-icon-circle {
@@ -227,31 +227,31 @@
 
 /* Specific header icon colors */
 .header-icon-notification {
-    -fx-background-color: t.$amber-100;
+    -fx-background-color: t.$warning-bg;
 }
 
 .header-icon-notification .header-icon-text,
 .header-icon-notification .header-icon-fonticon {
-    -fx-text-fill: t.$amber-600;
-    -fx-icon-color: t.$amber-600;
+    -fx-text-fill: t.$accent;
+    -fx-icon-color: t.$accent;
 }
 
 .header-icon-button:hover .header-icon-notification {
-    -fx-background-color: #fde68a;
+    -fx-background-color: t.$warning-bg;
 }
 
 .header-icon-help {
-    -fx-background-color: #dbeafe;
+    -fx-background-color: t.$primary-light;
 }
 
 .header-icon-help .header-icon-text,
 .header-icon-help .header-icon-fonticon {
-    -fx-text-fill: t.$blue-600;
-    -fx-icon-color: t.$blue-600;
+    -fx-text-fill: t.$primary-bright;
+    -fx-icon-color: t.$primary-bright;
 }
 
 .header-icon-button:hover .header-icon-help {
-    -fx-background-color: #bfdbfe;
+    -fx-background-color: derive(t.$primary-light, -8%);
 }
 
 .header-icon-settings {
@@ -265,7 +265,7 @@
 }
 
 .header-icon-button:hover .header-icon-settings {
-    -fx-background-color: t.$gray-200;
+    -fx-background-color: t.$gray-150;
 }
 
 .tax-year-selector {
@@ -509,7 +509,7 @@
 }
 
 .year-progress > .bar {
-    -fx-background-color: linear-gradient(to right, -fx-primary, #00a3ff);
+    -fx-background-color: linear-gradient(to right, -fx-primary, t.$primary);
     -fx-background-radius: 6;
     -fx-background-insets: 0;
 }
@@ -726,7 +726,7 @@
 .text-success { -fx-text-fill: -fx-success; }
 .text-danger { -fx-text-fill: -fx-danger; }
 .text-warning { -fx-text-fill: -fx-warning; }
-.text-info { -fx-text-fill: #5a2d82; }
+.text-info { -fx-text-fill: t.$purple; }
 
 .mb-10 { -fx-padding: 0 0 10 0; }
 .mb-20 { -fx-padding: 0 0 20 0; }
@@ -775,7 +775,7 @@
 .summary-card {
     -fx-background-color: white;
     -fx-background-radius: 12;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-border-color: t.$gray-150;
     -fx-border-radius: 12;
     -fx-border-width: 1;
     -fx-padding: 20;
@@ -798,7 +798,7 @@
 
 .summary-card-nondeductible {
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: t.$secondary;
+    -fx-border-color: t.$gray-500;
 }
 
 .summary-card-value {
@@ -815,7 +815,7 @@
 }
 
 .summary-card-value-nondeductible {
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
 }
 
 /* ===== Income Summary Cards (Bento Style) ===== */
@@ -1089,7 +1089,7 @@
 .combo-box.form-input .list-cell {
     -fx-padding: 0 12;
     -fx-font-size: 14px;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
     -fx-background-color: transparent;
     -fx-pref-height: 42;
 }
@@ -1100,7 +1100,7 @@
 }
 
 .combo-box.form-input .arrow-button .arrow {
-    -fx-background-color: t.$secondary;
+    -fx-background-color: t.$gray-500;
 }
 
 .combo-box-popup .list-view {
@@ -1136,7 +1136,7 @@
 }
 
 .date-picker.form-input .arrow-button .arrow {
-    -fx-background-color: t.$secondary;
+    -fx-background-color: t.$gray-500;
 }
 
 .date-picker-popup {
@@ -1195,12 +1195,12 @@
 }
 
 .combo-box-popup .list-view .list-cell:hover {
-    -fx-background-color: t.$bg-secondary;
+    -fx-background-color: t.$gray-50;
     -fx-text-fill: -fx-text-primary;
 }
 
 .combo-box-popup .list-view .list-cell:selected {
-    -fx-background-color: t.$bg-tertiary;
+    -fx-background-color: t.$gray-150;
     -fx-text-fill: -fx-text-primary;
 }
 
@@ -1220,17 +1220,17 @@
 }
 
 .dialog-scroll-pane .scroll-bar:vertical .track {
-    -fx-background-color: #f0f0f0;
+    -fx-background-color: t.$gray-100;
     -fx-background-radius: 4;
 }
 
 .dialog-scroll-pane .scroll-bar:vertical .thumb {
-    -fx-background-color: #c0c0c0;
+    -fx-background-color: t.$gray-400;
     -fx-background-radius: 4;
 }
 
 .dialog-scroll-pane .scroll-bar:vertical .thumb:hover {
-    -fx-background-color: #a0a0a0;
+    -fx-background-color: t.$gray-450;
 }
 
 .field-error {
@@ -1284,12 +1284,12 @@
 
 /* ===== Disabled State ===== */
 .button-success:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 
 .button-primary:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 
@@ -1352,7 +1352,7 @@
 }
 
 .button-warning:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 
@@ -1474,9 +1474,9 @@
     -fx-min-height: 18;
     -fx-max-width: 18;
     -fx-max-height: 18;
-    -fx-background-color: #e7f1ff;
+    -fx-background-color: t.$primary-light;
     -fx-background-radius: 9;
-    -fx-text-fill: t.$blue-bootstrap;
+    -fx-text-fill: t.$primary-bright;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-alignment: CENTER;
@@ -1484,26 +1484,26 @@
 }
 
 .info-icon-circle:hover {
-    -fx-background-color: t.$blue-bootstrap;
+    -fx-background-color: t.$primary-bright;
     -fx-text-fill: white;
 }
 
 /* Legacy alias for backwards compatibility */
 .help-icon-info {
-    -fx-text-fill: t.$blue-bootstrap;
+    -fx-text-fill: t.$primary-bright;
     -fx-font-size: 14px;
     -fx-cursor: hand;
     -fx-font-weight: bold;
 }
 
 .help-icon-info:hover {
-    -fx-text-fill: #0a58ca;
+    -fx-text-fill: t.$primary;
 }
 
 /* ===== Category Help Box ===== */
 .category-help-box {
-    -fx-background-color: t.$blue-bg-lighter;
-    -fx-border-color: #b8daff;
+    -fx-background-color: t.$gray-100;
+    -fx-border-color: t.$primary-light;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -1658,7 +1658,7 @@
 }
 
 .notification-high {
-    -fx-background-color: t.$orange-bg;
+    -fx-background-color: t.$accent-bg;
     -fx-border-color: t.$accent;
     -fx-border-width: 0 0 0 4;
 }
@@ -1708,7 +1708,7 @@
 
 .employment-warning-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #6d5206;
+    -fx-text-fill: t.$warning-text;
     -fx-wrap-text: true;
     -fx-line-spacing: 3;
 }
@@ -1732,7 +1732,7 @@
 }
 
 .employment-warning-dismiss {
-    -fx-text-fill: #6d5206;
+    -fx-text-fill: t.$warning-text;
     -fx-font-size: 13px;
     -fx-cursor: hand;
 }
@@ -1745,16 +1745,16 @@
 /* Non-dismissable variant (Annual Submission) */
 .employment-warning-banner.critical {
     -fx-border-color: t.$accent;
-    -fx-background-color: t.$orange-bg;
+    -fx-background-color: t.$accent-bg;
 }
 
 .employment-warning-banner.critical .employment-warning-title,
 .employment-warning-banner.critical .employment-warning-icon-text {
-    -fx-text-fill: #9a4e00;
+    -fx-text-fill: t.$amber-dark;
 }
 
 .employment-warning-banner.critical .employment-warning-text {
-    -fx-text-fill: #7a3e00;
+    -fx-text-fill: t.$amber-dark;
 }
 
 /* Compact variant for limited space */
@@ -1805,7 +1805,7 @@
 /* Legal section - gray accent */
 .settings-card-legal {
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: t.$secondary;
+    -fx-border-color: t.$gray-500;
     -fx-border-radius: 0 12 12 0;
     -fx-background-radius: 0 12 12 0;
 }
@@ -1821,7 +1821,7 @@
 /* HMRC section - teal/green accent for government services */
 .settings-card-hmrc {
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: #00703c;
+    -fx-border-color: t.$success-dark;
     -fx-border-radius: 0 12 12 0;
     -fx-background-radius: 0 12 12 0;
 }
@@ -1897,7 +1897,7 @@
 }
 
 .settings-link {
-    -fx-text-fill: t.$blue-500;
+    -fx-text-fill: t.$primary;
     -fx-cursor: hand;
 }
 
@@ -2023,7 +2023,7 @@
 /* ===== Coming Soon Feature Card (PS11-004) ===== */
 .feature-card-coming-soon {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 12;
 }
@@ -2033,7 +2033,7 @@
 }
 
 .coming-soon-badge {
-    -fx-background-color: t.$secondary;
+    -fx-background-color: t.$gray-500;
     -fx-text-fill: t.$white;
     -fx-font-size: 10px;
     -fx-font-weight: bold;
@@ -2155,7 +2155,7 @@
 }
 
 .summary-card-nondeductible:focused {
-    -fx-border-color: t.$secondary -fx-primary -fx-primary t.$secondary;
+    -fx-border-color: t.$gray-500 -fx-primary -fx-primary t.$gray-500;
     -fx-border-width: 3 3 3 4;
 }
 
@@ -2248,7 +2248,7 @@
 }
 
 .accessible-icon-button:hover .accessible-icon-button-circle {
-    -fx-background-color: t.$gray-200;
+    -fx-background-color: t.$gray-150;
 }
 
 .accessible-icon-button:focused .accessible-icon-button-circle {
@@ -2280,7 +2280,7 @@
 }
 
 .tour-card-progress {
-    -fx-text-fill: t.$green-600;
+    -fx-text-fill: t.$success;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
 }
@@ -2314,12 +2314,12 @@
 .text-success { -fx-icon-color: -fx-success; }
 .text-danger { -fx-icon-color: -fx-danger; }
 .text-warning { -fx-icon-color: -fx-warning; }
-.text-info { -fx-icon-color: #5a2d82; }
+.text-info { -fx-icon-color: t.$purple; }
 .privacy-icon { -fx-icon-color: -fx-primary; }
 .help-icon { -fx-icon-color: t.$primary; }
 .help-icon:hover { -fx-icon-color: -fx-primary; }
 .section-toggle { -fx-icon-color: -fx-text-secondary; }
-.pension-insight-icon { -fx-icon-color: #f59e0b; }
+.pension-insight-icon { -fx-icon-color: t.$warning; }
 
 .drop-zone-glyph { -fx-icon-color: -fx-primary; }
 .file-glyph { -fx-icon-color: -fx-primary; }
