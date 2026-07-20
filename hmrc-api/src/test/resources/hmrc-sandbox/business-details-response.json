@@ -2,16 +2,18 @@
   "businessId": "XAIS12345678901",
   "typeOfBusiness": "self-employment",
   "tradingName": "Test Business Ltd",
-  "tradingStartDate": "2020-01-01",
+  "commencementDate": "2020-01-01",
+  "firstAccountingPeriodStartDate": "2020-01-01",
+  "firstAccountingPeriodEndDate": "2021-04-05",
   "accountingPeriods": [
     {
       "start": "2025-04-06",
       "end": "2026-04-05"
     }
   ],
-  "addressLineOne": "123 Test Street",
-  "addressLineTwo": "Test District",
-  "addressLineThree": "Test City",
-  "postalCode": "AB12 3CD",
-  "countryCode": "GB"
+  "businessAddressLineOne": "123 Test Street",
+  "businessAddressLineTwo": "Test District",
+  "businessAddressLineThree": "Test City",
+  "businessAddressPostcode": "AB12 3CD",
+  "businessAddressCountryCode": "GB"
 }

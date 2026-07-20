@@ -48,8 +48,8 @@ public final class HmrcWireMockStubs {
     // Test Calculation ID
     public static final String TEST_CALCULATION_ID = "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1e";
 
-    // Media Types
-    public static final String HMRC_CONTENT_TYPE = "application/vnd.hmrc.1.0+json";
+    // Media Types. HMRC MTD responses carry Content-Type: application/json (the vnd.hmrc.N.0+json
+    // versioned media type belongs on the request Accept header, not the response).
     public static final String JSON_CONTENT_TYPE = "application/json";
 
     private HmrcWireMockStubs() {
@@ -122,11 +122,11 @@ public final class HmrcWireMockStubs {
      * Stubs successful business list retrieval.
      */
     public static void stubListBusinessesSuccess(String nino) {
-        stubFor(get(urlPathEqualTo("/individuals/business/self-employment/" + nino))
+        stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino + "/list"))
             .withHeader("Authorization", matching("Bearer .+"))
             .willReturn(aResponse()
                 .withStatus(200)
-                .withHeader("Content-Type", HMRC_CONTENT_TYPE)
+                .withHeader("Content-Type", JSON_CONTENT_TYPE)
                 .withBody(loadFixture("business-details-list-response.json"))));
     }
 
@@ -134,11 +134,11 @@ public final class HmrcWireMockStubs {
      * Stubs successful single business retrieval.
      */
     public static void stubGetBusinessSuccess(String nino, String businessId) {
-        stubFor(get(urlPathEqualTo("/individuals/business/self-employment/" + nino + "/" + businessId))
+        stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino + "/" + businessId))
             .withHeader("Authorization", matching("Bearer .+"))
             .willReturn(aResponse()
                 .withStatus(200)
-                .withHeader("Content-Type", HMRC_CONTENT_TYPE)
+                .withHeader("Content-Type", JSON_CONTENT_TYPE)
                 .withBody(loadFixture("business-details-response.json"))));
     }
 
@@ -146,7 +146,7 @@ public final class HmrcWireMockStubs {
      * Stubs business not found (404) response.
      */
     public static void stubBusinessNotFound(String nino) {
-        stubFor(get(urlPathMatching("/individuals/business/self-employment/" + nino + ".*"))
+        stubFor(get(urlPathMatching("/individuals/business/details/" + nino + ".*"))
             .willReturn(aResponse()
                 .withStatus(404)
                 .withHeader("Content-Type", JSON_CONTENT_TYPE)

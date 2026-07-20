@@ -42,7 +42,7 @@ class BusinessDetailsIntegrationTest {
     private HttpClient httpClient;
 
     private static final String ACCESS_TOKEN = "test_access_token_12345";
-    private static final String HMRC_ACCEPT_HEADER = "application/vnd.hmrc.1.0+json";
+    private static final String HMRC_ACCEPT_HEADER = "application/vnd.hmrc.2.0+json";
 
     @BeforeAll
     static void startWireMock() {
@@ -79,7 +79,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/self-employment/" + NINO_HAPPY_PATH))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
                 .header("Accept", HMRC_ACCEPT_HEADER)
                 .header("Authorization", "Bearer " + ACCESS_TOKEN)
                 .GET()
@@ -90,7 +90,7 @@ class BusinessDetailsIntegrationTest {
             // Then
             assertThat(response.statusCode()).isEqualTo(200);
             assertThat(response.body())
-                .contains("selfEmployments")
+                .contains("listOfBusinesses")
                 .contains(TEST_BUSINESS_ID)
                 .contains("Test Business Ltd")
                 .contains("self-employment");
@@ -103,7 +103,7 @@ class BusinessDetailsIntegrationTest {
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then - Check for businessId with flexible whitespace
             assertThat(response.body())
@@ -118,7 +118,7 @@ class BusinessDetailsIntegrationTest {
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then - Check for tradingName with flexible whitespace
             assertThat(response.body())
@@ -127,35 +127,33 @@ class BusinessDetailsIntegrationTest {
         }
 
         @Test
-        @DisplayName("BIZ-API-001-04: Response includes accounting periods")
-        void responseIncludesAccountingPeriods() throws Exception {
+        @DisplayName("BIZ-API-001-04: Response includes business type")
+        void responseIncludesBusinessType() throws Exception {
             // Given
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
-            // Then
+            // Then - the list response carries only businessId/typeOfBusiness/tradingName
             assertThat(response.body())
-                .contains("accountingPeriods")
-                .contains("2025-04-06")
-                .contains("2026-04-05");
+                .contains("typeOfBusiness")
+                .contains("self-employment");
         }
 
         @Test
-        @DisplayName("BIZ-API-001-05: Response includes address information")
-        void responseIncludesAddressInformation() throws Exception {
+        @DisplayName("BIZ-API-001-05: Response lists the business")
+        void responseListsTheBusiness() throws Exception {
             // Given
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
-            // Then
+            // Then - the list response carries only businessId/typeOfBusiness/tradingName
             assertThat(response.body())
-                .contains("123 Test Street")
-                .contains("AB12 3CD")
-                .contains("GB");
+                .contains("listOfBusinesses")
+                .contains(TEST_BUSINESS_ID);
         }
     }
 
@@ -173,7 +171,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(200);
@@ -190,17 +188,17 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/" + TEST_BUSINESS_ID);
 
             // Then
             assertThat(response.body())
                 .contains("businessId")
                 .contains("typeOfBusiness")
                 .contains("tradingName")
-                .contains("tradingStartDate")
+                .contains("commencementDate")
                 .contains("accountingPeriods")
-                .contains("addressLineOne")
-                .contains("postalCode");
+                .contains("businessAddressLineOne")
+                .contains("businessAddressPostcode");
         }
     }
 
@@ -218,7 +216,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_NOT_FOUND);
+                "/individuals/business/details/" + NINO_NOT_FOUND);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(404);
@@ -232,7 +230,7 @@ class BusinessDetailsIntegrationTest {
         void nonExistentBusinessIdReturns404() throws Exception {
             // Given
             String nonExistentBusinessId = "XAIS00000000000";
-            stubFor(get(urlPathEqualTo("/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + nonExistentBusinessId))
+            stubFor(get(urlPathEqualTo("/individuals/business/details/" + NINO_HAPPY_PATH + "/" + nonExistentBusinessId))
                 .willReturn(aResponse()
                     .withStatus(404)
                     .withHeader("Content-Type", "application/json")
@@ -245,7 +243,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH + "/" + nonExistentBusinessId);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/" + nonExistentBusinessId);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(404);
@@ -262,7 +260,7 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-004-01: Missing Authorization header returns 401")
         void missingAuthorizationHeaderReturns401() throws Exception {
             // Given
-            stubFor(get(urlPathMatching("/individuals/business/self-employment/.*"))
+            stubFor(get(urlPathMatching("/individuals/business/details/.*"))
                 .withHeader("Authorization", absent())
                 .willReturn(aResponse()
                     .withStatus(401)
@@ -276,7 +274,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/self-employment/" + NINO_HAPPY_PATH))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH))
                 .header("Accept", HMRC_ACCEPT_HEADER)
                 .GET()
                 .build();
@@ -292,7 +290,7 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-004-02: Invalid token returns 401")
         void invalidTokenReturns401() throws Exception {
             // Given
-            stubFor(get(urlPathMatching("/individuals/business/self-employment/.*"))
+            stubFor(get(urlPathMatching("/individuals/business/details/.*"))
                 .withHeader("Authorization", matching("Bearer invalid.*"))
                 .willReturn(aResponse()
                     .withStatus(401)
@@ -306,7 +304,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/self-employment/" + NINO_HAPPY_PATH))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH))
                 .header("Accept", HMRC_ACCEPT_HEADER)
                 .header("Authorization", "Bearer invalid_token")
                 .GET()
@@ -322,7 +320,7 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-004-03: Expired token returns 401")
         void expiredTokenReturns401() throws Exception {
             // Given
-            stubFor(get(urlPathMatching("/individuals/business/self-employment/.*"))
+            stubFor(get(urlPathMatching("/individuals/business/details/.*"))
                 .withHeader("Authorization", matching("Bearer expired.*"))
                 .willReturn(aResponse()
                     .withStatus(401)
@@ -336,7 +334,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/self-employment/" + NINO_HAPPY_PATH))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH))
                 .header("Accept", HMRC_ACCEPT_HEADER)
                 .header("Authorization", "Bearer expired_token_12345")
                 .GET()
@@ -360,7 +358,7 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-005-01: Insufficient scope returns 403")
         void insufficientScopeReturns403() throws Exception {
             // Given
-            stubFor(get(urlPathMatching("/individuals/business/self-employment/" + NINO_FORBIDDEN + ".*"))
+            stubFor(get(urlPathMatching("/individuals/business/details/" + NINO_FORBIDDEN + ".*"))
                 .willReturn(aResponse()
                     .withStatus(403)
                     .withHeader("Content-Type", "application/json")
@@ -373,7 +371,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_FORBIDDEN);
+                "/individuals/business/details/" + NINO_FORBIDDEN);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(403);
@@ -391,11 +389,11 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-006-01: Server error returns 500")
         void serverErrorReturns500() throws Exception {
             // Given
-            stubServerError("/individuals/business/self-employment/" + NINO_SERVER_ERROR + ".*");
+            stubServerError("/individuals/business/details/" + NINO_SERVER_ERROR + ".*");
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_SERVER_ERROR);
+                "/individuals/business/details/" + NINO_SERVER_ERROR);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(500);
@@ -406,11 +404,11 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-006-02: Service unavailable returns 503")
         void serviceUnavailableReturns503() throws Exception {
             // Given
-            stubServiceUnavailable("/individuals/business/self-employment/.*");
+            stubServiceUnavailable("/individuals/business/details/.*");
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(503);
@@ -422,11 +420,11 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-006-03: Rate limited returns 429 with Retry-After header")
         void rateLimitedReturns429() throws Exception {
             // Given
-            stubRateLimited("/individuals/business/self-employment/.*");
+            stubRateLimited("/individuals/business/details/.*");
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_RATE_LIMITED);
+                "/individuals/business/details/" + NINO_RATE_LIMITED);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(429);
@@ -451,10 +449,10 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
-            verify(getRequestedFor(urlPathEqualTo("/individuals/business/self-employment/" + NINO_HAPPY_PATH))
+            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
                 .withHeader("Accept", equalTo(HMRC_ACCEPT_HEADER)));
         }
 
@@ -466,10 +464,10 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
-            verify(getRequestedFor(urlPathEqualTo("/individuals/business/self-employment/" + NINO_HAPPY_PATH))
+            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
                 .withHeader("Authorization", matching("Bearer .+")));
         }
     }
@@ -488,7 +486,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
             assertThat(response.statusCode()).isEqualTo(200);
@@ -502,7 +500,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_NOT_FOUND);
+                "/individuals/business/details/" + NINO_NOT_FOUND);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(404);
@@ -512,11 +510,11 @@ class BusinessDetailsIntegrationTest {
         @DisplayName("BIZ-API-008-03: Server error NINO (AA000500A) returns 500")
         void serverErrorNinoReturns500() throws Exception {
             // Given
-            stubServerError("/individuals/business/self-employment/" + NINO_SERVER_ERROR + ".*");
+            stubServerError("/individuals/business/details/" + NINO_SERVER_ERROR + ".*");
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/self-employment/" + NINO_SERVER_ERROR);
+                "/individuals/business/details/" + NINO_SERVER_ERROR);
 
             // Then
             assertThat(response.statusCode()).isEqualTo(500);

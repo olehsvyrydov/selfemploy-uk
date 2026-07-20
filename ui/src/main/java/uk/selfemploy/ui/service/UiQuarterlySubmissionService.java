@@ -19,7 +19,6 @@ import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
 
 import java.math.BigDecimal;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -28,7 +27,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -273,7 +271,7 @@ public class UiQuarterlySubmissionService {
                     .header("Accept", getAcceptHeader(reviewData.getTaxYear()));
 
             // Add fraud prevention headers (required by HMRC for ALL MTD API calls)
-            addFraudPreventionHeaders(requestBuilder);
+            HmrcFraudHeaders.apply(requestBuilder);
 
             // Sandbox mode: Don't add Gov-Test-Scenario header to get default success response.
             if (isSandbox) {
@@ -554,7 +552,7 @@ public class UiQuarterlySubmissionService {
      * <p>HMRC MTD API endpoints differ based on tax year:</p>
      * <ul>
      *   <li>Tax year 2024-25 and earlier (v5.0): POST to /period (no taxYear query param, dates in request body)</li>
-     *   <li>Tax year 2025-26 onwards (v7.0): PUT to /cumulative?taxYear=YYYY-YY</li>
+     *   <li>Tax year 2025-26 onwards: PUT to /cumulative?taxYear=YYYY-YY (still v5.0)</li>
      * </ul>
      *
      * <p>Visible for testing.</p>
@@ -570,7 +568,7 @@ public class UiQuarterlySubmissionService {
 
         // Use cumulative endpoint for 2025-26+, period endpoint for earlier years
         // For v5.0 (2024-25 and earlier), tax year is determined from periodDates in request body
-        // For v7.0 (2025-26+), tax year is a query parameter
+        // For 2025-26+ (cumulative, still v5.0), tax year is a query parameter
         if (taxYear != null && taxYear.startYear() >= 2025) {
             String taxYearStr = taxYear.hmrcFormat();
             return basePath + "/cumulative?taxYear=" + taxYearStr;
@@ -740,40 +738,4 @@ public class UiQuarterlySubmissionService {
         return sum;
     }
 
-    // ==================== Fraud Prevention Headers ====================
-
-    /**
-     * Adds HMRC fraud prevention headers to the request.
-     * These headers are legally required for all MTD API calls.
-     *
-     * @param requestBuilder the HTTP request builder to add headers to
-     */
-    private void addFraudPreventionHeaders(HttpRequest.Builder requestBuilder) {
-        requestBuilder
-                .header("Gov-Client-Connection-Method", "DESKTOP_APP_DIRECT")
-                .header("Gov-Client-User-IDs", "")
-                .header("Gov-Vendor-Version", "SelfEmployment=1.0")
-                .header("Gov-Vendor-Product-Name", "UK Self-Employment Manager");
-
-        // Add timezone
-        try {
-            TimeZone tz = TimeZone.getDefault();
-            int offsetMs = tz.getRawOffset();
-            int hours = Math.abs(offsetMs) / 3600000;
-            int minutes = (Math.abs(offsetMs) % 3600000) / 60000;
-            String sign = offsetMs >= 0 ? "+" : "-";
-            requestBuilder.header("Gov-Client-Timezone",
-                    String.format("UTC%s%02d:%02d", sign, hours, minutes));
-        } catch (Exception e) {
-            requestBuilder.header("Gov-Client-Timezone", "UTC+00:00");
-        }
-
-        // Add local IP
-        try {
-            String localIp = InetAddress.getLocalHost().getHostAddress();
-            requestBuilder.header("Gov-Client-Local-IPs", localIp);
-        } catch (Exception e) {
-            LOG.fine("Could not determine local IP for fraud prevention header");
-        }
-    }
 }

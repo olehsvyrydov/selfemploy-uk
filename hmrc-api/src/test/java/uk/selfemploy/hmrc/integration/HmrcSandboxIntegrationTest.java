@@ -69,7 +69,13 @@ class HmrcSandboxIntegrationTest {
     private HttpClient httpClient;
 
     private static final String JSON_CONTENT_TYPE = "application/json";
-    private static final String HMRC_ACCEPT_HEADER = "application/vnd.hmrc.1.0+json";
+    // Each MTD API has its own Accept version; pick the right one per endpoint.
+    private static final String ACCEPT_BUSINESS_DETAILS = "application/vnd.hmrc.2.0+json";
+    private static final String ACCEPT_CALCULATIONS = "application/vnd.hmrc.8.0+json";
+
+    private static String acceptFor(String path) {
+        return path.contains("/individuals/calculations/") ? ACCEPT_CALCULATIONS : ACCEPT_BUSINESS_DETAILS;
+    }
 
     // Fraud Prevention Headers
     private static final String HEADER_CONNECTION_METHOD = "Gov-Client-Connection-Method";
@@ -152,7 +158,7 @@ class HmrcSandboxIntegrationTest {
 
             // When
             HttpResponse<String> response = sendAuthenticatedGet(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
             assertThat(response.statusCode()).isEqualTo(200);
@@ -349,7 +355,7 @@ class HmrcSandboxIntegrationTest {
 
             // When
             HttpResponse<String> response = sendAuthenticatedGet(
-                "/individuals/business/self-employment/" + NINO_NOT_FOUND);
+                "/individuals/business/details/" + NINO_NOT_FOUND + "/list");
 
             // Then
             assertThat(response.statusCode()).isEqualTo(404);
@@ -404,11 +410,11 @@ class HmrcSandboxIntegrationTest {
         void serverErrorReturns500() throws Exception {
             // Given
             accessToken = "test_access_token_12345678901234567890";
-            stubServerError("/individuals/business/self-employment/" + NINO_SERVER_ERROR + ".*");
+            stubServerError("/individuals/business/details/" + NINO_SERVER_ERROR + ".*");
 
             // When
             HttpResponse<String> response = sendAuthenticatedGet(
-                "/individuals/business/self-employment/" + NINO_SERVER_ERROR);
+                "/individuals/business/details/" + NINO_SERVER_ERROR + "/list");
 
             // Then
             assertThat(response.statusCode()).isEqualTo(500);
@@ -418,7 +424,7 @@ class HmrcSandboxIntegrationTest {
         @DisplayName("SUITE-002-05: Unauthorized without token returns 401")
         void unauthorizedWithoutTokenReturns401() throws Exception {
             // Given
-            stubFor(get(urlPathMatching("/individuals/business/self-employment/.*"))
+            stubFor(get(urlPathMatching("/individuals/business/details/.*"))
                 .withHeader("Authorization", absent())
                 .willReturn(aResponse()
                     .withStatus(401)
@@ -426,8 +432,8 @@ class HmrcSandboxIntegrationTest {
 
             // When
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/self-employment/" + NINO_HAPPY_PATH))
-                .header("Accept", HMRC_ACCEPT_HEADER)
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
+                .header("Accept", ACCEPT_BUSINESS_DETAILS)
                 .GET()
                 .build();
 
@@ -442,11 +448,11 @@ class HmrcSandboxIntegrationTest {
         void rateLimitingReturns429() throws Exception {
             // Given
             accessToken = "test_access_token_12345678901234567890";
-            stubRateLimited("/individuals/business/self-employment/" + NINO_RATE_LIMITED + ".*");
+            stubRateLimited("/individuals/business/details/" + NINO_RATE_LIMITED + ".*");
 
             // When
             HttpResponse<String> response = sendAuthenticatedGet(
-                "/individuals/business/self-employment/" + NINO_RATE_LIMITED);
+                "/individuals/business/details/" + NINO_RATE_LIMITED + "/list");
 
             // Then
             assertThat(response.statusCode()).isEqualTo(429);
@@ -469,10 +475,10 @@ class HmrcSandboxIntegrationTest {
 
             // When
             HttpResponse<String> response = sendAuthenticatedGetWithFraudHeaders(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
-            verify(getRequestedFor(urlPathMatching("/individuals/business/self-employment/.*"))
+            verify(getRequestedFor(urlPathMatching("/individuals/business/details/.*"))
                 .withHeader(HEADER_CONNECTION_METHOD, equalTo("DESKTOP_APP_DIRECT"))
                 .withHeader(HEADER_DEVICE_ID, matching(".+"))
                 .withHeader(HEADER_USER_IDS, matching(".+"))
@@ -484,7 +490,7 @@ class HmrcSandboxIntegrationTest {
         void missingFraudHeadersReturns400() throws Exception {
             // Given
             accessToken = "test_access_token_12345678901234567890";
-            stubFor(get(urlPathMatching("/individuals/business/self-employment/.*"))
+            stubFor(get(urlPathMatching("/individuals/business/details/.*"))
                 .withHeader(HEADER_CONNECTION_METHOD, absent())
                 .willReturn(aResponse()
                     .withStatus(400)
@@ -498,8 +504,8 @@ class HmrcSandboxIntegrationTest {
 
             // When - request WITHOUT fraud headers
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/self-employment/" + NINO_HAPPY_PATH))
-                .header("Accept", HMRC_ACCEPT_HEADER)
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
+                .header("Accept", ACCEPT_BUSINESS_DETAILS)
                 .header("Authorization", "Bearer " + accessToken)
                 .GET()
                 .build();
@@ -568,9 +574,9 @@ class HmrcSandboxIntegrationTest {
 
             // When - Run same request multiple times
             HttpResponse<String> response1 = sendAuthenticatedGet(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
             HttpResponse<String> response2 = sendAuthenticatedGet(
-                "/individuals/business/self-employment/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then - Responses should be identical
             assertThat(response1.statusCode()).isEqualTo(response2.statusCode());
@@ -624,7 +630,7 @@ class HmrcSandboxIntegrationTest {
     private HttpResponse<String> sendAuthenticatedGet(String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(wireMockServer.baseUrl() + path))
-            .header("Accept", HMRC_ACCEPT_HEADER)
+            .header("Accept", acceptFor(path))
             .header("Authorization", "Bearer " + accessToken)
             .GET()
             .build();
@@ -635,7 +641,7 @@ class HmrcSandboxIntegrationTest {
     private HttpResponse<String> sendAuthenticatedGetWithFraudHeaders(String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(wireMockServer.baseUrl() + path))
-            .header("Accept", HMRC_ACCEPT_HEADER)
+            .header("Accept", acceptFor(path))
             .header("Authorization", "Bearer " + accessToken)
             .header(HEADER_CONNECTION_METHOD, "DESKTOP_APP_DIRECT")
             .header(HEADER_DEVICE_ID, "beec798b-b366-47fa-b1f8-92cede14a1ce")
