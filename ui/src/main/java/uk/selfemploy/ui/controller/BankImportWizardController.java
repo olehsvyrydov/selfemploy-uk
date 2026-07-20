@@ -804,31 +804,24 @@ public class BankImportWizardController implements Initializable {
     private void showCategoryHelp(Node anchor, ExpenseCategory category) {
         VBox content = new VBox(4);
         content.getStyleClass().add("category-help-popover");
-        content.setStyle(
-                "-fx-background-color: #1e293b;"
-                + "-fx-background-radius: 8;"
-                + "-fx-border-color: #475569;"
-                + "-fx-border-width: 1;"
-                + "-fx-border-radius: 8;"
-                + "-fx-padding: 12;"
-                + "-fx-max-width: 260;"
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 5);");
+        // A Popup has its own scene, so attach the compiled component stylesheet to the content root.
+        content.getStylesheets().add(getClass().getResource("/css/components.css").toExternalForm());
 
         if (category == null) {
             Label none = new Label(Messages.get("bankImport.categoryHelp.none"));
             none.setWrapText(true);
-            none.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 12px;");
+            none.getStyleClass().add("popover-note");
             content.getChildren().add(none);
         } else {
             Label title = new Label(category.getShortDisplayName());
-            title.setStyle("-fx-text-fill: #f8fafc; -fx-font-size: 13px; -fx-font-weight: bold;");
+            title.getStyleClass().add("popover-title");
             Label sa103 = new Label(Messages.format("bankImport.categoryHelp.sa103", category.getSa103Box()));
-            sa103.setStyle("-fx-text-fill: #cbd5e1; -fx-font-size: 12px;");
+            sa103.getStyleClass().add("popover-text");
             Label allowable = new Label(Messages.get(category.isAllowable()
                     ? "bankImport.categoryHelp.allowable"
                     : "bankImport.categoryHelp.notAllowable"));
             allowable.setWrapText(true);
-            allowable.setStyle("-fx-text-fill: #cbd5e1; -fx-font-size: 12px;");
+            allowable.getStyleClass().add("popover-text");
             content.getChildren().addAll(title, sa103, allowable);
         }
 

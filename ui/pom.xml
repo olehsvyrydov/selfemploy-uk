@@ -129,11 +129,41 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.build.directory}/generated-resources/css</directory>
+                <targetPath>css</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
+            </plugin>
+            <plugin>
+                <groupId>us.hebi.sass</groupId>
+                <artifactId>sass-cli-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>compile-scss</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <args>
+                                <arg>${project.basedir}/src/main/scss/components.scss:${project.build.directory}/generated-resources/css/components.css</arg>
+                                <arg>--no-source-map</arg>
+                                <arg>--no-charset</arg>
+                                <arg>--style=expanded</arg>
+                            </args>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

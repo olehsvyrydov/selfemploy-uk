@@ -86,6 +86,8 @@
         -->
         <surefire.excludedGroups>e2e,hmrc-sandbox</surefire.excludedGroups>
         <jpackage-maven-plugin.version>1.4.0</jpackage-maven-plugin.version>
+        <sass-cli-maven-plugin.version>1.0.4</sass-cli-maven-plugin.version>
+        <dart-sass.version>1.87.0</dart-sass.version>
     </properties>
 
     <dependencyManagement>
@@ -269,6 +271,14 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>us.hebi.sass</groupId>
+                    <artifactId>sass-cli-maven-plugin</artifactId>
+                    <version>${sass-cli-maven-plugin.version}</version>
+                    <configuration>
+                        <sassVersion>${dart-sass.version}</sassVersion>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

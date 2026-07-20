@@ -1,0 +1,6 @@
+// Shared JavaFX styling mixins. JavaFX's dropshadow() is an unknown function to Sass and passes
+// through verbatim, so it can be wrapped for reuse.
+
+@mixin popover-elevation {
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0, 0, 5);
+}
