@@ -1,10 +1,16 @@
 {
-  "incomeSourceId": "XAIS12345678901",
-  "incomeSourceType": "self-employment",
+  "businessId": "XAIS12345678901",
+  "typeOfBusiness": "self-employment",
   "tradingName": "Test Business Ltd",
-  "tradingStartDate": "2020-01-01",
-  "accountingPeriodStartDate": "2025-04-06",
-  "accountingPeriodEndDate": "2026-04-05",
+  "commencementDate": "2020-01-01",
+  "firstAccountingPeriodStartDate": "2020-01-01",
+  "firstAccountingPeriodEndDate": "2021-04-05",
+  "accountingPeriods": [
+    {
+      "start": "2025-04-06",
+      "end": "2026-04-05"
+    }
+  ],
   "businessAddressLineOne": "123 Test Street",
   "businessAddressLineTwo": "Test District",
   "businessAddressLineThree": "Test City",

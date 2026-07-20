@@ -24,13 +24,11 @@ class HmrcBusinessProfileServiceTest {
 
     private static final String NINO = "AB123456C";
     private static final String OTHER_NINO = "CD654321B";
-    // Real HMRC Business Details API v2 shape: self-employment income sources in `businessData`,
-    // each carrying `incomeSourceId` (what other MTD APIs call the businessId).
+    // Real HMRC Business Details API v2 "List All Businesses" shape: a listOfBusinesses array whose
+    // items carry typeOfBusiness + businessId + tradingName.
     private static final String BUSINESS_JSON =
-            "{\"nino\":\"AB123456C\",\"mtdbsa\":\"XQIT00000000001\","
-            + "\"businessData\":[{\"incomeSourceId\":\"XAIS12345678901\","
-            + "\"incomeSourceType\":\"self-employment\",\"tradingName\":\"Test\"}],"
-            + "\"propertyData\":[]}";
+            "{\"listOfBusinesses\":[{\"typeOfBusiness\":\"self-employment\","
+            + "\"businessId\":\"XAIS12345678901\",\"tradingName\":\"Test\"}]}";
 
     private HmrcBusinessProfileService service;
 
@@ -72,10 +70,10 @@ class HmrcBusinessProfileServiceTest {
         }
 
         @Test
-        @DisplayName("200 with no business reports no-business and does not persist the NINO")
+        @DisplayName("200 with an empty business list reports no-business and does not persist the NINO")
         void okWithoutBusiness() {
             Result result = service.applyResponse(200,
-                    "{\"businessData\":[],\"propertyData\":[]}", NINO, false);
+                    "{\"listOfBusinesses\":[]}", NINO, false);
 
             assertThat(result.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
             assertThat(store().loadNino()).isNull();
@@ -86,13 +84,25 @@ class HmrcBusinessProfileServiceTest {
         @DisplayName("200 with only a property business (no self-employment) reports no-business")
         void okWithPropertyOnly() {
             String propertyOnly =
-                    "{\"businessData\":[],\"propertyData\":[{\"incomeSourceId\":\"XPIS12345678901\","
-                    + "\"incomeSourceType\":\"uk-property\"}]}";
+                    "{\"listOfBusinesses\":[{\"typeOfBusiness\":\"uk-property\","
+                    + "\"businessId\":\"XPIS12345678901\"}]}";
 
             Result result = service.applyResponse(200, propertyOnly, NINO, false);
 
             assertThat(result.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
             assertThat(store().loadNino()).isNull();
+        }
+
+        @Test
+        @DisplayName("a self-employment businessId with a lower-case second character is accepted")
+        void lowerCaseSecondCharBusinessId() {
+            String json = "{\"listOfBusinesses\":[{\"typeOfBusiness\":\"self-employment\","
+                    + "\"businessId\":\"XmIS12345678901\"}]}";
+
+            Result result = service.applyResponse(200, json, NINO, false);
+
+            assertThat(result.outcome()).isEqualTo(Outcome.VERIFIED);
+            assertThat(result.businessId()).isEqualTo("XmIS12345678901");
         }
 
         @Test
@@ -154,8 +164,8 @@ class HmrcBusinessProfileServiceTest {
         }
 
         @Test
-        @DisplayName("a 200 with an empty body is sync-pending, but a valid empty object is a genuine rejection")
-        void emptyBodyVersusEmptyObject() {
+        @DisplayName("a 200 with an empty body or an object lacking listOfBusinesses is sync-pending, not a wipe")
+        void unrecognisedObjectDoesNotWipe() {
             store().saveHmrcBusinessId("XAIS12345678901");
             store().saveConnectedNino(NINO);
 
@@ -163,9 +173,15 @@ class HmrcBusinessProfileServiceTest {
             assertThat(empty.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
             assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
 
+            // An object without the listOfBusinesses marker (e.g. a gateway error envelope) is not a
+            // genuine "no business" — it must not clear a previously-verified profile.
+            Result envelope = service.applyResponse(200, "{\"code\":\"SERVER_ERROR\"}", NINO, false);
+            assertThat(envelope.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
+            assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
+
             Result emptyObject = service.applyResponse(200, "{}", NINO, false);
-            assertThat(emptyObject.outcome()).isEqualTo(Outcome.NO_BUSINESS_FOUND);
-            assertThat(store().loadHmrcBusinessId()).isNull();
+            assertThat(emptyObject.outcome()).isEqualTo(Outcome.PROFILE_SYNC_PENDING);
+            assertThat(store().loadHmrcBusinessId()).isEqualTo("XAIS12345678901");
         }
 
         @Test
@@ -257,16 +273,6 @@ class HmrcBusinessProfileServiceTest {
             assertThat(HmrcBusinessProfileService.isServerError(500)).isTrue();
             assertThat(HmrcBusinessProfileService.isServerError(503)).isTrue();
             assertThat(HmrcBusinessProfileService.isServerError(404)).isFalse();
-        }
-
-        @Test
-        @DisplayName("parses and validates the business ID from a response")
-        void parsesBusinessId() {
-            assertThat(HmrcBusinessProfileService.parseBusinessId(BUSINESS_JSON)).isEqualTo("XAIS12345678901");
-            assertThat(HmrcBusinessProfileService.parseBusinessId(
-                    "{\"businessData\":[{\"incomeSourceId\":\"nope\"}]}")).isNull();
-            assertThat(HmrcBusinessProfileService.parseBusinessId("{}")).isNull();
-            assertThat(HmrcBusinessProfileService.parseBusinessId(null)).isNull();
         }
     }
 }

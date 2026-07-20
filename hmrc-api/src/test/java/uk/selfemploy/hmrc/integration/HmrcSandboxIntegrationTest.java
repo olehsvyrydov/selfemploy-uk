@@ -152,7 +152,7 @@ class HmrcSandboxIntegrationTest {
 
             // When
             HttpResponse<String> response = sendAuthenticatedGet(
-                "/individuals/business/details/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
             assertThat(response.statusCode()).isEqualTo(200);
@@ -469,7 +469,7 @@ class HmrcSandboxIntegrationTest {
 
             // When
             HttpResponse<String> response = sendAuthenticatedGetWithFraudHeaders(
-                "/individuals/business/details/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
             verify(getRequestedFor(urlPathMatching("/individuals/business/details/.*"))
@@ -568,9 +568,9 @@ class HmrcSandboxIntegrationTest {
 
             // When - Run same request multiple times
             HttpResponse<String> response1 = sendAuthenticatedGet(
-                "/individuals/business/details/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
             HttpResponse<String> response2 = sendAuthenticatedGet(
-                "/individuals/business/details/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then - Responses should be identical
             assertThat(response1.statusCode()).isEqualTo(response2.statusCode());

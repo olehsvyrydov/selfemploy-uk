@@ -87,31 +87,26 @@ class HmrcApiIntegrationTest {
         void listBusinessesReturnsBusinessDetails() throws Exception {
             // Given
             String nino = "AA123456A";
-            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino))
+            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino + "/list"))
                 .willReturn(aResponse()
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
                     .withBody("""
                         {
-                            "nino": "AA123456A",
-                            "mtdbsa": "XQIT00000000001",
-                            "businessData": [
+                            "listOfBusinesses": [
                                 {
-                                    "incomeSourceId": "XAIS12345678901",
-                                    "incomeSourceType": "self-employment",
-                                    "tradingName": "Test Business",
-                                    "accountingPeriodStartDate": "2025-04-06",
-                                    "accountingPeriodEndDate": "2026-04-05"
+                                    "typeOfBusiness": "self-employment",
+                                    "businessId": "XAIS12345678901",
+                                    "tradingName": "Test Business Ltd"
                                 }
-                            ],
-                            "propertyData": []
+                            ]
                         }
                         """)));
 
             // When
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino + "/list"))
                 .header("Accept", "application/vnd.hmrc.2.0+json")
                 .header("Authorization", "Bearer test_access_token_12345")
                 .GET()
@@ -137,13 +132,17 @@ class HmrcApiIntegrationTest {
                     .withHeader("Content-Type", "application/json")
                     .withBody("""
                         {
-                            "incomeSourceId": "XAIS12345678901",
-                            "incomeSourceType": "self-employment",
-                            "tradingName": "Test Business",
+                            "businessId": "XAIS12345678901",
+                            "typeOfBusiness": "self-employment",
+                            "tradingName": "Test Business Ltd",
                             "businessAddressLineOne": "123 Test Street",
                             "businessAddressPostcode": "AB12 3CD",
-                            "accountingPeriodStartDate": "2025-04-06",
-                            "accountingPeriodEndDate": "2026-04-05"
+                            "accountingPeriods": [
+                                {
+                                    "start": "2025-04-06",
+                                    "end": "2026-04-05"
+                                }
+                            ]
                         }
                         """)));
 
@@ -170,14 +169,14 @@ class HmrcApiIntegrationTest {
         void bearerTokenRequiredInAuthorizationHeader() throws Exception {
             // Given
             String nino = "AA123456A";
-            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino))
+            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino + "/list"))
                 .withHeader("Authorization", matching("Bearer .+"))
                 .willReturn(aResponse()
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
-                    .withBody("{\"businessData\": []}")));
+                    .withBody("{\"listOfBusinesses\": []}")));
 
-            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino))
+            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino + "/list"))
                 .withHeader("Authorization", absent())
                 .willReturn(aResponse()
                     .withStatus(401)
@@ -186,7 +185,7 @@ class HmrcApiIntegrationTest {
             // When - with token
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest requestWithToken = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino + "/list"))
                 .header("Authorization", "Bearer test_token")
                 .GET()
                 .build();
@@ -198,7 +197,7 @@ class HmrcApiIntegrationTest {
 
             // When - without token
             HttpRequest requestWithoutToken = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino + "/list"))
                 .GET()
                 .build();
 
@@ -213,17 +212,17 @@ class HmrcApiIntegrationTest {
         void acceptHeaderIsHmrcVersioned() throws Exception {
             // Given
             String nino = "AA123456A";
-            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino))
+            stubFor(get(urlPathEqualTo("/individuals/business/details/" + nino + "/list"))
                 .withHeader("Accept", equalTo("application/vnd.hmrc.2.0+json"))
                 .willReturn(aResponse()
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
-                    .withBody("{\"businessData\": []}")));
+                    .withBody("{\"listOfBusinesses\": []}")));
 
             // When
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + nino + "/list"))
                 .header("Accept", "application/vnd.hmrc.2.0+json")
                 .header("Authorization", "Bearer test_token")
                 .GET()
@@ -233,7 +232,7 @@ class HmrcApiIntegrationTest {
 
             // Then
             assertThat(response.statusCode()).isEqualTo(200);
-            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + nino))
+            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + nino + "/list"))
                 .withHeader("Accept", equalTo("application/vnd.hmrc.2.0+json")));
         }
     }
@@ -370,7 +369,7 @@ class HmrcApiIntegrationTest {
             stubFor(get(urlPathMatching("/individuals/business/details/.*"))
                 .willReturn(aResponse()
                     .withStatus(200)
-                    .withBody("{\"businessData\": []}")));
+                    .withBody("{\"listOfBusinesses\": []}")));
 
             // When - Simulate a log message with NINO
             System.out.println("Listing businesses for NINO: " + maskNino(nino));

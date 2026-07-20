@@ -79,7 +79,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH))
+                .uri(URI.create(wireMockServer.baseUrl() + "/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
                 .header("Accept", HMRC_ACCEPT_HEADER)
                 .header("Authorization", "Bearer " + ACCESS_TOKEN)
                 .GET()
@@ -90,7 +90,7 @@ class BusinessDetailsIntegrationTest {
             // Then
             assertThat(response.statusCode()).isEqualTo(200);
             assertThat(response.body())
-                .contains("businessData")
+                .contains("listOfBusinesses")
                 .contains(TEST_BUSINESS_ID)
                 .contains("Test Business Ltd")
                 .contains("self-employment");
@@ -103,11 +103,11 @@ class BusinessDetailsIntegrationTest {
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then - Check for businessId with flexible whitespace
             assertThat(response.body())
-                .contains("incomeSourceId")
+                .contains("businessId")
                 .contains(TEST_BUSINESS_ID);
         }
 
@@ -118,7 +118,7 @@ class BusinessDetailsIntegrationTest {
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then - Check for tradingName with flexible whitespace
             assertThat(response.body())
@@ -127,36 +127,33 @@ class BusinessDetailsIntegrationTest {
         }
 
         @Test
-        @DisplayName("BIZ-API-001-04: Response includes accounting periods")
-        void responseIncludesAccountingPeriods() throws Exception {
+        @DisplayName("BIZ-API-001-04: Response includes business type")
+        void responseIncludesBusinessType() throws Exception {
             // Given
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
-            // Then
+            // Then - the list response carries only businessId/typeOfBusiness/tradingName
             assertThat(response.body())
-                .contains("accountingPeriodStartDate")
-                .contains("accountingPeriodEndDate")
-                .contains("2025-04-06")
-                .contains("2026-04-05");
+                .contains("typeOfBusiness")
+                .contains("self-employment");
         }
 
         @Test
-        @DisplayName("BIZ-API-001-05: Response includes address information")
-        void responseIncludesAddressInformation() throws Exception {
+        @DisplayName("BIZ-API-001-05: Response lists the business")
+        void responseListsTheBusiness() throws Exception {
             // Given
             stubListBusinessesSuccess(NINO_HAPPY_PATH);
 
             // When
-            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH);
+            HttpResponse<String> response = sendGetRequest("/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
-            // Then
+            // Then - the list response carries only businessId/typeOfBusiness/tradingName
             assertThat(response.body())
-                .contains("123 Test Street")
-                .contains("AB12 3CD")
-                .contains("GB");
+                .contains("listOfBusinesses")
+                .contains(TEST_BUSINESS_ID);
         }
     }
 
@@ -195,11 +192,11 @@ class BusinessDetailsIntegrationTest {
 
             // Then
             assertThat(response.body())
-                .contains("incomeSourceId")
-                .contains("incomeSourceType")
+                .contains("businessId")
+                .contains("typeOfBusiness")
                 .contains("tradingName")
-                .contains("tradingStartDate")
-                .contains("accountingPeriodStartDate")
+                .contains("commencementDate")
+                .contains("accountingPeriods")
                 .contains("businessAddressLineOne")
                 .contains("businessAddressPostcode");
         }
@@ -452,10 +449,10 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/details/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
-            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + NINO_HAPPY_PATH))
+            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
                 .withHeader("Accept", equalTo(HMRC_ACCEPT_HEADER)));
         }
 
@@ -467,10 +464,10 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/details/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
-            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + NINO_HAPPY_PATH))
+            verify(getRequestedFor(urlPathEqualTo("/individuals/business/details/" + NINO_HAPPY_PATH + "/list"))
                 .withHeader("Authorization", matching("Bearer .+")));
         }
     }
@@ -489,7 +486,7 @@ class BusinessDetailsIntegrationTest {
 
             // When
             HttpResponse<String> response = sendGetRequest(
-                "/individuals/business/details/" + NINO_HAPPY_PATH);
+                "/individuals/business/details/" + NINO_HAPPY_PATH + "/list");
 
             // Then
             assertThat(response.statusCode()).isEqualTo(200);

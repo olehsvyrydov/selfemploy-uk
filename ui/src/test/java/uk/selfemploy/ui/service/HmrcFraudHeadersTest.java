@@ -28,16 +28,17 @@ class HmrcFraudHeadersTest {
         HmrcFraudHeaders.apply(builder);
         HttpRequest request = builder.build();
 
-        // Includes the headers the previous hand-rolled quarterly subset omitted (device id, MAC
-        // addresses, user agent, local-IP timestamp). Screens/Window-Size are display-dependent and
-        // intentionally not asserted so the check is stable in a headless CI.
+        // Includes the headers the previous hand-rolled quarterly subset omitted or emptied (device id,
+        // user IDs, user agent, local-IP timestamp). Gov-Client-MAC-Addresses, Screens and Window-Size
+        // are environment-dependent (a runner with no readable NIC hardware address / no display omits
+        // them) and are intentionally not asserted so the check is stable in a headless CI.
         List<String> mandatory = List.of(
                 "Gov-Client-Connection-Method",
                 "Gov-Client-Device-ID",
+                "Gov-Client-User-IDs",
                 "Gov-Client-Timezone",
                 "Gov-Client-Local-IPs",
                 "Gov-Client-Local-IPs-Timestamp",
-                "Gov-Client-MAC-Addresses",
                 "Gov-Client-User-Agent",
                 "Gov-Vendor-Version",
                 "Gov-Vendor-Product-Name");
