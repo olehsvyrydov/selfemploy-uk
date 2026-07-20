@@ -19,7 +19,9 @@ public class DefaultBrowserLauncher implements BrowserLauncher {
 
     @Override
     public void openUrl(String url) throws HmrcOAuthException {
-        LOG.info("Opening browser with URL: " + url);
+        // Never log the authorization URL itself: it carries the OAuth state and PKCE
+        // code_challenge query parameters.
+        LOG.info("Opening the system browser for HMRC authorization");
 
         try {
             openUrlWithOsCommand(url);
