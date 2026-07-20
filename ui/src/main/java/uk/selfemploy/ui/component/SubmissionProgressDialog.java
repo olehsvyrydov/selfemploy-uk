@@ -16,6 +16,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import uk.selfemploy.ui.service.AutoOAuthSubmissionService.SubmissionProgress;
 import uk.selfemploy.ui.service.AutoOAuthSubmissionService.SubmissionStage;
+import uk.selfemploy.ui.util.Stylesheets;
 
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -79,11 +80,11 @@ public class SubmissionProgressDialog {
 
         // Create components
         titleLabel = new Label("Submitting to HMRC");
-        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        titleLabel.getStyleClass().add("submission-progress-title");
         titleLabel.setAccessibleRole(AccessibleRole.TEXT);
 
         messageLabel = new Label(SubmissionStage.VALIDATING.getDefaultMessage());
-        messageLabel.setStyle("-fx-font-size: 13px;");
+        messageLabel.getStyleClass().add("submission-progress-message");
         messageLabel.setWrapText(true);
         messageLabel.setAccessibleRole(AccessibleRole.TEXT);
 
@@ -115,6 +116,7 @@ public class SubmissionProgressDialog {
         buttonRow.getChildren().addAll(cancelButton, closeButton);
 
         content.getChildren().addAll(titleLabel, progressRow, buttonRow);
+        Stylesheets.attachComponents(content);
 
         Scene scene = new Scene(content);
         stage.setScene(scene);
@@ -173,7 +175,9 @@ public class SubmissionProgressDialog {
                 case COMPLETE -> {
                     titleLabel.setText("Submission Complete");
                     progressIndicator.setProgress(1.0);
-                    progressIndicator.setStyle("-fx-accent: green;");
+                    progressIndicator.getStyleClass().removeAll(
+                            "submission-progress-indicator-complete", "submission-progress-indicator-failed");
+                    progressIndicator.getStyleClass().add("submission-progress-indicator-complete");
                     cancelButton.setVisible(false);
                     cancelButton.setManaged(false);
                     closeButton.setVisible(true);
@@ -182,7 +186,9 @@ public class SubmissionProgressDialog {
                 case FAILED -> {
                     titleLabel.setText("Submission Failed");
                     progressIndicator.setProgress(0);
-                    progressIndicator.setStyle("-fx-accent: red;");
+                    progressIndicator.getStyleClass().removeAll(
+                            "submission-progress-indicator-complete", "submission-progress-indicator-failed");
+                    progressIndicator.getStyleClass().add("submission-progress-indicator-failed");
                     cancelButton.setVisible(false);
                     cancelButton.setManaged(false);
                     closeButton.setVisible(true);

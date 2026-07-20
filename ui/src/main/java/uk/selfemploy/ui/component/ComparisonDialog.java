@@ -11,6 +11,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import uk.selfemploy.ui.util.DialogStyler;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.ImportAction;
 import uk.selfemploy.ui.viewmodel.ImportCandidateViewModel;
 import uk.selfemploy.ui.viewmodel.MatchedRecordViewModel;
@@ -119,6 +120,7 @@ public class ComparisonDialog {
     private VBox buildContent() {
         VBox container = new VBox(20);
         container.getStyleClass().add("comparison-dialog");
+        Stylesheets.attachComponents(container);
         container.setPadding(new Insets(24));
         container.setMinWidth(DIALOG_WIDTH);
         container.setMaxWidth(DIALOG_WIDTH);
@@ -145,15 +147,13 @@ public class ComparisonDialog {
         header.setAlignment(Pos.CENTER_LEFT);
 
         Label title = new Label("Compare Transactions");
-        title.getStyleClass().add("dialog-title");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        title.getStyleClass().addAll("dialog-title", "comparison-dialog-title");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         closeBtn = new Button("X");
-        closeBtn.getStyleClass().addAll("button-icon", "close-btn");
-        closeBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 16px; -fx-cursor: hand;");
+        closeBtn.getStyleClass().addAll("button-icon", "close-btn", "comparison-close-button");
         closeBtn.setOnAction(e -> {
             selectedAction = null;
             stage.close();
@@ -232,7 +232,7 @@ public class ComparisonDialog {
             );
         } else {
             Label noRecord = new Label("No matching record details available");
-            noRecord.setStyle("-fx-text-fill: -fx-text-muted; -fx-font-style: italic;");
+            noRecord.getStyleClass().add("comparison-no-record");
             fields.getChildren().add(noRecord);
         }
 
@@ -266,7 +266,7 @@ public class ComparisonDialog {
         note.setPadding(new Insets(12));
 
         Label icon = new Label("!");
-        icon.setStyle("-fx-font-weight: bold;");
+        icon.getStyleClass().add("comparison-difference-icon");
 
         MatchedRecordViewModel matchedRecord = candidate.getMatchedRecord();
         List<String> differences = calculateDifferences(candidate, matchedRecord);
@@ -281,7 +281,7 @@ public class ComparisonDialog {
         }
 
         Label text = new Label(message);
-        text.setStyle("-fx-font-size: 13px;");
+        text.getStyleClass().add("comparison-difference-text");
 
         note.getChildren().addAll(icon, text);
         return note;
