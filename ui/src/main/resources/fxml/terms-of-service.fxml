@@ -33,7 +33,7 @@
         <!-- ToS Header -->
         <VBox styleClass="tos-header" alignment="CENTER" spacing="4" maxHeight="110">
             <padding><Insets top="8" right="0" bottom="8" left="0"/></padding>
-            <Label text="§" styleClass="tos-icon" style="-fx-font-size: 24px;"/>
+            <Label text="§" styleClass="tos-icon"/>
             <Label text="%terms.hero.title" styleClass="tos-title"/>
             <HBox alignment="CENTER" spacing="8">
                 <Label fx:id="versionLabel" text="%terms.hero.version" styleClass="tos-version"/>
