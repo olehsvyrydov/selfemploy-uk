@@ -4,6 +4,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import uk.selfemploy.ui.service.db.SqliteMigrationRunner;
+import uk.selfemploy.ui.service.security.DbKey;
+import uk.selfemploy.ui.service.security.SqlCipherSupport;
 
 import java.sql.*;
 import java.time.Instant;
@@ -54,6 +56,24 @@ public final class SqliteDataStore {
     /** Every connection handed out, tracked so {@link #close()} can release them all. */
     private final List<Connection> openConnections = new CopyOnWriteArrayList<>();
 
+    /**
+     * Database encryption key, supplied by the app-lock gate via {@link #provisionKey} before the
+     * singleton is first created. When null the database opens in plaintext (unprotected — the
+     * unchanged behaviour for users who have not enabled protection, and for tests).
+     */
+    private static volatile DbKey provisionedKey;
+
+    /** This store's key: the provisioned key for the singleton, null (plaintext) for test stores. */
+    private final DbKey dbKey;
+
+    /**
+     * Supplies the database encryption key for the singleton. Must be called by the unlock flow before
+     * the first {@link #getInstance()} — the returned connections are keyed only if a key is present.
+     */
+    public static void provisionKey(DbKey key) {
+        provisionedKey = key;
+    }
+
     private SqliteDataStore() {
         this(false);
     }
@@ -61,6 +81,7 @@ public final class SqliteDataStore {
     SqliteDataStore(boolean inMemory) {
         this.credentialEncryption = new CredentialEncryption();
         this.inMemory = inMemory;
+        this.dbKey = inMemory ? null : provisionedKey;
         this.databasePath = inMemory ? null : resolveDatabasePath();
         if (!inMemory) {
             ensureDirectoryExists();
@@ -85,11 +106,20 @@ public final class SqliteDataStore {
      * the at-rest encryption to a temporary master key instead of the real per-user key file.
      */
     SqliteDataStore(Path databasePath, CredentialEncryption credentialEncryption) {
+        this(databasePath, credentialEncryption, null);
+    }
+
+    /**
+     * Test seam: a file-mode store backed by an explicit path and an optional database encryption key,
+     * so tests can exercise the real keyed (SQLCipher) connection path against a temporary database.
+     */
+    SqliteDataStore(Path databasePath, CredentialEncryption credentialEncryption, DbKey dbKey) {
         if (databasePath == null) {
             throw new IllegalArgumentException("databasePath cannot be null");
         }
         this.credentialEncryption = credentialEncryption;
         this.inMemory = false;
+        this.dbKey = dbKey;
         this.databasePath = databasePath;
         ensureDirectoryExists();
         initializeDatabase();
@@ -135,12 +165,24 @@ public final class SqliteDataStore {
     }
 
     /**
+     * Opens a raw connection to the database — keyed (SQLCipher) when an encryption key is present,
+     * plaintext otherwise. Every seam (primary + per-thread) routes through here so the on-disk cipher
+     * is applied consistently.
+     */
+    private Connection openRawConnection() throws SQLException {
+        String url = inMemory ? "jdbc:sqlite::memory:" : "jdbc:sqlite:" + databasePath.toAbsolutePath();
+        if (inMemory || dbKey == null) {
+            return DriverManager.getConnection(url);
+        }
+        return SqlCipherSupport.openEncrypted(url, dbKey);
+    }
+
+    /**
      * Initializes the database connection and creates tables.
      */
     private void initializeDatabase() {
         try {
-            String url = inMemory ? "jdbc:sqlite::memory:" : "jdbc:sqlite:" + databasePath.toAbsolutePath();
-            connection = DriverManager.getConnection(url);
+            connection = openRawConnection();
             LOG.info("Connected to SQLite database: " + (inMemory ? ":memory:" : databasePath));
 
             configureSqlite();
@@ -1028,7 +1070,7 @@ public final class SqliteDataStore {
      */
     private Connection openThreadConnection() {
         try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + databasePath.toAbsolutePath());
+            Connection conn = openRawConnection();
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("PRAGMA foreign_keys = ON");
                 stmt.execute("PRAGMA synchronous = NORMAL");
