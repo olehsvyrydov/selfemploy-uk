@@ -1,3 +1,4 @@
+@use 'tokens' as t;
 /*
  * HMRC Connection Wizard Stylesheet
  * Sprint 12 - SE-12-001: Prerequisites Checklist Screen
@@ -14,7 +15,7 @@
 
 /* ===== Header (Blue Authorization Theme) ===== */
 .hmrc-wizard-header {
-    -fx-background-color: linear-gradient(to right, #1e40af, #3b82f6);
+    -fx-background-color: linear-gradient(to right, t.$blue-800, t.$blue-500);
     -fx-background-radius: 12 12 0 0;
 }
 
@@ -25,7 +26,7 @@
 }
 
 .hmrc-wizard-header-icon {
-    -fx-icon-color: #1e40af;
+    -fx-icon-color: t.$blue-800;
     -fx-icon-size: 20;
 }
 
@@ -58,8 +59,8 @@
 
 /* ===== Progress Indicator ===== */
 .wizard-progress-container {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #e9ecef;
+    -fx-background-color: t.$bg-secondary;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 0 0 1 0;
 }
 
@@ -80,20 +81,20 @@
 }
 
 .wizard-step-circle.active {
-    -fx-background-color: #0066cc;
+    -fx-background-color: t.$primary;
     -fx-text-fill: white;
 }
 
 .wizard-step-circle.pending {
     -fx-background-color: transparent;
-    -fx-border-color: #adb5bd;
+    -fx-border-color: t.$bs-gray-500;
     -fx-border-width: 2;
     -fx-border-radius: 16;
-    -fx-text-fill: #adb5bd;
+    -fx-text-fill: t.$bs-gray-500;
 }
 
 .wizard-step-circle.completed {
-    -fx-background-color: #28a745;
+    -fx-background-color: t.$success;
     -fx-text-fill: white;
 }
 
@@ -102,11 +103,11 @@
     -fx-max-width: 40;
     -fx-min-height: 2;
     -fx-max-height: 2;
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
 }
 
 .wizard-step-connector.completed {
-    -fx-background-color: #28a745;
+    -fx-background-color: t.$success;
 }
 
 /* ===== Content Area ===== */
@@ -117,13 +118,13 @@
 
 .hmrc-wizard-step-description {
     -fx-font-size: 14px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-padding: 0 0 8 0;
 }
 
 .hmrc-wizard-placeholder {
     -fx-font-size: 16px;
-    -fx-text-fill: #adb5bd;
+    -fx-text-fill: t.$bs-gray-500;
     -fx-padding: 40;
     -fx-alignment: center;
 }
@@ -145,12 +146,12 @@
 }
 
 .hmrc-wizard-scroll .scroll-bar:vertical .thumb {
-    -fx-background-color: #ced4da;
+    -fx-background-color: t.$bs-gray-400;
     -fx-background-radius: 4;
 }
 
 .hmrc-wizard-scroll .scroll-bar:vertical .thumb:hover {
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
 }
 
 .hmrc-wizard-scroll .scroll-bar:vertical .increment-button,
@@ -161,7 +162,7 @@
 
 /* ===== Prerequisite Items ===== */
 .prerequisite-item {
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: t.$bg-secondary;
     -fx-background-radius: 8;
     -fx-padding: 12 16;
 }
@@ -180,11 +181,11 @@
 }
 
 .prerequisite-icon-wrapper.teal {
-    -fx-background-color: #ccfbf1;
+    -fx-background-color: t.$teal-50;
 }
 
 .prerequisite-icon-wrapper.teal .prerequisite-icon {
-    -fx-icon-color: #0f766e;
+    -fx-icon-color: t.$teal-700;
 }
 
 .prerequisite-icon-wrapper.blue {
@@ -192,7 +193,7 @@
 }
 
 .prerequisite-icon-wrapper.blue .prerequisite-icon {
-    -fx-icon-color: #0369a1;
+    -fx-icon-color: t.$sky-800;
 }
 
 .prerequisite-icon-wrapper.violet {
@@ -206,17 +207,17 @@
 .prerequisite-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
 }
 
 .prerequisite-description {
     -fx-font-size: 13px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-wrap-text: true;
 }
 
 .prerequisite-link {
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-font-size: 13px;
     -fx-cursor: hand;
 }
@@ -226,7 +227,7 @@
 }
 
 .prerequisite-link:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 0 0 2 0;
 }
 
@@ -237,7 +238,7 @@
 
 .prerequisite-checkbox .box {
     -fx-background-color: white;
-    -fx-border-color: #ced4da;
+    -fx-border-color: t.$bs-gray-400;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
     -fx-pref-width: 20;
@@ -245,12 +246,12 @@
 }
 
 .prerequisite-checkbox:hover .box {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
 }
 
 .prerequisite-checkbox:selected .box {
-    -fx-background-color: #0066cc;
-    -fx-border-color: #0066cc;
+    -fx-background-color: t.$primary;
+    -fx-border-color: t.$primary;
 }
 
 .prerequisite-checkbox:selected .mark {
@@ -258,26 +259,26 @@
 }
 
 .prerequisite-checkbox:focused .box {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.3), 4, 0, 0, 0);
 }
 
 /* ===== Footer ===== */
 .hmrc-wizard-footer {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #e9ecef;
+    -fx-background-color: t.$bg-secondary;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 1 0 0 0;
     -fx-background-radius: 0 0 12 12;
 }
 
 .hmrc-wizard-step-label {
     -fx-font-size: 13px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
 }
 
 /* ===== Buttons ===== */
 .hmrc-wizard-btn-primary {
-    -fx-background-color: #0066cc;
+    -fx-background-color: t.$primary;
     -fx-text-fill: white;
     -fx-font-size: 14px;
     -fx-font-weight: 600;
@@ -297,42 +298,42 @@
 }
 
 .hmrc-wizard-btn-primary:disabled {
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
     -fx-cursor: default;
 }
 
 .hmrc-wizard-btn-secondary {
     -fx-background-color: transparent;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-font-size: 14px;
     -fx-padding: 10 24;
     -fx-background-radius: 6;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-cursor: hand;
 }
 
 .hmrc-wizard-btn-secondary:hover {
-    -fx-background-color: #e9ecef;
-    -fx-text-fill: #495057;
+    -fx-background-color: t.$bg-tertiary;
+    -fx-text-fill: t.$bs-gray-700;
 }
 
 .hmrc-wizard-btn-secondary:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 2;
 }
 
 /* ===== Focus Indicators (WCAG 2.1 AA) ===== */
 .wizard-step-circle:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 3;
     -fx-border-radius: 16;
     -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.4), 8, 0, 0, 0);
 }
 
 .prerequisite-item:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 2;
     -fx-border-radius: 8;
 }
@@ -346,7 +347,7 @@
 .hmrc-wizard-section-title {
     -fx-font-size: 16px;
     -fx-font-weight: 600;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
     -fx-padding: 0 0 8 0;
 }
 
@@ -357,7 +358,7 @@
 
 .nino-text-field {
     -fx-background-color: white;
-    -fx-border-color: #ced4da;
+    -fx-border-color: t.$bs-gray-400;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -368,14 +369,14 @@
 }
 
 .nino-text-field:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 2;
     -fx-effect: dropshadow(gaussian, rgba(0, 102, 204, 0.2), 8, 0, 0, 0);
 }
 
 .nino-text-field:disabled {
-    -fx-background-color: #e9ecef;
-    -fx-text-fill: #6c757d;
+    -fx-background-color: t.$bg-tertiary;
+    -fx-text-fill: t.$secondary;
 }
 
 /* Validation Icon */
@@ -386,31 +387,31 @@
 }
 
 .nino-validation-icon.valid {
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
 }
 
 .nino-validation-icon.valid .ikonli-font-icon {
-    -fx-icon-color: #28a745;
+    -fx-icon-color: t.$success;
 }
 
 .nino-validation-icon.invalid {
-    -fx-text-fill: #dc3545;
+    -fx-text-fill: t.$danger;
 }
 
 .nino-validation-icon.invalid .ikonli-font-icon {
-    -fx-icon-color: #dc3545;
+    -fx-icon-color: t.$danger;
 }
 
 /* Validation Error Message */
 .validation-error {
-    -fx-text-fill: #dc3545;
+    -fx-text-fill: t.$danger;
     -fx-font-size: 13px;
     -fx-padding: 4 0 0 0;
 }
 
 /* Pre-filled from Settings hint */
 .nino-prefilled-hint {
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-font-size: 12px;
     -fx-font-style: italic;
     -fx-padding: 2 0 0 0;
@@ -423,49 +424,49 @@
 
 /* NINO vs UTR Info Box */
 .nino-info-box {
-    -fx-background-color: #f0f7ff;
+    -fx-background-color: t.$blue-bg-lighter;
     -fx-background-radius: 8;
-    -fx-border-color: #cce5ff;
+    -fx-border-color: t.$blue-bg-light;
     -fx-border-radius: 8;
     -fx-border-width: 1;
 }
 
 .nino-info-icon {
-    -fx-icon-color: #0066cc;
+    -fx-icon-color: t.$primary;
 }
 
 .nino-info-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
 }
 
 .nino-info-description {
     -fx-font-size: 13px;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
     -fx-wrap-text: true;
 }
 
 .nino-bullet {
     -fx-font-size: 14px;
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-min-width: 12;
 }
 
 .nino-bullet-main {
     -fx-font-size: 13px;
     -fx-font-weight: 600;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
 }
 
 .nino-bullet-sub {
     -fx-font-size: 12px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
 }
 
 /* GOV.UK Link */
 .nino-gov-link {
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-font-size: 13px;
     -fx-padding: 4 0 0 0;
 }
@@ -475,7 +476,7 @@
 }
 
 .nino-gov-link:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 0 0 2 0;
 }
 
@@ -489,25 +490,25 @@
 
 /* Privacy Reminder (FIN-003) */
 .oauth-privacy-reminder {
-    -fx-background-color: #f0f7ff;
+    -fx-background-color: t.$blue-bg-lighter;
     -fx-background-radius: 8;
-    -fx-border-color: #cce5ff;
+    -fx-border-color: t.$blue-bg-light;
     -fx-border-radius: 8;
     -fx-border-width: 1;
 }
 
 .oauth-privacy-icon {
-    -fx-icon-color: #0066cc;
+    -fx-icon-color: t.$primary;
 }
 
 .oauth-privacy-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
 }
 
 .oauth-description {
     -fx-font-size: 13px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-text-alignment: center;
 }
 
@@ -520,13 +521,13 @@
 
 /* Browser Icon */
 .oauth-browser-icon {
-    -fx-icon-color: #0066cc;
+    -fx-icon-color: t.$primary;
     -fx-icon-size: 48;
 }
 
 /* Small Spinner Overlay */
 .oauth-spinner-small {
-    -fx-progress-color: #0066cc;
+    -fx-progress-color: t.$primary;
     -fx-pref-width: 24;
     -fx-pref-height: 24;
 }
@@ -539,14 +540,14 @@
 .oauth-browser-title {
     -fx-font-size: 18px;
     -fx-font-weight: 600;
-    -fx-text-fill: #1e40af;
+    -fx-text-fill: t.$blue-800;
     -fx-text-alignment: center;
 }
 
 /* Browser Waiting Description */
 .oauth-browser-desc {
     -fx-font-size: 14px;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
     -fx-text-alignment: center;
     -fx-wrap-text: true;
     -fx-padding: 0 20;
@@ -555,7 +556,7 @@
 /* Browser Waiting Hint */
 .oauth-browser-hint {
     -fx-font-size: 12px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-font-style: italic;
     -fx-text-alignment: center;
     -fx-wrap-text: true;
@@ -564,7 +565,7 @@
 
 /* Large Spinner (legacy support) */
 .oauth-spinner {
-    -fx-progress-color: #0066cc;
+    -fx-progress-color: t.$primary;
 }
 
 .oauth-spinner .percentage {
@@ -574,7 +575,7 @@
 .oauth-status-text {
     -fx-font-size: 14px;
     -fx-font-weight: 500;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-padding: 8 0;
 }
 
@@ -585,19 +586,19 @@
 }
 
 .oauth-success-icon-wrapper {
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
     -fx-background-radius: 32;
     -fx-alignment: center;
 }
 
 .oauth-success-icon {
-    -fx-icon-color: #28a745;
+    -fx-icon-color: t.$success;
 }
 
 .oauth-success-text {
     -fx-font-size: 18px;
     -fx-font-weight: 600;
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
     -fx-padding: 16 0;
 }
 
@@ -608,52 +609,52 @@
 }
 
 .oauth-error-icon-wrapper {
-    -fx-background-color: #f8d7da;
+    -fx-background-color: t.$danger-bg;
     -fx-background-radius: 32;
     -fx-alignment: center;
 }
 
 .oauth-error-icon {
-    -fx-icon-color: #dc3545;
+    -fx-icon-color: t.$danger;
 }
 
 .oauth-error-text {
     -fx-font-size: 16px;
     -fx-font-weight: 600;
-    -fx-text-fill: #dc3545;
+    -fx-text-fill: t.$danger;
     -fx-padding: 16 0 8 0;
     -fx-text-alignment: center;
 }
 
 .oauth-guidance-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-text-alignment: center;
     -fx-padding: 0 0 16 0;
 }
 
 /* Timeout Warning */
 .oauth-timeout-icon-wrapper {
-    -fx-background-color: #fff3cd;
+    -fx-background-color: t.$warning-bg;
     -fx-background-radius: 32;
     -fx-alignment: center;
 }
 
 .oauth-timeout-icon {
-    -fx-icon-color: #856404;
+    -fx-icon-color: t.$warning-text;
 }
 
 .oauth-timeout-text {
     -fx-font-size: 16px;
     -fx-font-weight: 600;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-padding: 16 0;
     -fx-text-alignment: center;
 }
 
 /* Focus States for OAuth Elements */
 .oauth-privacy-reminder:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 2;
 }
 
@@ -666,10 +667,10 @@
 
 /* Info Card Container */
 .info-card {
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: t.$bg-secondary;
     -fx-background-radius: 8;
     -fx-padding: 16;
-    -fx-border-color: #e9ecef;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-radius: 8;
     -fx-border-width: 1;
 }
@@ -687,7 +688,7 @@
 
 /* Info Card Icon */
 .info-card-icon {
-    -fx-icon-color: #0066cc;
+    -fx-icon-color: t.$primary;
     -fx-icon-size: 18;
 }
 
@@ -695,13 +696,13 @@
 .info-card-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
 }
 
 /* Info Card Description */
 .info-card-description {
     -fx-font-size: 13px;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
     -fx-wrap-text: true;
 }
 
@@ -713,7 +714,7 @@
 /* Info Card Bullet */
 .info-card-bullet {
     -fx-font-size: 13px;
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-min-width: 16;
 }
 
@@ -721,19 +722,19 @@
 .info-card-number {
     -fx-font-size: 13px;
     -fx-font-weight: bold;
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-min-width: 16;
 }
 
 /* Info Card List Item */
 .info-card-list-item {
     -fx-font-size: 13px;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
 }
 
 /* Focus indicator for info cards */
 .info-card:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 2;
 }
 
@@ -755,7 +756,7 @@
 }
 
 .success-icon-large {
-    -fx-icon-color: #16a34a;
+    -fx-icon-color: t.$green-600;
 }
 
 .success-title {
@@ -766,7 +767,7 @@
 
 .success-description {
     -fx-font-size: 14px;
-    -fx-text-fill: #4b5563;
+    -fx-text-fill: t.$gray-600;
     -fx-text-alignment: center;
 }
 
@@ -774,24 +775,24 @@
 .next-steps-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: #374151;
+    -fx-text-fill: t.$gray-700;
 }
 
 .next-step-check {
-    -fx-icon-color: #16a34a;
+    -fx-icon-color: t.$green-600;
 }
 
 .next-step-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #4b5563;
+    -fx-text-fill: t.$gray-600;
 }
 
 /* Retention Reminder (FIN-002) */
 .retention-reminder {
-    -fx-background-color: #fef3c7;
+    -fx-background-color: t.$amber-100;
     -fx-border-color: #fcd34d;
 }
 
 .retention-reminder .info-card-icon {
-    -fx-icon-color: #d97706;
+    -fx-icon-color: t.$amber-600;
 }

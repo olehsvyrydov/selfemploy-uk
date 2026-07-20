@@ -1,3 +1,4 @@
+@use 'tokens' as t;
 /*
  * SE-701: In-App Help System Styles
  *
@@ -11,15 +12,15 @@
 /* ===== Help Page Layout ===== */
 .help-scroll {
     -fx-background-color: transparent;
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: t.$bg-secondary;
 }
 
 .help-scroll > .viewport {
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: t.$bg-secondary;
 }
 
 .help-container {
-    -fx-background-color: #f8f9fa;
+    -fx-background-color: t.$bg-secondary;
     -fx-max-width: 1200;
 }
 
@@ -34,24 +35,24 @@
 
 .help-quick-link {
     -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
+    -fx-border-color: t.$gray-200;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 8 16;
     -fx-cursor: hand;
     -fx-font-size: 13px;
-    -fx-text-fill: #374151;
+    -fx-text-fill: t.$gray-700;
 }
 
 .help-quick-link:hover {
-    -fx-background-color: #f8fafc;
-    -fx-border-color: #0f766e;
-    -fx-text-fill: #0f766e;
+    -fx-background-color: t.$slate-50;
+    -fx-border-color: t.$teal-700;
+    -fx-text-fill: t.$teal-700;
 }
 
 .help-quick-link:focused {
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 2;
 }
 
@@ -80,7 +81,7 @@
 /* ===== Help Topic Rows - Settings card style ===== */
 .help-topic-row {
     -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
+    -fx-border-color: t.$gray-200;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -89,8 +90,8 @@
 }
 
 .help-topic-row:hover {
-    -fx-background-color: #f8fafc;
-    -fx-border-color: #d1d5db;
+    -fx-background-color: t.$slate-50;
+    -fx-border-color: t.$gray-300;
 }
 
 /* Topic Badge - Small colored badge with initials */
@@ -107,23 +108,23 @@
 
 /* Badge color variants - muted professional palette */
 .badge-teal {
-    -fx-background-color: #ccfbf1;
-    -fx-text-fill: #0f766e;
+    -fx-background-color: t.$teal-50;
+    -fx-text-fill: t.$teal-700;
 }
 
 .badge-amber {
-    -fx-background-color: #fef3c7;
+    -fx-background-color: t.$amber-100;
     -fx-text-fill: #b45309;
 }
 
 .badge-sky {
     -fx-background-color: #e0f2fe;
-    -fx-text-fill: #0369a1;
+    -fx-text-fill: t.$sky-800;
 }
 
 .badge-slate {
     -fx-background-color: #f1f5f9;
-    -fx-text-fill: #475569;
+    -fx-text-fill: t.$slate-600;
 }
 
 .badge-violet {
@@ -135,28 +136,28 @@
 .help-topic-title {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: #111827;
+    -fx-text-fill: t.$gray-900;
 }
 
 .help-topic-desc {
     -fx-font-size: 12px;
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
 }
 
 /* Chevron */
 .help-topic-chevron {
     -fx-font-size: 20px;
-    -fx-text-fill: #d1d5db;
+    -fx-text-fill: t.$gray-300;
 }
 
 .help-topic-row:hover .help-topic-chevron {
-    -fx-text-fill: #9ca3af;
+    -fx-text-fill: t.$gray-400;
 }
 
 /* ===== Support Section ===== */
 .help-support-card {
     -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
+    -fx-border-color: t.$gray-200;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -164,7 +165,7 @@
 
 .help-support-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
 }
 
 /* ===== Disclaimer - Left border accent (matches Settings) ===== */
@@ -203,7 +204,7 @@
 
 /* Header - Gradient (11px radius to fit inside 12px container with 1px border) */
 .help-dialog-header {
-    -fx-background-color: linear-gradient(to right, #475569, #64748b);
+    -fx-background-color: linear-gradient(to right, t.$slate-600, t.$slate-500);
     -fx-background-radius: 11 11 0 0;
 }
 
@@ -271,12 +272,12 @@
 }
 
 .help-scroll-pane > .scroll-bar > .thumb {
-    -fx-background-color: #cbd5e1;
+    -fx-background-color: t.$slate-300;
     -fx-background-radius: 4;
 }
 
 .help-scroll-pane > .scroll-bar > .thumb:hover {
-    -fx-background-color: #94a3b8;
+    -fx-background-color: t.$slate-400;
 }
 
 /* Footer buttons area */
@@ -289,7 +290,7 @@
 
 /* Primary Button (Teal - matches NotificationDialog) */
 .help-btn-primary {
-    -fx-background-color: #0f766e;
+    -fx-background-color: t.$teal-700;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -299,24 +300,24 @@
 }
 
 .help-btn-primary:hover {
-    -fx-background-color: #14b8a6;
+    -fx-background-color: t.$teal-500;
 }
 
 .help-btn-primary:focused {
-    -fx-background-color: #14b8a6;
-    -fx-border-color: #0f766e;
+    -fx-background-color: t.$teal-500;
+    -fx-border-color: t.$teal-700;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
 
 .help-btn-secondary {
     -fx-background-color: transparent;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
     -fx-padding: 10 24;
     -fx-background-radius: 6;
-    -fx-border-color: #ced4da;
+    -fx-border-color: t.$bs-gray-400;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-cursor: hand;
@@ -327,7 +328,7 @@
 }
 
 .help-btn-secondary:focused {
-    -fx-border-color: #0f766e;
+    -fx-border-color: t.$teal-700;
     -fx-border-width: 2;
 }
 
@@ -352,8 +353,8 @@
 }
 
 .help-dialog-close-btn {
-    -fx-background-color: #f3f4f6;
-    -fx-text-fill: #374151;
+    -fx-background-color: t.$gray-100;
+    -fx-text-fill: t.$gray-700;
     -fx-font-size: 13px;
     -fx-padding: 10 24;
     -fx-background-radius: 6;
@@ -361,12 +362,12 @@
 }
 
 .help-dialog-close-btn:hover {
-    -fx-background-color: #e5e7eb;
+    -fx-background-color: t.$gray-200;
 }
 
 .help-dialog-close-btn:focused {
-    -fx-background-color: #e5e7eb;
-    -fx-border-color: #0066cc;
+    -fx-background-color: t.$gray-200;
+    -fx-border-color: t.$primary;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
@@ -384,7 +385,7 @@
 
 .help-icon-circle {
     -fx-background-color: transparent;
-    -fx-border-color: #adb5bd;
+    -fx-border-color: t.$bs-gray-500;
     -fx-border-width: 1.5;
     -fx-border-radius: 10;
     -fx-background-radius: 10;
@@ -398,7 +399,7 @@
 .help-icon-text {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-text-fill: #adb5bd;
+    -fx-text-fill: t.$bs-gray-500;
 }
 
 /* ===== External Browser Toast Notification ===== */
@@ -407,7 +408,7 @@
 .external-browser-toast {
     -fx-background-color: rgba(51, 65, 85, 0.95);
     -fx-background-radius: 8;
-    -fx-border-color: #475569;
+    -fx-border-color: t.$slate-600;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-padding: 12 16;
@@ -416,37 +417,37 @@
 
 .external-browser-toast-icon {
     -fx-font-size: 14px;
-    -fx-text-fill: #94a3b8;
+    -fx-text-fill: t.$slate-400;
 }
 
 .external-browser-toast-text {
     -fx-font-size: 13px;
     -fx-font-weight: 500;
-    -fx-text-fill: #f8fafc;
+    -fx-text-fill: t.$slate-50;
 }
 
 .external-browser-toast-url {
     -fx-font-size: 11px;
-    -fx-text-fill: #94a3b8;
+    -fx-text-fill: t.$slate-400;
 }
 
 /* ===== Dialog Header Colors (for help topic dialogs) ===== */
 /* These match the badge colors for visual consistency */
 
 .dialog-header-teal {
-    -fx-background-color: linear-gradient(to right, #0f766e, #14b8a6);
+    -fx-background-color: linear-gradient(to right, t.$teal-700, t.$teal-500);
 }
 
 .dialog-header-amber {
-    -fx-background-color: linear-gradient(to right, #b45309, #d97706);
+    -fx-background-color: linear-gradient(to right, #b45309, t.$amber-600);
 }
 
 .dialog-header-sky {
-    -fx-background-color: linear-gradient(to right, #0369a1, #0ea5e9);
+    -fx-background-color: linear-gradient(to right, t.$sky-800, #0ea5e9);
 }
 
 .dialog-header-slate {
-    -fx-background-color: linear-gradient(to right, #475569, #64748b);
+    -fx-background-color: linear-gradient(to right, t.$slate-600, t.$slate-500);
 }
 
 .dialog-header-violet {
@@ -460,7 +461,7 @@
 
 .help-about-card {
     -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
+    -fx-border-color: t.$gray-200;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -469,23 +470,23 @@
 .about-app-name {
     -fx-font-size: 16px;
     -fx-font-weight: 600;
-    -fx-text-fill: #111827;
+    -fx-text-fill: t.$gray-900;
 }
 
 .about-version {
     -fx-font-size: 13px;
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
 }
 
 .about-description {
     -fx-font-size: 14px;
-    -fx-text-fill: #4b5563;
+    -fx-text-fill: t.$gray-600;
     -fx-line-spacing: 2;
 }
 
 .about-license {
     -fx-font-size: 12px;
-    -fx-text-fill: #9ca3af;
+    -fx-text-fill: t.$gray-400;
     -fx-font-style: italic;
 }
 
@@ -503,7 +504,7 @@
 }
 
 .oauth-dialog-header {
-    -fx-background-color: linear-gradient(to right, #1e40af, #3b82f6);
+    -fx-background-color: linear-gradient(to right, t.$blue-800, t.$blue-500);
     -fx-background-radius: 11 11 0 0;
 }
 
@@ -519,19 +520,19 @@
 
 .oauth-info-row-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #374151;
+    -fx-text-fill: t.$gray-700;
     -fx-wrap-text: true;
 }
 
 .oauth-info-row-text-muted {
     -fx-font-size: 13px;
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
     -fx-font-style: italic;
     -fx-wrap-text: true;
 }
 
 .oauth-btn-continue {
-    -fx-background-color: #1e40af;
+    -fx-background-color: t.$blue-800;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -546,14 +547,14 @@
 
 .oauth-btn-continue:focused {
     -fx-background-color: #1d4ed8;
-    -fx-border-color: #1e40af;
+    -fx-border-color: t.$blue-800;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
 
 .oauth-btn-cancel {
-    -fx-background-color: #f3f4f6;
-    -fx-text-fill: #374151;
+    -fx-background-color: t.$gray-100;
+    -fx-text-fill: t.$gray-700;
     -fx-font-size: 13px;
     -fx-padding: 10 20;
     -fx-background-radius: 6;
@@ -561,19 +562,19 @@
 }
 
 .oauth-btn-cancel:hover {
-    -fx-background-color: #e5e7eb;
+    -fx-background-color: t.$gray-200;
 }
 
 .oauth-btn-cancel:focused {
-    -fx-background-color: #e5e7eb;
-    -fx-border-color: #1e40af;
+    -fx-background-color: t.$gray-200;
+    -fx-border-color: t.$blue-800;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
 
 /* Blue header gradient variant */
 .dialog-header-blue {
-    -fx-background-color: linear-gradient(to right, #1e40af, #3b82f6);
+    -fx-background-color: linear-gradient(to right, t.$blue-800, t.$blue-500);
 }
 
 /* Warning dialog footer with bottom rounded corners to fit inside 12px container border */
@@ -596,7 +597,7 @@
 }
 
 .hmrc-success-dialog-header {
-    -fx-background-color: linear-gradient(to right, #15803d, #22c55e);
+    -fx-background-color: linear-gradient(to right, t.$green-700, t.$green-500);
     -fx-background-radius: 11 11 0 0;
 }
 
@@ -606,7 +607,7 @@
 
 .hmrc-success-dialog-body-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #374151;
+    -fx-text-fill: t.$gray-700;
     -fx-wrap-text: true;
     -fx-line-spacing: 2;
 }
@@ -617,7 +618,7 @@
 }
 
 .hmrc-btn-success-ok {
-    -fx-background-color: #15803d;
+    -fx-background-color: t.$green-700;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -628,12 +629,12 @@
 }
 
 .hmrc-btn-success-ok:hover {
-    -fx-background-color: #16a34a;
+    -fx-background-color: t.$green-600;
 }
 
 .hmrc-btn-success-ok:focused {
-    -fx-background-color: #16a34a;
-    -fx-border-color: #15803d;
+    -fx-background-color: t.$green-600;
+    -fx-border-color: t.$green-700;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
@@ -662,7 +663,7 @@
 
 .hmrc-error-dialog-body-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #374151;
+    -fx-text-fill: t.$gray-700;
     -fx-wrap-text: true;
     -fx-line-spacing: 2;
 }
@@ -673,7 +674,7 @@
 }
 
 .hmrc-btn-error-ok {
-    -fx-background-color: #6b7280;
+    -fx-background-color: t.$gray-500;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -684,19 +685,19 @@
 }
 
 .hmrc-btn-error-ok:hover {
-    -fx-background-color: #4b5563;
+    -fx-background-color: t.$gray-600;
 }
 
 .hmrc-btn-error-ok:focused {
-    -fx-background-color: #4b5563;
-    -fx-border-color: #6b7280;
+    -fx-background-color: t.$gray-600;
+    -fx-border-color: t.$gray-500;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
 
 /* Green header gradient variant */
 .dialog-header-green {
-    -fx-background-color: linear-gradient(to right, #15803d, #22c55e);
+    -fx-background-color: linear-gradient(to right, t.$green-700, t.$green-500);
 }
 
 /* Red header gradient variant */
@@ -708,25 +709,25 @@
 
 .guide-copy-label {
     -fx-font-size: 13px;
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
 }
 
 .guide-copy-field {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #e5e7eb;
+    -fx-background-color: t.$bg-secondary;
+    -fx-border-color: t.$gray-200;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-font-family: "Consolas", "Monaco", monospace;
     -fx-font-size: 12px;
-    -fx-text-fill: #111827;
+    -fx-text-fill: t.$gray-900;
     -fx-padding: 8 10;
-    -fx-highlight-fill: #ccfbf1;
-    -fx-highlight-text-fill: #0f766e;
+    -fx-highlight-fill: t.$teal-50;
+    -fx-highlight-text-fill: t.$teal-700;
 }
 
 .guide-copy-field:focused {
-    -fx-border-color: #0f766e;
+    -fx-border-color: t.$teal-700;
     -fx-background-color: white;
 }
 
@@ -737,12 +738,12 @@
 .guide-step-check {
     -fx-font-size: 14px;
     -fx-font-weight: 600;
-    -fx-text-fill: #111827;
+    -fx-text-fill: t.$gray-900;
 }
 
 .guide-step-check > .box {
     -fx-background-color: white;
-    -fx-border-color: #d1d5db;
+    -fx-border-color: t.$gray-300;
     -fx-border-width: 1.5;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -750,8 +751,8 @@
 }
 
 .guide-step-check:selected > .box {
-    -fx-background-color: #0f766e;
-    -fx-border-color: #0f766e;
+    -fx-background-color: t.$teal-700;
+    -fx-border-color: t.$teal-700;
 }
 
 .guide-step-check:selected > .box > .mark {
@@ -759,46 +760,46 @@
 }
 
 .guide-step-check:selected {
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
 }
 
 .guide-step-check:focused > .box {
-    -fx-border-color: #0f766e;
+    -fx-border-color: t.$teal-700;
     -fx-border-width: 2;
 }
 
 .guide-step-detail {
     -fx-font-size: 13px;
-    -fx-text-fill: #4b5563;
+    -fx-text-fill: t.$gray-600;
     -fx-line-spacing: 2;
     -fx-wrap-text: true;
 }
 
 .guide-production-note {
     -fx-font-size: 13px;
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
     -fx-font-style: italic;
     -fx-wrap-text: true;
 }
 
 /* ===== Help markdown renderer (help-md-*) ===== */
 .help-md-body { -fx-padding: 0; }
-.help-md-heading { -fx-font-weight: 700; -fx-text-fill: #111827; -fx-padding: 6 0 0 0; }
+.help-md-heading { -fx-font-weight: 700; -fx-text-fill: t.$gray-900; -fx-padding: 6 0 0 0; }
 .help-md-heading-1 { -fx-font-size: 18px; }
 .help-md-heading-2 { -fx-font-size: 16px; }
 .help-md-heading-3 { -fx-font-size: 14px; }
 .help-md-heading-4, .help-md-heading-5, .help-md-heading-6 { -fx-font-size: 13px; }
 .help-md-paragraph { -fx-line-spacing: 3; }
-.help-md-text { -fx-fill: #374151; -fx-font-size: 14px; }
-.help-md-bold { -fx-fill: #111827; -fx-font-size: 14px; -fx-font-weight: 700; }
+.help-md-text { -fx-fill: t.$gray-700; -fx-font-size: 14px; }
+.help-md-bold { -fx-fill: t.$gray-900; -fx-font-size: 14px; -fx-font-weight: 700; }
 .help-md-list { -fx-padding: 2 0 2 4; }
-.help-md-list-marker { -fx-text-fill: #6b7280; -fx-font-size: 14px; }
+.help-md-list-marker { -fx-text-fill: t.$gray-500; -fx-font-size: 14px; }
 .help-md-list-text { -fx-line-spacing: 3; }
-.help-md-link { -fx-text-fill: #0f766e; -fx-font-size: 14px; -fx-padding: 0; -fx-border-width: 0; }
+.help-md-link { -fx-text-fill: t.$teal-700; -fx-font-size: 14px; -fx-padding: 0; -fx-border-width: 0; }
 .help-md-link:hover { -fx-underline: true; }
-.help-md-rule { -fx-background-color: #e5e7eb; -fx-pref-height: 1; -fx-max-height: 1; }
-.help-md-table { -fx-hgap: 0; -fx-vgap: 0; -fx-border-color: #e5e7eb; -fx-border-width: 1; }
-.help-md-th { -fx-padding: 8 10; -fx-background-color: #f8f9fa; -fx-border-color: #e5e7eb; -fx-border-width: 0 1 1 0; }
-.help-md-th .text { -fx-font-weight: 700; -fx-fill: #111827; -fx-font-size: 13px; }
-.help-md-td { -fx-padding: 8 10; -fx-border-color: #e5e7eb; -fx-border-width: 0 1 1 0; }
-.help-md-td .text { -fx-fill: #374151; -fx-font-size: 13px; }
+.help-md-rule { -fx-background-color: t.$gray-200; -fx-pref-height: 1; -fx-max-height: 1; }
+.help-md-table { -fx-hgap: 0; -fx-vgap: 0; -fx-border-color: t.$gray-200; -fx-border-width: 1; }
+.help-md-th { -fx-padding: 8 10; -fx-background-color: t.$bg-secondary; -fx-border-color: t.$gray-200; -fx-border-width: 0 1 1 0; }
+.help-md-th .text { -fx-font-weight: 700; -fx-fill: t.$gray-900; -fx-font-size: 13px; }
+.help-md-td { -fx-padding: 8 10; -fx-border-color: t.$gray-200; -fx-border-width: 0 1 1 0; }
+.help-md-td .text { -fx-fill: t.$gray-700; -fx-font-size: 13px; }

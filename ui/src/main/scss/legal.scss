@@ -1,3 +1,4 @@
+@use 'tokens' as t;
 /*
  * Legal Documents Styles - SE-507, SE-508
  * Privacy Notice and Terms of Service
@@ -52,7 +53,7 @@
 /* ===== Privacy Content Scroll ===== */
 .privacy-content-scroll {
     -fx-background-color: transparent;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -131,7 +132,7 @@
 /* ===== Privacy Link (PS11-001 Enhanced) ===== */
 .privacy-link-container {
     -fx-padding: 16 0;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -325,7 +326,7 @@
 /* ===== ToS Content Scroll ===== */
 .tos-content-scroll {
     -fx-background-color: transparent;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -393,7 +394,7 @@
 
 /* ===== Highlight Box (Important Sections) ===== */
 .tos-highlight-box {
-    -fx-background-color: #fff3cd;
+    -fx-background-color: t.$warning-bg;
     -fx-border-color: -fx-warning;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
@@ -403,13 +404,13 @@
 
 .tos-highlight-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-line-spacing: 2;
 }
 
 /* ===== Important Notice ===== */
 .tos-important-notice {
-    -fx-background-color: #f8d7da;
+    -fx-background-color: t.$danger-bg;
     -fx-border-color: -fx-danger;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
@@ -495,13 +496,13 @@
 
 /* ===== ToS Footer ===== */
 .tos-footer {
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
 }
 
 .tos-scroll-indicator {
     -fx-background-color: -fx-warning;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-padding: 8 16;
     -fx-background-radius: 4;
     -fx-font-size: 13px;
@@ -509,7 +510,7 @@
 
 /* ===== Important Notice Boxes ===== */
 .legal-notice-box {
-    -fx-background-color: #f0f7ff;
+    -fx-background-color: t.$blue-bg-lighter;
     -fx-border-color: -fx-primary;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 8 8 0;
@@ -517,7 +518,7 @@
 }
 
 .legal-warning-box {
-    -fx-background-color: #fff3cd;
+    -fx-background-color: t.$warning-bg;
     -fx-border-color: -fx-warning;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 8 8 0;
@@ -525,7 +526,7 @@
 }
 
 .legal-danger-box {
-    -fx-background-color: #f8d7da;
+    -fx-background-color: t.$danger-bg;
     -fx-border-color: -fx-danger;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 8 8 0;
@@ -552,7 +553,7 @@
 .button-decline {
     -fx-background-color: transparent;
     -fx-text-fill: -fx-text-secondary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-padding: 10 20;
     -fx-background-radius: 6;
@@ -580,7 +581,7 @@
 }
 
 .button-accept:disabled {
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
     -fx-cursor: default;
 }
 
@@ -591,7 +592,7 @@
 
 .legal-checkbox > .box {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 2;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -611,7 +612,7 @@
 /* ===== Legal Document Footer ===== */
 .legal-footer {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
     -fx-padding: 16 24;
 }
@@ -639,8 +640,8 @@
 
 /* Tax Summary Disclaimer Banner (AC-1) */
 .disclaimer-banner {
-    -fx-background-color: #fff3cd;
-    -fx-border-color: #ffc107;
+    -fx-background-color: t.$warning-bg;
+    -fx-border-color: t.$warning;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
@@ -650,7 +651,7 @@
 .disclaimer-banner-icon {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-background-color: rgba(133, 100, 4, 0.15);
     -fx-background-radius: 50;
     -fx-min-width: 32;
@@ -662,7 +663,7 @@
 
 .disclaimer-banner-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-wrap-text: true;
     -fx-line-spacing: 2;
 }
@@ -670,13 +671,13 @@
 .disclaimer-banner-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 /* HMRC Submission Disclaimer (AC-2) */
 .submission-disclaimer {
-    -fx-background-color: #f0f7ff;
-    -fx-border-color: #0d6efd;
+    -fx-background-color: t.$blue-bg-lighter;
+    -fx-border-color: t.$blue-bootstrap;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
@@ -686,7 +687,7 @@
 .submission-disclaimer-icon {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-text-fill: #0d6efd;
+    -fx-text-fill: t.$blue-bootstrap;
     -fx-background-color: rgba(13, 110, 253, 0.15);
     -fx-background-radius: 50;
     -fx-min-width: 32;
@@ -727,8 +728,8 @@
  */
 
 .consumer-rights-card {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #e9ecef;
+    -fx-background-color: t.$bg-secondary;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 1;
     -fx-border-radius: 12;
     -fx-background-radius: 12;
@@ -740,7 +741,7 @@
 }
 
 .consumer-rights-icon {
-    -fx-background-color: #e6f0ff;
+    -fx-background-color: t.$primary-light;
     -fx-background-radius: 16;
     -fx-min-width: 32;
     -fx-min-height: 32;
@@ -751,25 +752,25 @@
 
 .consumer-rights-icon-text {
     -fx-font-size: 16px;
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
 }
 
 .consumer-rights-title {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
 }
 
 .consumer-rights-body {
     -fx-font-size: 14px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-wrap-text: true;
     -fx-line-spacing: 4;
 }
 
 .consumer-rights-emphasis {
     -fx-font-weight: bold;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
 }
 
 /* Recommendation List */
@@ -779,12 +780,12 @@
 
 .consumer-rights-list-item {
     -fx-font-size: 14px;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-padding: 4 0;
 }
 
 .consumer-rights-bullet {
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-font-size: 14px;
     -fx-min-width: 20;
 }
@@ -792,24 +793,24 @@
 /* Acknowledgment Statement */
 .consumer-rights-acknowledgment {
     -fx-background-color: #fff8e6;
-    -fx-border-color: #ffc107;
+    -fx-border-color: t.$warning;
     -fx-border-width: 0 0 0 3;
     -fx-background-radius: 0 6 6 0;
     -fx-padding: 12 16;
     -fx-font-size: 13px;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-font-style: italic;
 }
 
 /* Footer Links */
 .consumer-rights-footer {
     -fx-padding: 16 0 0 0;
-    -fx-border-color: #e9ecef;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 1 0 0 0;
 }
 
 .consumer-rights-link {
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-font-size: 13px;
 }
 

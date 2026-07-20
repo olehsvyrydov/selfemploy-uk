@@ -1,3 +1,4 @@
+@use 'tokens' as t;
 /*
  * Bank Import Wizard Styles - SE-601
  * Based on /aura design specification
@@ -91,7 +92,7 @@
 /* ===== Drop Zone ===== */
 .drop-zone {
     -fx-background-color: -fx-bg-secondary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 2;
     -fx-border-style: dashed;
     -fx-border-radius: 12;
@@ -172,7 +173,7 @@
 
 /* ===== Bank Detection Boxes ===== */
 .bank-detected-box {
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
     -fx-background-radius: 8;
     -fx-padding: 12 16;
 }
@@ -186,35 +187,35 @@
 .detection-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 .detection-hint {
     -fx-font-size: 13px;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 .unknown-format-box {
-    -fx-background-color: #fff3cd;
+    -fx-background-color: t.$warning-bg;
     -fx-background-radius: 8;
     -fx-padding: 12 16;
 }
 
 .warning-icon {
     -fx-font-size: 18px;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-font-weight: bold;
 }
 
 .warning-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 .warning-hint {
     -fx-font-size: 13px;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 /* ===== Supported Banks ===== */
@@ -237,14 +238,14 @@
 
 /* ===== Wizard Footer ===== */
 .wizard-footer {
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
     -fx-background-color: -fx-bg-secondary;
 }
 
 /* ===== Info Banner ===== */
 .info-banner {
-    -fx-background-color: #e6f0ff;
+    -fx-background-color: t.$primary-light;
     -fx-border-color: -fx-primary;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
@@ -308,7 +309,7 @@
 
 .mapping-combo {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 8 12;
@@ -320,7 +321,7 @@
 
 .mapping-combo-small {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 6 10;
@@ -342,7 +343,7 @@
 /* ===== Preview Table ===== */
 .preview-table {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
 }
@@ -371,7 +372,7 @@
 }
 
 .stat-box.stat-expense {
-    -fx-border-color: #fd7e14;
+    -fx-border-color: t.$accent;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 12 12 0;
 }
@@ -409,7 +410,7 @@
 }
 
 .stat-box.stat-expense .stat-amount {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 .stat-hint {
@@ -419,7 +420,7 @@
 
 /* ===== Warning Banner ===== */
 .warning-banner {
-    -fx-background-color: #fff3cd;
+    -fx-background-color: t.$warning-bg;
     -fx-border-color: -fx-warning;
     -fx-border-width: 1;
     -fx-border-radius: 8;
@@ -428,7 +429,7 @@
 }
 
 .warning-banner-icon {
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-font-size: 18px;
     -fx-font-weight: bold;
 }
@@ -436,12 +437,12 @@
 .warning-banner-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 .warning-banner-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 /* ===== Preview Actions ===== */
@@ -451,7 +452,7 @@
 
 .filter-combo {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 8 12;
@@ -501,8 +502,8 @@
 
 /* Type badges in table */
 .type-badge-income {
-    -fx-background-color: #d4edda;
-    -fx-text-fill: #155724;
+    -fx-background-color: t.$success-bg;
+    -fx-text-fill: t.$success-text;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-padding: 2 8;
@@ -510,8 +511,8 @@
 }
 
 .type-badge-expense {
-    -fx-background-color: #ffe5d6;
-    -fx-text-fill: #fd7e14;
+    -fx-background-color: t.$orange-bg;
+    -fx-text-fill: t.$accent;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-padding: 2 8;
@@ -533,7 +534,7 @@
 
 /* ===== Suggestion Panel ===== */
 .suggestion-panel {
-    -fx-background-color: #e6f0ff;
+    -fx-background-color: t.$primary-light;
     -fx-border-color: -fx-primary;
     -fx-border-width: 1;
     -fx-border-radius: 8;
@@ -571,7 +572,7 @@
     -fx-text-fill: -fx-text-secondary;
     -fx-font-size: 12px;
     -fx-padding: 6 14;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -586,7 +587,7 @@
 .confirm-icon {
     -fx-font-size: 48px;
     -fx-text-fill: -fx-success;
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
     -fx-padding: 20;
     -fx-background-radius: 40;
 }
@@ -605,7 +606,7 @@
 /* ===== Summary Card ===== */
 .summary-card {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 12;
     -fx-background-radius: 12;
@@ -639,7 +640,7 @@
 }
 
 .summary-value.expense {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
     -fx-font-weight: bold;
 }
 

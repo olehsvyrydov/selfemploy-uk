@@ -8,7 +8,7 @@
 }
 
 .income-cell-description {
-  -fx-text-fill: #6c757d;
+  -fx-text-fill: t.$secondary;
 }
 
 .income-cell-amount-align {
@@ -17,7 +17,7 @@
 
 .income-cell-amount {
   -fx-font-weight: bold;
-  -fx-text-fill: #28a745;
+  -fx-text-fill: t.$success;
 }
 
 .income-cell-status-align {
@@ -25,7 +25,7 @@
 }
 
 .expense-category-warning {
-  -fx-text-fill: #856404;
+  -fx-text-fill: t.$warning-text;
 }
 
 .expense-date-outside {

@@ -3,12 +3,12 @@
 // Bank import wizard — amount column, coloured by transaction direction. The hex values are the
 // resolved equivalents of the former inline -fx-success / orange text fills.
 .import-amount-income {
-  -fx-text-fill: #28a745;
+  -fx-text-fill: t.$success;
   -fx-font-weight: bold;
 }
 
 .import-amount-expense {
-  -fx-text-fill: #fd7e14;
+  -fx-text-fill: t.$accent;
   -fx-font-weight: bold;
 }
 
