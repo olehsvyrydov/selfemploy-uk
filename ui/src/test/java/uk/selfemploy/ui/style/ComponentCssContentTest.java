@@ -41,4 +41,16 @@ class ComponentCssContentTest {
         // --no-charset was honoured (JavaFX's parser can warn on @charset).
         assertThat(css).doesNotContain("@charset");
     }
+
+    @Test
+    @DisplayName("components.css carries the compiled toast rules and token values")
+    void toastCompiled() throws IOException {
+        String css = read("/css/components.css");
+
+        assertThat(css).contains(".toast");
+        assertThat(css).contains(".toast .toast-message");
+        assertThat(css).contains(".toast .toast-icon-success");
+        assertThat(css).contains("-fx-text-fill: #4ade80");
+        assertThat(css).contains("-fx-text-fill: #94a3b8");
+    }
 }

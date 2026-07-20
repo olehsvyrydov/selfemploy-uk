@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.component;
 
 import uk.selfemploy.ui.util.StatusGlyph;
+import uk.selfemploy.ui.util.Stylesheets;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -147,24 +148,16 @@ public final class ToastNotification {
      */
     private static HBox createSuccessContent(String message) {
         Label iconLabel = new Label(StatusGlyph.PASS);
-        iconLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #4ade80;");
+        iconLabel.getStyleClass().addAll("toast-icon", "toast-icon-success");
 
         Label messageLabel = new Label(message);
-        messageLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: #f8fafc;");
+        messageLabel.getStyleClass().add("toast-message");
 
         HBox toast = new HBox(10);
         toast.setAlignment(Pos.CENTER_LEFT);
         toast.setPadding(new Insets(12, 16, 12, 16));
-        toast.setStyle(
-            "-fx-background-color: #1e293b;" +
-            "-fx-background-radius: 8;" +
-            "-fx-border-color: #475569;" +
-            "-fx-border-width: 1;" +
-            "-fx-border-radius: 8;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 5);" +
-            "-fx-min-width: 250;" +
-            "-fx-min-height: 50;"
-        );
+        toast.getStyleClass().add("toast");
+        Stylesheets.attachComponents(toast);
         toast.getChildren().addAll(iconLabel, messageLabel);
         toast.setAccessibleText(message);
         return toast;
@@ -176,13 +169,13 @@ public final class ToastNotification {
     private static HBox createToastContent(String message, String url) {
         // Icon
         Label iconLabel = new Label(EXTERNAL_LINK_ICON);
-        iconLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #94a3b8;");
+        iconLabel.getStyleClass().addAll("toast-icon", "toast-icon-link");
 
         // Text content
         VBox textBox = new VBox(2);
 
         Label messageLabel = new Label(message);
-        messageLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: #f8fafc;");
+        messageLabel.getStyleClass().add("toast-message");
         textBox.getChildren().add(messageLabel);
 
         // Add URL domain if provided
@@ -190,26 +183,16 @@ public final class ToastNotification {
             String domain = extractDomain(url);
             if (domain != null) {
                 Label urlLabel = new Label(domain);
-                urlLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                urlLabel.getStyleClass().add("toast-url");
                 textBox.getChildren().add(urlLabel);
             }
         }
 
-        // Container with inline styles (for popup that doesn't have CSS loaded)
         HBox toast = new HBox(10);
         toast.setAlignment(Pos.CENTER_LEFT);
         toast.setPadding(new Insets(12, 16, 12, 16));
-        // Use solid color instead of rgba for better visibility
-        toast.setStyle(
-            "-fx-background-color: #1e293b;" +
-            "-fx-background-radius: 8;" +
-            "-fx-border-color: #475569;" +
-            "-fx-border-width: 1;" +
-            "-fx-border-radius: 8;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 5);" +
-            "-fx-min-width: 250;" +
-            "-fx-min-height: 50;"
-        );
+        toast.getStyleClass().add("toast");
+        Stylesheets.attachComponents(toast);
         toast.getChildren().addAll(iconLabel, textBox);
 
         // Accessibility
