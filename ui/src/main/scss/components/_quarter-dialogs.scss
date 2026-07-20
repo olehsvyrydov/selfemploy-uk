@@ -1,0 +1,398 @@
+@use '../tokens' as t;
+
+.quarter-dialog {
+
+  // ---- Shared gradient header ----
+  .header-gradient {
+    -fx-background-radius: 11 11 0 0;
+  }
+
+  .header-green {
+    -fx-background-color: linear-gradient(to right, #28a745, #48c664);
+  }
+
+  .header-red {
+    -fx-background-color: linear-gradient(to right, #dc3545, #e4606d);
+  }
+
+  .header-blue {
+    -fx-background-color: linear-gradient(to right, #0066cc, #3385d6);
+  }
+
+  .header-gray {
+    -fx-background-color: linear-gradient(to right, #6c757d, #868e96);
+  }
+
+  .header-orange {
+    -fx-background-color: linear-gradient(to right, #e67e22, #f39c12);
+  }
+
+  .header-icon {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-background-radius: 20;
+  }
+
+  .header-title {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+  }
+
+  .header-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.85);
+    -fx-font-size: t.$font-xs;
+  }
+
+  // ---- Body / scroll ----
+  .dialog-body {
+    -fx-background-color: white;
+  }
+
+  .scroll-transparent {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+  }
+
+  // ---- Summary / data cards ----
+  .summary-card {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 1;
+    -fx-border-radius: t.$radius-sm;
+    -fx-background-radius: t.$radius-sm;
+    -fx-padding: t.$space-3;
+  }
+
+  .card-title {
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 600;
+    -fx-text-fill: #495057;
+  }
+
+  .financial-card-title {
+    -fx-font-size: t.$font-xs;
+    -fx-font-weight: 600;
+    -fx-text-fill: #495057;
+  }
+
+  .data-label {
+    -fx-font-size: t.$font-sm;
+    -fx-text-fill: #6c757d;
+  }
+
+  .data-value {
+    -fx-font-size: t.$font-sm;
+    -fx-text-fill: #212529;
+    -fx-font-weight: 500;
+  }
+
+  .data-suffix {
+    -fx-font-size: t.$font-2xs;
+    -fx-text-fill: #6c757d;
+  }
+
+  .total-row {
+    -fx-font-weight: 600;
+  }
+
+  .no-expenses {
+    -fx-font-size: t.$font-sm;
+    -fx-text-fill: #6c757d;
+    -fx-font-style: italic;
+  }
+
+  .category-name {
+    -fx-font-size: t.$font-xs;
+    -fx-text-fill: #495057;
+  }
+
+  .category-amount {
+    -fx-font-size: t.$font-xs;
+    -fx-text-fill: #212529;
+    -fx-font-weight: 500;
+  }
+
+  .category-count {
+    -fx-font-size: t.$font-2xs;
+    -fx-text-fill: #6c757d;
+  }
+
+  // ---- Net profit / loss card (review dialog) ----
+  .net-card {
+    -fx-border-width: 1;
+    -fx-border-radius: t.$radius-sm;
+    -fx-background-radius: t.$radius-sm;
+
+    &.net-profit {
+      -fx-background-color: #f0fdf4;
+      -fx-border-color: #86efac;
+
+      .net-label,
+      .net-amount {
+        -fx-text-fill: #28a745;
+      }
+    }
+
+    &.net-loss {
+      -fx-background-color: #fff5f5;
+      -fx-border-color: #feb2b2;
+
+      .net-label,
+      .net-amount {
+        -fx-text-fill: #dc3545;
+      }
+    }
+  }
+
+  .net-label {
+    -fx-font-size: t.$font-md;
+    -fx-font-weight: 600;
+  }
+
+  .net-amount {
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
+  }
+
+  // ---- Confirmations ----
+  .confirmations-section {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #e9ecef;
+    -fx-border-width: 1 0 0 0;
+  }
+
+  .section-heading {
+    -fx-font-size: t.$font-md;
+    -fx-font-weight: 600;
+    -fx-text-fill: #212529;
+  }
+
+  .confirmation-checkbox {
+    -fx-font-size: t.$font-xs;
+  }
+
+  // ---- Buttons ----
+  .btn-cancel {
+    -fx-background-color: #e9ecef;
+    -fx-text-fill: #495057;
+    -fx-font-size: t.$font-sm;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+  }
+
+  .btn-submit {
+    -fx-text-fill: white;
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 500;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+
+    &.submit-review {
+      -fx-background-color: #28a745;
+    }
+
+    &.submit-overdue {
+      -fx-background-color: #dc3545;
+    }
+  }
+
+  .btn-ok-success {
+    -fx-background-color: #28a745;
+    -fx-text-fill: white;
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 500;
+    -fx-padding: 10 30;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+  }
+
+  .btn-settings {
+    -fx-background-color: #0066cc;
+    -fx-text-fill: white;
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 600;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+  }
+
+  .btn-action {
+    -fx-text-fill: white;
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 500;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+
+    &.action-draft {
+      -fx-background-color: #0066cc;
+    }
+
+    &.action-overdue {
+      -fx-background-color: #dc3545;
+    }
+  }
+
+  // ---- Progress overlay (review dialog) ----
+  .progress-overlay {
+    -fx-background-color: rgba(255, 255, 255, 0.85);
+  }
+
+  .progress-message {
+    -fx-font-size: t.$font-md;
+    -fx-font-weight: 500;
+    -fx-text-fill: #495057;
+  }
+
+  .progress-submessage {
+    -fx-font-size: t.$font-xs;
+    -fx-text-fill: #6c757d;
+  }
+
+  // ---- Success dialog ----
+  .success-label {
+    -fx-font-size: t.$font-xs;
+    -fx-text-fill: #6c757d;
+  }
+
+  .success-ref-value {
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #212529;
+  }
+
+  .success-message {
+    -fx-font-size: t.$font-sm;
+    -fx-text-fill: #28a745;
+    -fx-font-weight: 500;
+  }
+
+  // ---- Error dialog ----
+  .compliance-banner {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: #ffc107;
+    -fx-border-width: 0 0 0 4;
+  }
+
+  .compliance-banner-text {
+    -fx-text-fill: #856404;
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 700;
+  }
+
+  .error-message {
+    -fx-font-size: t.$font-sm;
+    -fx-text-fill: #495057;
+  }
+
+  .retry-hint {
+    -fx-font-size: t.$font-sm;
+    -fx-text-fill: #e67e22;
+    -fx-font-weight: 600;
+  }
+
+  .error-code-row {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1 0 0 0;
+  }
+
+  .error-code {
+    -fx-font-size: t.$font-2xs;
+    -fx-text-fill: #6c757d;
+    -fx-font-family: monospace;
+  }
+
+  // ---- Status description & badge (info dialog) ----
+  .status-description {
+    -fx-font-size: t.$font-sm;
+    -fx-text-fill: #6c757d;
+  }
+
+  .status-badge {
+    -fx-padding: 4 12;
+    -fx-background-radius: 12;
+    -fx-font-size: t.$font-2xs;
+    -fx-font-weight: 600;
+
+    &.badge-submitted {
+      -fx-background-color: #d4edda;
+      -fx-text-fill: #155724;
+    }
+
+    &.badge-overdue {
+      -fx-background-color: #f8d7da;
+      -fx-text-fill: #721c24;
+    }
+
+    &.badge-draft {
+      -fx-background-color: #fff3cd;
+      -fx-text-fill: #856404;
+    }
+
+    &.badge-future {
+      -fx-background-color: #e9ecef;
+      -fx-text-fill: #6c757d;
+    }
+  }
+
+  // ---- Net value cell (info dialog financial card) ----
+  .net-value-neutral {
+    -fx-text-fill: #6c757d;
+  }
+
+  .net-value-positive {
+    -fx-text-fill: #28a745;
+    -fx-font-weight: 600;
+  }
+
+  .net-value-negative {
+    -fx-text-fill: #dc3545;
+    -fx-font-weight: 600;
+  }
+
+  // ---- Deadline card (info dialog) ----
+  .deadline-card {
+    -fx-border-width: 1;
+    -fx-border-radius: t.$radius-sm;
+    -fx-background-radius: t.$radius-sm;
+    -fx-padding: t.$space-3;
+
+    &.deadline-overdue {
+      -fx-background-color: #fff5f5;
+      -fx-border-color: #feb2b2;
+
+      .deadline-date {
+        -fx-text-fill: #dc3545;
+      }
+
+      .deadline-countdown {
+        -fx-text-fill: #ef4444;
+      }
+    }
+
+    &.deadline-normal {
+      -fx-background-color: #f0fdf4;
+      -fx-border-color: #86efac;
+
+      .deadline-date {
+        -fx-text-fill: #166534;
+      }
+
+      .deadline-countdown {
+        -fx-text-fill: #22c55e;
+      }
+    }
+  }
+
+  .deadline-date {
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 500;
+  }
+
+  .deadline-countdown {
+    -fx-font-size: t.$font-xs;
+  }
+}

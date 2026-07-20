@@ -26,6 +26,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.SubmissionException;
 import uk.selfemploy.ui.util.DialogStyler;
 import uk.selfemploy.ui.util.HmrcErrorGuidance;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.util.SubmissionErrorDisplay;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
@@ -336,7 +337,7 @@ public class QuarterlyReviewDialog {
         ScrollPane scrollPane = new ScrollPane(createBody());
         scrollPane.setFitToWidth(true);
         scrollPane.setMaxHeight(450); // Limit height to prevent overly tall dialog
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-border-width: 0;");
+        scrollPane.getStyleClass().add("scroll-transparent");
         container.getChildren().add(scrollPane);
 
         // Confirmations section
@@ -350,9 +351,10 @@ public class QuarterlyReviewDialog {
         progressOverlay.setVisible(false);
 
         StackPane dialogStack = new StackPane(container, progressOverlay);
-        dialogStack.getStyleClass().add("help-dialog-container");
+        dialogStack.getStyleClass().addAll("help-dialog-container", "quarter-dialog");
         dialogStack.setMinWidth(DIALOG_WIDTH);
         dialogStack.setMaxWidth(DIALOG_WIDTH);
+        Stylesheets.attachComponents(dialogStack);
 
         // Apply styling using DialogStyler utility
         DialogStyler.applyRoundedClip(dialogStack, CORNER_RADIUS);
@@ -373,16 +375,14 @@ public class QuarterlyReviewDialog {
         header.setPadding(new Insets(16, 20, 16, 20));
 
         // Apply status-specific gradient color
-        String[] colors = getHeaderGradientColors(isOverdue);
-        header.setStyle("-fx-background-color: linear-gradient(to right, " + colors[0] + ", " + colors[1] + ");" +
-                        "-fx-background-radius: 11 11 0 0;");
+        header.getStyleClass().addAll("header-gradient", isOverdue ? "header-red" : "header-green");
 
         // Icon circle
         StackPane iconWrapper = new StackPane();
         iconWrapper.setMinSize(40, 40);
         iconWrapper.setMaxSize(40, 40);
         iconWrapper.setAlignment(Pos.CENTER);
-        iconWrapper.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20;");
+        iconWrapper.getStyleClass().add("header-icon");
 
         FontIcon icon = FontIcon.of(isOverdue ? FontAwesomeSolid.EXCLAMATION_TRIANGLE : FontAwesomeSolid.CLIPBOARD_CHECK, 18);
         icon.setIconColor(Color.WHITE);
@@ -391,10 +391,10 @@ public class QuarterlyReviewDialog {
         // Title
         VBox titleBox = new VBox(2);
         Label titleLabel = new Label(reviewData.getPeriodHeaderText());
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
+        titleLabel.getStyleClass().add("header-title");
 
         Label subtitleLabel = new Label(reviewData.getDateRangeText());
-        subtitleLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.85); -fx-font-size: 12px;");
+        subtitleLabel.getStyleClass().add("header-subtitle");
 
         titleBox.getChildren().addAll(titleLabel, subtitleLabel);
 
@@ -417,9 +417,8 @@ public class QuarterlyReviewDialog {
      */
     private VBox createBody() {
         VBox body = new VBox(16);
-        body.getStyleClass().add("help-dialog-body");
+        body.getStyleClass().addAll("help-dialog-body", "dialog-body");
         body.setPadding(new Insets(20));
-        body.setStyle("-fx-background-color: white;");
 
         // Income Summary Card
         body.getChildren().add(createIncomeCard());
@@ -459,7 +458,7 @@ public class QuarterlyReviewDialog {
 
         if (expenses.isEmpty()) {
             Label noExpenses = new Label("No expenses recorded");
-            noExpenses.setStyle("-fx-font-size: 13px; -fx-text-fill: #6c757d; -fx-font-style: italic;");
+            noExpenses.getStyleClass().add("no-expenses");
             card.getChildren().add(noExpenses);
         } else {
             // Display categories in a logical order matching SA103 form
@@ -478,7 +477,7 @@ public class QuarterlyReviewDialog {
                     reviewData.getFormattedExpenses(),
                     reviewData.getExpenseTransactionCount() + " transactions"
             );
-            totalRow.setStyle("-fx-font-weight: 600;");
+            totalRow.getStyleClass().add("total-row");
             card.getChildren().add(totalRow);
         }
 
@@ -519,20 +518,20 @@ public class QuarterlyReviewDialog {
         // Category name with box number
         String displayName = category.getShortDisplayName() + " (Box " + category.getSa103Box() + ")";
         Label nameLabel = new Label(displayName);
-        nameLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #495057;");
+        nameLabel.getStyleClass().add("category-name");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         // Amount
         Label amountLabel = new Label(formatCurrency(summary.amount()));
-        amountLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #212529; -fx-font-weight: 500;");
+        amountLabel.getStyleClass().add("category-amount");
         amountLabel.setMinWidth(80);
         amountLabel.setAlignment(Pos.CENTER_RIGHT);
 
         // Transaction count
         Label countLabel = new Label("(" + summary.transactionCount() + ")");
-        countLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #6c757d;");
+        countLabel.getStyleClass().add("category-count");
         countLabel.setMinWidth(40);
         countLabel.setAlignment(Pos.CENTER_RIGHT);
 
@@ -551,16 +550,7 @@ public class QuarterlyReviewDialog {
         boolean isLoss = netProfit.compareTo(BigDecimal.ZERO) < 0;
 
         // Background color based on profit/loss
-        String bgColor = isLoss ? "#fff5f5" : "#f0fdf4";
-        String borderColor = isLoss ? "#feb2b2" : "#86efac";
-        card.setStyle(String.format(
-                "-fx-background-color: %s; " +
-                "-fx-border-color: %s; " +
-                "-fx-border-width: 1; " +
-                "-fx-border-radius: 8; " +
-                "-fx-background-radius: 8;",
-                bgColor, borderColor
-        ));
+        card.getStyleClass().addAll("net-card", isLoss ? "net-loss" : "net-profit");
 
         HBox row = new HBox(10);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -571,16 +561,14 @@ public class QuarterlyReviewDialog {
 
         // Label
         Label label = new Label(isLoss ? "Net Loss" : "Net Profit");
-        label.setStyle(String.format("-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: %s;",
-                isLoss ? "#dc3545" : "#28a745"));
+        label.getStyleClass().add("net-label");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         // Amount
         Label amountLabel = new Label(formatCurrency(netProfit.abs()));
-        amountLabel.setStyle(String.format("-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: %s;",
-                isLoss ? "#dc3545" : "#28a745"));
+        amountLabel.getStyleClass().add("net-amount");
 
         row.getChildren().addAll(icon, label, spacer, amountLabel);
         card.getChildren().add(row);
@@ -594,17 +582,17 @@ public class QuarterlyReviewDialog {
     private VBox createConfirmationsSection() {
         VBox section = new VBox(12);
         section.setPadding(new Insets(16, 20, 8, 20));
-        section.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 1 0 0 0;");
+        section.getStyleClass().add("confirmations-section");
 
         Label heading = new Label("Confirmation");
-        heading.setStyle("-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: #212529;");
+        heading.getStyleClass().add("section-heading");
         section.getChildren().add(heading);
 
         String[] confirmations = getConfirmationTexts(reviewData.isNilReturn());
         for (String text : confirmations) {
             CheckBox checkbox = new CheckBox(text);
             checkbox.setWrapText(true);
-            checkbox.setStyle("-fx-font-size: 12px;");
+            checkbox.getStyleClass().add("confirmation-checkbox");
             checkbox.selectedProperty().addListener((obs, oldVal, newVal) -> updateSubmitButtonState());
             confirmationCheckboxes.add(checkbox);
             section.getChildren().add(checkbox);
@@ -624,27 +612,12 @@ public class QuarterlyReviewDialog {
 
         // Cancel button
         cancelButton = new Button("Cancel");
-        cancelButton.setStyle(
-                "-fx-background-color: #e9ecef; " +
-                "-fx-text-fill: #495057; " +
-                "-fx-font-size: 13px; " +
-                "-fx-padding: 10 20; " +
-                "-fx-background-radius: 6; " +
-                "-fx-cursor: hand;"
-        );
+        cancelButton.getStyleClass().add("btn-cancel");
         cancelButton.setOnAction(e -> stage.close());
 
         // Submit button
         submitButton = new Button(getSubmitButtonText(reviewData.isNilReturn()));
-        submitButton.setStyle(
-                "-fx-background-color: " + (isOverdue ? OVERDUE_GRADIENT[0] : REVIEW_GRADIENT[0]) + "; " +
-                "-fx-text-fill: white; " +
-                "-fx-font-size: 13px; " +
-                "-fx-font-weight: 500; " +
-                "-fx-padding: 10 20; " +
-                "-fx-background-radius: 6; " +
-                "-fx-cursor: hand;"
-        );
+        submitButton.getStyleClass().addAll("btn-submit", isOverdue ? "submit-overdue" : "submit-review");
         submitButton.setDisable(true); // Initially disabled until all checkboxes checked
         submitButton.setOnAction(e -> handleSubmit());
 
@@ -658,17 +631,10 @@ public class QuarterlyReviewDialog {
      */
     private VBox createCard(String title) {
         VBox card = new VBox(8);
-        card.setStyle(
-                "-fx-background-color: #f8f9fa; " +
-                "-fx-border-color: #e9ecef; " +
-                "-fx-border-width: 1; " +
-                "-fx-border-radius: 8; " +
-                "-fx-background-radius: 8; " +
-                "-fx-padding: 12;"
-        );
+        card.getStyleClass().add("summary-card");
 
         Label titleLabel = new Label(title);
-        titleLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #495057;");
+        titleLabel.getStyleClass().add("card-title");
         card.getChildren().add(titleLabel);
 
         return card;
@@ -683,19 +649,19 @@ public class QuarterlyReviewDialog {
         row.setPadding(new Insets(4, 0, 4, 0));
 
         Label labelNode = new Label(label);
-        labelNode.setStyle("-fx-font-size: 13px; -fx-text-fill: #6c757d;");
+        labelNode.getStyleClass().add("data-label");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label valueNode = new Label(value);
-        valueNode.setStyle("-fx-font-size: 13px; -fx-text-fill: #212529; -fx-font-weight: 500;");
+        valueNode.getStyleClass().add("data-value");
 
         row.getChildren().addAll(labelNode, spacer, valueNode);
 
         if (suffix != null && !suffix.isEmpty()) {
             Label suffixNode = new Label(" (" + suffix + ")");
-            suffixNode.setStyle("-fx-font-size: 11px; -fx-text-fill: #6c757d;");
+            suffixNode.getStyleClass().add("data-suffix");
             row.getChildren().add(suffixNode);
         }
 
@@ -801,7 +767,7 @@ public class QuarterlyReviewDialog {
      */
     private StackPane createProgressOverlay() {
         StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: rgba(255,255,255,0.85);");
+        overlay.getStyleClass().add("progress-overlay");
 
         VBox content = new VBox(16);
         content.setAlignment(Pos.CENTER);
@@ -810,10 +776,10 @@ public class QuarterlyReviewDialog {
         spinner.setMaxSize(48, 48);
 
         Label message = new Label("Submitting to HMRC...");
-        message.setStyle("-fx-font-size: 14px; -fx-font-weight: 500; -fx-text-fill: #495057;");
+        message.getStyleClass().add("progress-message");
 
         Label subMessage = new Label("Please do not close this window");
-        subMessage.setStyle("-fx-font-size: 12px; -fx-text-fill: #6c757d;");
+        subMessage.getStyleClass().add("progress-submessage");
 
         content.getChildren().addAll(spinner, message, subMessage);
         overlay.getChildren().add(content);
@@ -836,28 +802,29 @@ public class QuarterlyReviewDialog {
         successStage.setTitle("Submission Accepted");
 
         VBox container = new VBox(0);
+        container.getStyleClass().add("quarter-dialog");
         container.setMinWidth(420);
         container.setMaxWidth(420);
+        Stylesheets.attachComponents(container);
 
         // Green header with checkmark
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 20, 16, 20));
-        header.setStyle("-fx-background-color: linear-gradient(to right, #28a745, #48c664); " +
-                         "-fx-background-radius: 11 11 0 0;");
+        header.getStyleClass().addAll("header-gradient", "header-green");
 
         StackPane iconWrapper = new StackPane();
         iconWrapper.setMinSize(40, 40);
         iconWrapper.setMaxSize(40, 40);
         iconWrapper.setAlignment(Pos.CENTER);
-        iconWrapper.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20;");
+        iconWrapper.getStyleClass().add("header-icon");
 
         FontIcon checkIcon = FontIcon.of(FontAwesomeSolid.CHECK_CIRCLE, 20);
         checkIcon.setIconColor(Color.WHITE);
         iconWrapper.getChildren().add(checkIcon);
 
         Label titleLabel = new Label("Submission Accepted");
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
+        titleLabel.getStyleClass().add("header-title");
 
         header.getChildren().addAll(iconWrapper, titleLabel);
         container.getChildren().add(header);
@@ -865,13 +832,13 @@ public class QuarterlyReviewDialog {
         // Body with submission details
         VBox body = new VBox(12);
         body.setPadding(new Insets(20));
-        body.setStyle("-fx-background-color: white;");
+        body.getStyleClass().add("dialog-body");
 
         if (submission.hmrcReference() != null) {
             Label refLabel = new Label("HMRC Reference");
-            refLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #6c757d;");
+            refLabel.getStyleClass().add("success-label");
             Label refValue = new Label(submission.hmrcReference());
-            refValue.setStyle("-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #212529;");
+            refValue.getStyleClass().add("success-ref-value");
             body.getChildren().addAll(refLabel, refValue, new Separator());
         }
 
@@ -889,7 +856,7 @@ public class QuarterlyReviewDialog {
 
         Label confirmMsg = new Label("Your quarterly update has been submitted to HMRC.");
         confirmMsg.setWrapText(true);
-        confirmMsg.setStyle("-fx-font-size: 13px; -fx-text-fill: #28a745; -fx-font-weight: 500;");
+        confirmMsg.getStyleClass().add("success-message");
         body.getChildren().add(confirmMsg);
 
         container.getChildren().add(body);
@@ -900,15 +867,7 @@ public class QuarterlyReviewDialog {
         footer.setPadding(new Insets(12, 20, 16, 20));
 
         Button okBtn = new Button("OK");
-        okBtn.setStyle(
-                "-fx-background-color: #28a745; " +
-                "-fx-text-fill: white; " +
-                "-fx-font-size: 13px; " +
-                "-fx-font-weight: 500; " +
-                "-fx-padding: 10 30; " +
-                "-fx-background-radius: 6; " +
-                "-fx-cursor: hand;"
-        );
+        okBtn.getStyleClass().add("btn-ok-success");
         okBtn.setOnAction(e -> successStage.close());
         footer.getChildren().add(okBtn);
         container.getChildren().add(footer);
@@ -930,14 +889,14 @@ public class QuarterlyReviewDialog {
         row.setPadding(new Insets(2, 0, 2, 0));
 
         Label labelNode = new Label(label);
-        labelNode.setStyle("-fx-font-size: 12px; -fx-text-fill: #6c757d;");
+        labelNode.getStyleClass().add("success-label");
         labelNode.setMinWidth(80);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label valueNode = new Label(value);
-        valueNode.setStyle("-fx-font-size: 13px; -fx-text-fill: #212529; -fx-font-weight: 500;");
+        valueNode.getStyleClass().add("data-value");
 
         row.getChildren().addAll(labelNode, spacer, valueNode);
         return row;
@@ -972,31 +931,29 @@ public class QuarterlyReviewDialog {
         errorStage.setTitle(display.title());
 
         VBox container = new VBox(0);
+        container.getStyleClass().add("quarter-dialog");
         container.setMinWidth(420);
         container.setMaxWidth(420);
+        Stylesheets.attachComponents(container);
 
         // ---- Header with specific title ----
-        String headerColor = display.retryable() ? "#e67e22" : "#dc3545";
-        String headerEndColor = display.retryable() ? "#f39c12" : "#e4606d";
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 20, 16, 20));
-        header.setStyle("-fx-background-color: linear-gradient(to right, " +
-                         headerColor + ", " + headerEndColor + "); " +
-                         "-fx-background-radius: 11 11 0 0;");
+        header.getStyleClass().addAll("header-gradient", display.retryable() ? "header-orange" : "header-red");
 
         StackPane iconWrapper = new StackPane();
         iconWrapper.setMinSize(40, 40);
         iconWrapper.setMaxSize(40, 40);
         iconWrapper.setAlignment(Pos.CENTER);
-        iconWrapper.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20;");
+        iconWrapper.getStyleClass().add("header-icon");
 
         FontIcon warningIcon = FontIcon.of(FontAwesomeSolid.EXCLAMATION_TRIANGLE, 20);
         warningIcon.setIconColor(Color.WHITE);
         iconWrapper.getChildren().add(warningIcon);
 
         Label titleLabel = new Label(display.title());
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
+        titleLabel.getStyleClass().add("header-title");
         titleLabel.setWrapText(true);
 
         header.getChildren().addAll(iconWrapper, titleLabel);
@@ -1006,16 +963,13 @@ public class QuarterlyReviewDialog {
         HBox complianceBanner = new HBox(8);
         complianceBanner.setAlignment(Pos.CENTER_LEFT);
         complianceBanner.setPadding(new Insets(12, 16, 12, 16));
-        complianceBanner.setStyle(
-                "-fx-background-color: #fff3cd; " +
-                "-fx-border-color: #ffc107; " +
-                "-fx-border-width: 0 0 0 4;");
+        complianceBanner.getStyleClass().add("compliance-banner");
 
         FontIcon bannerIcon = FontIcon.of(FontAwesomeSolid.EXCLAMATION_CIRCLE, 16);
         bannerIcon.setIconColor(Color.web("#856404"));
 
         Label bannerLabel = new Label("Your return has NOT been submitted to HMRC.");
-        bannerLabel.setStyle("-fx-text-fill: #856404; -fx-font-size: 13px; -fx-font-weight: 700;");
+        bannerLabel.getStyleClass().add("compliance-banner-text");
         bannerLabel.setWrapText(true);
 
         complianceBanner.getChildren().addAll(bannerIcon, bannerLabel);
@@ -1024,18 +978,18 @@ public class QuarterlyReviewDialog {
         // ---- Body with error guidance ----
         VBox body = new VBox(12);
         body.setPadding(new Insets(20));
-        body.setStyle("-fx-background-color: white;");
+        body.getStyleClass().add("dialog-body");
 
         Label messageLabel = new Label(display.message());
         messageLabel.setWrapText(true);
-        messageLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #495057;");
+        messageLabel.getStyleClass().add("error-message");
         body.getChildren().add(messageLabel);
 
         // Only show guidance label if it's different from the message (avoid duplication)
         if (display.guidance() != null && !display.guidance().equals(display.message())) {
             Label guidanceLabel = new Label(display.guidance());
             guidanceLabel.setWrapText(true);
-            guidanceLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #495057;");
+            guidanceLabel.getStyleClass().add("error-message");
             body.getChildren().add(guidanceLabel);
         }
 
@@ -1043,8 +997,7 @@ public class QuarterlyReviewDialog {
         if (display.retryable()) {
             Label retryHintLabel = new Label(RETRYABLE_HINT_TEXT);
             retryHintLabel.setWrapText(true);
-            retryHintLabel.setStyle(
-                    "-fx-font-size: 13px; -fx-text-fill: #e67e22; -fx-font-weight: 600;");
+            retryHintLabel.getStyleClass().add("retry-hint");
             body.getChildren().add(retryHintLabel);
         }
 
@@ -1055,12 +1008,9 @@ public class QuarterlyReviewDialog {
             HBox errorCodeRow = new HBox(8);
             errorCodeRow.setAlignment(Pos.CENTER_LEFT);
             errorCodeRow.setPadding(new Insets(10, 20, 10, 20));
-            errorCodeRow.setStyle(
-                    "-fx-background-color: #f8f9fa; " +
-                    "-fx-border-color: #dee2e6; " +
-                    "-fx-border-width: 1 0 0 0;");
+            errorCodeRow.getStyleClass().add("error-code-row");
             Label codeLabel = new Label("Error: " + display.errorCode());
-            codeLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #6c757d; -fx-font-family: monospace;");
+            codeLabel.getStyleClass().add("error-code");
             errorCodeRow.getChildren().add(codeLabel);
             container.getChildren().add(errorCodeRow);
         }
@@ -1076,15 +1026,7 @@ public class QuarterlyReviewDialog {
             FontIcon settingsIcon = FontIcon.of(FontAwesomeSolid.COG, 13);
             settingsIcon.setIconColor(Color.WHITE);
             settingsBtn.setGraphic(settingsIcon);
-            settingsBtn.setStyle(
-                    "-fx-background-color: " + SETTINGS_BUTTON_COLOR + "; " +
-                    "-fx-text-fill: white; " +
-                    "-fx-font-size: 13px; " +
-                    "-fx-font-weight: 600; " +
-                    "-fx-padding: 10 20; " +
-                    "-fx-background-radius: 6; " +
-                    "-fx-cursor: hand;"
-            );
+            settingsBtn.getStyleClass().add("btn-settings");
             settingsBtn.setOnAction(e -> {
                 errorStage.close();
                 stage.close();
@@ -1094,14 +1036,7 @@ public class QuarterlyReviewDialog {
         }
 
         Button closeBtn = new Button("Close");
-        closeBtn.setStyle(
-                "-fx-background-color: #e9ecef; " +
-                "-fx-text-fill: #495057; " +
-                "-fx-font-size: 13px; " +
-                "-fx-padding: 10 20; " +
-                "-fx-background-radius: 6; " +
-                "-fx-cursor: hand;"
-        );
+        closeBtn.getStyleClass().add("btn-cancel");
         closeBtn.setOnAction(e -> errorStage.close());
         footer.getChildren().add(closeBtn);
 

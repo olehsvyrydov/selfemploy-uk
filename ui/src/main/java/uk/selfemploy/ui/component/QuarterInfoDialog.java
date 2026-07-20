@@ -19,6 +19,7 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.ui.util.DialogStyler;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.QuarterStatus;
 import uk.selfemploy.ui.viewmodel.QuarterViewModel;
 
@@ -348,13 +349,62 @@ public class QuarterInfoDialog {
         return total;
     }
 
+    /**
+     * Returns the header gradient style class for a status.
+     *
+     * @param status the quarter status
+     * @return the style class carrying the status-specific gradient
+     */
+    private static String headerColorClass(QuarterStatus status) {
+        return switch (status) {
+            case DRAFT -> "header-blue";
+            case OVERDUE -> "header-red";
+            case SUBMITTED -> "header-green";
+            case FUTURE -> "header-gray";
+        };
+    }
+
+    /**
+     * Returns the status badge modifier style class for a status.
+     *
+     * @param status the quarter status
+     * @return the badge colour style class
+     */
+    private static String badgeClass(QuarterStatus status) {
+        return "badge-" + status.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /**
+     * Returns the net-value style class for a net profit/loss amount.
+     *
+     * @param netValue the net profit (positive) or loss (negative), or null when unknown
+     * @return the style class conveying neutral, positive, or negative styling
+     */
+    private static String netValueClass(BigDecimal netValue) {
+        if (netValue == null) {
+            return "net-value-neutral";
+        }
+        return netValue.compareTo(BigDecimal.ZERO) >= 0 ? "net-value-positive" : "net-value-negative";
+    }
+
+    /**
+     * Returns the action button modifier style class for a status.
+     *
+     * @param status the quarter status (only DRAFT and OVERDUE render an action button)
+     * @return the button colour style class
+     */
+    private static String actionButtonClass(QuarterStatus status) {
+        return status == QuarterStatus.OVERDUE ? "action-overdue" : "action-draft";
+    }
+
     // ==================== Private Methods ====================
 
     private void initializeDialog() {
         VBox container = new VBox(0);
-        container.getStyleClass().add("help-dialog-container");
+        container.getStyleClass().addAll("help-dialog-container", "quarter-dialog");
         container.setMinWidth(DIALOG_WIDTH);
         container.setMaxWidth(DIALOG_WIDTH);
+        Stylesheets.attachComponents(container);
 
         // Header with status-colored gradient
         container.getChildren().add(createHeader());
@@ -384,17 +434,14 @@ public class QuarterInfoDialog {
         header.setPadding(new Insets(16, 20, 16, 20));
 
         // Apply status-specific gradient color
-        String[] colors = getHeaderGradientColors(viewModel.getStatus());
-        header.setStyle("-fx-background-color: linear-gradient(to right, " + colors[0] + ", " + colors[1] + ");" +
-                        "-fx-background-radius: 11 11 0 0;");
+        header.getStyleClass().addAll("header-gradient", headerColorClass(viewModel.getStatus()));
 
         // Icon circle with FontIcon
         StackPane iconWrapper = new StackPane();
-        iconWrapper.getStyleClass().add("help-dialog-icon-wrapper");
+        iconWrapper.getStyleClass().addAll("help-dialog-icon-wrapper", "header-icon");
         iconWrapper.setMinSize(40, 40);
         iconWrapper.setMaxSize(40, 40);
         iconWrapper.setAlignment(Pos.CENTER);
-        iconWrapper.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20;");
 
         FontIcon fontIcon = FontIcon.of(getIconForStatus(viewModel.getStatus()), 18);
         fontIcon.setIconColor(Color.WHITE);
@@ -403,10 +450,10 @@ public class QuarterInfoDialog {
         // Title - Quarter label and date range
         VBox titleBox = new VBox(2);
         Label titleLabel = new Label(viewModel.getQuarter().name() + " " + viewModel.getTaxYear().label());
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
+        titleLabel.getStyleClass().add("header-title");
 
         Label subtitleLabel = new Label(viewModel.getDateRangeText());
-        subtitleLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.85); -fx-font-size: 12px;");
+        subtitleLabel.getStyleClass().add("header-subtitle");
 
         titleBox.getChildren().addAll(titleLabel, subtitleLabel);
 
@@ -429,9 +476,8 @@ public class QuarterInfoDialog {
      */
     private VBox createBody() {
         VBox body = new VBox(16);
-        body.getStyleClass().add("help-dialog-body");
+        body.getStyleClass().addAll("help-dialog-body", "dialog-body");
         body.setPadding(new Insets(20));
-        body.setStyle("-fx-background-color: white;");
 
         // Status badge
         HBox badgeRow = new HBox();
@@ -443,7 +489,7 @@ public class QuarterInfoDialog {
         // Status description
         Label descriptionLabel = new Label(getStatusDescription(viewModel.getStatus()));
         descriptionLabel.setWrapText(true);
-        descriptionLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #6c757d;");
+        descriptionLabel.getStyleClass().add("status-description");
         body.getChildren().add(descriptionLabel);
 
         // Quarter Financial Card
@@ -476,16 +522,7 @@ public class QuarterInfoDialog {
     private Label createStatusBadge() {
         QuarterStatus status = viewModel.getStatus();
         Label badge = new Label(status.getDisplayText().toUpperCase());
-        badge.setStyle(String.format(
-                "-fx-background-color: %s; " +
-                "-fx-text-fill: %s; " +
-                "-fx-padding: 4 12; " +
-                "-fx-background-radius: 12; " +
-                "-fx-font-size: 11px; " +
-                "-fx-font-weight: 600;",
-                status.getBackgroundColor(),
-                status.getTextColor()
-        ));
+        badge.getStyleClass().addAll("status-badge", badgeClass(status));
         return badge;
     }
 
@@ -494,18 +531,11 @@ public class QuarterInfoDialog {
      */
     private VBox createFinancialCard(String title, BigDecimal income, BigDecimal expenses) {
         VBox card = new VBox(8);
-        card.setStyle(
-                "-fx-background-color: #f8f9fa; " +
-                "-fx-border-color: #e9ecef; " +
-                "-fx-border-width: 1; " +
-                "-fx-border-radius: 8; " +
-                "-fx-background-radius: 8; " +
-                "-fx-padding: 12;"
-        );
+        card.getStyleClass().add("summary-card");
 
         // Title
         Label titleLabel = new Label(title);
-        titleLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #495057;");
+        titleLabel.getStyleClass().add("financial-card-title");
 
         // Income row
         HBox incomeRow = createFinancialRow("Income", formatCurrency(income), "#212529");
@@ -521,7 +551,7 @@ public class QuarterInfoDialog {
         HBox netRow = createFinancialRow("Net Profit", formatCurrency(net), null);
         // Apply conditional styling for net value (index 2: label=0, spacer=1, value=2)
         Label netValue = (Label) netRow.getChildren().get(2);
-        netValue.setStyle(getNetProfitStyle(net));
+        netValue.getStyleClass().add(netValueClass(net));
 
         card.getChildren().addAll(titleLabel, incomeRow, expensesRow, netRow);
 
@@ -536,14 +566,14 @@ public class QuarterInfoDialog {
         row.setAlignment(Pos.CENTER_LEFT);
 
         Label labelNode = new Label(label);
-        labelNode.setStyle("-fx-font-size: 13px; -fx-text-fill: #6c757d;");
+        labelNode.getStyleClass().add("data-label");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label valueNode = new Label(value);
         if (valueColor != null) {
-            valueNode.setStyle("-fx-font-size: 13px; -fx-text-fill: " + valueColor + "; -fx-font-weight: 500;");
+            valueNode.getStyleClass().add("data-value");
         }
 
         row.getChildren().addAll(labelNode, spacer, valueNode);
@@ -560,16 +590,7 @@ public class QuarterInfoDialog {
         QuarterStatus status = viewModel.getStatus();
         boolean isOverdue = status == QuarterStatus.OVERDUE;
 
-        card.setStyle(String.format(
-                "-fx-background-color: %s; " +
-                "-fx-border-color: %s; " +
-                "-fx-border-width: 1; " +
-                "-fx-border-radius: 8; " +
-                "-fx-background-radius: 8; " +
-                "-fx-padding: 12;",
-                isOverdue ? "#fff5f5" : "#f0fdf4",
-                isOverdue ? "#feb2b2" : "#86efac"
-        ));
+        card.getStyleClass().addAll("deadline-card", isOverdue ? "deadline-overdue" : "deadline-normal");
 
         HBox row = new HBox(10);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -582,13 +603,11 @@ public class QuarterInfoDialog {
         VBox textContent = new VBox(2);
 
         Label dateLabel = new Label(viewModel.getDeadlineText());
-        dateLabel.setStyle(String.format("-fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: %s;",
-                isOverdue ? "#dc3545" : "#166534"));
+        dateLabel.getStyleClass().add("deadline-date");
 
         String countdownText = getDeadlineCountdownText(viewModel.getDeadline());
         Label countdownLabel = new Label(countdownText);
-        countdownLabel.setStyle(String.format("-fx-font-size: 12px; -fx-text-fill: %s;",
-                isOverdue ? "#ef4444" : "#22c55e"));
+        countdownLabel.getStyleClass().add("deadline-countdown");
 
         textContent.getChildren().addAll(dateLabel, countdownLabel);
         row.getChildren().addAll(icon, textContent);
@@ -610,15 +629,7 @@ public class QuarterInfoDialog {
         String actionText = getActionButtonText(viewModel.getStatus());
         if (actionText != null) {
             Button actionBtn = new Button(actionText);
-            actionBtn.setStyle(
-                    "-fx-background-color: " + getHeaderGradientColors(viewModel.getStatus())[0] + "; " +
-                    "-fx-text-fill: white; " +
-                    "-fx-font-size: 13px; " +
-                    "-fx-font-weight: 500; " +
-                    "-fx-padding: 10 20; " +
-                    "-fx-background-radius: 6; " +
-                    "-fx-cursor: hand;"
-            );
+            actionBtn.getStyleClass().addAll("btn-action", actionButtonClass(viewModel.getStatus()));
             actionBtn.setOnAction(e -> {
                 if (onReviewAction != null) {
                     onReviewAction.run();
