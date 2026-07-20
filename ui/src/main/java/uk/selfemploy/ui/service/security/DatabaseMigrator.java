@@ -95,6 +95,24 @@ public final class DatabaseMigrator {
     }
 
     /**
+     * Whether an existing database file is still plaintext (readable without a key). Used at startup to
+     * decide whether protection has been enabled but the one-time encryption has not yet run. Returns
+     * false if the file is absent (nothing to migrate) or already encrypted.
+     */
+    public static boolean databaseIsPlaintext(Path dbPath) {
+        if (!Files.exists(dbPath)) {
+            return false;
+        }
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + dbPath.toAbsolutePath());
+             Statement s = c.createStatement()) {
+            s.executeQuery("SELECT count(*) FROM sqlite_master").close();
+            return true;
+        } catch (SQLException e) {
+            return false;   // not readable as plaintext -> already encrypted
+        }
+    }
+
+    /**
      * Recovers from a crash during the atomic swap: if the database file is missing but a plaintext
      * backup exists, restore it. Called at startup before opening the store.
      */

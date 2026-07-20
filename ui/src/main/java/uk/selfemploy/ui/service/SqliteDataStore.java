@@ -144,6 +144,11 @@ public final class SqliteDataStore {
         return AppDataDirectory.resolve().resolve(DB_FILE);
     }
 
+    /** The production database file path — used by the app-lock gate for migration/rollback. */
+    public static Path databaseFilePath() {
+        return AppDataDirectory.resolve().resolve(DB_FILE);
+    }
+
     /**
      * Creates the data directory (owner-only) if it does not yet exist. The database files
      * themselves are restricted by {@link #restrictDatabaseFiles()} after
