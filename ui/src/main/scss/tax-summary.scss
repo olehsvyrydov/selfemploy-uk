@@ -1,3 +1,4 @@
+@use 'tokens' as t;
 /*
  * Tax Summary View Styles - SE-306
  * Based on /aura design specification
@@ -23,14 +24,14 @@
 }
 
 .tax-disclaimer-text {
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: t.$gray-500;
     -fx-font-size: 13px;
 }
 
 /* ===== Submission Status Banner ===== */
 .submitted-banner {
-    -fx-background-color: #d4edda;
-    -fx-border-color: #28a745;
+    -fx-background-color: t.$success-bg;
+    -fx-border-color: t.$success;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -38,7 +39,7 @@
 }
 
 .submitted-banner-text {
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
@@ -84,15 +85,15 @@
 }
 
 .tax-metric-value.income-tax {
-    -fx-text-fill: #6f42c1;
+    -fx-text-fill: t.$purple;
 }
 
 .tax-metric-value.ni-class4 {
-    -fx-text-fill: #17a2b8;
+    -fx-text-fill: t.$info;
 }
 
 .total-tax-due-container {
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
     -fx-padding: 20 0 0 0;
 }
@@ -147,7 +148,7 @@
 }
 
 .section-total.expenses {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 .section-total.profit {
@@ -155,11 +156,11 @@
 }
 
 .section-total.tax {
-    -fx-text-fill: #6f42c1;
+    -fx-text-fill: t.$purple;
 }
 
 .section-total.ni {
-    -fx-text-fill: #17a2b8;
+    -fx-text-fill: t.$info;
 }
 
 .section-content {
@@ -169,7 +170,7 @@
 /* ===== Line Items ===== */
 .line-item {
     -fx-padding: 8 0;
-    -fx-border-color: #e9ecef;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 0 0 1 0;
     -fx-border-style: dashed;
 }
@@ -191,7 +192,7 @@
 }
 
 .line-item-value.negative {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 /* ===== Profit Calculation ===== */
@@ -247,11 +248,11 @@
 }
 
 .tax-band-amount.income-tax {
-    -fx-text-fill: #6f42c1;
+    -fx-text-fill: t.$purple;
 }
 
 .tax-band-amount.ni-class4 {
-    -fx-text-fill: #17a2b8;
+    -fx-text-fill: t.$info;
 }
 
 /* ===== Total Due Card ===== */
@@ -317,7 +318,7 @@
 }
 
 .button-pdf:hover {
-    -fx-background-color: #dee2e6;
+    -fx-background-color: t.$border;
 }
 
 .button-submit {
@@ -334,7 +335,7 @@
 }
 
 .button-submit:disabled {
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
     -fx-cursor: default;
 }
 
@@ -345,8 +346,8 @@
  */
 
 .class2-ni-card {
-    -fx-background-color: #f0f7ff;
-    -fx-border-color: #0066cc;
+    -fx-background-color: t.$blue-bg-lighter;
+    -fx-border-color: t.$primary;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
@@ -358,7 +359,7 @@
 }
 
 .class2-ni-icon {
-    -fx-background-color: #0066cc;
+    -fx-background-color: t.$primary;
     -fx-text-fill: white;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
@@ -414,7 +415,7 @@
 .class2-rates-value {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-font-family: monospace;
 }
 
@@ -447,7 +448,7 @@
 
 /* External Link */
 .class2-external-link {
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-font-size: 13px;
     -fx-padding: 12 0 0 0;
 }
@@ -469,7 +470,7 @@
 /* Help Button */
 .help-icon-btn {
     -fx-background-color: transparent;
-    -fx-text-fill: #0066cc;
+    -fx-text-fill: t.$primary;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-min-width: 24;
@@ -477,13 +478,13 @@
     -fx-max-width: 24;
     -fx-max-height: 24;
     -fx-background-radius: 12;
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-width: 1;
     -fx-border-radius: 12;
     -fx-cursor: hand;
 }
 
 .help-icon-btn:hover {
-    -fx-background-color: #0066cc;
+    -fx-background-color: t.$primary;
     -fx-text-fill: white;
 }

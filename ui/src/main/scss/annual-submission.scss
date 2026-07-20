@@ -1,3 +1,4 @@
+@use 'tokens' as t;
 /*
  * Annual Self Assessment Submission View Styles - SE-403
  * Based on submission-history.css patterns
@@ -91,7 +92,7 @@
 }
 
 .step-connector {
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 0 0 2 0;
     -fx-min-height: 2;
     -fx-max-height: 2;
@@ -109,7 +110,7 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
     -fx-min-width: 380;
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: #0066cc;
+    -fx-border-color: t.$primary;
     -fx-border-radius: 0 12 12 0;
 }
 
@@ -120,7 +121,7 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
     -fx-min-width: 380;
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: #dc3545;
+    -fx-border-color: t.$danger;
     -fx-border-radius: 0 12 12 0;
 }
 
@@ -159,7 +160,7 @@
 }
 
 .item-value.expense {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 .item-value.profit {
@@ -195,13 +196,13 @@
 
 /* ===== Error Panel ===== */
 .error-panel {
-    -fx-background-color: #f8d7da;
+    -fx-background-color: t.$danger-bg;
     -fx-background-radius: 8;
     -fx-padding: 16 20;
 }
 
 .error-icon {
-    -fx-text-fill: #721c24;
+    -fx-text-fill: t.$danger-text;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
 }
@@ -209,23 +210,23 @@
 .error-title {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: #721c24;
+    -fx-text-fill: t.$danger-text;
 }
 
 .error-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #721c24;
+    -fx-text-fill: t.$danger-text;
 }
 
 /* ===== Success Panel ===== */
 .success-panel {
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
     -fx-background-radius: 8;
     -fx-padding: 16 20;
 }
 
 .success-icon {
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
     -fx-font-size: 32px;
     -fx-font-weight: bold;
 }
@@ -233,24 +234,24 @@
 .success-title {
     -fx-font-size: 18px;
     -fx-font-weight: bold;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 .success-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 .field-label {
     -fx-font-size: 12px;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
     -fx-font-weight: bold;
 }
 
 .reference-text {
     -fx-font-size: 14px;
     -fx-font-family: "Consolas", "Monaco", monospace;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
     -fx-font-weight: 500;
 }
 
@@ -276,7 +277,7 @@
 }
 
 .button-primary:disabled {
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
     -fx-cursor: default;
     -fx-effect: none;
 }
@@ -286,7 +287,7 @@
     -fx-text-fill: -fx-text-secondary;
     -fx-font-size: 14px;
     -fx-padding: 10 20;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -299,7 +300,7 @@
 }
 
 .button-warning {
-    -fx-background-color: #fd7e14;
+    -fx-background-color: t.$accent;
     -fx-text-fill: white;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
@@ -309,11 +310,11 @@
 }
 
 .button-warning:hover {
-    -fx-background-color: derive(#fd7e14, -10%);
+    -fx-background-color: derive(t.$accent, -10%);
 }
 
 .button-warning:disabled {
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
     -fx-cursor: default;
 }
 
@@ -323,7 +324,7 @@
 }
 
 .separator .line {
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -336,7 +337,7 @@
 /* ===== Declaration Card ===== */
 .declaration-card {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #ffc107;
+    -fx-border-color: t.$warning;
     -fx-border-width: 2;
     -fx-border-radius: 12;
     -fx-background-radius: 12;
@@ -348,8 +349,8 @@
 .declaration-warning-icon {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: #856404;
-    -fx-background-color: #ffc107;
+    -fx-text-fill: t.$warning-text;
+    -fx-background-color: t.$warning;
     -fx-min-width: 24;
     -fx-min-height: 24;
     -fx-max-width: 24;
@@ -361,7 +362,7 @@
 .declaration-title {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 /* ===== Declaration Checkbox ===== */
@@ -371,7 +372,7 @@
 
 .declaration-checkbox > .box {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 2;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -387,8 +388,8 @@
 }
 
 .declaration-checkbox:selected > .box {
-    -fx-background-color: #28a745;
-    -fx-border-color: #28a745;
+    -fx-background-color: t.$success;
+    -fx-border-color: t.$success;
 }
 
 .declaration-checkbox:selected > .box > .mark {
@@ -409,27 +410,27 @@
 
 .declaration-warning-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #dc3545;
+    -fx-text-fill: t.$danger;
     -fx-font-weight: 500;
     -fx-line-spacing: 2;
 }
 
 /* ===== Timestamp (shown after checking) ===== */
 .declaration-timestamp {
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
     -fx-background-radius: 6;
     -fx-padding: 8 12;
 }
 
 .timestamp-icon {
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
 
 .timestamp-text {
     -fx-font-size: 12px;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 /* ===== Submit Helper Text ===== */
@@ -439,7 +440,7 @@
 }
 
 .submit-helper-text.ready {
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
 }
 
 /* ===== Submit Button States ===== */
@@ -460,18 +461,18 @@
 }
 
 .button-submit-hmrc:disabled {
-    -fx-background-color: #adb5bd;
+    -fx-background-color: t.$bs-gray-500;
     -fx-cursor: default;
     -fx-effect: none;
 }
 
 /* Enabled state after declaration checked */
 .button-submit-hmrc.ready {
-    -fx-background-color: #28a745;
+    -fx-background-color: t.$success;
 }
 
 .button-submit-hmrc.ready:hover {
-    -fx-background-color: derive(#28a745, -10%);
+    -fx-background-color: derive(t.$success, -10%);
 }
 
 /*
@@ -483,7 +484,7 @@
 /* ===== Declaration Card 6-Box ===== */
 .declaration-card-6box {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #ffc107;
+    -fx-border-color: t.$warning;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 12 12 0;
     -fx-padding: 24;
@@ -505,7 +506,7 @@
     -fx-background-color: -fx-bg-secondary;
     -fx-background-radius: 8;
     -fx-padding: 16;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 8;
 }
@@ -516,7 +517,7 @@
 }
 
 .declaration-row.checked {
-    -fx-border-color: #28a745;
+    -fx-border-color: t.$success;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
@@ -547,21 +548,21 @@
 }
 
 .declaration-progress-text.complete {
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
     -fx-font-weight: bold;
 }
 
 /* ===== Timestamp Section ===== */
 .declaration-timestamp-section {
-    -fx-background-color: #d4edda;
-    -fx-border-color: #28a745;
+    -fx-background-color: t.$success-bg;
+    -fx-border-color: t.$success;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 8 8 0;
     -fx-padding: 16;
 }
 
 .declaration-timestamp-icon {
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
 }
@@ -569,12 +570,12 @@
 .declaration-timestamp-title {
     -fx-font-size: 15px;
     -fx-font-weight: bold;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 .declaration-timestamp-details {
     -fx-font-size: 13px;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
     -fx-font-family: "Consolas", "Monaco", monospace;
 }
 

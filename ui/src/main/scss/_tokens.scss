@@ -1,21 +1,99 @@
 // Design tokens as Sass variables (hex/number literals) for compile-time authoring and colour math.
-// The runtime JavaFX looked-up-colour tokens stay defined in main.css .root; these mirror the values
-// needed by SCSS-authored components. Radius/spacing tokens are unitless (JavaFX numeric properties);
-// font-size tokens carry px, matching the existing stylesheets.
-//
-// During the migration these hex values also still appear literally in the not-yet-migrated hand-written
-// stylesheets (e.g. help.css, notifications.css). Keep them in sync until those files move to SCSS, at
-// which point this file becomes the single source.
+// The runtime JavaFX looked-up-colour tokens stay defined in main.scss .root; these mirror the values
+// and are the single source for every duplicated colour across the compiled stylesheets. Radius/spacing
+// tokens are unitless (JavaFX numeric properties); font-size tokens carry px, matching the stylesheets.
 
-// Slate palette — dark popover/toast surfaces (not part of the light main palette)
-$slate-900: #1e293b;
-$slate-600: #475569;
-$slate-400: #94a3b8;
-$slate-300: #cbd5e1;
-$slate-50:  #f8fafc;
+// ============================================================================
+// Colour palette
+// ============================================================================
 
-// Accents used on dark surfaces
-$toast-success: #4ade80;
+// Brand & semantic
+$primary:               #0066cc;
+$primary-light:         #e6f0ff;
+$secondary:             #6c757d;
+$success:               #28a745;
+$danger:                #dc3545;
+$warning:               #ffc107;
+$accent:                #fd7e14;
+$info:                  #17a2b8;
+$purple:                #6f42c1;
+
+// Text & surfaces
+$text-primary:          #212529;
+$white:                 #ffffff;
+$bg-secondary:          #f8f9fa;
+$bg-tertiary:           #e9ecef;
+$border:                #dee2e6;
+
+// Status containers
+$success-bg:            #d4edda;
+$success-text:          #155724;
+$warning-bg:            #fff3cd;
+$warning-text:          #856404;
+$danger-bg:             #f8d7da;
+$danger-text:           #721c24;
+
+// Gray scale
+$gray-50:               #f9fafb;
+$gray-100:              #f3f4f6;
+$gray-200:              #e5e7eb;
+$gray-300:              #d1d5db;
+$gray-400:              #9ca3af;
+$gray-500:              #6b7280;
+$gray-600:              #4b5563;
+$gray-700:              #374151;
+$gray-800:              #1f2937;
+$gray-900:              #111827;
+
+// Slate scale
+$slate-50:              #f8fafc;
+$slate-300:             #cbd5e1;
+$slate-400:             #94a3b8;
+$slate-500:             #64748b;
+$slate-600:             #475569;
+$slate-900:             #1e293b;
+
+// Bootstrap grays
+$bs-gray-400:           #ced4da;
+$bs-gray-500:           #adb5bd;
+$bs-gray-700:           #495057;
+
+// GOV.UK palette
+$govuk-bg:              #f3f2f1;
+$govuk-grey:            #b1b4b6;
+$govuk-text-secondary:  #505a5f;
+$govuk-blue:            #1d70b8;
+$govuk-black:           #0b0c0c;
+
+// Blues
+$blue-500:              #3b82f6;
+$blue-600:              #2563eb;
+$blue-800:              #1e40af;
+$blue-bootstrap:        #0d6efd;
+$sky-800:               #0369a1;
+$blue-bg-light:         #cce5ff;
+$blue-bg-lighter:       #f0f7ff;
+
+// Teals & greens
+$teal-50:               #ccfbf1;
+$teal-500:              #14b8a6;
+$teal-700:              #0f766e;
+$green-500:             #22c55e;
+$green-600:             #16a34a;
+$green-700:             #15803d;
+
+// Amber / orange / yellow
+$amber-100:             #fef3c7;
+$amber-600:             #d97706;
+$orange-bg:             #ffe5d6;
+$yellow-bright:         #fd0;
+
+// Accent on dark surfaces
+$toast-success:         #4ade80;
+
+// ============================================================================
+// Non-colour scales
+// ============================================================================
 
 // Radius scale
 $radius-sm: 8;

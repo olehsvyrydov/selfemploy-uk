@@ -31,15 +31,15 @@
 
 // Per-kind header gradients (AppDialog kinds; the HMRC guide reuses -info).
 .shell-dialog-header-info {
-  -fx-background-color: linear-gradient(to right, #0066cc, #3385d6);
+  -fx-background-color: linear-gradient(to right, t.$primary, #3385d6);
 }
 
 .shell-dialog-header-warning {
-  -fx-background-color: linear-gradient(to right, #d97706, #f59e0b);
+  -fx-background-color: linear-gradient(to right, t.$amber-600, #f59e0b);
 }
 
 .shell-dialog-header-error {
-  -fx-background-color: linear-gradient(to right, #dc3545, #e4606d);
+  -fx-background-color: linear-gradient(to right, t.$danger, #e4606d);
 }
 
 // Dynamic header gradient: only the runtime category colour is set inline as the -fx-header-accent
@@ -51,13 +51,13 @@
 // AppDialog body message text.
 .shell-dialog-message {
   -fx-font-size: t.$font-md;
-  -fx-text-fill: #212529;
+  -fx-text-fill: t.$text-primary;
 }
 
 // HmrcRegistrationGuideDialog intro paragraph.
 .shell-guide-intro {
   -fx-font-size: t.$font-md;
-  -fx-text-fill: #374151;
+  -fx-text-fill: t.$gray-700;
   -fx-line-spacing: 4;
 }
 

@@ -1,3 +1,4 @@
+@use 'tokens' as t;
 /*
  * Import Review, History, and Reconciliation Dashboard Styles
  * Sprint 10B - SE-10B-005, SE-10B-006, SE-10B-008
@@ -35,7 +36,7 @@
 }
 
 .all-clear-icon {
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
     -fx-min-width: 64;
     -fx-min-height: 64;
     -fx-max-width: 64;
@@ -46,7 +47,7 @@
 
 .all-clear-icon-text {
     -fx-font-size: 28px;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
     -fx-font-weight: bold;
 }
 
@@ -79,7 +80,7 @@
     -fx-min-width: 1;
     -fx-max-width: 1;
     -fx-min-height: 40;
-    -fx-background-color: #dee2e6;
+    -fx-background-color: t.$border;
 }
 
 .import-summary-count {
@@ -134,30 +135,30 @@
 }
 
 .match-badge-new {
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
 }
 
 .match-badge-new .match-badge-icon,
 .match-badge-new .match-badge-text {
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 .match-badge-exact {
-    -fx-background-color: #f8d7da;
+    -fx-background-color: t.$danger-bg;
 }
 
 .match-badge-exact .match-badge-icon,
 .match-badge-exact .match-badge-text {
-    -fx-text-fill: #721c24;
+    -fx-text-fill: t.$danger-text;
 }
 
 .match-badge-likely {
-    -fx-background-color: #fff3cd;
+    -fx-background-color: t.$warning-bg;
 }
 
 .match-badge-likely .match-badge-icon,
 .match-badge-likely .match-badge-text {
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 .match-badge-similar {
@@ -171,15 +172,15 @@
 
 /* ===== Table Row Styling ===== */
 .row-new {
-    -fx-background-color: derive(#d4edda, 60%);
+    -fx-background-color: derive(t.$success-bg, 60%);
 }
 
 .row-exact {
-    -fx-background-color: derive(#f8d7da, 60%);
+    -fx-background-color: derive(t.$danger-bg, 60%);
 }
 
 .row-likely {
-    -fx-background-color: derive(#fff3cd, 60%);
+    -fx-background-color: derive(t.$warning-bg, 60%);
 }
 
 .row-similar {
@@ -193,14 +194,14 @@
 }
 
 .amount-negative {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
     -fx-font-weight: bold;
 }
 
 /* ===== Action ComboBox ===== */
 .action-combo {
     -fx-background-color: -fx-bg-primary;
-    -fx-border-color: #dee2e6;
+    -fx-border-color: t.$border;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
     -fx-pref-width: 130;
@@ -223,7 +224,7 @@
 }
 
 .filter-chip:hover {
-    -fx-background-color: #dee2e6;
+    -fx-background-color: t.$border;
 }
 
 .filter-chip:selected {
@@ -274,7 +275,7 @@
 
 .import-status-undone {
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: #6c757d;
+    -fx-border-color: t.$secondary;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
     -fx-opacity: 0.75;
@@ -300,7 +301,7 @@
 }
 
 .status-icon-undone {
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
 }
 
 .status-icon-locked {
@@ -337,19 +338,19 @@
 }
 
 .import-status-badge.import-status-active {
-    -fx-background-color: #d4edda;
-    -fx-text-fill: #155724;
+    -fx-background-color: t.$success-bg;
+    -fx-text-fill: t.$success-text;
     -fx-border-width: 0;
 }
 
 .import-status-badge.import-status-undone {
-    -fx-background-color: #e9ecef;
-    -fx-text-fill: #6c757d;
+    -fx-background-color: t.$bg-tertiary;
+    -fx-text-fill: t.$secondary;
     -fx-border-width: 0;
 }
 
 .import-status-badge.import-status-locked {
-    -fx-background-color: #cce5ff;
+    -fx-background-color: t.$blue-bg-light;
     -fx-text-fill: #004085;
     -fx-border-width: 0;
 }
@@ -369,7 +370,7 @@
 /* Import details section */
 .import-details {
     -fx-padding: 12 0 0 0;
-    -fx-border-color: #e9ecef;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -410,7 +411,7 @@
 }
 
 .amount-expense {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 /* Undo button */
@@ -462,7 +463,7 @@
 
 .card-expenses {
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: #fd7e14;
+    -fx-border-color: t.$accent;
     -fx-border-radius: 0 12 12 0;
     -fx-background-radius: 0 12 12 0;
 }
@@ -491,7 +492,7 @@
 }
 
 .icon-expense {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 .icon-alert {
@@ -499,7 +500,7 @@
 }
 
 .icon-warning {
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
 }
 
 /* Card content */
@@ -519,7 +520,7 @@
 }
 
 .value-expense {
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 .reconciliation-card-subtitle {
@@ -546,7 +547,7 @@
 
 /* All clear banner */
 .all-clear-banner {
-    -fx-background-color: #d4edda;
+    -fx-background-color: t.$success-bg;
     -fx-background-radius: 8;
     -fx-padding: 20;
 }
@@ -559,12 +560,12 @@
 .all-clear-banner .all-clear-title {
     -fx-font-size: 18px;
     -fx-font-weight: bold;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 .all-clear-banner .all-clear-message {
     -fx-font-size: 14px;
-    -fx-text-fill: #155724;
+    -fx-text-fill: t.$success-text;
 }
 
 /* ===== Issues List ===== */
@@ -635,7 +636,7 @@
 }
 
 .severity-icon.issue-severity-medium {
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-border-width: 0;
 }
 
@@ -682,7 +683,7 @@
 
 .issue-action-btn.issue-severity-medium {
     -fx-background-color: -fx-warning;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
     -fx-border-width: 0;
 }
 
@@ -719,13 +720,13 @@
 
 .quick-action-btn.action-warning {
     -fx-background-color: transparent;
-    -fx-border-color: #fd7e14;
+    -fx-border-color: t.$accent;
     -fx-border-width: 1;
-    -fx-text-fill: #fd7e14;
+    -fx-text-fill: t.$accent;
 }
 
 .quick-action-btn.action-warning:hover {
-    -fx-background-color: derive(#fd7e14, 90%);
+    -fx-background-color: derive(t.$accent, 90%);
 }
 
 .quick-action-btn.action-warning:disabled {
@@ -780,7 +781,7 @@
 
 .comparison-field {
     -fx-padding: 8 0;
-    -fx-border-color: #e9ecef;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 0 0 1 0;
 }
 
@@ -795,12 +796,12 @@
 }
 
 .comparison-field-different {
-    -fx-background-color: #fff3cd;
+    -fx-background-color: t.$warning-bg;
     -fx-background-radius: 4;
 }
 
 .comparison-difference-note {
-    -fx-background-color: #e6f0ff;
+    -fx-background-color: t.$primary-light;
     -fx-background-radius: 6;
     -fx-padding: 12;
     -fx-text-fill: -fx-primary;
@@ -838,7 +839,7 @@
 }
 
 .comparison-dialog .button-secondary:hover {
-    -fx-background-color: #dee2e6;
+    -fx-background-color: t.$border;
 }
 
 .comparison-dialog .button-secondary:focused {

@@ -8,19 +8,19 @@
   }
 
   .header-green {
-    -fx-background-color: linear-gradient(to right, #28a745, #48c664);
+    -fx-background-color: linear-gradient(to right, t.$success, #48c664);
   }
 
   .header-red {
-    -fx-background-color: linear-gradient(to right, #dc3545, #e4606d);
+    -fx-background-color: linear-gradient(to right, t.$danger, #e4606d);
   }
 
   .header-blue {
-    -fx-background-color: linear-gradient(to right, #0066cc, #3385d6);
+    -fx-background-color: linear-gradient(to right, t.$primary, #3385d6);
   }
 
   .header-gray {
-    -fx-background-color: linear-gradient(to right, #6c757d, #868e96);
+    -fx-background-color: linear-gradient(to right, t.$secondary, #868e96);
   }
 
   .header-orange {
@@ -55,8 +55,8 @@
 
   // ---- Summary / data cards ----
   .summary-card {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #e9ecef;
+    -fx-background-color: t.$bg-secondary;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 1;
     -fx-border-radius: t.$radius-sm;
     -fx-background-radius: t.$radius-sm;
@@ -66,29 +66,29 @@
   .card-title {
     -fx-font-size: t.$font-sm;
     -fx-font-weight: 600;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
   }
 
   .financial-card-title {
     -fx-font-size: t.$font-xs;
     -fx-font-weight: 600;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
   }
 
   .data-label {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
   }
 
   .data-value {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
     -fx-font-weight: 500;
   }
 
   .data-suffix {
     -fx-font-size: t.$font-2xs;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
   }
 
   .total-row {
@@ -97,24 +97,24 @@
 
   .no-expenses {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-font-style: italic;
   }
 
   .category-name {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
   }
 
   .category-amount {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
     -fx-font-weight: 500;
   }
 
   .category-count {
     -fx-font-size: t.$font-2xs;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
   }
 
   // ---- Net profit / loss card (review dialog) ----
@@ -129,7 +129,7 @@
 
       .net-label,
       .net-amount {
-        -fx-text-fill: #28a745;
+        -fx-text-fill: t.$success;
       }
     }
 
@@ -139,7 +139,7 @@
 
       .net-label,
       .net-amount {
-        -fx-text-fill: #dc3545;
+        -fx-text-fill: t.$danger;
       }
     }
   }
@@ -156,15 +156,15 @@
 
   // ---- Confirmations ----
   .confirmations-section {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #e9ecef;
+    -fx-background-color: t.$bg-secondary;
+    -fx-border-color: t.$bg-tertiary;
     -fx-border-width: 1 0 0 0;
   }
 
   .section-heading {
     -fx-font-size: t.$font-md;
     -fx-font-weight: 600;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
   }
 
   .confirmation-checkbox {
@@ -173,8 +173,8 @@
 
   // ---- Buttons ----
   .btn-cancel {
-    -fx-background-color: #e9ecef;
-    -fx-text-fill: #495057;
+    -fx-background-color: t.$bg-tertiary;
+    -fx-text-fill: t.$bs-gray-700;
     -fx-font-size: t.$font-sm;
     -fx-padding: 10 20;
     -fx-background-radius: 6;
@@ -190,16 +190,16 @@
     -fx-cursor: hand;
 
     &.submit-review {
-      -fx-background-color: #28a745;
+      -fx-background-color: t.$success;
     }
 
     &.submit-overdue {
-      -fx-background-color: #dc3545;
+      -fx-background-color: t.$danger;
     }
   }
 
   .btn-ok-success {
-    -fx-background-color: #28a745;
+    -fx-background-color: t.$success;
     -fx-text-fill: white;
     -fx-font-size: t.$font-sm;
     -fx-font-weight: 500;
@@ -209,7 +209,7 @@
   }
 
   .btn-settings {
-    -fx-background-color: #0066cc;
+    -fx-background-color: t.$primary;
     -fx-text-fill: white;
     -fx-font-size: t.$font-sm;
     -fx-font-weight: 600;
@@ -227,11 +227,11 @@
     -fx-cursor: hand;
 
     &.action-draft {
-      -fx-background-color: #0066cc;
+      -fx-background-color: t.$primary;
     }
 
     &.action-overdue {
-      -fx-background-color: #dc3545;
+      -fx-background-color: t.$danger;
     }
   }
 
@@ -243,48 +243,48 @@
   .progress-message {
     -fx-font-size: t.$font-md;
     -fx-font-weight: 500;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
   }
 
   .progress-submessage {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
   }
 
   // ---- Success dialog ----
   .success-label {
     -fx-font-size: t.$font-xs;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
   }
 
   .success-ref-value {
     -fx-font-size: 16px;
     -fx-font-weight: 700;
-    -fx-text-fill: #212529;
+    -fx-text-fill: t.$text-primary;
   }
 
   .success-message {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
     -fx-font-weight: 500;
   }
 
   // ---- Error dialog ----
   .compliance-banner {
-    -fx-background-color: #fff3cd;
-    -fx-border-color: #ffc107;
+    -fx-background-color: t.$warning-bg;
+    -fx-border-color: t.$warning;
     -fx-border-width: 0 0 0 4;
   }
 
   .compliance-banner-text {
-    -fx-text-fill: #856404;
+    -fx-text-fill: t.$warning-text;
     -fx-font-size: t.$font-sm;
     -fx-font-weight: 700;
   }
 
   .error-message {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: #495057;
+    -fx-text-fill: t.$bs-gray-700;
   }
 
   .retry-hint {
@@ -294,21 +294,21 @@
   }
 
   .error-code-row {
-    -fx-background-color: #f8f9fa;
-    -fx-border-color: #dee2e6;
+    -fx-background-color: t.$bg-secondary;
+    -fx-border-color: t.$border;
     -fx-border-width: 1 0 0 0;
   }
 
   .error-code {
     -fx-font-size: t.$font-2xs;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
     -fx-font-family: monospace;
   }
 
   // ---- Status description & badge (info dialog) ----
   .status-description {
     -fx-font-size: t.$font-sm;
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
   }
 
   .status-badge {
@@ -318,38 +318,38 @@
     -fx-font-weight: 600;
 
     &.badge-submitted {
-      -fx-background-color: #d4edda;
-      -fx-text-fill: #155724;
+      -fx-background-color: t.$success-bg;
+      -fx-text-fill: t.$success-text;
     }
 
     &.badge-overdue {
-      -fx-background-color: #f8d7da;
-      -fx-text-fill: #721c24;
+      -fx-background-color: t.$danger-bg;
+      -fx-text-fill: t.$danger-text;
     }
 
     &.badge-draft {
-      -fx-background-color: #fff3cd;
-      -fx-text-fill: #856404;
+      -fx-background-color: t.$warning-bg;
+      -fx-text-fill: t.$warning-text;
     }
 
     &.badge-future {
-      -fx-background-color: #e9ecef;
-      -fx-text-fill: #6c757d;
+      -fx-background-color: t.$bg-tertiary;
+      -fx-text-fill: t.$secondary;
     }
   }
 
   // ---- Net value cell (info dialog financial card) ----
   .net-value-neutral {
-    -fx-text-fill: #6c757d;
+    -fx-text-fill: t.$secondary;
   }
 
   .net-value-positive {
-    -fx-text-fill: #28a745;
+    -fx-text-fill: t.$success;
     -fx-font-weight: 600;
   }
 
   .net-value-negative {
-    -fx-text-fill: #dc3545;
+    -fx-text-fill: t.$danger;
     -fx-font-weight: 600;
   }
 
@@ -365,7 +365,7 @@
       -fx-border-color: #feb2b2;
 
       .deadline-date {
-        -fx-text-fill: #dc3545;
+        -fx-text-fill: t.$danger;
       }
 
       .deadline-countdown {
@@ -382,7 +382,7 @@
       }
 
       .deadline-countdown {
-        -fx-text-fill: #22c55e;
+        -fx-text-fill: t.$green-500;
       }
     }
   }
