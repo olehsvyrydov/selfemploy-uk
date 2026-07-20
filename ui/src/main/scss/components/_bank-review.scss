@@ -1,0 +1,28 @@
+@use '../tokens' as t;
+
+// Bank import wizard — amount column, coloured by transaction direction. The hex values are the
+// resolved equivalents of the former inline -fx-success / orange text fills.
+.import-amount-income {
+  -fx-text-fill: #28a745;
+  -fx-font-weight: bold;
+}
+
+.import-amount-expense {
+  -fx-text-fill: #fd7e14;
+  -fx-font-weight: bold;
+}
+
+// Transaction review table — cell alignment carried on the cells (a TableColumn is not a scene node,
+// so the former column-level -fx-alignment moves onto the cell factories).
+.cell-align-right {
+  -fx-alignment: CENTER-RIGHT;
+}
+
+.cell-align-center {
+  -fx-alignment: CENTER;
+}
+
+// Settings — HMRC credentials status label when credentials are configured.
+.credentials-configured {
+  -fx-text-fill: #27ae60;
+}

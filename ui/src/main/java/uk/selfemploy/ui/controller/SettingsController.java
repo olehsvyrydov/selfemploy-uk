@@ -16,6 +16,7 @@ import javafx.stage.Modality;
 import uk.selfemploy.ui.util.ClipboardUtil;
 import uk.selfemploy.ui.util.DialogBounds;
 import uk.selfemploy.ui.util.StatusGlyph;
+import uk.selfemploy.ui.util.Stylesheets;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -200,6 +201,11 @@ public class SettingsController implements Initializable, MainController.TaxYear
         // Show the real redirect URI (reflecting HMRC_CALLBACK_PORT) rather than the FXML default.
         if (hmrcRedirectUriField != null) {
             hmrcRedirectUriField.setText(OAuthServiceFactory.getRedirectUri());
+        }
+        // The Settings scene loads main + legal CSS but not the SCSS component sheet, so the
+        // credentials status class is attached to the label directly.
+        if (hmrcCredentialsStatusLabel != null) {
+            Stylesheets.attachComponents(hmrcCredentialsStatusLabel);
         }
         loadHmrcCredentialsStatus();
         initHmrcEnvironmentCombo();
@@ -601,12 +607,12 @@ public class SettingsController implements Initializable, MainController.TaxYear
         try {
             boolean hasCredentials = SqliteDataStore.getInstance().hasHmrcCredentials();
             if (hmrcCredentialsStatusLabel != null) {
+                hmrcCredentialsStatusLabel.getStyleClass().remove("credentials-configured");
                 if (hasCredentials) {
                     hmrcCredentialsStatusLabel.setText("Configured");
-                    hmrcCredentialsStatusLabel.setStyle("-fx-text-fill: #27ae60;");
+                    hmrcCredentialsStatusLabel.getStyleClass().add("credentials-configured");
                 } else {
                     hmrcCredentialsStatusLabel.setText("Not configured — enter your Client ID and Secret above");
-                    hmrcCredentialsStatusLabel.setStyle("");
                 }
             }
             if (clearCredentialsButton != null) {
