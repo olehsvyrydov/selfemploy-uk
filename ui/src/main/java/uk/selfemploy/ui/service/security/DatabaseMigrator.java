@@ -139,11 +139,16 @@ public final class DatabaseMigrator {
 
     private static void cloneToEncrypted(Path plain, Path encTmp, DbKey key)
             throws SQLException, MigrationException {
-        String plainAttach = plain.toAbsolutePath().toString().replace("'", "''");
         try (Connection c = SqlCipherSupport.openEncrypted("jdbc:sqlite:" + encTmp.toAbsolutePath(), key);
              Statement s = c.createStatement()) {
             s.execute("PRAGMA foreign_keys = OFF");
-            s.execute("ATTACH DATABASE '" + plainAttach + "' AS src KEY ''");
+            // The plaintext source path is bound as a parameter (SQLite accepts an expression for the
+            // ATTACH filename) rather than concatenated, so the file path can never break out of the
+            // statement. The empty KEY marks the source as plaintext.
+            try (java.sql.PreparedStatement attach = c.prepareStatement("ATTACH DATABASE ? AS src KEY ''")) {
+                attach.setString(1, plain.toAbsolutePath().toString());
+                attach.execute();
+            }
 
             List<String> tables = new ArrayList<>();
             for (Object[] obj : objects(c, "table")) {
