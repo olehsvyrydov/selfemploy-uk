@@ -1,0 +1,28 @@
+@use '../tokens' as t;
+
+.category-help-popover {
+  -fx-background-color: t.$slate-900;
+  -fx-background-radius: t.$radius-sm;
+  -fx-border-color: t.$slate-600;
+  -fx-border-width: 1;
+  -fx-border-radius: t.$radius-sm;
+  -fx-padding: t.$space-3;
+  -fx-max-width: 260;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0, 0, 5);
+
+  .popover-title {
+    -fx-text-fill: t.$slate-50;
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: bold;
+  }
+
+  .popover-note {
+    -fx-text-fill: t.$slate-50;
+    -fx-font-size: t.$font-xs;
+  }
+
+  .popover-text {
+    -fx-text-fill: t.$slate-300;
+    -fx-font-size: t.$font-xs;
+  }
+}

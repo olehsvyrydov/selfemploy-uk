@@ -1,0 +1,24 @@
+// Design tokens as Sass variables (hex/number literals) for compile-time authoring and colour math.
+// The runtime JavaFX looked-up-colour tokens stay defined in main.css .root; these mirror the values
+// needed by SCSS-authored components. Radius/spacing tokens are unitless (JavaFX numeric properties);
+// font-size tokens carry px, matching the existing stylesheets.
+//
+// During the migration these hex values also still appear literally in the not-yet-migrated hand-written
+// stylesheets (e.g. help.css, notifications.css). Keep them in sync until those files move to SCSS, at
+// which point this file becomes the single source.
+
+// Slate palette — dark popover/toast surfaces (not part of the light main palette)
+$slate-900: #1e293b;
+$slate-600: #475569;
+$slate-300: #cbd5e1;
+$slate-50:  #f8fafc;
+
+// Radius scale
+$radius-sm: 8;
+
+// Spacing scale
+$space-3: 12;
+
+// Type scale
+$font-xs: 12px;
+$font-sm: 13px;

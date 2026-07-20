@@ -85,6 +85,12 @@ scripts/run.sh
 repository rather than the working tree, so changes to those modules are silently ignored until they are
 reinstalled. `scripts/run.sh` installs the upstream modules first, then launches the app.
 
+Stylesheets under `ui/src/main/scss/**` are compiled to `/css/*.css` during the `generate-resources`
+phase by the `scss-compiler` build module (Dart Sass, resolved from Maven Central — no external
+download). A bare `mvn javafx:run` will not pick up SCSS edits, so reinstall the `ui` module first
+(`mvn -pl ui -am install`, or `scripts/run.sh`), since the app resolves `ui` from the local repository
+rather than the working tree.
+
 ### Create Native Installer
 
 ```bash

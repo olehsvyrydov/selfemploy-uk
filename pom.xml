@@ -27,6 +27,7 @@
       only under the "server" profile (see <profiles> below).
     -->
     <modules>
+        <module>scss-compiler</module>
         <module>common</module>
         <module>hmrc-api</module>
         <module>core</module>
@@ -86,6 +87,8 @@
         -->
         <surefire.excludedGroups>e2e,hmrc-sandbox</surefire.excludedGroups>
         <jpackage-maven-plugin.version>1.4.0</jpackage-maven-plugin.version>
+        <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+        <sass-embedded.version>4.4.0</sass-embedded.version>
     </properties>
 
     <dependencyManagement>
@@ -269,6 +272,11 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${exec-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
