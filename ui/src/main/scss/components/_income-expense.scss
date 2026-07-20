@@ -8,7 +8,7 @@
 }
 
 .income-cell-description {
-  -fx-text-fill: t.$secondary;
+  -fx-text-fill: t.$gray-500;
 }
 
 .income-cell-amount-align {
@@ -29,17 +29,17 @@
 }
 
 .expense-date-outside {
-  -fx-background-color: #ffc0c0;
+  -fx-background-color: t.$danger-bg;
 }
 
 .expense-date-future {
-  -fx-background-color: #e0e0e0;
+  -fx-background-color: t.$border;
 }
 
 .income-date-outside {
-  -fx-background-color: #ffc0cb;
+  -fx-background-color: t.$danger-bg;
 }
 
 .income-date-future {
-  -fx-background-color: #e0e0e0;
+  -fx-background-color: t.$border;
 }

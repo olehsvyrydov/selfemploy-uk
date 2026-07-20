@@ -162,12 +162,12 @@
 }
 
 .match-badge-similar {
-    -fx-background-color: #e2d4f0;
+    -fx-background-color: t.$purple-bg;
 }
 
 .match-badge-similar .match-badge-icon,
 .match-badge-similar .match-badge-text {
-    -fx-text-fill: #5a2d82;
+    -fx-text-fill: t.$purple;
 }
 
 /* ===== Table Row Styling ===== */
@@ -184,7 +184,7 @@
 }
 
 .row-similar {
-    -fx-background-color: derive(#e2d4f0, 60%);
+    -fx-background-color: derive(t.$purple-bg, 60%);
 }
 
 /* ===== Amount Styling ===== */
@@ -275,7 +275,7 @@
 
 .import-status-undone {
     -fx-border-width: 0 0 0 4;
-    -fx-border-color: t.$secondary;
+    -fx-border-color: t.$gray-500;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
     -fx-opacity: 0.75;
@@ -301,7 +301,7 @@
 }
 
 .status-icon-undone {
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
 }
 
 .status-icon-locked {
@@ -344,14 +344,14 @@
 }
 
 .import-status-badge.import-status-undone {
-    -fx-background-color: t.$bg-tertiary;
-    -fx-text-fill: t.$secondary;
+    -fx-background-color: t.$gray-150;
+    -fx-text-fill: t.$gray-500;
     -fx-border-width: 0;
 }
 
 .import-status-badge.import-status-locked {
-    -fx-background-color: t.$blue-bg-light;
-    -fx-text-fill: #004085;
+    -fx-background-color: t.$primary-light;
+    -fx-text-fill: t.$primary-dark;
     -fx-border-width: 0;
 }
 
@@ -370,7 +370,7 @@
 /* Import details section */
 .import-details {
     -fx-padding: 12 0 0 0;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1 0 0 0;
 }
 
@@ -683,7 +683,7 @@
 
 .issue-action-btn.issue-severity-medium {
     -fx-background-color: -fx-warning;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
     -fx-border-width: 0;
 }
 
@@ -781,7 +781,7 @@
 
 .comparison-field {
     -fx-padding: 8 0;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 0 0 1 0;
 }
 

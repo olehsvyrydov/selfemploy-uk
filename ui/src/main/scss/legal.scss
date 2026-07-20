@@ -510,7 +510,7 @@
 
 /* ===== Important Notice Boxes ===== */
 .legal-notice-box {
-    -fx-background-color: t.$blue-bg-lighter;
+    -fx-background-color: t.$gray-100;
     -fx-border-color: -fx-primary;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 8 8 0;
@@ -581,7 +581,7 @@
 }
 
 .button-accept:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 
@@ -676,8 +676,8 @@
 
 /* HMRC Submission Disclaimer (AC-2) */
 .submission-disclaimer {
-    -fx-background-color: t.$blue-bg-lighter;
-    -fx-border-color: t.$blue-bootstrap;
+    -fx-background-color: t.$gray-100;
+    -fx-border-color: t.$primary-bright;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
@@ -687,7 +687,7 @@
 .submission-disclaimer-icon {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-text-fill: t.$blue-bootstrap;
+    -fx-text-fill: t.$primary-bright;
     -fx-background-color: rgba(13, 110, 253, 0.15);
     -fx-background-radius: 50;
     -fx-min-width: 32;
@@ -699,7 +699,7 @@
 
 .submission-disclaimer-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #084298;
+    -fx-text-fill: t.$primary-dark;
     -fx-wrap-text: true;
     -fx-line-spacing: 2;
 }
@@ -707,7 +707,7 @@
 .submission-disclaimer-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #084298;
+    -fx-text-fill: t.$primary-dark;
 }
 
 /* Persistent Info Banner - cannot be dismissed (AC-4) */
@@ -728,8 +728,8 @@
  */
 
 .consumer-rights-card {
-    -fx-background-color: t.$bg-secondary;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 12;
     -fx-background-radius: 12;
@@ -758,19 +758,19 @@
 .consumer-rights-title {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: t.$text-primary;
+    -fx-text-fill: t.$text;
 }
 
 .consumer-rights-body {
     -fx-font-size: 14px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-wrap-text: true;
     -fx-line-spacing: 4;
 }
 
 .consumer-rights-emphasis {
     -fx-font-weight: bold;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
 }
 
 /* Recommendation List */
@@ -780,7 +780,7 @@
 
 .consumer-rights-list-item {
     -fx-font-size: 14px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-padding: 4 0;
 }
 
@@ -792,7 +792,7 @@
 
 /* Acknowledgment Statement */
 .consumer-rights-acknowledgment {
-    -fx-background-color: #fff8e6;
+    -fx-background-color: t.$accent-bg;
     -fx-border-color: t.$warning;
     -fx-border-width: 0 0 0 3;
     -fx-background-radius: 0 6 6 0;
@@ -805,7 +805,7 @@
 /* Footer Links */
 .consumer-rights-footer {
     -fx-padding: 16 0 0 0;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1 0 0 0;
 }
 

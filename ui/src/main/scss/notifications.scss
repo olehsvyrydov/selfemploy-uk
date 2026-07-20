@@ -28,7 +28,7 @@
 
 /* Header - Slate Gradient (11px radius to fit inside 12px container with 1px border) */
 .notification-dialog-header {
-    -fx-background-color: linear-gradient(to right, t.$slate-600, t.$slate-500);
+    -fx-background-color: linear-gradient(to right, t.$gray-600, t.$gray-500);
     -fx-background-radius: 11 11 0 0;
 }
 
@@ -74,7 +74,7 @@
 
 .notification-empty-icon {
     -fx-font-size: 48px;
-    -fx-text-fill: t.$slate-300;
+    -fx-text-fill: t.$gray-300;
 }
 
 .notification-empty-title {
@@ -92,16 +92,16 @@
 
 /* Deadline Reminder Card (empty state) */
 .notification-deadline-card {
-    -fx-background-color: t.$slate-50;
+    -fx-background-color: t.$gray-50;
     -fx-background-radius: 8;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 8;
 }
 
 .notification-deadline-icon {
     -fx-font-size: 14px;
-    -fx-text-fill: t.$slate-500;
+    -fx-text-fill: t.$gray-500;
 }
 
 .notification-deadline-text {
@@ -111,21 +111,21 @@
 
 .notification-deadline-subtext {
     -fx-font-size: 12px;
-    -fx-text-fill: t.$gray-400;
+    -fx-text-fill: t.$gray-450;
 }
 
 /* ===== Notification Items (in dialog) ===== */
 .notification-item-unread {
-    -fx-background-color: #f0f9ff;
+    -fx-background-color: t.$gray-100;
 }
 
 .notification-item-unread:hover {
-    -fx-background-color: #e0f2fe;
+    -fx-background-color: t.$primary-light;
 }
 
 /* Unread Indicator Dot */
 .notification-unread-dot {
-    -fx-background-color: #0ea5e9;
+    -fx-background-color: t.$sky;
     -fx-background-radius: 4;
     -fx-min-width: 8;
     -fx-min-height: 8;
@@ -144,35 +144,35 @@
 }
 
 .notification-type-warning {
-    -fx-background-color: t.$amber-100;
+    -fx-background-color: t.$warning-bg;
 }
 
 .notification-type-warning .notification-type-icon-text {
-    -fx-text-fill: #b45309;
+    -fx-text-fill: t.$amber-dark;
 }
 
 .notification-type-info {
-    -fx-background-color: #e0f2fe;
+    -fx-background-color: t.$primary-light;
 }
 
 .notification-type-info .notification-type-icon-text {
-    -fx-text-fill: t.$sky-800;
+    -fx-text-fill: t.$sky;
 }
 
 .notification-type-success {
-    -fx-background-color: t.$teal-50;
+    -fx-background-color: t.$teal-bg;
 }
 
 .notification-type-success .notification-type-icon-text {
-    -fx-text-fill: t.$teal-700;
+    -fx-text-fill: t.$teal;
 }
 
 .notification-type-calendar {
-    -fx-background-color: #f1f5f9;
+    -fx-background-color: t.$gray-100;
 }
 
 .notification-type-calendar .notification-type-icon-text {
-    -fx-text-fill: t.$slate-600;
+    -fx-text-fill: t.$gray-600;
 }
 
 .notification-type-icon-text {
@@ -195,7 +195,7 @@
 
 .notification-item-time {
     -fx-font-size: 11px;
-    -fx-text-fill: t.$gray-400;
+    -fx-text-fill: t.$gray-450;
 }
 
 /* ===== Dialog Buttons ===== */
@@ -208,7 +208,7 @@
 
 /* Primary Button (Teal) */
 .notification-btn-primary {
-    -fx-background-color: t.$teal-700;
+    -fx-background-color: t.$teal;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -218,12 +218,12 @@
 }
 
 .notification-btn-primary:hover {
-    -fx-background-color: t.$teal-500;
+    -fx-background-color: t.$teal;
 }
 
 .notification-btn-primary:focused {
-    -fx-background-color: t.$teal-500;
-    -fx-border-color: t.$teal-700;
+    -fx-background-color: t.$teal;
+    -fx-border-color: t.$teal;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
@@ -231,24 +231,24 @@
 /* Secondary Button (Outline) */
 .notification-btn-secondary {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$slate-600;
+    -fx-text-fill: t.$gray-600;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
     -fx-padding: 10 16;
     -fx-background-radius: 6;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-cursor: hand;
 }
 
 .notification-btn-secondary:hover {
-    -fx-background-color: t.$slate-50;
-    -fx-border-color: t.$slate-300;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$gray-300;
 }
 
 .notification-btn-secondary:focused {
-    -fx-border-color: t.$teal-700;
+    -fx-border-color: t.$teal;
     -fx-border-width: 2;
 }
 
@@ -268,12 +268,12 @@
 }
 
 .notification-scroll > .scroll-bar > .thumb {
-    -fx-background-color: t.$slate-300;
+    -fx-background-color: t.$gray-300;
     -fx-background-radius: 4;
 }
 
 .notification-scroll > .scroll-bar > .thumb:hover {
-    -fx-background-color: t.$slate-400;
+    -fx-background-color: t.$gray-450;
 }
 
 /* ===== Notification Bell ===== */
@@ -289,11 +289,11 @@
 
 .bell-icon {
     -fx-font-size: 20px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
 }
 
 .notification-bell:hover .bell-icon {
-    -fx-text-fill: t.$blue-600;
+    -fx-text-fill: t.$primary-bright;
 }
 
 /* Badge */
@@ -315,7 +315,7 @@
 
 /* Badge variants */
 .notification-badge.low-priority {
-    -fx-background-color: t.$secondary;
+    -fx-background-color: t.$gray-500;
 }
 
 .notification-badge.medium-priority {
@@ -330,13 +330,13 @@
 .notification-panel {
     -fx-background-color: white;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 24, 0, -4, 4);
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 0 0 0 1;
 }
 
 .notification-panel-header {
     -fx-background-color: white;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 0 0 1 0;
 }
 
@@ -348,7 +348,7 @@
 
 .button-link {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$blue-600;
+    -fx-text-fill: t.$primary-bright;
     -fx-font-size: 13px;
     -fx-cursor: hand;
     -fx-padding: 4 8;
@@ -360,7 +360,7 @@
 
 .settings-button {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-font-size: 16px;
     -fx-padding: 6 8;
     -fx-background-radius: 4;
@@ -380,7 +380,7 @@
 
 .filter-tab {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-padding: 8 16;
     -fx-background-radius: 6;
     -fx-font-size: 13px;
@@ -388,12 +388,12 @@
 }
 
 .filter-tab:hover {
-    -fx-background-color: t.$gray-200;
+    -fx-background-color: t.$gray-150;
 }
 
 .filter-tab:selected {
-    -fx-background-color: #dbeafe;
-    -fx-text-fill: t.$blue-600;
+    -fx-background-color: t.$primary-light;
+    -fx-text-fill: t.$primary-bright;
     -fx-font-weight: bold;
 }
 
@@ -415,7 +415,7 @@
 .notification-item {
     -fx-background-color: white;
     -fx-padding: 16;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 0 0 1 0;
     -fx-cursor: hand;
 }
@@ -426,31 +426,31 @@
 
 /* Priority-based left border */
 .notification-item.priority-low {
-    -fx-border-color: t.$secondary t.$gray-200 t.$gray-200 t.$gray-200;
+    -fx-border-color: t.$gray-500 t.$gray-150 t.$gray-150 t.$gray-150;
     -fx-border-width: 0 0 1 4;
 }
 
 .notification-item.priority-medium {
-    -fx-border-color: t.$accent t.$gray-200 t.$gray-200 t.$gray-200;
+    -fx-border-color: t.$accent t.$gray-150 t.$gray-150 t.$gray-150;
     -fx-border-width: 0 0 1 4;
-    -fx-background-color: #fff9f5;
+    -fx-background-color: t.$white;
 }
 
 .notification-item.priority-high {
-    -fx-border-color: t.$danger t.$gray-200 t.$gray-200 t.$gray-200;
+    -fx-border-color: t.$danger t.$gray-150 t.$gray-150 t.$gray-150;
     -fx-border-width: 0 0 1 4;
-    -fx-background-color: #fff5f5;
+    -fx-background-color: t.$gray-50;
 }
 
 .notification-item.priority-critical {
-    -fx-border-color: t.$danger t.$gray-200 t.$gray-200 t.$gray-200;
+    -fx-border-color: t.$danger t.$gray-150 t.$gray-150 t.$gray-150;
     -fx-border-width: 0 0 1 4;
     -fx-background-color: t.$danger-bg;
 }
 
 /* Unread state */
 .notification-item.unread {
-    -fx-background-color: t.$blue-bg-lighter;
+    -fx-background-color: t.$gray-100;
 }
 
 /* ===== Priority Indicator ===== */
@@ -471,12 +471,12 @@
 }
 
 .priority-low .priority-icon {
-    -fx-background-color: t.$gray-200;
-    -fx-text-fill: t.$secondary;
+    -fx-background-color: t.$gray-150;
+    -fx-text-fill: t.$gray-500;
 }
 
 .priority-medium .priority-icon {
-    -fx-background-color: t.$orange-bg;
+    -fx-background-color: t.$accent-bg;
     -fx-text-fill: t.$accent;
 }
 
@@ -502,18 +502,18 @@
     -fx-min-height: 8;
     -fx-max-width: 8;
     -fx-max-height: 8;
-    -fx-background-color: t.$blue-600;
+    -fx-background-color: t.$primary-bright;
     -fx-background-radius: 4;
 }
 
 .notification-message {
     -fx-font-size: 13px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
 }
 
 .notification-time {
     -fx-font-size: 12px;
-    -fx-text-fill: t.$gray-400;
+    -fx-text-fill: t.$gray-450;
 }
 
 /* ===== Notification Actions ===== */
@@ -522,7 +522,7 @@
 }
 
 .button-primary-small {
-    -fx-background-color: t.$blue-600;
+    -fx-background-color: t.$primary-bright;
     -fx-text-fill: white;
     -fx-font-size: 12px;
     -fx-padding: 6 14;
@@ -531,15 +531,15 @@
 }
 
 .button-primary-small:hover {
-    -fx-background-color: #1d4ed8;
+    -fx-background-color: t.$primary-bright;
 }
 
 .button-secondary-small {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
     -fx-font-size: 12px;
     -fx-padding: 6 14;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
@@ -553,7 +553,7 @@
 /* ===== Dismiss Button ===== */
 .dismiss-button {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$gray-400;
+    -fx-text-fill: t.$gray-450;
     -fx-font-size: 14px;
     -fx-padding: 4 8;
     -fx-background-radius: 4;
@@ -577,7 +577,7 @@
 
 .empty-icon {
     -fx-font-size: 48px;
-    -fx-text-fill: t.$gray-400;
+    -fx-text-fill: t.$gray-450;
 }
 
 .empty-title {
@@ -588,19 +588,19 @@
 
 .empty-subtitle {
     -fx-font-size: 14px;
-    -fx-text-fill: t.$secondary;
+    -fx-text-fill: t.$gray-500;
 }
 
 /* ===== Panel Footer ===== */
 .notification-panel-footer {
     -fx-background-color: t.$gray-50;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1 0 0 0;
 }
 
 /* ===== Toggle Switch ===== */
 .toggle-switch {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-background-radius: 12;
     -fx-min-width: 48;
     -fx-max-width: 48;
@@ -611,13 +611,13 @@
 }
 
 .toggle-switch:selected {
-    -fx-background-color: t.$green-500;
+    -fx-background-color: t.$success;
 }
 
 /* ===== Snooze Menu ===== */
 .snooze-menu {
     -fx-background-color: white;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 2);

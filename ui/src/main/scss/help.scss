@@ -12,15 +12,15 @@
 /* ===== Help Page Layout ===== */
 .help-scroll {
     -fx-background-color: transparent;
-    -fx-background-color: t.$bg-secondary;
+    -fx-background-color: t.$gray-50;
 }
 
 .help-scroll > .viewport {
-    -fx-background-color: t.$bg-secondary;
+    -fx-background-color: t.$gray-50;
 }
 
 .help-container {
-    -fx-background-color: t.$bg-secondary;
+    -fx-background-color: t.$gray-50;
     -fx-max-width: 1200;
 }
 
@@ -35,7 +35,7 @@
 
 .help-quick-link {
     -fx-background-color: white;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -46,9 +46,9 @@
 }
 
 .help-quick-link:hover {
-    -fx-background-color: t.$slate-50;
-    -fx-border-color: t.$teal-700;
-    -fx-text-fill: t.$teal-700;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$teal;
+    -fx-text-fill: t.$teal;
 }
 
 .help-quick-link:focused {
@@ -58,7 +58,7 @@
 
 /* ===== User Guide Button - Prominent call to action ===== */
 .user-guide-btn {
-    -fx-background-color: linear-gradient(to right, #7c3aed, #8b5cf6);
+    -fx-background-color: linear-gradient(to right, t.$purple, t.$purple);
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
@@ -69,11 +69,11 @@
 }
 
 .user-guide-btn:hover {
-    -fx-background-color: linear-gradient(to right, #6d28d9, #7c3aed);
+    -fx-background-color: linear-gradient(to right, t.$purple, t.$purple);
 }
 
 .user-guide-btn:focused {
-    -fx-border-color: #4c1d95;
+    -fx-border-color: t.$purple;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
@@ -81,7 +81,7 @@
 /* ===== Help Topic Rows - Settings card style ===== */
 .help-topic-row {
     -fx-background-color: white;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -90,7 +90,7 @@
 }
 
 .help-topic-row:hover {
-    -fx-background-color: t.$slate-50;
+    -fx-background-color: t.$gray-50;
     -fx-border-color: t.$gray-300;
 }
 
@@ -108,28 +108,28 @@
 
 /* Badge color variants - muted professional palette */
 .badge-teal {
-    -fx-background-color: t.$teal-50;
-    -fx-text-fill: t.$teal-700;
+    -fx-background-color: t.$teal-bg;
+    -fx-text-fill: t.$teal;
 }
 
 .badge-amber {
-    -fx-background-color: t.$amber-100;
-    -fx-text-fill: #b45309;
+    -fx-background-color: t.$warning-bg;
+    -fx-text-fill: t.$amber-dark;
 }
 
 .badge-sky {
-    -fx-background-color: #e0f2fe;
-    -fx-text-fill: t.$sky-800;
+    -fx-background-color: t.$primary-light;
+    -fx-text-fill: t.$sky;
 }
 
 .badge-slate {
-    -fx-background-color: #f1f5f9;
-    -fx-text-fill: t.$slate-600;
+    -fx-background-color: t.$gray-100;
+    -fx-text-fill: t.$gray-600;
 }
 
 .badge-violet {
-    -fx-background-color: #ede9fe;
-    -fx-text-fill: #6d28d9;
+    -fx-background-color: t.$purple-bg;
+    -fx-text-fill: t.$purple;
 }
 
 /* Topic Content */
@@ -151,13 +151,13 @@
 }
 
 .help-topic-row:hover .help-topic-chevron {
-    -fx-text-fill: t.$gray-400;
+    -fx-text-fill: t.$gray-450;
 }
 
 /* ===== Support Section ===== */
 .help-support-card {
     -fx-background-color: white;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -170,8 +170,8 @@
 
 /* ===== Disclaimer - Left border accent (matches Settings) ===== */
 .help-disclaimer {
-    -fx-background-color: #fffbeb;
-    -fx-border-color: #fbbf24;
+    -fx-background-color: t.$white;
+    -fx-border-color: t.$warning;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 8 8 0;
     -fx-padding: 16 20;
@@ -180,12 +180,12 @@
 .help-disclaimer .disclaimer-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #92400e;
+    -fx-text-fill: t.$amber-dark;
 }
 
 .help-disclaimer .disclaimer-text {
     -fx-font-size: 13px;
-    -fx-text-fill: #78350f;
+    -fx-text-fill: t.$amber-dark;
 }
 
 /* ===== Help Dialog Styles (Stage-based, matches NotificationDialog) ===== */
@@ -204,7 +204,7 @@
 
 /* Header - Gradient (11px radius to fit inside 12px container with 1px border) */
 .help-dialog-header {
-    -fx-background-color: linear-gradient(to right, t.$slate-600, t.$slate-500);
+    -fx-background-color: linear-gradient(to right, t.$gray-600, t.$gray-500);
     -fx-background-radius: 11 11 0 0;
 }
 
@@ -272,12 +272,12 @@
 }
 
 .help-scroll-pane > .scroll-bar > .thumb {
-    -fx-background-color: t.$slate-300;
+    -fx-background-color: t.$gray-300;
     -fx-background-radius: 4;
 }
 
 .help-scroll-pane > .scroll-bar > .thumb:hover {
-    -fx-background-color: t.$slate-400;
+    -fx-background-color: t.$gray-450;
 }
 
 /* Footer buttons area */
@@ -290,7 +290,7 @@
 
 /* Primary Button (Teal - matches NotificationDialog) */
 .help-btn-primary {
-    -fx-background-color: t.$teal-700;
+    -fx-background-color: t.$teal;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -300,35 +300,35 @@
 }
 
 .help-btn-primary:hover {
-    -fx-background-color: t.$teal-500;
+    -fx-background-color: t.$teal;
 }
 
 .help-btn-primary:focused {
-    -fx-background-color: t.$teal-500;
-    -fx-border-color: t.$teal-700;
+    -fx-background-color: t.$teal;
+    -fx-border-color: t.$teal;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
 
 .help-btn-secondary {
     -fx-background-color: transparent;
-    -fx-text-fill: t.$bs-gray-700;
+    -fx-text-fill: t.$gray-600;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
     -fx-padding: 10 24;
     -fx-background-radius: 6;
-    -fx-border-color: t.$bs-gray-400;
+    -fx-border-color: t.$gray-300;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-cursor: hand;
 }
 
 .help-btn-secondary:hover {
-    -fx-background-color: #f1f3f5;
+    -fx-background-color: t.$gray-100;
 }
 
 .help-btn-secondary:focused {
-    -fx-border-color: t.$teal-700;
+    -fx-border-color: t.$teal;
     -fx-border-width: 2;
 }
 
@@ -362,11 +362,11 @@
 }
 
 .help-dialog-close-btn:hover {
-    -fx-background-color: t.$gray-200;
+    -fx-background-color: t.$gray-150;
 }
 
 .help-dialog-close-btn:focused {
-    -fx-background-color: t.$gray-200;
+    -fx-background-color: t.$gray-150;
     -fx-border-color: t.$primary;
     -fx-border-width: 2;
     -fx-border-radius: 6;
@@ -385,7 +385,7 @@
 
 .help-icon-circle {
     -fx-background-color: transparent;
-    -fx-border-color: t.$bs-gray-500;
+    -fx-border-color: t.$gray-400;
     -fx-border-width: 1.5;
     -fx-border-radius: 10;
     -fx-background-radius: 10;
@@ -399,7 +399,7 @@
 .help-icon-text {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-text-fill: t.$bs-gray-500;
+    -fx-text-fill: t.$gray-400;
 }
 
 /* ===== External Browser Toast Notification ===== */
@@ -408,7 +408,7 @@
 .external-browser-toast {
     -fx-background-color: rgba(51, 65, 85, 0.95);
     -fx-background-radius: 8;
-    -fx-border-color: t.$slate-600;
+    -fx-border-color: t.$gray-600;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-padding: 12 16;
@@ -417,41 +417,41 @@
 
 .external-browser-toast-icon {
     -fx-font-size: 14px;
-    -fx-text-fill: t.$slate-400;
+    -fx-text-fill: t.$gray-450;
 }
 
 .external-browser-toast-text {
     -fx-font-size: 13px;
     -fx-font-weight: 500;
-    -fx-text-fill: t.$slate-50;
+    -fx-text-fill: t.$gray-50;
 }
 
 .external-browser-toast-url {
     -fx-font-size: 11px;
-    -fx-text-fill: t.$slate-400;
+    -fx-text-fill: t.$gray-450;
 }
 
 /* ===== Dialog Header Colors (for help topic dialogs) ===== */
 /* These match the badge colors for visual consistency */
 
 .dialog-header-teal {
-    -fx-background-color: linear-gradient(to right, t.$teal-700, t.$teal-500);
+    -fx-background-color: linear-gradient(to right, t.$teal, t.$teal);
 }
 
 .dialog-header-amber {
-    -fx-background-color: linear-gradient(to right, #b45309, t.$amber-600);
+    -fx-background-color: linear-gradient(to right, t.$amber-dark, t.$accent);
 }
 
 .dialog-header-sky {
-    -fx-background-color: linear-gradient(to right, t.$sky-800, #0ea5e9);
+    -fx-background-color: linear-gradient(to right, t.$sky, t.$sky);
 }
 
 .dialog-header-slate {
-    -fx-background-color: linear-gradient(to right, t.$slate-600, t.$slate-500);
+    -fx-background-color: linear-gradient(to right, t.$gray-600, t.$gray-500);
 }
 
 .dialog-header-violet {
-    -fx-background-color: linear-gradient(to right, #7c3aed, #8b5cf6);
+    -fx-background-color: linear-gradient(to right, t.$purple, t.$purple);
 }
 
 /* ===== About Section ===== */
@@ -461,7 +461,7 @@
 
 .help-about-card {
     -fx-background-color: white;
-    -fx-border-color: t.$gray-200;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
@@ -486,7 +486,7 @@
 
 .about-license {
     -fx-font-size: 12px;
-    -fx-text-fill: t.$gray-400;
+    -fx-text-fill: t.$gray-450;
     -fx-font-style: italic;
 }
 
@@ -504,12 +504,12 @@
 }
 
 .oauth-dialog-header {
-    -fx-background-color: linear-gradient(to right, t.$blue-800, t.$blue-500);
+    -fx-background-color: linear-gradient(to right, t.$primary-bright, t.$primary);
     -fx-background-radius: 11 11 0 0;
 }
 
 .oauth-info-row-icon-wrapper {
-    -fx-background-color: #eff6ff;
+    -fx-background-color: t.$gray-100;
     -fx-background-radius: 6;
     -fx-min-width: 28;
     -fx-min-height: 28;
@@ -532,7 +532,7 @@
 }
 
 .oauth-btn-continue {
-    -fx-background-color: t.$blue-800;
+    -fx-background-color: t.$primary-bright;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -542,12 +542,12 @@
 }
 
 .oauth-btn-continue:hover {
-    -fx-background-color: #1d4ed8;
+    -fx-background-color: t.$primary-bright;
 }
 
 .oauth-btn-continue:focused {
-    -fx-background-color: #1d4ed8;
-    -fx-border-color: t.$blue-800;
+    -fx-background-color: t.$primary-bright;
+    -fx-border-color: t.$primary-bright;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
@@ -562,19 +562,19 @@
 }
 
 .oauth-btn-cancel:hover {
-    -fx-background-color: t.$gray-200;
+    -fx-background-color: t.$gray-150;
 }
 
 .oauth-btn-cancel:focused {
-    -fx-background-color: t.$gray-200;
-    -fx-border-color: t.$blue-800;
+    -fx-background-color: t.$gray-150;
+    -fx-border-color: t.$primary-bright;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
 
 /* Blue header gradient variant */
 .dialog-header-blue {
-    -fx-background-color: linear-gradient(to right, t.$blue-800, t.$blue-500);
+    -fx-background-color: linear-gradient(to right, t.$primary-bright, t.$primary);
 }
 
 /* Warning dialog footer with bottom rounded corners to fit inside 12px container border */
@@ -597,7 +597,7 @@
 }
 
 .hmrc-success-dialog-header {
-    -fx-background-color: linear-gradient(to right, t.$green-700, t.$green-500);
+    -fx-background-color: linear-gradient(to right, t.$success-dark, t.$success);
     -fx-background-radius: 11 11 0 0;
 }
 
@@ -618,7 +618,7 @@
 }
 
 .hmrc-btn-success-ok {
-    -fx-background-color: t.$green-700;
+    -fx-background-color: t.$success-dark;
     -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: 500;
@@ -629,12 +629,12 @@
 }
 
 .hmrc-btn-success-ok:hover {
-    -fx-background-color: t.$green-600;
+    -fx-background-color: t.$success;
 }
 
 .hmrc-btn-success-ok:focused {
-    -fx-background-color: t.$green-600;
-    -fx-border-color: t.$green-700;
+    -fx-background-color: t.$success;
+    -fx-border-color: t.$success-dark;
     -fx-border-width: 2;
     -fx-border-radius: 6;
 }
@@ -653,7 +653,7 @@
 }
 
 .hmrc-error-dialog-header {
-    -fx-background-color: linear-gradient(to right, #b91c1c, #ef4444);
+    -fx-background-color: linear-gradient(to right, t.$danger-dark, t.$danger);
     -fx-background-radius: 11 11 0 0;
 }
 
@@ -697,12 +697,12 @@
 
 /* Green header gradient variant */
 .dialog-header-green {
-    -fx-background-color: linear-gradient(to right, t.$green-700, t.$green-500);
+    -fx-background-color: linear-gradient(to right, t.$success-dark, t.$success);
 }
 
 /* Red header gradient variant */
 .dialog-header-red {
-    -fx-background-color: linear-gradient(to right, #b91c1c, #ef4444);
+    -fx-background-color: linear-gradient(to right, t.$danger-dark, t.$danger);
 }
 
 /* ===== HMRC Registration Guide Dialog ===== */
@@ -713,8 +713,8 @@
 }
 
 .guide-copy-field {
-    -fx-background-color: t.$bg-secondary;
-    -fx-border-color: t.$gray-200;
+    -fx-background-color: t.$gray-50;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -722,12 +722,12 @@
     -fx-font-size: 12px;
     -fx-text-fill: t.$gray-900;
     -fx-padding: 8 10;
-    -fx-highlight-fill: t.$teal-50;
-    -fx-highlight-text-fill: t.$teal-700;
+    -fx-highlight-fill: t.$teal-bg;
+    -fx-highlight-text-fill: t.$teal;
 }
 
 .guide-copy-field:focused {
-    -fx-border-color: t.$teal-700;
+    -fx-border-color: t.$teal;
     -fx-background-color: white;
 }
 
@@ -751,8 +751,8 @@
 }
 
 .guide-step-check:selected > .box {
-    -fx-background-color: t.$teal-700;
-    -fx-border-color: t.$teal-700;
+    -fx-background-color: t.$teal;
+    -fx-border-color: t.$teal;
 }
 
 .guide-step-check:selected > .box > .mark {
@@ -764,7 +764,7 @@
 }
 
 .guide-step-check:focused > .box {
-    -fx-border-color: t.$teal-700;
+    -fx-border-color: t.$teal;
     -fx-border-width: 2;
 }
 
@@ -795,11 +795,11 @@
 .help-md-list { -fx-padding: 2 0 2 4; }
 .help-md-list-marker { -fx-text-fill: t.$gray-500; -fx-font-size: 14px; }
 .help-md-list-text { -fx-line-spacing: 3; }
-.help-md-link { -fx-text-fill: t.$teal-700; -fx-font-size: 14px; -fx-padding: 0; -fx-border-width: 0; }
+.help-md-link { -fx-text-fill: t.$teal; -fx-font-size: 14px; -fx-padding: 0; -fx-border-width: 0; }
 .help-md-link:hover { -fx-underline: true; }
-.help-md-rule { -fx-background-color: t.$gray-200; -fx-pref-height: 1; -fx-max-height: 1; }
-.help-md-table { -fx-hgap: 0; -fx-vgap: 0; -fx-border-color: t.$gray-200; -fx-border-width: 1; }
-.help-md-th { -fx-padding: 8 10; -fx-background-color: t.$bg-secondary; -fx-border-color: t.$gray-200; -fx-border-width: 0 1 1 0; }
+.help-md-rule { -fx-background-color: t.$gray-150; -fx-pref-height: 1; -fx-max-height: 1; }
+.help-md-table { -fx-hgap: 0; -fx-vgap: 0; -fx-border-color: t.$gray-150; -fx-border-width: 1; }
+.help-md-th { -fx-padding: 8 10; -fx-background-color: t.$gray-50; -fx-border-color: t.$gray-150; -fx-border-width: 0 1 1 0; }
 .help-md-th .text { -fx-font-weight: 700; -fx-fill: t.$gray-900; -fx-font-size: 13px; }
-.help-md-td { -fx-padding: 8 10; -fx-border-color: t.$gray-200; -fx-border-width: 0 1 1 0; }
+.help-md-td { -fx-padding: 8 10; -fx-border-color: t.$gray-150; -fx-border-width: 0 1 1 0; }
 .help-md-td .text { -fx-fill: t.$gray-700; -fx-font-size: 13px; }

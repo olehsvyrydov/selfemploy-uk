@@ -222,7 +222,7 @@
 /* ===== Error Message ===== */
 .receipt-error {
     -fx-background-color: t.$danger-bg;
-    -fx-border-color: #f5c6cb;
+    -fx-border-color: t.$danger-bg;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;

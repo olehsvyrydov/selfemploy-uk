@@ -52,7 +52,7 @@
 
 /* ===== Privacy Assurance Box ===== */
 .privacy-assurance-box {
-    -fx-background-color: #e8f5e9;
+    -fx-background-color: t.$success-bg;
     -fx-border-color: -fx-success;
     -fx-border-width: 0 0 0 4;
     -fx-background-radius: 0 8 8 0;
@@ -61,19 +61,19 @@
 
 .privacy-icon {
     -fx-font-size: 20px;
-    -fx-text-fill: #2e7d32;
+    -fx-text-fill: t.$success-dark;
     -fx-font-weight: bold;
 }
 
 .privacy-assurance-title {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1b5e20;
+    -fx-text-fill: t.$success-text;
 }
 
 .privacy-assurance-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #2e7d32;
+    -fx-text-fill: t.$success-dark;
     -fx-wrap-text: true;
 }
 

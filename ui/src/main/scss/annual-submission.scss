@@ -277,7 +277,7 @@
 }
 
 .button-primary:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
     -fx-effect: none;
 }
@@ -314,7 +314,7 @@
 }
 
 .button-warning:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 
@@ -461,7 +461,7 @@
 }
 
 .button-submit-hmrc:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
     -fx-effect: none;
 }
@@ -521,20 +521,20 @@
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
     -fx-background-radius: 0 8 8 0;
-    -fx-background-color: #f8fdf9;
+    -fx-background-color: t.$white;
 }
 
 /* Row 1 and 2 are HMRC official - slightly emphasized */
 .declaration-row.hmrc-official {
-    -fx-background-color: #fffbf0;
+    -fx-background-color: t.$white;
 }
 
 .declaration-row.hmrc-official:hover {
-    -fx-background-color: derive(#fffbf0, -3%);
+    -fx-background-color: derive(t.$white, -3%);
 }
 
 .declaration-row.hmrc-official.checked {
-    -fx-background-color: #f8fdf9;
+    -fx-background-color: t.$white;
 }
 
 /* ===== Progress Counter ===== */
@@ -581,6 +581,6 @@
 
 .declaration-timestamp-note {
     -fx-font-size: 12px;
-    -fx-text-fill: #2e7d32;
+    -fx-text-fill: t.$success-dark;
     -fx-font-style: italic;
 }

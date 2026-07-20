@@ -170,7 +170,7 @@
 /* ===== Line Items ===== */
 .line-item {
     -fx-padding: 8 0;
-    -fx-border-color: t.$bg-tertiary;
+    -fx-border-color: t.$gray-150;
     -fx-border-width: 0 0 1 0;
     -fx-border-style: dashed;
 }
@@ -335,7 +335,7 @@
 }
 
 .button-submit:disabled {
-    -fx-background-color: t.$bs-gray-500;
+    -fx-background-color: t.$gray-400;
     -fx-cursor: default;
 }
 
@@ -346,7 +346,7 @@
  */
 
 .class2-ni-card {
-    -fx-background-color: t.$blue-bg-lighter;
+    -fx-background-color: t.$gray-100;
     -fx-border-color: t.$primary;
     -fx-border-width: 0 0 0 4;
     -fx-border-radius: 0 8 8 0;
@@ -378,7 +378,7 @@
 }
 
 .class2-ni-title-badge {
-    -fx-background-color: #6366f1;
+    -fx-background-color: t.$primary-bright;
     -fx-text-fill: white;
     -fx-font-size: 10px;
     -fx-font-weight: bold;
@@ -396,7 +396,7 @@
 /* Rates Box */
 .class2-rates-box {
     -fx-background-color: white;
-    -fx-border-color: #e2e8f0;
+    -fx-border-color: t.$border;
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
@@ -429,19 +429,19 @@
 }
 
 .pension-insight-icon {
-    -fx-text-fill: #f59e0b;
+    -fx-text-fill: t.$warning;
     -fx-font-size: 16px;
 }
 
 .pension-insight-title {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-text-fill: #92400e;
+    -fx-text-fill: t.$amber-dark;
 }
 
 .pension-insight-text {
     -fx-font-size: 14px;
-    -fx-text-fill: #78716c;
+    -fx-text-fill: t.$gray-500;
     -fx-wrap-text: true;
     -fx-line-spacing: 2;
 }
@@ -459,8 +459,8 @@
 
 /* Voluntary Badge */
 .voluntary-badge {
-    -fx-background-color: #e0e7ff;
-    -fx-text-fill: #4338ca;
+    -fx-background-color: t.$purple-bg;
+    -fx-text-fill: t.$purple;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-padding: 3 8;
