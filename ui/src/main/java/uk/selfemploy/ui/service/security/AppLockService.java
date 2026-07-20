@@ -3,16 +3,21 @@ package uk.selfemploy.ui.service.security;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 
+import uk.selfemploy.ui.service.AppDataDirectory;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.LongSupplier;
+import java.util.logging.Logger;
 
 /**
  * Owns the app-lock: the passphrase-derived protection of the database key. It never stores the
@@ -20,11 +25,13 @@ import java.util.function.LongSupplier;
  *
  * <p>Key hierarchy: {@code passphrase → Argon2id(salt) → key-encryption-key (KEK) → AES-256-GCM
  * unwraps a random database key}. Enabling protection generates the database key once; the passphrase
- * slot and a one-time recovery code each wrap that same key, so changing the passphrase re-wraps one
- * 32-byte secret instead of re-encrypting the database. There is no escrow and no backdoor: losing the
+ * slot and a recovery code each wrap that same key, so changing the passphrase re-wraps one 32-byte
+ * secret instead of re-encrypting the database. There is no escrow and no backdoor: losing the
  * passphrase and the recovery code means the data cannot be recovered.
  */
 public final class AppLockService {
+
+    private static final Logger LOG = Logger.getLogger(AppLockService.class.getName());
 
     // OWASP-current Argon2id parameters (2026): 64 MiB memory, 3 iterations, single lane.
     private static final int ARGON2_MEMORY_KIB = 65536;
@@ -35,11 +42,14 @@ public final class AppLockService {
     private static final int NONCE_LEN = 12;
     private static final int GCM_TAG_BITS = 128;
 
-    // Rate limiting: no delay for the first few tries, then escalating and capped.
+    // Rate limiting: no delay for the first few tries, then escalating and capped, persisted across
+    // restarts so relaunching cannot reset the throttle.
     private static final int FREE_ATTEMPTS = 3;
+    private static final int MAX_SHIFT = 20;    // guards the 1000L << shift against overflow
     private static final long MAX_DELAY_MILLIS = 30_000;
 
     private final Path vaultPath;
+    private final Path lockStatePath;
     private final LongSupplier nowMillis;
     private final SecureRandom random = new SecureRandom();
 
@@ -52,7 +62,9 @@ public final class AppLockService {
 
     AppLockService(Path vaultPath, LongSupplier nowMillis) {
         this.vaultPath = vaultPath;
+        this.lockStatePath = vaultPath.resolveSibling(vaultPath.getFileName() + ".lockstate");
         this.nowMillis = nowMillis;
+        loadLockState();
     }
 
     /** Whether the database is protected by a passphrase (a vault file exists). */
@@ -61,42 +73,70 @@ public final class AppLockService {
             return Vault.read(vaultPath) != null;
         } catch (IOException e) {
             // A present-but-unreadable vault still means protection is on; unlock will surface the error.
-            return java.nio.file.Files.exists(vaultPath);
+            return Files.exists(vaultPath);
         }
     }
 
-    /** The result of enabling protection: the database key to open/migrate with, and the one-time code. */
-    public record EnableResult(DbKey dbKey, String recoveryCode) {}
+    // ==================== Enable (two-phase) ====================
 
     /**
-     * Generates a fresh database key, protects it with the passphrase and a new recovery code, and writes
-     * the vault. Does NOT migrate the database — the caller migrates using the returned key, then this
-     * vault takes effect on the next open. The recovery code is shown once and never stored in the clear.
+     * A prepared-but-not-yet-committed protection: the vault is built in memory and only written to
+     * disk by {@link #commit()}. This lets the UI show and confirm the recovery code <em>before</em>
+     * anything is persisted, so abandoning the flow never leaves a half-enabled, un-recoverable state.
      */
-    public EnableResult enableProtection(char[] passphrase) throws IOException {
+    public final class PendingProtection {
+        private final Vault vault;
+        private final String recoveryCode;
+        private final byte[] dbKey;    // kept only to zero it after commit; never leaves this class
+
+        private PendingProtection(Vault vault, String recoveryCode, byte[] dbKey) {
+            this.vault = vault;
+            this.recoveryCode = recoveryCode;
+            this.dbKey = dbKey;
+        }
+
+        /** The one-time-displayed recovery code to show the user. */
+        public String recoveryCode() {
+            return recoveryCode;
+        }
+
+        /** Writes the vault to disk, enabling protection from the next launch. Idempotent-safe. */
+        public void commit() throws IOException {
+            try {
+                vault.write(vaultPath);
+            } finally {
+                Arrays.fill(dbKey, (byte) 0);
+            }
+        }
+    }
+
+    /**
+     * Builds the vault, database key and recovery code in memory without writing anything. The caller
+     * shows the recovery code and, once the user confirms it is saved, calls {@link PendingProtection#commit()}.
+     * The database is encrypted on the next launch (see the app-lock gate), so no key is returned here.
+     */
+    public PendingProtection prepareProtection(char[] passphrase) {
         byte[] dbKey = new byte[KEY_LEN];
         random.nextBytes(dbKey);
 
         char[] recovery = generateRecoveryCode();
-        Vault.Slot passphraseSlot = wrapSlot(Vault.SLOT_PASSPHRASE, passphrase, dbKey);
-        Vault.Slot recoverySlot = wrapSlot(Vault.SLOT_RECOVERY, recovery, dbKey);
-
+        Vault.Slot passphraseSlot = wrapSlot(Vault.VERSION, Vault.SLOT_PASSPHRASE, passphrase, dbKey);
+        Vault.Slot recoverySlot = wrapSlot(Vault.VERSION, Vault.SLOT_RECOVERY, recovery, dbKey);
         Vault vault = new Vault(Vault.VERSION, Vault.CIPHER, List.of(passphraseSlot, recoverySlot));
-        vault.write(vaultPath);
 
-        DbKey key = new DbKey(dbKey);
         String recoveryString = new String(recovery);
-        Arrays.fill(dbKey, (byte) 0);
         Arrays.fill(recovery, '\0');
-        return new EnableResult(key, recoveryString);
+        return new PendingProtection(vault, recoveryString, dbKey);
     }
+
+    // ==================== Unlock ====================
 
     /** Unlocks the database key with the passphrase. Applies rate limiting on repeated failures. */
     public DbKey unlock(char[] passphrase) throws WrongPassphraseException, RateLimitedException, IOException {
         return unlockSlot(Vault.SLOT_PASSPHRASE, passphrase);
     }
 
-    /** Unlocks with the one-time recovery code. */
+    /** Unlocks with the recovery code. */
     public DbKey unlockWithRecovery(char[] code) throws WrongPassphraseException, RateLimitedException, IOException {
         return unlockSlot(Vault.SLOT_RECOVERY, code);
     }
@@ -128,20 +168,22 @@ public final class AppLockService {
     public void changePassphrase(char[] current, char[] next)
             throws WrongPassphraseException, RateLimitedException, IOException {
         DbKey key = unlock(current);
+        byte[] dbKey = key.bytes();
         try {
-            byte[] dbKey = key.bytes();
             Vault vault = Vault.read(vaultPath);
-            Vault.Slot slot = wrapSlot(Vault.SLOT_PASSPHRASE, next, dbKey);
+            // Bind the new slot's AAD to the vault's stored version (not the compiled constant), so a
+            // vault written by a different-versioned binary still unwraps after a passphrase change.
+            Vault.Slot slot = wrapSlot(vault.vaultVersion(), Vault.SLOT_PASSPHRASE, next, dbKey);
             vault.withSlot(slot).write(vaultPath);
-            Arrays.fill(dbKey, (byte) 0);
         } finally {
+            Arrays.fill(dbKey, (byte) 0);
             key.destroy();
         }
     }
 
     // ==================== Argon2id + GCM wrap/unwrap ====================
 
-    private Vault.Slot wrapSlot(String name, char[] secret, byte[] dbKey) {
+    private Vault.Slot wrapSlot(int version, String name, char[] secret, byte[] dbKey) {
         byte[] salt = new byte[SALT_LEN];
         random.nextBytes(salt);
         Vault.KdfParams kdf = new Vault.KdfParams("argon2id", ARGON2_MEMORY_KIB, ARGON2_ITERATIONS,
@@ -151,7 +193,7 @@ public final class AppLockService {
             byte[] nonce = new byte[NONCE_LEN];
             random.nextBytes(nonce);
             Vault.Slot slotForAad = new Vault.Slot(name, kdf, null, null);
-            byte[] wrapped = gcm(Cipher.ENCRYPT_MODE, kek, nonce, Vault.aad(Vault.VERSION, slotForAad), dbKey);
+            byte[] wrapped = gcm(Cipher.ENCRYPT_MODE, kek, nonce, Vault.aad(version, slotForAad), dbKey);
             return new Vault.Slot(name, kdf,
                     Base64.getEncoder().encodeToString(nonce),
                     Base64.getEncoder().encodeToString(wrapped));
@@ -205,7 +247,7 @@ public final class AppLockService {
 
     private static final char[] BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".toCharArray();
 
-    /** A 125-bit recovery code as five groups of five Crockford-ish base32 chars: XXXXX-XXXXX-... */
+    /** A 125-bit recovery code as five groups of five base32 chars: XXXXX-XXXXX-... */
     private char[] generateRecoveryCode() {
         StringBuilder sb = new StringBuilder(29);
         for (int group = 0; group < 5; group++) {
@@ -218,11 +260,10 @@ public final class AppLockService {
         }
         char[] out = new char[sb.length()];
         sb.getChars(0, sb.length(), out, 0);
-        // Best-effort clear of the builder's backing array is not guaranteed; the value is short-lived.
         return out;
     }
 
-    // ==================== Rate limiting ====================
+    // ==================== Rate limiting (persisted across restarts) ====================
 
     private synchronized void enforceRateLimit() throws RateLimitedException {
         long now = nowMillis.getAsLong();
@@ -234,13 +275,40 @@ public final class AppLockService {
     private synchronized void recordFailure() {
         failedAttempts++;
         if (failedAttempts > FREE_ATTEMPTS) {
-            long delay = Math.min(MAX_DELAY_MILLIS, 1000L << (failedAttempts - FREE_ATTEMPTS - 1));
+            int shift = Math.min(MAX_SHIFT, failedAttempts - FREE_ATTEMPTS - 1);
+            long delay = Math.min(MAX_DELAY_MILLIS, 1000L << shift);
             lockedUntilMillis = nowMillis.getAsLong() + delay;
         }
+        saveLockState();
     }
 
     private synchronized void recordSuccess() {
         failedAttempts = 0;
         lockedUntilMillis = 0;
+        saveLockState();
+    }
+
+    private void loadLockState() {
+        try {
+            if (Files.exists(lockStatePath)) {
+                String[] parts = Files.readString(lockStatePath, StandardCharsets.UTF_8).trim().split(",");
+                if (parts.length == 2) {
+                    failedAttempts = Integer.parseInt(parts[0]);
+                    lockedUntilMillis = Long.parseLong(parts[1]);
+                }
+            }
+        } catch (Exception e) {
+            // A corrupt lock-state file just means we start from zero this session; not fatal.
+            LOG.fine("Could not read unlock-attempt state; starting fresh");
+        }
+    }
+
+    private void saveLockState() {
+        try {
+            AppDataDirectory.writeRestricted(lockStatePath,
+                    (failedAttempts + "," + lockedUntilMillis).getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            LOG.fine("Could not persist unlock-attempt state");
+        }
     }
 }

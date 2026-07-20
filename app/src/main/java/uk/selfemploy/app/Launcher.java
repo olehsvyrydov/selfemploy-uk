@@ -139,6 +139,10 @@ public class Launcher extends Application {
                 uk.selfemploy.ui.service.security.DatabaseMigrator.encrypt(dbPath, key);
             }
             uk.selfemploy.ui.service.SqliteDataStore.provisionKey(key);
+            // Force the store to actually open the encrypted database (keyed connection + schema
+            // migrations) and only then remove the plaintext safety-net backup. If this throws, the
+            // outer catch exits with the backup retained for recovery.
+            uk.selfemploy.ui.service.SqliteDataStore.getInstance();
             uk.selfemploy.ui.service.security.DatabaseMigrator.deleteBackup(dbPath);
             return true;
         } catch (Exception e) {

@@ -54,9 +54,15 @@ public final class DatabaseMigrator {
         Path bak = sibling(dbPath, BAK_SUFFIX);
         String plainUrl = "jdbc:sqlite:" + dbPath.toAbsolutePath();
         try {
-            // 1. Fold the WAL back into the main file so the clone sees all committed data.
-            try (Connection c = DriverManager.getConnection(plainUrl); Statement s = c.createStatement()) {
-                s.execute("PRAGMA wal_checkpoint(TRUNCATE)");
+            // 1. Fold the WAL back into the main file so the clone sees all committed data. If the
+            // checkpoint reports busy, another process holds the database open — abort before touching
+            // any files, so a second running instance can never have the database swapped out from under it.
+            try (Connection c = DriverManager.getConnection(plainUrl); Statement s = c.createStatement();
+                 java.sql.ResultSet rs = s.executeQuery("PRAGMA wal_checkpoint(TRUNCATE)")) {
+                if (rs.next() && rs.getInt(1) != 0) {
+                    throw new MigrationException(
+                            "The database is open in another window; cannot encrypt it now", null);
+                }
             }
             Map<String, Long> before = tableCounts(plainUrl, null);
 

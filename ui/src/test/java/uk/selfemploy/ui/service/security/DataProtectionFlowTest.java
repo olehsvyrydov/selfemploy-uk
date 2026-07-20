@@ -34,15 +34,16 @@ class DataProtectionFlowTest {
             s.execute("INSERT INTO income (amount) VALUES ('4200.00')");
         }
 
-        // Onboarding: enable protection. The vault is written; the database is NOT touched this session.
+        // Onboarding: enable protection. The vault is written on commit; the database is NOT touched.
         AppLockService enableService = new AppLockService(vault, System::currentTimeMillis);
-        AppLockService.EnableResult enabled = enableService.enableProtection("river-otter-sunrise".toCharArray());
+        AppLockService.PendingProtection pending = enableService.prepareProtection("river-otter-sunrise".toCharArray());
+        String recoveryCode = pending.recoveryCode();
+        pending.commit();
         assertThat(DatabaseMigrator.databaseIsPlaintext(db)).isTrue();
 
         // Next launch: a fresh service unlocks, and because the DB is still plaintext it is encrypted now.
         AppLockService launch = new AppLockService(vault, System::currentTimeMillis);
         DbKey key = launch.unlock("river-otter-sunrise".toCharArray());
-        assertThat(key.hex()).isEqualTo(enabled.dbKey().hex());
         if (DatabaseMigrator.databaseIsPlaintext(db)) {
             DatabaseMigrator.encrypt(db, key);
         }
@@ -57,7 +58,7 @@ class DataProtectionFlowTest {
 
         // The recovery code opens the same (already-encrypted) database too.
         DbKey viaRecovery = new AppLockService(vault, System::currentTimeMillis)
-                .unlockWithRecovery(enabled.recoveryCode().toCharArray());
+                .unlockWithRecovery(recoveryCode.toCharArray());
         assertThat(viaRecovery.hex()).isEqualTo(key.hex());
     }
 }

@@ -39,6 +39,7 @@ public class AppProtectController {
     @FXML private Button continueButton;
 
     private AppLockService appLock;
+    private AppLockService.PendingProtection pending;
     private Stage dialogStage;
 
     public void setAppLockService(AppLockService appLock) {
@@ -69,23 +70,26 @@ public class AppProtectController {
         enableButton.setDisable(true);
         enableButton.setText(Messages.get("protect.enabling"));
 
-        Task<AppLockService.EnableResult> task = new Task<>() {
+        // Prepare the vault in memory only; nothing is written to disk until the user acknowledges the
+        // recovery code (handleContinue -> commit). Abandoning here therefore leaves the app unprotected.
+        Task<AppLockService.PendingProtection> task = new Task<>() {
             @Override
-            protected AppLockService.EnableResult call() throws Exception {
-                return appLock.enableProtection(passphrase);
+            protected AppLockService.PendingProtection call() {
+                return appLock.prepareProtection(passphrase);
             }
         };
         task.setOnSucceeded(e -> {
             Arrays.fill(passphrase, '\0');
             passphraseField.clear();
             confirmField.clear();
-            showRecovery(task.getValue().recoveryCode());
+            pending = task.getValue();
+            showRecovery(pending.recoveryCode());
         });
         task.setOnFailed(e -> {
             Arrays.fill(passphrase, '\0');
             enableButton.setDisable(false);
             enableButton.setText(Messages.get("protect.enable"));
-            LOG.log(Level.SEVERE, "Failed to enable data protection", task.getException());
+            LOG.log(Level.SEVERE, "Failed to prepare data protection", task.getException());
             showError(Messages.get("protect.error.generic"));
         });
         Thread thread = new Thread(task, "app-protect-enable");
@@ -115,6 +119,16 @@ public class AppProtectController {
 
     @FXML
     private void handleContinue() {
+        // Point of no return: write the vault now that the recovery code has been shown and acknowledged.
+        if (pending != null) {
+            try {
+                pending.commit();
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to write the protection vault", e);
+                showError(Messages.get("protect.error.generic"));
+                return;
+            }
+        }
         close();
     }
 

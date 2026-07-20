@@ -246,6 +246,7 @@ class HelpServiceTest {
             // is unconditional, must not mention the not-yet-built OS-keychain unlock, and must stay
             // honest that without a passphrase the data is not encrypted.
             assertThat(body)
+                .doesNotContain("Database encrypted")
                 .doesNotContain("All data at rest is encrypted")
                 .doesNotContain("OS keychain");
             assertThat(body).contains("AES-256-GCM");
