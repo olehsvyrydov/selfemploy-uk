@@ -126,6 +126,13 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Build-time only: the SCSS compiler, run via exec at generate-resources. provided = not shipped. -->
+        <dependency>
+            <groupId>uk.selfemploy</groupId>
+            <artifactId>scss-compiler</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -145,22 +152,22 @@
                 <version>0.0.8</version>
             </plugin>
             <plugin>
-                <groupId>us.hebi.sass</groupId>
-                <artifactId>sass-cli-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>compile-scss</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>java</goal>
                         </goals>
                         <configuration>
-                            <args>
-                                <arg>${project.basedir}/src/main/scss/components.scss:${project.build.directory}/generated-resources/css/components.css</arg>
-                                <arg>--no-source-map</arg>
-                                <arg>--no-charset</arg>
-                                <arg>--style=expanded</arg>
-                            </args>
+                            <mainClass>uk.selfemploy.buildtools.ScssCompiler</mainClass>
+                            <classpathScope>compile</classpathScope>
+                            <arguments>
+                                <argument>${project.basedir}/src/main/scss</argument>
+                                <argument>${project.build.directory}/generated-resources/css</argument>
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>

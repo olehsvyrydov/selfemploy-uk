@@ -27,6 +27,7 @@
       only under the "server" profile (see <profiles> below).
     -->
     <modules>
+        <module>scss-compiler</module>
         <module>common</module>
         <module>hmrc-api</module>
         <module>core</module>
@@ -86,8 +87,8 @@
         -->
         <surefire.excludedGroups>e2e,hmrc-sandbox</surefire.excludedGroups>
         <jpackage-maven-plugin.version>1.4.0</jpackage-maven-plugin.version>
-        <sass-cli-maven-plugin.version>1.0.4</sass-cli-maven-plugin.version>
-        <dart-sass.version>1.87.0</dart-sass.version>
+        <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+        <sass-embedded.version>4.4.0</sass-embedded.version>
     </properties>
 
     <dependencyManagement>
@@ -273,12 +274,9 @@
                     </executions>
                 </plugin>
                 <plugin>
-                    <groupId>us.hebi.sass</groupId>
-                    <artifactId>sass-cli-maven-plugin</artifactId>
-                    <version>${sass-cli-maven-plugin.version}</version>
-                    <configuration>
-                        <sassVersion>${dart-sass.version}</sassVersion>
-                    </configuration>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${exec-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
