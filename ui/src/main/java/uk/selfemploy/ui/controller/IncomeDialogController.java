@@ -156,17 +156,17 @@ public class IncomeDialogController implements Initializable {
 
                 getStyleClass().removeAll("income-date-outside", "income-date-future");
 
-                // Disable dates outside tax year
+                // Cells are reused across renders, so reset the disable state each time.
+                boolean disabled = false;
                 if (!taxYear.contains(date)) {
-                    setDisable(true);
+                    disabled = true;
                     getStyleClass().add("income-date-outside");
                 }
-
-                // Disable future dates
                 if (date.isAfter(LocalDate.now())) {
-                    setDisable(true);
+                    disabled = true;
                     getStyleClass().add("income-date-future");
                 }
+                setDisable(disabled);
             }
         });
     }

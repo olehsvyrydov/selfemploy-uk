@@ -497,18 +497,18 @@ public class QuarterInfoDialog {
         titleLabel.getStyleClass().add("financial-card-title");
 
         // Income row
-        HBox incomeRow = createFinancialRow("Income", formatCurrency(income), true);
+        HBox incomeRow = createFinancialRow("Income", formatCurrency(income));
 
         // Expenses row
-        HBox expensesRow = createFinancialRow("Expenses", formatCurrency(expenses), true);
+        HBox expensesRow = createFinancialRow("Expenses", formatCurrency(expenses));
 
-        // Net row — its colour class is applied separately below, so no default value style here.
+        // Net row — the colour modifier is layered on top of the shared data-value styling so the
+        // net value keeps the same size/weight as the other values (index 2: label=0, spacer=1, value=2).
         BigDecimal net = null;
         if (income != null && expenses != null) {
             net = income.subtract(expenses);
         }
-        HBox netRow = createFinancialRow("Net Profit", formatCurrency(net), false);
-        // Apply conditional styling for net value (index 2: label=0, spacer=1, value=2)
+        HBox netRow = createFinancialRow("Net Profit", formatCurrency(net));
         Label netValue = (Label) netRow.getChildren().get(2);
         netValue.getStyleClass().add(netValueClass(net));
 
@@ -518,12 +518,10 @@ public class QuarterInfoDialog {
     }
 
     /**
-     * Creates a row for financial data display.
-     *
-     * @param defaultValueStyle whether to apply the neutral {@code data-value} colour to the value;
-     *     rows that set their own value colour (the net row) pass {@code false}
+     * Creates a row for financial data display. The value carries the shared {@code data-value} style;
+     * callers that need a different colour (the net row) layer a modifier class on top of it.
      */
-    private HBox createFinancialRow(String label, String value, boolean defaultValueStyle) {
+    private HBox createFinancialRow(String label, String value) {
         HBox row = new HBox();
         row.setAlignment(Pos.CENTER_LEFT);
 
@@ -534,9 +532,7 @@ public class QuarterInfoDialog {
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label valueNode = new Label(value);
-        if (defaultValueStyle) {
-            valueNode.getStyleClass().add("data-value");
-        }
+        valueNode.getStyleClass().add("data-value");
 
         row.getChildren().addAll(labelNode, spacer, valueNode);
 
