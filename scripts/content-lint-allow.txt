@@ -38,3 +38,8 @@ todo | runtime/PluginHotReloader.java | state retrieval when Plugin
 todo | runtime/PluginHotReloader.java | state restoration when Plugin
 todo | controller/TermsOfServiceController.java | Implement actual PDF generation
 todo | controller/QuarterlyUpdatesController.java | Open quarter detail view
+
+# --- java-style: the sanctioned dynamic-colour pattern — a single runtime-computed looked-up
+# colour handed to CSS (the SCSS class builds the gradient from it), not a full style block.
+java-style | component/HelpDialog.java | -fx-header-accent
+java-style | component/HelpDialog.java | -fx-link-accent

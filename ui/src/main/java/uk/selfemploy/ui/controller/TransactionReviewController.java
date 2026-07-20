@@ -23,6 +23,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Window;
 import uk.selfemploy.ui.util.DialogBounds;
+import uk.selfemploy.ui.util.Stylesheets;
 import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ReviewStatus;
@@ -202,6 +203,10 @@ public class TransactionReviewController implements Initializable, MainControlle
     }
 
     private void setupTableColumns() {
+        // The review table lives on a scene that loads main + bank-import CSS but not the SCSS
+        // component sheet, so the cell alignment classes are attached to the table directly.
+        Stylesheets.attachComponents(transactionTable);
+
         // Select column - checkbox
         selectCol.setCellValueFactory(cellData -> {
             TransactionReviewTableRow row = cellData.getValue();
@@ -246,6 +251,7 @@ public class TransactionReviewController implements Initializable, MainControlle
         amountCol.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getSignedFormattedAmount()));
         amountCol.setCellFactory(col -> new TableCell<>() {
+            { getStyleClass().add("cell-align-right"); }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -260,7 +266,6 @@ public class TransactionReviewController implements Initializable, MainControlle
                 }
             }
         });
-        amountCol.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // Category column
         categoryCol.setCellValueFactory(cellData ->
@@ -270,6 +275,7 @@ public class TransactionReviewController implements Initializable, MainControlle
         confidenceCol.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getConfidenceLabel()));
         confidenceCol.setCellFactory(col -> new TableCell<>() {
+            { getStyleClass().add("cell-align-center"); }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -285,7 +291,6 @@ public class TransactionReviewController implements Initializable, MainControlle
                 }
             }
         });
-        confidenceCol.setStyle("-fx-alignment: CENTER;");
 
         // Business/Personal column - segmented toggle that classifies THIS row (single-row control).
         // The batch bar above the table applies the same two states to the checkbox selection; the two
@@ -336,6 +341,7 @@ public class TransactionReviewController implements Initializable, MainControlle
         statusCol.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().reviewStatus().name()));
         statusCol.setCellFactory(col -> new TableCell<>() {
+            { getStyleClass().add("cell-align-center"); }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -351,7 +357,6 @@ public class TransactionReviewController implements Initializable, MainControlle
                 }
             }
         });
-        statusCol.setStyle("-fx-alignment: CENTER;");
 
         // Actions column - buttons
         actionCol.setCellFactory(col -> new TableCell<>() {

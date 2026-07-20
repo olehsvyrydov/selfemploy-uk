@@ -45,11 +45,6 @@ public final class AppDialog {
     /** Dialog kind — drives the header colour, icon and default buttons. */
     public enum Kind { INFO, WARNING, ERROR, CONFIRM }
 
-    private static final String[] INFO_GRADIENT = {"#0066cc", "#3385d6"};
-    private static final String[] WARNING_GRADIENT = {"#d97706", "#f59e0b"};
-    private static final String[] ERROR_GRADIENT = {"#dc3545", "#e4606d"};
-    private static final String[] CONFIRM_GRADIENT = {"#0066cc", "#3385d6"};
-
     private final Stage stage;
     private boolean confirmed;
 
@@ -141,16 +136,6 @@ public final class AppDialog {
 
     // ==================== Testable pure helpers ====================
 
-    /** Header gradient [start, end] hex colours for a kind. */
-    public static String[] gradientFor(Kind kind) {
-        return switch (kind) {
-            case INFO -> INFO_GRADIENT;
-            case WARNING -> WARNING_GRADIENT;
-            case ERROR -> ERROR_GRADIENT;
-            case CONFIRM -> CONFIRM_GRADIENT;
-        };
-    }
-
     /** Header icon for a kind. */
     public static Ikon iconFor(Kind kind) {
         return switch (kind) {
@@ -158,6 +143,21 @@ public final class AppDialog {
             case WARNING -> FontAwesomeSolid.EXCLAMATION_TRIANGLE;
             case ERROR -> FontAwesomeSolid.TIMES_CIRCLE;
             case CONFIRM -> FontAwesomeSolid.QUESTION_CIRCLE;
+        };
+    }
+
+    /**
+     * SCSS style class carrying the header gradient for a kind. {@code CONFIRM} shares the
+     * {@code INFO} gradient.
+     *
+     * @param kind the dialog kind
+     * @return the {@code shell-dialog-header-*} style class name
+     */
+    public static String headerStyleClass(Kind kind) {
+        return switch (kind) {
+            case INFO, CONFIRM -> "shell-dialog-header-info";
+            case WARNING -> "shell-dialog-header-warning";
+            case ERROR -> "shell-dialog-header-error";
         };
     }
 
@@ -179,25 +179,21 @@ public final class AppDialog {
 
     private HBox createHeader(Kind kind, String title) {
         HBox header = new HBox(12);
-        header.getStyleClass().add("help-dialog-header");
+        header.getStyleClass().addAll("help-dialog-header", "shell-dialog-header", headerStyleClass(kind));
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 20, 16, 20));
 
-        String[] colors = gradientFor(kind);
-        header.setStyle("-fx-background-color: linear-gradient(to right, " + colors[0] + ", " + colors[1] + ");"
-                + "-fx-background-radius: 11 11 0 0;");
-
         StackPane iconWrapper = new StackPane();
+        iconWrapper.getStyleClass().add("shell-dialog-icon-wrapper");
         iconWrapper.setMinSize(40, 40);
         iconWrapper.setMaxSize(40, 40);
         iconWrapper.setAlignment(Pos.CENTER);
-        iconWrapper.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20;");
         FontIcon icon = FontIcon.of(iconFor(kind), 18);
         icon.setIconColor(Color.WHITE);
         iconWrapper.getChildren().add(icon);
 
         Label titleLabel = new Label(title == null ? "" : title);
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
+        titleLabel.getStyleClass().add("shell-dialog-title");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -215,13 +211,12 @@ public final class AppDialog {
 
     private VBox createBody(String message) {
         VBox body = new VBox(0);
-        body.getStyleClass().add("help-dialog-body");
+        body.getStyleClass().addAll("help-dialog-body", "shell-dialog-body");
         body.setPadding(new Insets(20));
-        body.setStyle("-fx-background-color: white;");
 
         Label messageLabel = new Label(message == null ? "" : message);
         messageLabel.setWrapText(true);
-        messageLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #212529;");
+        messageLabel.getStyleClass().add("shell-dialog-message");
         body.getChildren().add(messageLabel);
         return body;
     }

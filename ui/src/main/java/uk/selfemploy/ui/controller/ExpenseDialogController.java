@@ -28,6 +28,7 @@ import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.ReceiptMetadata;
 import uk.selfemploy.core.service.ReceiptStorageService;
 import uk.selfemploy.ui.service.DataStoreException;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.ExpenseDialogViewModel;
 
 import java.awt.Desktop;
@@ -162,8 +163,11 @@ public class ExpenseDialogController implements Initializable {
         dateField.setEditable(true);
         dateField.getStyleClass().add("date-picker");
 
-        // Configure date picker to restrict to tax year
+        // Configure date picker to restrict to tax year. Day cells render in the DatePicker's own popup
+        // scene, which does not inherit the control's stylesheets, so attach the component sheet per cell.
         dateField.setDayCellFactory(picker -> new DateCell() {
+            { Stylesheets.attachComponents(this); }
+
             @Override
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
@@ -175,10 +179,11 @@ public class ExpenseDialogController implements Initializable {
 
                     setDisable(outsideTaxYear || inFuture);
 
+                    getStyleClass().removeAll("expense-date-outside", "expense-date-future");
                     if (outsideTaxYear) {
-                        setStyle("-fx-background-color: #ffc0c0;");
+                        getStyleClass().add("expense-date-outside");
                     } else if (inFuture) {
-                        setStyle("-fx-background-color: #e0e0e0;");
+                        getStyleClass().add("expense-date-future");
                     }
                 }
             }
@@ -236,19 +241,24 @@ public class ExpenseDialogController implements Initializable {
             }
         });
 
+        // Dropdown list cells render in the ComboBox popup scene, which does not inherit the control's
+        // stylesheets, so the component sheet is attached to each cell for the warning colour to resolve.
         categoryField.setCellFactory(lv -> new ListCell<>() {
+            { Stylesheets.attachComponents(this); }
+
             @Override
             protected void updateItem(ExpenseCategory item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
+                    getStyleClass().remove("expense-category-warning");
                 } else {
                     setText(converter.toString(item));
-                    // Warning style for non-allowable
-                    if (!item.isAllowable()) {
-                        setStyle("-fx-text-fill: #856404;");
-                    } else {
-                        setStyle("");
+                    boolean warning = !item.isAllowable();
+                    if (warning && !getStyleClass().contains("expense-category-warning")) {
+                        getStyleClass().add("expense-category-warning");
+                    } else if (!warning) {
+                        getStyleClass().remove("expense-category-warning");
                     }
                 }
             }

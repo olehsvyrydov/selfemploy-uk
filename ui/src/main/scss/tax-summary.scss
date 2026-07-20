@@ -17,6 +17,16 @@
     -fx-max-width: 1200;
 }
 
+/* ===== Tax Summary Disclaimer ===== */
+.tax-disclaimer-banner {
+    -fx-padding: 8 16;
+}
+
+.tax-disclaimer-text {
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 13px;
+}
+
 /* ===== Submission Status Banner ===== */
 .submitted-banner {
     -fx-background-color: #d4edda;
@@ -192,6 +202,10 @@
 .calc-label {
     -fx-font-size: 14px;
     -fx-text-fill: -fx-text-primary;
+}
+
+.calc-label-bold {
+    -fx-font-weight: bold;
 }
 
 .calc-value {

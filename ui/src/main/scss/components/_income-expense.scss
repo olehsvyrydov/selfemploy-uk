@@ -1,0 +1,45 @@
+@use '../tokens' as t;
+
+// Cell styling for the income table and the income/expense dialogs, migrated from
+// inline setStyle calls so appearance lives in one compiled stylesheet.
+
+.income-cell-client {
+  -fx-font-weight: bold;
+}
+
+.income-cell-description {
+  -fx-text-fill: #6c757d;
+}
+
+.income-cell-amount-align {
+  -fx-alignment: CENTER-RIGHT;
+}
+
+.income-cell-amount {
+  -fx-font-weight: bold;
+  -fx-text-fill: #28a745;
+}
+
+.income-cell-status-align {
+  -fx-alignment: CENTER;
+}
+
+.expense-category-warning {
+  -fx-text-fill: #856404;
+}
+
+.expense-date-outside {
+  -fx-background-color: #ffc0c0;
+}
+
+.expense-date-future {
+  -fx-background-color: #e0e0e0;
+}
+
+.income-date-outside {
+  -fx-background-color: #ffc0cb;
+}
+
+.income-date-future {
+  -fx-background-color: #e0e0e0;
+}

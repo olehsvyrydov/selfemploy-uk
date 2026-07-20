@@ -13,6 +13,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.IncomeDialogViewModel;
 
 import java.net.URL;
@@ -143,24 +144,29 @@ public class IncomeDialogController implements Initializable {
         dateField.setEditable(true);
         dateField.getStyleClass().add("date-picker");
 
-        // Restrict to tax year bounds
+        // Restrict to tax year bounds. Day cells live in the DatePicker's own popup scene, which does
+        // not inherit the control's stylesheets, so the component sheet is attached to each cell.
         dateField.setDayCellFactory(picker -> new DateCell() {
+            { Stylesheets.attachComponents(this); }
+
             @Override
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
                 if (date == null || empty) return;
 
-                // Disable dates outside tax year
-                if (!taxYear.contains(date)) {
-                    setDisable(true);
-                    setStyle("-fx-background-color: #ffc0cb;");
-                }
+                getStyleClass().removeAll("income-date-outside", "income-date-future");
 
-                // Disable future dates
-                if (date.isAfter(LocalDate.now())) {
-                    setDisable(true);
-                    setStyle("-fx-background-color: #e0e0e0;");
+                // Cells are reused across renders, so reset the disable state each time.
+                boolean disabled = false;
+                if (!taxYear.contains(date)) {
+                    disabled = true;
+                    getStyleClass().add("income-date-outside");
                 }
+                if (date.isAfter(LocalDate.now())) {
+                    disabled = true;
+                    getStyleClass().add("income-date-future");
+                }
+                setDisable(disabled);
             }
         });
     }

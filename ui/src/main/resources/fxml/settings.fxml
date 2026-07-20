@@ -271,12 +271,12 @@
                 </HBox>
                 <Label fx:id="buildDateLabel" text="" styleClass="settings-hint"/>
                 <Label fx:id="licenseLabel" text="" styleClass="settings-hint"/>
-                <Label fx:id="githubLabel" text="" styleClass="settings-hint" style="-fx-text-fill: #3b82f6; -fx-cursor: hand;"
+                <Label fx:id="githubLabel" text="" styleClass="settings-hint, settings-link"
                        accessibleText="%settings.about.github.accessible"/>
                 <CheckBox fx:id="updateCheckToggle" text="%settings.about.updateCheckToggle" styleClass="settings-hint"/>
                 <Label fx:id="updateStatusLabel" text="" visible="false" managed="false" styleClass="settings-hint" wrapText="true"/>
-                <Label fx:id="updateGuidanceLabel" text="" visible="false" managed="false" styleClass="settings-hint" wrapText="true"
-                       style="-fx-text-fill: #3b82f6; -fx-cursor: hand;" accessibleText="%settings.about.updateLink.accessible"/>
+                <Label fx:id="updateGuidanceLabel" text="" visible="false" managed="false" styleClass="settings-hint, settings-link" wrapText="true"
+                       accessibleText="%settings.about.updateLink.accessible"/>
             </VBox>
         </VBox>
 

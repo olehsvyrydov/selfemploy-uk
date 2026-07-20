@@ -223,19 +223,19 @@ public class HelpDialog {
      */
     private HBox createHeader() {
         HBox header = new HBox(12);
-        header.getStyleClass().add("help-dialog-header");
+        header.getStyleClass().addAll("help-dialog-header", "shell-dialog-gradient-header");
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 20, 16, 20));
-        // Apply category-specific gradient color
-        header.setStyle("-fx-background-color: linear-gradient(to right, " + categoryColor + ", " + adjustColor(categoryColor, 20) + ");");
+        // The runtime category colour is the one dynamic value; expose it as a looked-up colour and let
+        // the shell-dialog-gradient-header class build the gradient (deriving the lighter end in CSS).
+        header.setStyle("-fx-header-accent: " + categoryColor + ";");
 
         // Icon circle with FontIcon
         StackPane iconWrapper = new StackPane();
-        iconWrapper.getStyleClass().add("help-dialog-icon-wrapper");
+        iconWrapper.getStyleClass().addAll("help-dialog-icon-wrapper", "shell-dialog-icon-wrapper");
         iconWrapper.setMinSize(40, 40);
         iconWrapper.setMaxSize(40, 40);
         iconWrapper.setAlignment(Pos.CENTER);
-        iconWrapper.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20;");
 
         FontIcon fontIcon = FontIcon.of(icon, 18);
         fontIcon.setIconColor(Color.WHITE);
@@ -243,8 +243,7 @@ public class HelpDialog {
 
         // Title
         Label titleLabel = new Label(content.title());
-        titleLabel.getStyleClass().add("help-dialog-title");
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
+        titleLabel.getStyleClass().addAll("help-dialog-title", "shell-dialog-title");
         titleLabel.setWrapText(true);
 
         // Spacer
@@ -268,9 +267,8 @@ public class HelpDialog {
      */
     private VBox createBody() {
         VBox body = new VBox(16);
-        body.getStyleClass().add("help-dialog-body");
+        body.getStyleClass().addAll("help-dialog-body", "shell-dialog-body");
         body.setPadding(new Insets(24, 32, 24, 32));
-        body.setStyle("-fx-background-color: white;");
 
         body.getChildren().add(new HelpMarkdownRenderer().render(content.body()));
 
@@ -285,57 +283,14 @@ public class HelpDialog {
 
     private Button createLinkButton() {
         Button learnMoreBtn = new Button(content.linkText() + " ↗");
-        learnMoreBtn.getStyleClass().add("help-dialog-link-btn");
-        learnMoreBtn.setStyle(
-            "-fx-background-color: " + categoryColor + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 13px;" +
-            "-fx-padding: 10 20;" +
-            "-fx-background-radius: 6;" +
-            "-fx-cursor: hand;"
-        );
+        learnMoreBtn.getStyleClass().addAll("help-dialog-link-btn", "shell-dialog-link-btn");
+        // The runtime category colour is the one dynamic value; expose it as a looked-up colour and let
+        // the shell-dialog-link-btn class (and its :hover) drive the background, deriving the hover in CSS.
+        learnMoreBtn.setStyle("-fx-link-accent: " + categoryColor + ";");
         learnMoreBtn.setOnAction(e -> {
             helpService.openHmrcGuidance(content.hmrcLink(), content.title());
         });
-
-        // Hover effect
-        learnMoreBtn.setOnMouseEntered(e ->
-            learnMoreBtn.setStyle(
-                "-fx-background-color: " + adjustColor(categoryColor, -15) + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 13px;" +
-                "-fx-padding: 10 20;" +
-                "-fx-background-radius: 6;" +
-                "-fx-cursor: hand;"
-            )
-        );
-        learnMoreBtn.setOnMouseExited(e ->
-            learnMoreBtn.setStyle(
-                "-fx-background-color: " + categoryColor + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 13px;" +
-                "-fx-padding: 10 20;" +
-                "-fx-background-radius: 6;" +
-                "-fx-cursor: hand;"
-            )
-        );
-
         return learnMoreBtn;
-    }
-
-    /**
-     * Adjusts a hex color by the given amount (positive = lighter, negative = darker).
-     */
-    private String adjustColor(String hexColor, int amount) {
-        try {
-            String hex = hexColor.replace("#", "");
-            int r = Math.min(255, Math.max(0, Integer.parseInt(hex.substring(0, 2), 16) + amount));
-            int g = Math.min(255, Math.max(0, Integer.parseInt(hex.substring(2, 4), 16) + amount));
-            int b = Math.min(255, Math.max(0, Integer.parseInt(hex.substring(4, 6), 16) + amount));
-            return String.format("#%02x%02x%02x", r, g, b);
-        } catch (Exception e) {
-            return hexColor;
-        }
     }
 
     /**

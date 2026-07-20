@@ -16,6 +16,7 @@ import javafx.stage.Window;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.selfemploy.ui.component.ComparisonDialog;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.*;
 
 import java.net.URL;
@@ -89,6 +90,7 @@ public class ImportReviewController implements Initializable {
         LOG.info("ImportReviewController.initialize() called");
         viewModel = new ImportReviewViewModel();
 
+        Stylesheets.attachComponents(reviewTable);
         setupTableColumns();
         setupBindings();
         setupKeyboardNavigation();
@@ -227,6 +229,8 @@ public class ImportReviewController implements Initializable {
         amountColumn.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getFormattedAmount()));
         amountColumn.setCellFactory(col -> new TableCell<>() {
+            { getStyleClass().add("cell-align-right"); }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -244,7 +248,6 @@ public class ImportReviewController implements Initializable {
                 }
             }
         });
-        amountColumn.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // Match column (badge)
         matchColumn.setCellValueFactory(cellData ->

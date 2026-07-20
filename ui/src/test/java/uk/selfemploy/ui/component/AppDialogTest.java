@@ -32,12 +32,10 @@ class AppDialogTest {
     class KindMapping {
 
         @Test
-        @DisplayName("every kind has a two-stop gradient")
-        void everyKindHasGradient() {
+        @DisplayName("every kind maps to a header style class")
+        void everyKindHasHeaderClass() {
             for (AppDialog.Kind kind : AppDialog.Kind.values()) {
-                assertThat(AppDialog.gradientFor(kind)).hasSize(2);
-                assertThat(AppDialog.gradientFor(kind)[0]).startsWith("#");
-                assertThat(AppDialog.gradientFor(kind)[1]).startsWith("#");
+                assertThat(AppDialog.headerStyleClass(kind)).isNotBlank();
             }
         }
 
@@ -52,8 +50,8 @@ class AppDialogTest {
         @Test
         @DisplayName("error and info use different header colours")
         void errorAndInfoDiffer() {
-            assertThat(AppDialog.gradientFor(AppDialog.Kind.ERROR))
-                    .isNotEqualTo(AppDialog.gradientFor(AppDialog.Kind.INFO));
+            assertThat(AppDialog.headerStyleClass(AppDialog.Kind.ERROR))
+                    .isNotEqualTo(AppDialog.headerStyleClass(AppDialog.Kind.INFO));
         }
     }
 

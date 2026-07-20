@@ -27,39 +27,31 @@ class QuarterInfoDialogTest {
     private static final TaxYear TAX_YEAR_2025 = TaxYear.of(2025);
 
     @Nested
-    @DisplayName("Header Gradient Colors")
-    class HeaderGradientTests {
+    @DisplayName("Header Color Classes")
+    class HeaderColorClassTests {
 
         @Test
-        @DisplayName("should return blue gradient for DRAFT status")
-        void shouldReturnBlueGradientForDraft() {
-            String[] colors = QuarterInfoDialog.getHeaderGradientColors(QuarterStatus.DRAFT);
-            assertEquals("#0066cc", colors[0], "Start color for DRAFT should be blue");
-            assertEquals("#3385d6", colors[1], "End color for DRAFT should be lighter blue");
+        @DisplayName("should map DRAFT to the blue header class")
+        void shouldMapDraft() {
+            assertEquals("header-blue", QuarterInfoDialog.headerColorClass(QuarterStatus.DRAFT));
         }
 
         @Test
-        @DisplayName("should return red gradient for OVERDUE status")
-        void shouldReturnRedGradientForOverdue() {
-            String[] colors = QuarterInfoDialog.getHeaderGradientColors(QuarterStatus.OVERDUE);
-            assertEquals("#dc3545", colors[0], "Start color for OVERDUE should be red");
-            assertEquals("#e4606d", colors[1], "End color for OVERDUE should be lighter red");
+        @DisplayName("should map OVERDUE to the red header class")
+        void shouldMapOverdue() {
+            assertEquals("header-red", QuarterInfoDialog.headerColorClass(QuarterStatus.OVERDUE));
         }
 
         @Test
-        @DisplayName("should return green gradient for SUBMITTED status")
-        void shouldReturnGreenGradientForSubmitted() {
-            String[] colors = QuarterInfoDialog.getHeaderGradientColors(QuarterStatus.SUBMITTED);
-            assertEquals("#28a745", colors[0], "Start color for SUBMITTED should be green");
-            assertEquals("#48c664", colors[1], "End color for SUBMITTED should be lighter green");
+        @DisplayName("should map SUBMITTED to the green header class")
+        void shouldMapSubmitted() {
+            assertEquals("header-green", QuarterInfoDialog.headerColorClass(QuarterStatus.SUBMITTED));
         }
 
         @Test
-        @DisplayName("should return gray gradient for FUTURE status")
-        void shouldReturnGrayGradientForFuture() {
-            String[] colors = QuarterInfoDialog.getHeaderGradientColors(QuarterStatus.FUTURE);
-            assertEquals("#6c757d", colors[0], "Start color for FUTURE should be gray");
-            assertEquals("#868e96", colors[1], "End color for FUTURE should be lighter gray");
+        @DisplayName("should map FUTURE to the gray header class")
+        void shouldMapFuture() {
+            assertEquals("header-gray", QuarterInfoDialog.headerColorClass(QuarterStatus.FUTURE));
         }
     }
 
@@ -126,18 +118,16 @@ class QuarterInfoDialogTest {
         @DisplayName("should determine positive net styling")
         void shouldDeterminePositiveNetStyling() {
             BigDecimal positiveNet = new BigDecimal("1000.00");
-            String style = QuarterInfoDialog.getNetProfitStyle(positiveNet);
-            assertTrue(style.contains("#28a745") || style.contains("green"),
-                    "Positive net should use green color");
+            assertEquals("net-value-positive", QuarterInfoDialog.netValueClass(positiveNet),
+                    "Positive net should use the positive value class");
         }
 
         @Test
         @DisplayName("should determine negative net styling")
         void shouldDetermineNegativeNetStyling() {
             BigDecimal negativeNet = new BigDecimal("-500.00");
-            String style = QuarterInfoDialog.getNetProfitStyle(negativeNet);
-            assertTrue(style.contains("#dc3545") || style.contains("red"),
-                    "Negative net should use red color");
+            assertEquals("net-value-negative", QuarterInfoDialog.netValueClass(negativeNet),
+                    "Negative net should use the negative value class");
         }
 
         @Test
@@ -407,14 +397,11 @@ class QuarterInfoDialogTest {
         }
 
         @Test
-        @DisplayName("status colors should be valid hex")
-        void statusColorsShouldBeValidHex() {
+        @DisplayName("every status maps to a header color class")
+        void everyStatusMapsToHeaderClass() {
             for (QuarterStatus status : QuarterStatus.values()) {
-                String[] colors = QuarterInfoDialog.getHeaderGradientColors(status);
-                assertTrue(colors[0].matches("#[0-9a-fA-F]{6}"),
-                        "Start color should be valid hex for " + status);
-                assertTrue(colors[1].matches("#[0-9a-fA-F]{6}"),
-                        "End color should be valid hex for " + status);
+                assertTrue(QuarterInfoDialog.headerColorClass(status).startsWith("header-"),
+                        "Status should map to a header- style class for " + status);
             }
         }
     }
