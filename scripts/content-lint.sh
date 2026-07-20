@@ -89,6 +89,18 @@ for dir in "${MAIN_DIRS[@]}"; do
     emit "todo" "TODO/XXX/FIXME left in src/main — resolve or track it, don't ship it" < <(
         grep -rnIE '\b(TODO|XXX|FIXME)\b' --include='*.java' "$dir" 2>/dev/null
     )
+
+    # --- java-style: inline CSS in Java — style belongs in SCSS, use a style class --------
+    # A dynamic single looked-up-colour assignment (e.g. -fx-...-accent) is the sanctioned
+    # exception for a runtime-computed colour and is waived by the allowlist.
+    emit "java-style" "inline setStyle — move the styling to an SCSS class (getStyleClass)" < <(
+        grep -rnIE '\.setStyle\(' --include='*.java' "$dir" 2>/dev/null
+    )
+
+    # --- fxml-style: inline style= in FXML — use a styleClass and an SCSS rule ------------
+    emit "fxml-style" "inline style= — move the styling to a styleClass + SCSS rule" < <(
+        grep -rnIE 'style="[^"]' --include='*.fxml' "$dir" 2>/dev/null
+    )
 done
 
 echo
