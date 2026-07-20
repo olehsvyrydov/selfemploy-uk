@@ -1,0 +1,35 @@
+@use '../tokens' as t;
+
+.toast {
+  -fx-background-color: t.$slate-900;
+  -fx-background-radius: t.$radius-sm;
+  -fx-border-color: t.$slate-600;
+  -fx-border-width: 1;
+  -fx-border-radius: t.$radius-sm;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0, 0, 5);
+  -fx-min-width: 250;
+  -fx-min-height: 50;
+
+  .toast-message {
+    -fx-font-size: t.$font-sm;
+    -fx-font-weight: 500;
+    -fx-text-fill: t.$slate-50;
+  }
+
+  .toast-url {
+    -fx-font-size: t.$font-2xs;
+    -fx-text-fill: t.$slate-400;
+  }
+
+  .toast-icon {
+    -fx-font-size: t.$font-md;
+  }
+
+  .toast-icon-success {
+    -fx-text-fill: t.$toast-success;
+  }
+
+  .toast-icon-link {
+    -fx-text-fill: t.$slate-400;
+  }
+}

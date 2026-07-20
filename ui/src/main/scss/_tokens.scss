@@ -10,8 +10,12 @@
 // Slate palette — dark popover/toast surfaces (not part of the light main palette)
 $slate-900: #1e293b;
 $slate-600: #475569;
+$slate-400: #94a3b8;
 $slate-300: #cbd5e1;
 $slate-50:  #f8fafc;
+
+// Accents used on dark surfaces
+$toast-success: #4ade80;
 
 // Radius scale
 $radius-sm: 8;
@@ -20,5 +24,7 @@ $radius-sm: 8;
 $space-3: 12;
 
 // Type scale
-$font-xs: 12px;
-$font-sm: 13px;
+$font-2xs: 11px;
+$font-xs:  12px;
+$font-sm:  13px;
+$font-md:  14px;
