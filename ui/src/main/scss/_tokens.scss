@@ -1,7 +1,8 @@
 // Design tokens as Sass variables (hex/number literals) for compile-time authoring and colour math.
 // The runtime JavaFX looked-up-colour tokens stay defined in main.scss .root; these mirror the values
-// and are the single source for every duplicated colour across the compiled stylesheets. Radius/spacing
-// tokens are unitless (JavaFX numeric properties); font-size tokens carry px, matching the stylesheets.
+// and are the single source for every frequently-duplicated colour (used four or more times); rarer
+// one-off shades stay literal at their call site. Radius/spacing tokens are unitless (JavaFX numeric
+// properties); font-size tokens carry px, matching the stylesheets.
 
 // ============================================================================
 // Colour palette
