@@ -13,6 +13,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.IncomeDialogViewModel;
 
 import java.net.URL;
@@ -136,6 +137,8 @@ public class IncomeDialogController implements Initializable {
     private void configureDatePicker() {
         if (taxYear == null) return;
 
+        Stylesheets.attachComponents(dateField);
+
         // Set default date to today
         dateField.setValue(LocalDate.now());
 
@@ -150,16 +153,18 @@ public class IncomeDialogController implements Initializable {
                 super.updateItem(date, empty);
                 if (date == null || empty) return;
 
+                getStyleClass().removeAll("income-date-outside", "income-date-future");
+
                 // Disable dates outside tax year
                 if (!taxYear.contains(date)) {
                     setDisable(true);
-                    setStyle("-fx-background-color: #ffc0cb;");
+                    getStyleClass().add("income-date-outside");
                 }
 
                 // Disable future dates
                 if (date.isAfter(LocalDate.now())) {
                     setDisable(true);
-                    setStyle("-fx-background-color: #e0e0e0;");
+                    getStyleClass().add("income-date-future");
                 }
             }
         });
