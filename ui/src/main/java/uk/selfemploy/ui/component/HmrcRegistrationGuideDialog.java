@@ -88,23 +88,21 @@ public final class HmrcRegistrationGuideDialog {
 
     private HBox createHeader(Stage stage) {
         HBox header = new HBox(12);
-        header.getStyleClass().add("help-dialog-header");
+        header.getStyleClass().addAll("help-dialog-header", "shell-dialog-header", "shell-dialog-header-info");
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 20, 16, 20));
-        header.setStyle("-fx-background-color: linear-gradient(to right, #0066cc, #3385d6);"
-            + "-fx-background-radius: 11 11 0 0;");
 
         StackPane iconWrapper = new StackPane();
+        iconWrapper.getStyleClass().add("shell-dialog-icon-wrapper");
         iconWrapper.setMinSize(40, 40);
         iconWrapper.setMaxSize(40, 40);
         iconWrapper.setAlignment(Pos.CENTER);
-        iconWrapper.setStyle("-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 20;");
         FontIcon icon = FontIcon.of(FontAwesomeSolid.KEY, 18);
         icon.setIconColor(Color.WHITE);
         iconWrapper.getChildren().add(icon);
 
         Label title = new Label("Register your app with HMRC");
-        title.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
+        title.getStyleClass().add("shell-dialog-title");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -119,9 +117,8 @@ public final class HmrcRegistrationGuideDialog {
 
     private ScrollPane createBody(Window owner) {
         VBox body = new VBox(16);
-        body.getStyleClass().add("help-dialog-body");
+        body.getStyleClass().addAll("help-dialog-body", "shell-dialog-body");
         body.setPadding(new Insets(20, 24, 20, 24));
-        body.setStyle("-fx-background-color: white;");
         body.getChildren().add(intro());
         body.getChildren().add(copyValuesSection());
         body.getChildren().add(openHubButton());
@@ -145,7 +142,7 @@ public final class HmrcRegistrationGuideDialog {
             + "credentials. Follow these steps, then paste your Client ID and Secret below.");
         intro.setWrapText(true);
         intro.setMaxWidth(Double.MAX_VALUE);
-        intro.setStyle("-fx-font-size: 14px; -fx-text-fill: #374151; -fx-line-spacing: 4;");
+        intro.getStyleClass().add("shell-guide-intro");
         return intro;
     }
 

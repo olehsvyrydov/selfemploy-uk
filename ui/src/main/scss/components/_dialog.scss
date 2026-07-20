@@ -1,0 +1,82 @@
+@use '../tokens' as t;
+
+// Shared dialog "shell" — the visual pieces common to the app's transparent-stage dialogs
+// (AppDialog, HelpDialog, HmrcRegistrationGuideDialog). Each dialog previously repeated the same
+// inline styles; one class per shared surface keeps a single definition. These dialogs have their
+// own scene, so colours are literal hex / Sass tokens, never inherited looked-up colours. The one
+// exception is the dynamic header/link accent, a looked-up colour the node defines inline itself.
+
+// Icon circle behind the header glyph.
+.shell-dialog-icon-wrapper {
+  -fx-background-color: rgba(255, 255, 255, 0.2);
+  -fx-background-radius: 20;
+}
+
+// White header title.
+.shell-dialog-title {
+  -fx-text-fill: white;
+  -fx-font-size: 16px;
+  -fx-font-weight: 600;
+}
+
+// White body surface.
+.shell-dialog-body {
+  -fx-background-color: white;
+}
+
+// Header base. The 11px top radius fits inside the 12px rounded container's 1px border.
+.shell-dialog-header {
+  -fx-background-radius: 11 11 0 0;
+}
+
+// Per-kind header gradients (AppDialog kinds; the HMRC guide reuses -info).
+.shell-dialog-header-info {
+  -fx-background-color: linear-gradient(to right, #0066cc, #3385d6);
+}
+
+.shell-dialog-header-warning {
+  -fx-background-color: linear-gradient(to right, #d97706, #f59e0b);
+}
+
+.shell-dialog-header-error {
+  -fx-background-color: linear-gradient(to right, #dc3545, #e4606d);
+}
+
+// Dynamic header gradient: the runtime category colour and its lightened partner are set inline on
+// the node as looked-up colours; the class assembles the gradient from them.
+.shell-dialog-gradient-header {
+  -fx-background-color: linear-gradient(to right, -fx-header-accent, -fx-header-accent-end);
+}
+
+// AppDialog body message text.
+.shell-dialog-message {
+  -fx-font-size: t.$font-md;
+  -fx-text-fill: #212529;
+}
+
+// HmrcRegistrationGuideDialog intro paragraph.
+.shell-guide-intro {
+  -fx-font-size: t.$font-md;
+  -fx-text-fill: #374151;
+  -fx-line-spacing: 4;
+}
+
+// HelpDialog "Learn more" link button. Its accent (and darker hover accent) come from the category
+// colour set inline as looked-up colours; the hover is a pure CSS pseudo-class, not a mouse handler.
+.shell-dialog-link-btn {
+  -fx-background-color: -fx-link-accent;
+  -fx-text-fill: white;
+  -fx-font-size: t.$font-sm;
+  -fx-padding: 10 20;
+  -fx-background-radius: 6;
+  -fx-cursor: hand;
+}
+
+.shell-dialog-link-btn:hover {
+  -fx-background-color: -fx-link-accent-hover;
+}
+
+// Transparent shadow wrapper produced by DialogStyler.createShadowWrapper for every dialog.
+.shell-dialog-shadow-wrapper {
+  -fx-background-color: transparent;
+}

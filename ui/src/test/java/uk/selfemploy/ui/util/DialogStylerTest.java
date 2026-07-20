@@ -252,7 +252,7 @@ class DialogStylerTest {
 
             StackPane wrapper = DialogStyler.createShadowWrapper(content);
 
-            assertTrue(wrapper.getStyle().contains("-fx-background-color: transparent"));
+            assertTrue(wrapper.getStyleClass().contains("shell-dialog-shadow-wrapper"));
         }
 
         @Test
