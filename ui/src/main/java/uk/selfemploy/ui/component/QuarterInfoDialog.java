@@ -19,7 +19,6 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.ui.util.DialogStyler;
-import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.viewmodel.QuarterStatus;
 import uk.selfemploy.ui.viewmodel.QuarterViewModel;
 
@@ -67,13 +66,6 @@ public class QuarterInfoDialog {
      * Corner radius for the dialog container.
      */
     public static final double CORNER_RADIUS = 12.0;
-
-    // ==================== Header Gradient Colors ====================
-
-    private static final String[] DRAFT_GRADIENT = {"#0066cc", "#3385d6"};
-    private static final String[] OVERDUE_GRADIENT = {"#dc3545", "#e4606d"};
-    private static final String[] SUBMITTED_GRADIENT = {"#28a745", "#48c664"};
-    private static final String[] FUTURE_GRADIENT = {"#6c757d", "#868e96"};
 
     // ==================== Instance Fields ====================
 
@@ -158,21 +150,6 @@ public class QuarterInfoDialog {
     // ==================== Static Helper Methods (for testing) ====================
 
     /**
-     * Returns the header gradient colors for a given status.
-     *
-     * @param status the quarter status
-     * @return array of [startColor, endColor] hex values
-     */
-    public static String[] getHeaderGradientColors(QuarterStatus status) {
-        return switch (status) {
-            case DRAFT -> DRAFT_GRADIENT;
-            case OVERDUE -> OVERDUE_GRADIENT;
-            case SUBMITTED -> SUBMITTED_GRADIENT;
-            case FUTURE -> FUTURE_GRADIENT;
-        };
-    }
-
-    /**
      * Returns the icon name for a given status.
      *
      * @param status the quarter status
@@ -200,23 +177,6 @@ public class QuarterInfoDialog {
             case SUBMITTED -> FontAwesomeSolid.CHECK_CIRCLE;
             case FUTURE -> FontAwesomeSolid.CLOCK;
         };
-    }
-
-    /**
-     * Returns the styling for net profit/loss based on the value.
-     *
-     * @param netValue the net profit (positive) or loss (negative)
-     * @return CSS style string
-     */
-    public static String getNetProfitStyle(BigDecimal netValue) {
-        if (netValue == null) {
-            return "-fx-text-fill: #6c757d;";
-        }
-        if (netValue.compareTo(BigDecimal.ZERO) >= 0) {
-            return "-fx-text-fill: #28a745; -fx-font-weight: 600;"; // Green for profit
-        } else {
-            return "-fx-text-fill: #dc3545; -fx-font-weight: 600;"; // Red for loss
-        }
     }
 
     /**
@@ -355,7 +315,7 @@ public class QuarterInfoDialog {
      * @param status the quarter status
      * @return the style class carrying the status-specific gradient
      */
-    private static String headerColorClass(QuarterStatus status) {
+    static String headerColorClass(QuarterStatus status) {
         return switch (status) {
             case DRAFT -> "header-blue";
             case OVERDUE -> "header-red";
@@ -380,7 +340,7 @@ public class QuarterInfoDialog {
      * @param netValue the net profit (positive) or loss (negative), or null when unknown
      * @return the style class conveying neutral, positive, or negative styling
      */
-    private static String netValueClass(BigDecimal netValue) {
+    static String netValueClass(BigDecimal netValue) {
         if (netValue == null) {
             return "net-value-neutral";
         }
@@ -404,7 +364,6 @@ public class QuarterInfoDialog {
         container.getStyleClass().addAll("help-dialog-container", "quarter-dialog");
         container.setMinWidth(DIALOG_WIDTH);
         container.setMaxWidth(DIALOG_WIDTH);
-        Stylesheets.attachComponents(container);
 
         // Header with status-colored gradient
         container.getChildren().add(createHeader());
@@ -538,17 +497,17 @@ public class QuarterInfoDialog {
         titleLabel.getStyleClass().add("financial-card-title");
 
         // Income row
-        HBox incomeRow = createFinancialRow("Income", formatCurrency(income), "#212529");
+        HBox incomeRow = createFinancialRow("Income", formatCurrency(income), true);
 
         // Expenses row
-        HBox expensesRow = createFinancialRow("Expenses", formatCurrency(expenses), "#212529");
+        HBox expensesRow = createFinancialRow("Expenses", formatCurrency(expenses), true);
 
-        // Net row
+        // Net row — its colour class is applied separately below, so no default value style here.
         BigDecimal net = null;
         if (income != null && expenses != null) {
             net = income.subtract(expenses);
         }
-        HBox netRow = createFinancialRow("Net Profit", formatCurrency(net), null);
+        HBox netRow = createFinancialRow("Net Profit", formatCurrency(net), false);
         // Apply conditional styling for net value (index 2: label=0, spacer=1, value=2)
         Label netValue = (Label) netRow.getChildren().get(2);
         netValue.getStyleClass().add(netValueClass(net));
@@ -560,8 +519,11 @@ public class QuarterInfoDialog {
 
     /**
      * Creates a row for financial data display.
+     *
+     * @param defaultValueStyle whether to apply the neutral {@code data-value} colour to the value;
+     *     rows that set their own value colour (the net row) pass {@code false}
      */
-    private HBox createFinancialRow(String label, String value, String valueColor) {
+    private HBox createFinancialRow(String label, String value, boolean defaultValueStyle) {
         HBox row = new HBox();
         row.setAlignment(Pos.CENTER_LEFT);
 
@@ -572,7 +534,7 @@ public class QuarterInfoDialog {
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label valueNode = new Label(value);
-        if (valueColor != null) {
+        if (defaultValueStyle) {
             valueNode.getStyleClass().add("data-value");
         }
 

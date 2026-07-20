@@ -45,11 +45,6 @@ public final class AppDialog {
     /** Dialog kind — drives the header colour, icon and default buttons. */
     public enum Kind { INFO, WARNING, ERROR, CONFIRM }
 
-    private static final String[] INFO_GRADIENT = {"#0066cc", "#3385d6"};
-    private static final String[] WARNING_GRADIENT = {"#d97706", "#f59e0b"};
-    private static final String[] ERROR_GRADIENT = {"#dc3545", "#e4606d"};
-    private static final String[] CONFIRM_GRADIENT = {"#0066cc", "#3385d6"};
-
     private final Stage stage;
     private boolean confirmed;
 
@@ -140,16 +135,6 @@ public final class AppDialog {
     }
 
     // ==================== Testable pure helpers ====================
-
-    /** Header gradient [start, end] hex colours for a kind. */
-    public static String[] gradientFor(Kind kind) {
-        return switch (kind) {
-            case INFO -> INFO_GRADIENT;
-            case WARNING -> WARNING_GRADIENT;
-            case ERROR -> ERROR_GRADIENT;
-            case CONFIRM -> CONFIRM_GRADIENT;
-        };
-    }
 
     /** Header icon for a kind. */
     public static Ikon iconFor(Kind kind) {

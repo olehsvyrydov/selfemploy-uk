@@ -137,8 +137,6 @@ public class IncomeDialogController implements Initializable {
     private void configureDatePicker() {
         if (taxYear == null) return;
 
-        Stylesheets.attachComponents(dateField);
-
         // Set default date to today
         dateField.setValue(LocalDate.now());
 
@@ -146,8 +144,11 @@ public class IncomeDialogController implements Initializable {
         dateField.setEditable(true);
         dateField.getStyleClass().add("date-picker");
 
-        // Restrict to tax year bounds
+        // Restrict to tax year bounds. Day cells live in the DatePicker's own popup scene, which does
+        // not inherit the control's stylesheets, so the component sheet is attached to each cell.
         dateField.setDayCellFactory(picker -> new DateCell() {
+            { Stylesheets.attachComponents(this); }
+
             @Override
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);

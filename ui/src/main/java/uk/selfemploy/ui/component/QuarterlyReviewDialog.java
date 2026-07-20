@@ -26,7 +26,6 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.exception.SubmissionException;
 import uk.selfemploy.ui.util.DialogStyler;
 import uk.selfemploy.ui.util.HmrcErrorGuidance;
-import uk.selfemploy.ui.util.Stylesheets;
 import uk.selfemploy.ui.util.SubmissionErrorDisplay;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
@@ -126,11 +125,6 @@ public class QuarterlyReviewDialog {
      * D-07 (/aura): use solid #0066cc instead of Bootstrap gradient.
      */
     public static final String SETTINGS_BUTTON_COLOR = "#0066cc";
-
-    // ==================== Header Gradient Colors ====================
-
-    private static final String[] REVIEW_GRADIENT = {"#28a745", "#48c664"};  // Green for review
-    private static final String[] OVERDUE_GRADIENT = {"#dc3545", "#e4606d"}; // Red for overdue
 
     // ==================== Confirmation Texts ====================
 
@@ -278,16 +272,6 @@ public class QuarterlyReviewDialog {
     }
 
     /**
-     * Returns the header gradient colors.
-     *
-     * @param isOverdue whether this quarter is overdue
-     * @return array of [startColor, endColor] hex values
-     */
-    public static String[] getHeaderGradientColors(boolean isOverdue) {
-        return isOverdue ? OVERDUE_GRADIENT : REVIEW_GRADIENT;
-    }
-
-    /**
      * Computes a SHA-256 hash of the declaration confirmation texts.
      *
      * <p>This hash is stored with the submission as an audit trail to prove
@@ -354,7 +338,6 @@ public class QuarterlyReviewDialog {
         dialogStack.getStyleClass().addAll("help-dialog-container", "quarter-dialog");
         dialogStack.setMinWidth(DIALOG_WIDTH);
         dialogStack.setMaxWidth(DIALOG_WIDTH);
-        Stylesheets.attachComponents(dialogStack);
 
         // Apply styling using DialogStyler utility
         DialogStyler.applyRoundedClip(dialogStack, CORNER_RADIUS);
@@ -805,7 +788,6 @@ public class QuarterlyReviewDialog {
         container.getStyleClass().add("quarter-dialog");
         container.setMinWidth(420);
         container.setMaxWidth(420);
-        Stylesheets.attachComponents(container);
 
         // Green header with checkmark
         HBox header = new HBox(12);
@@ -934,7 +916,6 @@ public class QuarterlyReviewDialog {
         container.getStyleClass().add("quarter-dialog");
         container.setMinWidth(420);
         container.setMaxWidth(420);
-        Stylesheets.attachComponents(container);
 
         // ---- Header with specific title ----
         HBox header = new HBox(12);

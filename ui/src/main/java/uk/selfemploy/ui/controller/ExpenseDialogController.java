@@ -116,7 +116,6 @@ public class ExpenseDialogController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        Stylesheets.attachComponents(dateField);
         setupDatePicker();
         setupAmountFormatter();
     }
@@ -164,8 +163,11 @@ public class ExpenseDialogController implements Initializable {
         dateField.setEditable(true);
         dateField.getStyleClass().add("date-picker");
 
-        // Configure date picker to restrict to tax year
+        // Configure date picker to restrict to tax year. Day cells render in the DatePicker's own popup
+        // scene, which does not inherit the control's stylesheets, so attach the component sheet per cell.
         dateField.setDayCellFactory(picker -> new DateCell() {
+            { Stylesheets.attachComponents(this); }
+
             @Override
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
@@ -207,8 +209,6 @@ public class ExpenseDialogController implements Initializable {
             return;
         }
 
-        Stylesheets.attachComponents(categoryField);
-
         var categories = viewModel.getAvailableCategories();
         LOG.debug("Available categories count: {}", categories.size());
 
@@ -241,7 +241,11 @@ public class ExpenseDialogController implements Initializable {
             }
         });
 
+        // Dropdown list cells render in the ComboBox popup scene, which does not inherit the control's
+        // stylesheets, so the component sheet is attached to each cell for the warning colour to resolve.
         categoryField.setCellFactory(lv -> new ListCell<>() {
+            { Stylesheets.attachComponents(this); }
+
             @Override
             protected void updateItem(ExpenseCategory item, boolean empty) {
                 super.updateItem(item, empty);

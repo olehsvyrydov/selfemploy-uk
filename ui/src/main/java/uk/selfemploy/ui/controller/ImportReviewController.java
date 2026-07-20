@@ -229,6 +229,8 @@ public class ImportReviewController implements Initializable {
         amountColumn.setCellValueFactory(cellData ->
             new SimpleStringProperty(cellData.getValue().getFormattedAmount()));
         amountColumn.setCellFactory(col -> new TableCell<>() {
+            { getStyleClass().add("cell-align-right"); }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -246,7 +248,6 @@ public class ImportReviewController implements Initializable {
                 }
             }
         });
-        amountColumn.getStyleClass().add("column-amount");
 
         // Match column (badge)
         matchColumn.setCellValueFactory(cellData ->

@@ -366,21 +366,6 @@ class QuarterlyReviewDialogTest {
             assertEquals(500, QuarterlyReviewDialog.DIALOG_WIDTH);
         }
 
-        @Test
-        @DisplayName("should use green header color")
-        void shouldUseGreenHeaderColor() {
-            String[] colors = QuarterlyReviewDialog.getHeaderGradientColors(false);
-            // Green gradient for review
-            assertTrue(colors[0].contains("28a745") || colors[0].contains("2"));
-        }
-
-        @Test
-        @DisplayName("should use red header color for overdue")
-        void shouldUseRedHeaderColorForOverdue() {
-            String[] colors = QuarterlyReviewDialog.getHeaderGradientColors(true);
-            // Red gradient for overdue
-            assertTrue(colors[0].contains("dc3545") || colors[0].contains("d"));
-        }
     }
 
     @Nested
