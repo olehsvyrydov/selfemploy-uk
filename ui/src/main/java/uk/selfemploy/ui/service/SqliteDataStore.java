@@ -81,7 +81,9 @@ public final class SqliteDataStore {
     SqliteDataStore(boolean inMemory) {
         this.credentialEncryption = new CredentialEncryption();
         this.inMemory = inMemory;
-        this.dbKey = inMemory ? null : provisionedKey;
+        // The singleton reads the provisioned key live (see openRawConnection) rather than snapshotting
+        // it, so a key provisioned around construction is never missed; test stores pass an explicit key.
+        this.dbKey = null;
         this.databasePath = inMemory ? null : resolveDatabasePath();
         if (!inMemory) {
             ensureDirectoryExists();
@@ -176,10 +178,12 @@ public final class SqliteDataStore {
      */
     private Connection openRawConnection() throws SQLException {
         String url = inMemory ? "jdbc:sqlite::memory:" : "jdbc:sqlite:" + databasePath.toAbsolutePath();
-        if (inMemory || dbKey == null) {
+        // A test store carries its own key; the singleton uses the live provisioned key.
+        DbKey key = dbKey != null ? dbKey : provisionedKey;
+        if (inMemory || key == null) {
             return DriverManager.getConnection(url);
         }
-        return SqlCipherSupport.openEncrypted(url, dbKey);
+        return SqlCipherSupport.openEncrypted(url, key);
     }
 
     /**

@@ -5,10 +5,12 @@ import org.bouncycastle.crypto.params.Argon2Parameters;
 
 import uk.selfemploy.ui.service.AppDataDirectory;
 
+import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -197,6 +199,8 @@ public final class AppLockService {
             return new Vault.Slot(name, kdf,
                     Base64.getEncoder().encodeToString(nonce),
                     Base64.getEncoder().encodeToString(wrapped));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Failed to wrap the database key", e);
         } finally {
             Arrays.fill(kek, (byte) 0);
         }
@@ -209,23 +213,23 @@ public final class AppLockService {
             byte[] wrapped = Base64.getDecoder().decode(slot.wrappedKeyB64());
             Vault.Slot slotForAad = new Vault.Slot(slot.name(), slot.kdf(), null, null);
             return gcm(Cipher.DECRYPT_MODE, kek, nonce, Vault.aad(version, slotForAad), wrapped);
-        } catch (Exception e) {
-            // Auth-tag failure (wrong secret) or any decode error is an incorrect-secret outcome.
+        } catch (AEADBadTagException | IllegalArgumentException e) {
+            // Auth-tag failure (wrong secret) or an undecodable slot is an incorrect-secret outcome.
             throw new WrongPassphraseException();
+        } catch (GeneralSecurityException e) {
+            // A real crypto/provider failure must not be masked as a wrong passphrase.
+            throw new IllegalStateException("Failed to unwrap the database key", e);
         } finally {
             Arrays.fill(kek, (byte) 0);
         }
     }
 
-    private static byte[] gcm(int mode, byte[] key, byte[] nonce, byte[] aad, byte[] input) {
-        try {
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(mode, new SecretKeySpec(key, "AES"), new GCMParameterSpec(GCM_TAG_BITS, nonce));
-            cipher.updateAAD(aad);
-            return cipher.doFinal(input);
-        } catch (Exception e) {
-            throw new IllegalStateException("GCM operation failed", e);
-        }
+    private static byte[] gcm(int mode, byte[] key, byte[] nonce, byte[] aad, byte[] input)
+            throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(mode, new SecretKeySpec(key, "AES"), new GCMParameterSpec(GCM_TAG_BITS, nonce));
+        cipher.updateAAD(aad);
+        return cipher.doFinal(input);
     }
 
     private static byte[] deriveKek(char[] secret, Vault.KdfParams kdf) {
