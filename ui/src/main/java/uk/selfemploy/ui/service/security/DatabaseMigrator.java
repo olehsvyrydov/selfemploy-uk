@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -131,7 +132,7 @@ public final class DatabaseMigrator {
                 AppDataDirectory.restrictFile(dbPath);
             }
         } catch (IOException e) {
-            LOG.log(java.util.logging.Level.SEVERE, "Failed to restore database from backup", e);
+            LOG.log(Level.SEVERE, "Failed to restore database from backup", e);
         }
     }
 

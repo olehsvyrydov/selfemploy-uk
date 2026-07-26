@@ -7,6 +7,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,10 +55,10 @@ class AppLockServiceTest {
         DbKey unlocked = service.unlock(pw("correct horse battery"));
         assertThat(unlocked.hex()).hasSize(64);
 
-        if (Files.getFileStore(vault).supportsFileAttributeView(java.nio.file.attribute.PosixFileAttributeView.class)) {
+        if (Files.getFileStore(vault).supportsFileAttributeView(PosixFileAttributeView.class)) {
             assertThat(Files.getPosixFilePermissions(vault)).containsExactlyInAnyOrder(
-                    java.nio.file.attribute.PosixFilePermission.OWNER_READ,
-                    java.nio.file.attribute.PosixFilePermission.OWNER_WRITE);
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE);
         }
     }
 

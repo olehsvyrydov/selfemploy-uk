@@ -9,6 +9,8 @@ import javafx.stage.Modality;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.Stage;
 import uk.selfemploy.common.util.EnvLoader;
+import uk.selfemploy.ui.controller.AppProtectController;
+import uk.selfemploy.ui.controller.AppUnlockController;
 import uk.selfemploy.ui.controller.MainController;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.controller.OnboardingController;
@@ -16,11 +18,29 @@ import uk.selfemploy.ui.controller.SettingsController;
 import uk.selfemploy.ui.controller.TermsOfServiceController;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.OnboardingSetupService;
+import uk.selfemploy.ui.service.SqliteDataStore;
+import uk.selfemploy.ui.service.security.AppLockService;
+import uk.selfemploy.ui.service.security.DatabaseMigrator;
+import uk.selfemploy.ui.service.security.DbKey;
 import uk.selfemploy.ui.util.DialogBounds;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 /**
  * Main application launcher for UK Self-Employment Manager.
@@ -35,6 +55,8 @@ public class Launcher extends Application {
     private static final String APP_TITLE = "UK Self-Employment Manager";
     private static final int DEFAULT_WIDTH = 1280;
     private static final int DEFAULT_HEIGHT = 720;
+    private static final String CSS_DIRECTORY = "/css";
+    private static final String BASE_STYLESHEET = "main.css";
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -83,19 +105,53 @@ public class Launcher extends Application {
 
     /** The app's stylesheet URLs (resolved once, reused by the main scene and the modal gates). */
     private List<String> stylesheetUrls() {
-        String[] paths = {
-            "/css/main.css", "/css/tax-summary.css", "/css/legal.css", "/css/annual-submission.css",
-            "/css/submission-history.css", "/css/onboarding.css", "/css/bank-import.css",
-            "/css/notifications.css", "/css/receipt-attachment.css", "/css/help.css"
-        };
-        List<String> urls = new java.util.ArrayList<>();
-        for (String css : paths) {
-            var resource = getClass().getResource(css);
+        List<String> urls = new ArrayList<>();
+        for (String name : stylesheetNames()) {
+            URL resource = getClass().getResource(CSS_DIRECTORY + "/" + name);
             if (resource != null) {
                 urls.add(resource.toExternalForm());
             }
         }
         return urls;
+    }
+
+    /**
+     * Every stylesheet in the {@code /css} resource directory, base stylesheet first so the
+     * per-screen ones override it, then alphabetically. The directory is read through the NIO file
+     * system so it works both from an exploded classes directory and from inside the packaged jar.
+     * A directory that cannot be read yields no stylesheets rather than failing startup.
+     */
+    private List<String> stylesheetNames() {
+        URL directory = getClass().getResource(CSS_DIRECTORY);
+        if (directory == null) {
+            return List.of();
+        }
+        try {
+            URI uri = directory.toURI();
+            if (!"jar".equals(uri.getScheme())) {
+                return stylesheetNamesIn(Paths.get(uri));
+            }
+            try (FileSystem jar = FileSystems.newFileSystem(uri, Map.of())) {
+                return stylesheetNamesIn(jar.getPath(CSS_DIRECTORY));
+            } catch (FileSystemAlreadyExistsException alreadyOpen) {
+                // Another part of the app opened this jar first; it owns the file system, so use it
+                // without closing it.
+                return stylesheetNamesIn(FileSystems.getFileSystem(uri).getPath(CSS_DIRECTORY));
+            }
+        } catch (URISyntaxException | IOException e) {
+            LOG.log(Level.WARNING, "Could not list the stylesheet directory; continuing without styles", e);
+            return List.of();
+        }
+    }
+
+    private static List<String> stylesheetNamesIn(Path directory) throws IOException {
+        try (Stream<Path> entries = Files.list(directory)) {
+            return entries.map(entry -> entry.getFileName().toString())
+                    .filter(name -> name.endsWith(".css"))
+                    .sorted(Comparator.comparing((String name) -> !BASE_STYLESHEET.equals(name))
+                            .thenComparing(Comparator.naturalOrder()))
+                    .toList();
+        }
     }
 
     /**
@@ -107,17 +163,16 @@ public class Launcher extends Application {
      * @return true to continue starting the app, false if it is exiting
      */
     private boolean requireUnlock(List<String> stylesheets) {
-        java.nio.file.Path dbPath = uk.selfemploy.ui.service.SqliteDataStore.databaseFilePath();
-        uk.selfemploy.ui.service.security.DatabaseMigrator.restoreFromBackupIfInterrupted(dbPath);
-        uk.selfemploy.ui.service.security.AppLockService appLock =
-                new uk.selfemploy.ui.service.security.AppLockService();
+        Path dbPath = SqliteDataStore.databaseFilePath();
+        DatabaseMigrator.restoreFromBackupIfInterrupted(dbPath);
+        AppLockService appLock = new AppLockService();
         if (!appLock.isProtectionEnabled()) {
             return true; // no passphrase set — the database is plaintext, unchanged behaviour
         }
         try {
             FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/app-unlock.fxml"));
             Parent root = loader.load();
-            uk.selfemploy.ui.controller.AppUnlockController controller = loader.getController();
+            AppUnlockController controller = loader.getController();
             controller.setAppLockService(appLock);
 
             Stage dialog = new Stage();
@@ -129,21 +184,21 @@ public class Launcher extends Application {
             controller.setDialogStage(dialog);
             dialog.showAndWait();
 
-            uk.selfemploy.ui.service.security.DbKey key = controller.getUnlockedKey();
+            DbKey key = controller.getUnlockedKey();
             if (key == null) {
                 LOG.info("Unlock cancelled; exiting");
                 Platform.exit();
                 return false;
             }
-            if (uk.selfemploy.ui.service.security.DatabaseMigrator.databaseIsPlaintext(dbPath)) {
-                uk.selfemploy.ui.service.security.DatabaseMigrator.encrypt(dbPath, key);
+            if (DatabaseMigrator.databaseIsPlaintext(dbPath)) {
+                DatabaseMigrator.encrypt(dbPath, key);
             }
-            uk.selfemploy.ui.service.SqliteDataStore.provisionKey(key);
+            SqliteDataStore.provisionKey(key);
             // Force the store to actually open the encrypted database (keyed connection + schema
             // migrations) and only then remove the plaintext safety-net backup. If this throws, the
             // outer catch exits with the backup retained for recovery.
-            uk.selfemploy.ui.service.SqliteDataStore.getInstance();
-            uk.selfemploy.ui.service.security.DatabaseMigrator.deleteBackup(dbPath);
+            SqliteDataStore.getInstance();
+            DatabaseMigrator.deleteBackup(dbPath);
             return true;
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "App-lock gate failed; exiting to avoid opening unprotected", e);
@@ -158,15 +213,14 @@ public class Launcher extends Application {
      * it is swallowed — an optional step never blocks the app.
      */
     private void maybeOfferProtection(Stage owner, List<String> stylesheets) {
-        uk.selfemploy.ui.service.security.AppLockService appLock =
-                new uk.selfemploy.ui.service.security.AppLockService();
+        AppLockService appLock = new AppLockService();
         if (appLock.isProtectionEnabled()) {
             return;
         }
         try {
             FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/app-protect.fxml"));
             Parent root = loader.load();
-            uk.selfemploy.ui.controller.AppProtectController controller = loader.getController();
+            AppProtectController controller = loader.getController();
             controller.setAppLockService(appLock);
 
             Stage dialog = new Stage();
