@@ -8,10 +8,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.service.security.AppLockService;
+import uk.selfemploy.ui.viewmodel.AppProtectViewModel;
 
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -26,10 +28,9 @@ import java.util.logging.Logger;
 public class AppProtectController {
 
     private static final Logger LOG = Logger.getLogger(AppProtectController.class.getName());
-    private static final int MIN_PASSPHRASE_LENGTH = 8;
 
-    @FXML private javafx.scene.layout.VBox setupPane;
-    @FXML private javafx.scene.layout.VBox recoveryPane;
+    @FXML private VBox setupPane;
+    @FXML private VBox recoveryPane;
     @FXML private PasswordField passphraseField;
     @FXML private PasswordField confirmField;
     @FXML private Label errorLabel;
@@ -37,6 +38,8 @@ public class AppProtectController {
     @FXML private Label recoveryCodeLabel;
     @FXML private CheckBox savedCheckbox;
     @FXML private Button continueButton;
+
+    private final AppProtectViewModel viewModel = new AppProtectViewModel();
 
     private AppLockService appLock;
     private AppLockService.PendingProtection pending;
@@ -57,12 +60,9 @@ public class AppProtectController {
         }
         String p1 = passphraseField.getText();
         String p2 = confirmField.getText();
-        if (p1.length() < MIN_PASSPHRASE_LENGTH) {
-            showError(Messages.format("protect.error.tooShort", MIN_PASSPHRASE_LENGTH));
-            return;
-        }
-        if (!p1.equals(p2)) {
-            showError(Messages.get("protect.error.mismatch"));
+        AppProtectViewModel.Validation validation = viewModel.validate(p1, p2);
+        if (validation != AppProtectViewModel.Validation.OK) {
+            showError(Messages.format(validation.messageKey(), validation.messageArgs()));
             return;
         }
         hideError();
@@ -114,13 +114,13 @@ public class AppProtectController {
 
     @FXML
     private void handleSavedToggled() {
-        continueButton.setDisable(!savedCheckbox.isSelected());
+        continueButton.setDisable(!viewModel.canCommit(pending != null, savedCheckbox.isSelected()));
     }
 
     @FXML
     private void handleContinue() {
         // Point of no return: write the vault now that the recovery code has been shown and acknowledged.
-        if (pending != null) {
+        if (viewModel.canCommit(pending != null, savedCheckbox.isSelected())) {
             try {
                 pending.commit();
             } catch (Exception e) {

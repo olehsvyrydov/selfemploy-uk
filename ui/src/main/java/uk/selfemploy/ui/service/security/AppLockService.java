@@ -122,8 +122,10 @@ public final class AppLockService {
         random.nextBytes(dbKey);
 
         char[] recovery = generateRecoveryCode();
+        char[] recoveryKey = normalizeRecoveryCode(recovery);
         Vault.Slot passphraseSlot = wrapSlot(Vault.VERSION, Vault.SLOT_PASSPHRASE, passphrase, dbKey);
-        Vault.Slot recoverySlot = wrapSlot(Vault.VERSION, Vault.SLOT_RECOVERY, recovery, dbKey);
+        Vault.Slot recoverySlot = wrapSlot(Vault.VERSION, Vault.SLOT_RECOVERY, recoveryKey, dbKey);
+        Arrays.fill(recoveryKey, '\0');
         Vault vault = new Vault(Vault.VERSION, Vault.CIPHER, List.of(passphraseSlot, recoverySlot));
 
         String recoveryString = new String(recovery);
@@ -138,9 +140,37 @@ public final class AppLockService {
         return unlockSlot(Vault.SLOT_PASSPHRASE, passphrase);
     }
 
-    /** Unlocks with the recovery code. */
+    /**
+     * Unlocks with the recovery code. The code is normalised first (see {@link #normalizeRecoveryCode}),
+     * so the grouping dashes, surrounding whitespace and letter case a user reproduces from paper do not
+     * decide whether their last resort works.
+     */
     public DbKey unlockWithRecovery(char[] code) throws WrongPassphraseException, RateLimitedException, IOException {
-        return unlockSlot(Vault.SLOT_RECOVERY, code);
+        char[] normalized = normalizeRecoveryCode(code);
+        try {
+            return unlockSlot(Vault.SLOT_RECOVERY, normalized);
+        } finally {
+            Arrays.fill(normalized, '\0');
+        }
+    }
+
+    /**
+     * Canonical form of a recovery code: letters and digits only, upper-cased. Both the wrap (at
+     * enable time) and every unlock go through this, so a code entered as {@code abcde fghij} or
+     * {@code ABCDEFGHIJ} unwraps the same key as the displayed {@code ABCDE-FGHIJ}. Builds into a
+     * {@code char[]} rather than a String so the secret stays wipeable.
+     */
+    static char[] normalizeRecoveryCode(char[] code) {
+        char[] buffer = new char[code.length];
+        int length = 0;
+        for (char c : code) {
+            if (Character.isLetterOrDigit(c)) {
+                buffer[length++] = Character.toUpperCase(c);
+            }
+        }
+        char[] normalized = Arrays.copyOf(buffer, length);
+        Arrays.fill(buffer, '\0');
+        return normalized;
     }
 
     private DbKey unlockSlot(String slotName, char[] secret)

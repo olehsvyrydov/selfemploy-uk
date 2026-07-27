@@ -88,6 +88,34 @@ class AppLockServiceTest {
     }
 
     @Test
+    @DisplayName("the recovery code is accepted however it is retyped: case, spacing and dashes")
+    void recoveryCodeIsNormalizedOnEntry() throws Exception {
+        String code = enable("correct horse battery");
+        DbKey expected = service.unlockWithRecovery(code.toCharArray());
+
+        // The forms a user reproduces from paper must all open the same key.
+        for (String variant : new String[]{
+                code.toLowerCase(),                 // typed without shift
+                code.replace("-", ""),              // dashes omitted
+                code.replace('-', ' '),             // dashes read as spaces
+                "  " + code + "  ",                 // pasted with surrounding whitespace
+                code.toLowerCase().replace("-", " ")}) {
+            assertThat(service.unlockWithRecovery(variant.toCharArray()).hex())
+                    .as("recovery code entered as \"%s\"", variant)
+                    .isEqualTo(expected.hex());
+        }
+    }
+
+    @Test
+    @DisplayName("a genuinely wrong recovery code is still rejected after normalization")
+    void wrongRecoveryCodeStillFails() throws Exception {
+        enable("correct horse battery");
+
+        assertThatThrownBy(() -> service.unlockWithRecovery("AAAAA-BBBBB-CCCCC-DDDDD-EEEEE".toCharArray()))
+                .isInstanceOf(WrongPassphraseException.class);
+    }
+
+    @Test
     @DisplayName("changing the passphrase re-wraps the same key: new works, old fails, key unchanged")
     void changePassphrase() throws Exception {
         String recovery = enable("old-pass");

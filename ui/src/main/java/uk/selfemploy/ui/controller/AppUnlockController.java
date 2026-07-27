@@ -11,8 +11,7 @@ import javafx.stage.Stage;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.service.security.AppLockService;
 import uk.selfemploy.ui.service.security.DbKey;
-import uk.selfemploy.ui.service.security.RateLimitedException;
-import uk.selfemploy.ui.service.security.WrongPassphraseException;
+import uk.selfemploy.ui.viewmodel.AppUnlockViewModel;
 
 import java.util.Arrays;
 
@@ -30,6 +29,8 @@ public class AppUnlockController {
     @FXML private PasswordField secretField;
     @FXML private Button unlockButton;
     @FXML private Hyperlink recoveryLink;
+
+    private final AppUnlockViewModel viewModel = new AppUnlockViewModel();
 
     private AppLockService appLock;
     private Stage dialogStage;
@@ -87,15 +88,8 @@ public class AppUnlockController {
         task.setOnFailed(e -> {
             Arrays.fill(secret, '\0');
             setBusy(false);
-            Throwable ex = task.getException();
-            if (ex instanceof RateLimitedException rle) {
-                long secs = Math.max(1, (rle.retryAfterMillis() + 999) / 1000);
-                showError(Messages.format("unlock.error.rateLimited", secs));
-            } else if (ex instanceof WrongPassphraseException) {
-                showError(Messages.get("unlock.error.wrong"));
-            } else {
-                showError(Messages.get("unlock.error.generic"));
-            }
+            AppUnlockViewModel.ErrorMessage error = viewModel.errorFor(task.getException());
+            showError(Messages.format(error.key(), error.args()));
             secretField.requestFocus();
         });
         Thread thread = new Thread(task, "app-unlock");
