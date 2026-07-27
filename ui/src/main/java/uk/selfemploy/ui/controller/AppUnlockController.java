@@ -47,6 +47,17 @@ public class AppUnlockController implements AppLockDialog {
         this.dialogStage = dialogStage;
     }
 
+    /**
+     * Explains a mid-session lock. Without this the screen appears with startup wording, leaving a user
+     * who stepped away unsure whether the app restarted or something went wrong — and telling someone who
+     * locked deliberately that they timed out.
+     *
+     * @param messageKey the subtitle describing why the session locked
+     */
+    public void setLockReason(String messageKey) {
+        subtitleLabel.setText(Messages.get(messageKey));
+    }
+
     /** The unlocked database key, or {@code null} if the user closed the screen without unlocking. */
     public DbKey getUnlockedKey() {
         return unlockedKey;

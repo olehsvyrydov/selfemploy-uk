@@ -63,8 +63,18 @@ public final class SqliteDataStore {
      */
     private static volatile DbKey provisionedKey;
 
-    /** This store's key: the provisioned key for the singleton, null (plaintext) for test stores. */
-    private final DbKey dbKey;
+    /** This store's own key. Null for the singleton, which reads the shared {@link #provisionedKey}. */
+    private DbKey dbKey;
+
+    /**
+     * Whether this store's key lives in the shared static slot. Fixed at construction so a lock never
+     * reaches across to the singleton's key from a store that owns its own — which would otherwise let a
+     * test clear or set state the rest of the JVM can see.
+     */
+    private final boolean usesSharedKey;
+
+    /** Set by {@link #lock()}; every connection request is refused until {@link #reopen(DbKey)}. */
+    private volatile boolean locked;
 
     /**
      * Supplies the database encryption key for the singleton. Must be called by the unlock flow before
@@ -83,6 +93,65 @@ public final class SqliteDataStore {
         return provisionedKey != null;
     }
 
+    /**
+     * Locks the store: closes every connection and forgets the encryption key, so the data on disk cannot
+     * be read again until {@link #reopen(DbKey)} supplies it. This is what makes an auto-locked app
+     * genuinely locked rather than merely covered by a screen.
+     *
+     * <p>The store keeps its identity across a lock — repositories and services hold this instance in
+     * their fields, so replacing it would strand them. Connections are re-established lazily on reopen.
+     *
+     * <p>Zeroing the key is best effort: the JVM may have copied those bytes during garbage collection,
+     * and nothing can reach such copies. What this does guarantee is that no live reference remains and
+     * no open connection can still read the file.
+     */
+    public synchronized void lock() {
+        close();
+        connection = null;
+        threadConnection.remove();
+        DbKey key;
+        if (usesSharedKey) {
+            key = provisionedKey;
+            provisionedKey = null;
+        } else {
+            key = dbKey;
+            dbKey = null;
+        }
+        locked = true;
+        if (key != null) {
+            key.destroy();
+        }
+        LOG.info("Data store locked; connections closed and the encryption key cleared");
+    }
+
+    /**
+     * Reopens a locked store with the key from a successful unlock. Re-runs schema initialisation, which
+     * the version-tracked migration runner turns into a no-op when the schema is already current.
+     *
+     * @param key the database key, never null
+     */
+    public synchronized void reopen(DbKey key) {
+        if (key == null) {
+            throw new IllegalArgumentException("Cannot reopen the data store without a key");
+        }
+        // Put the key back where this store reads it from. A store that owns its key must not write the
+        // shared slot, which the singleton and isKeyProvisioned() read.
+        if (usesSharedKey) {
+            provisionedKey = key;
+        } else {
+            dbKey = key;
+        }
+        locked = false;
+        initializeDatabase();
+        restrictDatabaseFiles();
+        LOG.info("Data store reopened after unlock");
+    }
+
+    /** Whether the store is locked, so callers (background schedulers) can skip work instead of failing. */
+    public boolean isLocked() {
+        return locked;
+    }
+
     private SqliteDataStore() {
         this(false);
     }
@@ -93,6 +162,7 @@ public final class SqliteDataStore {
         // The singleton reads the provisioned key live (see openRawConnection) rather than snapshotting
         // it, so a key provisioned around construction is never missed; test stores pass an explicit key.
         this.dbKey = null;
+        this.usesSharedKey = true;
         this.databasePath = inMemory ? null : resolveDatabasePath();
         if (!inMemory) {
             ensureDirectoryExists();
@@ -131,6 +201,7 @@ public final class SqliteDataStore {
         this.credentialEncryption = credentialEncryption;
         this.inMemory = false;
         this.dbKey = dbKey;
+        this.usesSharedKey = dbKey == null;
         this.databasePath = databasePath;
         ensureDirectoryExists();
         initializeDatabase();
@@ -515,6 +586,33 @@ public final class SqliteDataStore {
      */
     public synchronized boolean isOnboardingCompleted() {
         return "true".equals(loadSetting("onboarding_completed"));
+    }
+
+    // === Auto-lock Operations ===
+
+    /**
+     * Stores the idle auto-lock timeout in minutes, or 0 for off. Lives in the encrypted database, which
+     * is fine because it is only ever needed after an unlock.
+     */
+    public synchronized void saveAutoLockMinutes(int minutes) {
+        saveSetting("auto_lock_minutes", String.valueOf(minutes));
+    }
+
+    /**
+     * The idle auto-lock timeout in minutes, or {@code null} if the user has never chosen one — the
+     * caller applies the default, so it lives in one place.
+     */
+    public synchronized Integer loadAutoLockMinutes() {
+        String stored = loadSetting("auto_lock_minutes");
+        if (stored == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(stored);
+        } catch (NumberFormatException e) {
+            LOG.warning("Ignoring unreadable auto-lock setting: " + stored);
+            return null;
+        }
     }
 
     // === Update Check Operations ===
@@ -1069,6 +1167,11 @@ public final class SqliteDataStore {
      * @return the connection for this thread, or null if the store failed to initialise
      */
     synchronized Connection connection() {
+        if (locked) {
+            // Refuse loudly. Without this the lazy reopen below would open an unkeyed connection against
+            // an encrypted file, and the failure would surface later as an unrelated-looking SQL error.
+            throw new IllegalStateException("The data store is locked; the app must be unlocked first");
+        }
         if (inMemory || connection == null) {
             return connection;
         }

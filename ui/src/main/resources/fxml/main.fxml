@@ -49,6 +49,12 @@
             </StackPane>
 
             <!-- Action Buttons -->
+            <Button fx:id="lockButton" styleClass="header-icon-button" onAction="#handleLock"
+                    accessibleText="%app.action.lock" visible="false" managed="false">
+                <graphic>
+                    <FontIcon iconLiteral="fas-lock" iconSize="18"/>
+                </graphic>
+            </Button>
             <Button fx:id="helpButton" styleClass="header-icon-button" onAction="#handleHelp" accessibleText="%app.action.help">
                 <graphic>
                     <StackPane styleClass="header-icon-circle, header-icon-help">

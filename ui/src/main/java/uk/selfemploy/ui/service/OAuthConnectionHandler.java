@@ -308,6 +308,17 @@ public class OAuthConnectionHandler {
                 handleCancellation();
                 return;
             }
+            if (SqliteDataStore.getInstance().isLocked()) {
+                // The session locked while this was in flight. Report honestly rather than half-saving:
+                // the tokens are still in memory only, so the user reconnects after unlocking.
+                LOG.warning("OAuth succeeded but the app locked before the session could be saved");
+                reportStatus(ConnectionStatus.ERROR);
+                reportResult(OAuthResult.ofError("STORAGE_ERROR",
+                    "Connected to HMRC, but the app locked before your session could be saved. "
+                        + "Please connect again."));
+                connectionInProgress.set(false);
+                return;
+            }
             boolean hadTokensBefore = SqliteDataStore.getInstance().hasOAuthTokens();
 
             if (!persistOAuthTokens(tokens)) {

@@ -20,6 +20,7 @@ import uk.selfemploy.ui.util.Stylesheets;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
+import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
@@ -35,6 +36,7 @@ import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 import uk.selfemploy.ui.service.security.AppLockService;
+import uk.selfemploy.ui.viewmodel.AutoLockViewModel;
 import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
 import uk.selfemploy.ui.viewmodel.SecuritySettingsViewModel;
 
@@ -191,6 +193,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private Button changePassphraseButton;
     @FXML private HBox recoveryCodeRow;
     @FXML private Button regenerateRecoveryButton;
+    @FXML private HBox autoLockRow;
+    @FXML private ComboBox<Integer> autoLockCombo;
 
     // === State ===
 
@@ -202,6 +206,9 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private final HmrcBusinessProfileService profileService = new HmrcBusinessProfileService();
     private final SecuritySettingsViewModel securityViewModel = new SecuritySettingsViewModel();
+    private final AutoLockViewModel autoLockViewModel = new AutoLockViewModel();
+    private Runnable securitySettingsChangeListener;
+    private boolean applyingStoredAutoLock;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -1360,6 +1367,69 @@ public class SettingsController implements Initializable, MainController.TaxYear
         changePassphraseRow.setManaged(canManageKeys);
         recoveryCodeRow.setVisible(canManageKeys);
         recoveryCodeRow.setManaged(canManageKeys);
+        autoLockRow.setVisible(canManageKeys);
+        autoLockRow.setManaged(canManageKeys);
+        if (canManageKeys) {
+            initAutoLockCombo();
+        }
+    }
+
+    /** Populates the auto-lock choices and selects the stored one. Idempotent: Settings can be reopened. */
+    private void initAutoLockCombo() {
+        if (autoLockCombo.getItems().isEmpty()) {
+            autoLockCombo.getItems().setAll(AutoLockViewModel.TIMEOUT_CHOICES);
+            autoLockCombo.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(Integer minutes) {
+                    if (minutes == null) {
+                        return "";
+                    }
+                    return minutes == AutoLockViewModel.OFF
+                            ? Messages.get("settings.security.autoLock.off")
+                            : Messages.format("settings.security.autoLock.minutes", minutes);
+                }
+
+                @Override
+                public Integer fromString(String label) {
+                    return null;    // display-only
+                }
+            });
+        }
+        // Showing the stored value is not the user choosing it. A ComboBox with a skin fires an
+        // ActionEvent from its value listener, so without this guard merely opening Settings would
+        // persist the default — overwriting "never chosen" — and restart the idle countdown.
+        applyingStoredAutoLock = true;
+        try {
+            autoLockCombo.setValue(
+                    autoLockViewModel.timeoutOrDefault(SqliteDataStore.getInstance().loadAutoLockMinutes()));
+        } finally {
+            applyingStoredAutoLock = false;
+        }
+    }
+
+    @FXML
+    void handleAutoLockChanged(ActionEvent event) {
+        Integer minutes = autoLockCombo.getValue();
+        if (minutes == null || applyingStoredAutoLock) {
+            return;
+        }
+        SqliteDataStore.getInstance().saveAutoLockMinutes(minutes);
+        // Apply immediately: a user who has just shortened the timeout should not have to restart for it.
+        notifySecuritySettingsChanged();
+    }
+
+    /**
+     * Lets the shell re-read the security settings when they change here, so enabling protection or
+     * changing the timeout takes effect in this session rather than at the next restart.
+     */
+    public void setSecuritySettingsChangeListener(Runnable listener) {
+        this.securitySettingsChangeListener = listener;
+    }
+
+    private void notifySecuritySettingsChanged() {
+        if (securitySettingsChangeListener != null) {
+            securitySettingsChangeListener.run();
+        }
     }
 
     private SecuritySettingsViewModel.ProtectionStatus currentProtectionStatus() {
@@ -1377,6 +1447,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
         // The database is open right now, so the encryption itself is deferred to the next launch.
         showSecurityDialog("/fxml/app-protect.fxml", "settings.security.title", AppProtectController.class);
         updateSecuritySection();
+        // Protection may have just been switched on, which is what enables auto-lock and the lock action.
+        notifySecuritySettingsChanged();
     }
 
     @FXML
