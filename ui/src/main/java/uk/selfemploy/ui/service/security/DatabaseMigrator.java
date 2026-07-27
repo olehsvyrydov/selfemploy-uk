@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -59,7 +60,7 @@ public final class DatabaseMigrator {
             // checkpoint reports busy, another process holds the database open — abort before touching
             // any files, so a second running instance can never have the database swapped out from under it.
             try (Connection c = DriverManager.getConnection(plainUrl); Statement s = c.createStatement();
-                 java.sql.ResultSet rs = s.executeQuery("PRAGMA wal_checkpoint(TRUNCATE)")) {
+                 ResultSet rs = s.executeQuery("PRAGMA wal_checkpoint(TRUNCATE)")) {
                 if (rs.next() && rs.getInt(1) != 0) {
                     throw new MigrationException(
                             "The database is open in another window; cannot encrypt it now", null);
@@ -138,7 +139,16 @@ public final class DatabaseMigrator {
 
     // ==================== internals ====================
 
-    private static void cloneToEncrypted(Path plain, Path encTmp, DbKey key)
+    /**
+     * Clones the plaintext database into a new encrypted file. The whole clone (schema, data,
+     * autoincrement counters and indexes) runs in one transaction, so the destination is either fully
+     * populated or empty — a failure or a crash mid-clone can never leave a partially copied database
+     * that would pass a later integrity check. ATTACH and DETACH cannot run inside a SQLite
+     * transaction, so they bracket it.
+     *
+     * <p>Package-private so tests can assert the rollback directly on the destination file.
+     */
+    static void cloneToEncrypted(Path plain, Path encTmp, DbKey key)
             throws SQLException, MigrationException {
         try (Connection c = SqlCipherSupport.openEncrypted("jdbc:sqlite:" + encTmp.toAbsolutePath(), key);
              Statement s = c.createStatement()) {
@@ -146,37 +156,58 @@ public final class DatabaseMigrator {
             // The plaintext source path is bound as a parameter (SQLite accepts an expression for the
             // ATTACH filename) rather than concatenated, so the file path can never break out of the
             // statement. The empty KEY marks the source as plaintext.
-            try (java.sql.PreparedStatement attach = c.prepareStatement("ATTACH DATABASE ? AS src KEY ''")) {
+            try (PreparedStatement attach = c.prepareStatement("ATTACH DATABASE ? AS src KEY ''")) {
                 attach.setString(1, plain.toAbsolutePath().toString());
                 attach.execute();
             }
 
-            List<String> tables = new ArrayList<>();
-            for (Object[] obj : objects(c, "table")) {
-                String name = (String) obj[0];
-                if (name.startsWith("sqlite_")) {
-                    continue;   // sqlite_sequence / sqlite_stat* are managed implicitly
-                }
-                s.execute((String) obj[1]);   // CREATE TABLE ... in the encrypted main
-                tables.add(name);
+            c.setAutoCommit(false);
+            try {
+                copySchemaAndData(c, s);
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                rollbackQuietly(c);
+                throw e;
             }
-            for (String name : tables) {
-                String q = quoteIdentifier(name);
-                s.execute("INSERT INTO main." + q + " SELECT * FROM src." + q);
-            }
-            // Preserve AUTOINCREMENT counters if the source tracked any.
-            if (hasTable(s, "src", "sqlite_sequence") && hasTable(s, "main", "sqlite_sequence")) {
-                s.execute("DELETE FROM main.sqlite_sequence");
-                s.execute("INSERT INTO main.sqlite_sequence SELECT * FROM src.sqlite_sequence");
-            }
-            for (String type : List.of("index", "trigger", "view")) {
-                for (Object[] obj : objects(c, type)) {
-                    if (!((String) obj[0]).startsWith("sqlite_")) {
-                        s.execute((String) obj[1]);
-                    }
-                }
-            }
+            c.setAutoCommit(true);
             s.execute("DETACH DATABASE src");
+        }
+    }
+
+    /** Copies every schema object and its rows from the attached {@code src} into {@code main}. */
+    private static void copySchemaAndData(Connection c, Statement s) throws SQLException {
+        List<String> tables = new ArrayList<>();
+        for (Object[] obj : objects(c, "table")) {
+            String name = (String) obj[0];
+            if (name.startsWith("sqlite_")) {
+                continue;   // sqlite_sequence / sqlite_stat* are managed implicitly
+            }
+            s.execute((String) obj[1]);   // CREATE TABLE ... in the encrypted main
+            tables.add(name);
+        }
+        for (String name : tables) {
+            String q = quoteIdentifier(name);
+            s.execute("INSERT INTO main." + q + " SELECT * FROM src." + q);
+        }
+        // Preserve AUTOINCREMENT counters if the source tracked any.
+        if (hasTable(s, "src", "sqlite_sequence") && hasTable(s, "main", "sqlite_sequence")) {
+            s.execute("DELETE FROM main.sqlite_sequence");
+            s.execute("INSERT INTO main.sqlite_sequence SELECT * FROM src.sqlite_sequence");
+        }
+        for (String type : List.of("index", "trigger", "view")) {
+            for (Object[] obj : objects(c, type)) {
+                if (!((String) obj[0]).startsWith("sqlite_")) {
+                    s.execute((String) obj[1]);
+                }
+            }
+        }
+    }
+
+    private static void rollbackQuietly(Connection c) {
+        try {
+            c.rollback();
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Failed to roll back the partial clone; it is discarded with the temp file", e);
         }
     }
 
@@ -195,7 +226,7 @@ public final class DatabaseMigrator {
     /** Returns {name, sql} for each non-autogenerated object of the given type in the src schema. */
     private static List<Object[]> objects(Connection c, String type) throws SQLException {
         List<Object[]> out = new ArrayList<>();
-        try (java.sql.PreparedStatement ps = c.prepareStatement(
+        try (PreparedStatement ps = c.prepareStatement(
                 "SELECT name, sql FROM src.sqlite_master WHERE type = ? AND sql IS NOT NULL")) {
             ps.setString(1, type);
             try (ResultSet rs = ps.executeQuery()) {

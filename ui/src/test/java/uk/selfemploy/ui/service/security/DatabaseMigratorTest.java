@@ -106,6 +106,50 @@ class DatabaseMigratorTest {
     }
 
     @Test
+    @DisplayName("a failure mid-clone rolls the whole clone back, leaving the destination empty")
+    void failedCloneRollsBack() throws Exception {
+        seedPlaintext();
+        // A table whose name fails identifier validation makes the clone throw after the schema has
+        // been created and the first table's rows copied.
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + db); Statement s = c.createStatement()) {
+            s.execute("CREATE TABLE \"odd-name\" (id INTEGER)");
+            s.execute("INSERT INTO \"odd-name\" (id) VALUES (1)");
+        }
+        Path encTmp = db.resolveSibling("clone.enc.tmp");
+
+        assertThatThrownBy(() -> DatabaseMigrator.cloneToEncrypted(db, encTmp, key))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        try (Connection c = SqlCipherSupport.openEncrypted("jdbc:sqlite:" + encTmp, key);
+             Statement s = c.createStatement();
+             ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")) {
+            rs.next();
+            assertThat(rs.getInt(1)).isZero();
+        }
+    }
+
+    @Test
+    @DisplayName("a failed migration leaves the plaintext database intact and no leftover files")
+    void failedMigrationLeavesOriginalIntact() throws Exception {
+        seedPlaintext();
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + db); Statement s = c.createStatement()) {
+            s.execute("CREATE TABLE \"odd-name\" (id INTEGER)");
+        }
+
+        assertThatThrownBy(() -> DatabaseMigrator.encrypt(db, key))
+                .isInstanceOf(DatabaseMigrator.MigrationException.class);
+
+        assertThat(DatabaseMigrator.databaseIsPlaintext(db)).isTrue();
+        assertThat(Files.exists(db.resolveSibling("selfemploy.db.enc.tmp"))).isFalse();
+        assertThat(Files.exists(db.resolveSibling("selfemploy.db.plaintext.bak"))).isFalse();
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + db); Statement s = c.createStatement();
+             ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM income")) {
+            rs.next();
+            assertThat(rs.getInt(1)).isEqualTo(2);
+        }
+    }
+
+    @Test
     @DisplayName("startup recovery restores the plaintext backup if the swap was interrupted")
     void recoversInterruptedSwap() throws Exception {
         seedPlaintext();
