@@ -313,17 +313,17 @@ class OAuthCallbackServerTest {
 
     // Helper methods
 
-    private void waitForServerRunning() throws InterruptedException {
-        int maxAttempts = 50;
-        for (int i = 0; i < maxAttempts; i++) {
-            if (server.isRunning()) {
-                // Additional small delay to ensure port is bound
-                Thread.sleep(50);
-                return;
-            }
-            Thread.sleep(20);
-        }
-        throw new IllegalStateException("Server failed to start within timeout");
+    /**
+     * Waits until the server is actually accepting connections.
+     *
+     * <p>{@code isRunning()} flips at the start of {@code startAndAwaitCallback}, before the port is
+     * bound, so polling it and then sleeping a fixed 50ms raced the bind. On a loaded machine the client
+     * connected first, which surfaced either as a refused connection or as an empty response body — the
+     * same test failing two different ways. {@code listening()} completes only from the successful-listen
+     * callback, so it is the real readiness signal and needs no sleep at all.
+     */
+    private void waitForServerRunning() throws Exception {
+        server.listening().get(10, TimeUnit.SECONDS);
     }
 
     private void sendCallback(String code, String state) throws Exception {
