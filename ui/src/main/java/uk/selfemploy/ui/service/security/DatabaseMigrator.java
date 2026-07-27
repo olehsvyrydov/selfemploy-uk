@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Encrypts an existing plaintext SQLite database in place, safely. The original file is never mutated:
@@ -35,6 +36,12 @@ public final class DatabaseMigrator {
     private static final Logger LOG = Logger.getLogger(DatabaseMigrator.class.getName());
     private static final String ENC_TMP_SUFFIX = ".enc.tmp";
     private static final String BAK_SUFFIX = ".plaintext.bak";
+
+    /**
+     * The only table names this migrator will interpolate into a statement. Compiled once rather than
+     * per call, since it is checked for every table in the schema.
+     */
+    private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[A-Za-z0-9_]+");
 
     private DatabaseMigrator() {
     }
@@ -217,7 +224,7 @@ public final class DatabaseMigrator {
      * keeps the clone injection-free even if the schema ever changes.
      */
     private static String quoteIdentifier(String name) {
-        if (!name.matches("[A-Za-z0-9_]+")) {
+        if (!SAFE_IDENTIFIER.matcher(name).matches()) {
             throw new IllegalArgumentException("Unexpected table name in schema: " + name);
         }
         return "\"" + name + "\"";
