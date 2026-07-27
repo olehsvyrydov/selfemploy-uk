@@ -47,6 +47,16 @@ public class AppUnlockController implements AppLockDialog {
         this.dialogStage = dialogStage;
     }
 
+    /**
+     * Switches the copy to explain a mid-session lock. Without this the same screen appears with startup
+     * wording, leaving a user who stepped away unsure whether the app restarted or something went wrong.
+     */
+    public void setRelocked(boolean relocked) {
+        if (relocked) {
+            subtitleLabel.setText(Messages.get("unlock.relocked.subtitle"));
+        }
+    }
+
     /** The unlocked database key, or {@code null} if the user closed the screen without unlocking. */
     public DbKey getUnlockedKey() {
         return unlockedKey;

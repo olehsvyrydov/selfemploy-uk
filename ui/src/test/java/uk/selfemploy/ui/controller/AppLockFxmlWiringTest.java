@@ -65,6 +65,13 @@ class AppLockFxmlWiringTest {
         assertThat(loadOnFxThread("/fxml/regenerate-recovery.fxml")).isInstanceOf(RegenerateRecoveryController.class);
     }
 
+    @Test
+    @DisplayName("the shell's lock action resolves against MainController")
+    void headerLockActionResolves() throws Exception {
+        // main.fxml carries the manual lock button; a renamed handler would only show up here.
+        assertThat(loadOnFxThread("/fxml/main.fxml")).isInstanceOf(MainController.class);
+    }
+
     /** Loads an FXML on the FX thread and returns its controller, rethrowing whatever the loader threw. */
     private Object loadOnFxThread(String fxml) throws Exception {
         AtomicReference<Object> controller = new AtomicReference<>();

@@ -11,8 +11,11 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.Scene;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 import uk.selfemploy.common.domain.TaxYear;
@@ -25,8 +28,13 @@ import uk.selfemploy.ui.service.ReconciliationCoordinator;
 import uk.selfemploy.ui.service.SqliteBankTransactionRepository;
 import uk.selfemploy.ui.service.SqliteImportAuditRepository;
 import uk.selfemploy.ui.service.SqliteNotificationStateRepository;
+import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.SqliteReconciliationMatchRepository;
 import uk.selfemploy.ui.service.SubmittedPeriodIndex;
+import uk.selfemploy.ui.service.security.AppLockService;
+import uk.selfemploy.ui.service.security.AppLockSession;
+import uk.selfemploy.ui.service.security.DbKey;
+import uk.selfemploy.ui.viewmodel.AutoLockViewModel;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
 import uk.selfemploy.ui.i18n.Messages;
@@ -41,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.UUID;
 
@@ -66,6 +75,7 @@ public class MainController implements Initializable {
     @FXML private Label deadlineLabel;
 
     // Notification Bell (SE-309)
+    @FXML private Button lockButton;
     @FXML private StackPane notificationBell;
     @FXML private Button notificationButton;
     @FXML private Label notificationBadge;
@@ -75,15 +85,116 @@ public class MainController implements Initializable {
     private final Map<View, Object> controllerCache = new HashMap<>();
     private final DeadlineNotificationService notificationService = new DeadlineNotificationService();
     private NotificationPanelController notificationPanelController;
+    private AppLockSession lockSession;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupTaxYearSelector();
         setupNavigationBindings();
         setupNotifications();
+        setupAutoLock();
 
         // Load dashboard by default
         loadView(View.DASHBOARD);
+    }
+
+    // === Auto-lock (Epic 10) ===
+
+    /**
+     * Starts idle watching once the window has a scene. Auto-lock only exists when a passphrase vault
+     * does: without one there is no key to clear and nothing to unlock with, so the lock control is
+     * hidden entirely rather than offered and refused.
+     */
+    private void setupAutoLock() {
+        boolean protectionEnabled = new AppLockService().isProtectionEnabled();
+        lockButton.setVisible(protectionEnabled);
+        lockButton.setManaged(protectionEnabled);
+        if (!protectionEnabled) {
+            return;
+        }
+        lockSession = new AppLockSession(System::currentTimeMillis, this::lockNow);
+        rootStack.sceneProperty().addListener((obs, old, scene) -> {
+            if (scene != null) {
+                lockSession.attachTo(scene);
+                lockSession.configure(configuredAutoLockMinutes(), true);
+            }
+        });
+    }
+
+    private int configuredAutoLockMinutes() {
+        return new AutoLockViewModel().timeoutOrDefault(SqliteDataStore.getInstance().loadAutoLockMinutes());
+    }
+
+    /** Re-reads the auto-lock timeout, so a change in Settings takes effect without a restart. */
+    public void refreshAutoLockSetting() {
+        if (lockSession != null) {
+            lockSession.configure(configuredAutoLockMinutes(), true);
+        }
+    }
+
+    @FXML
+    void handleLock(ActionEvent event) {
+        lockNow();
+    }
+
+    /**
+     * Locks the session: stops background database work, closes the database and clears the key, then
+     * blocks on the unlock screen. Fails closed like the startup gate — the screen has no way out except
+     * unlocking, and a failure to show it exits rather than leaving the app open over unlocked data.
+     */
+    private void lockNow() {
+        if (lockSession == null || SqliteDataStore.getInstance().isLocked()) {
+            return;
+        }
+        View viewBeforeLock = navigationViewModel.getCurrentView();
+        lockSession.pause();
+        notificationService.shutdown();
+        SqliteDataStore.getInstance().lock();
+        try {
+            DbKey key = showUnlockScreen();
+            if (key == null) {
+                LOG.info("Unlock cancelled after auto-lock; exiting");
+                Platform.exit();
+                return;
+            }
+            SqliteDataStore.getInstance().reopen(key);
+            notificationService.startScheduler(navigationViewModel.getSelectedTaxYear());
+            restoreView(viewBeforeLock);
+            lockSession.resume();
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to unlock after locking; exiting rather than continuing", e);
+            Platform.exit();
+        }
+    }
+
+    /** Shows the unlock screen modally over the main window. Returns null if it was closed unlocked. */
+    private DbKey showUnlockScreen() throws Exception {
+        FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/app-unlock.fxml"));
+        Parent root = loader.load();
+        AppUnlockController controller = loader.getController();
+        controller.setAppLockService(new AppLockService());
+        controller.setRelocked(true);
+
+        Stage dialog = new Stage();
+        dialog.initOwner(rootStack.getScene().getWindow());
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle(Messages.get("unlock.title"));
+        Scene scene = new Scene(root);
+        scene.getStylesheets().addAll(rootStack.getScene().getStylesheets());
+        dialog.setScene(scene);
+        controller.setDialogStage(dialog);
+        dialog.showAndWait();
+        return controller.getUnlockedKey();
+    }
+
+    /**
+     * Rebuilds the view the user was on. The cached nodes are discarded first: they hold data read
+     * before the lock, and their controllers would otherwise show it without re-reading.
+     */
+    private void restoreView(View view) {
+        viewCache.clear();
+        controllerCache.clear();
+        navigationViewModel.navigateTo(view == null ? View.DASHBOARD : view);
     }
 
     private void setupNotifications() {
@@ -281,6 +392,11 @@ public class MainController implements Initializable {
                 // Wire "Open Settings" callback for HMRC submission error dialogs
                 if (controller instanceof HmrcSubmissionController hmrcController) {
                     hmrcController.setNavigateToSettings(() -> loadView(View.SETTINGS));
+                }
+
+                // Apply an auto-lock timeout change to the running session, without a restart
+                if (controller instanceof SettingsController settingsController) {
+                    settingsController.setAutoLockChangeListener(this::refreshAutoLockSetting);
                 }
 
                 // Wire empty-state calls to action for the Tax Summary screen

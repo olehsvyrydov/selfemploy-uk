@@ -272,6 +272,17 @@
                         styleClass="button-secondary" onAction="#handleRegenerateRecovery"/>
             </HBox>
 
+            <!-- Auto-lock -->
+            <HBox fx:id="autoLockRow" styleClass="settings-card-row, settings-card-security"
+                  alignment="CENTER_LEFT" spacing="12" visible="false" managed="false">
+                <FontIcon iconLiteral="fas-clock" iconSize="20" styleClass="settings-icon"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="%settings.security.autoLock.label" styleClass="settings-label"/>
+                    <Label text="%settings.security.autoLock.description" styleClass="settings-description" wrapText="true"/>
+                </VBox>
+                <ComboBox fx:id="autoLockCombo" prefWidth="150" onAction="#handleAutoLockChanged"/>
+            </HBox>
+
             <!-- Backups are not encrypted -->
             <HBox styleClass="settings-card-row, settings-card-security" alignment="CENTER_LEFT" spacing="12">
                 <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="20" styleClass="settings-icon"/>

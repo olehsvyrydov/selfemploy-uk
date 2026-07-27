@@ -414,6 +414,11 @@ public class DeadlineNotificationService {
         if (!preferences.isEnabled()) {
             return;
         }
+        if (SqliteDataStore.getInstance().isLocked()) {
+            // A locked session has no readable data to check, and this runs on a scheduler that may
+            // already have been in flight when the lock happened. Skip quietly; the next unlock restarts it.
+            return;
+        }
 
         List<Deadline> deadlines = getDeadlinesForTaxYear(taxYear);
 
