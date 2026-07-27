@@ -290,13 +290,10 @@ class OAuthCallbackServerTest {
             try {
                 CompletableFuture<String> future = shortTimeoutServer.startAndAwaitCallback("state");
 
-                // Wait for timeout to fire
-                Thread.sleep(2000);
-
-                // Future should have completed with TIMEOUT (not USER_CANCELLED)
-                assertThat(future.isCompletedExceptionally()).isTrue();
-
-                assertThatThrownBy(() -> future.get(1, TimeUnit.SECONDS))
+                // Wait on the future rather than sleeping past the timeout. A scheduled task can fire
+                // late on a loaded machine, so any fixed sleep is a guess about how late is too late;
+                // this waits for the outcome itself and returns as soon as it arrives.
+                assertThatThrownBy(() -> future.get(10, TimeUnit.SECONDS))
                     .isInstanceOf(ExecutionException.class)
                     .hasCauseInstanceOf(HmrcOAuthException.class)
                     .cause()
@@ -313,17 +310,17 @@ class OAuthCallbackServerTest {
 
     // Helper methods
 
-    private void waitForServerRunning() throws InterruptedException {
-        int maxAttempts = 50;
-        for (int i = 0; i < maxAttempts; i++) {
-            if (server.isRunning()) {
-                // Additional small delay to ensure port is bound
-                Thread.sleep(50);
-                return;
-            }
-            Thread.sleep(20);
-        }
-        throw new IllegalStateException("Server failed to start within timeout");
+    /**
+     * Waits until the server is actually accepting connections.
+     *
+     * <p>{@code isRunning()} flips at the start of {@code startAndAwaitCallback}, before the port is
+     * bound, so polling it and then sleeping a fixed 50ms raced the bind. On a loaded machine the client
+     * connected first, which surfaced either as a refused connection or as an empty response body — the
+     * same test failing two different ways. {@code listening()} completes only from the successful-listen
+     * callback, so it is the real readiness signal and needs no sleep at all.
+     */
+    private void waitForServerRunning() throws Exception {
+        server.listening().get(10, TimeUnit.SECONDS);
     }
 
     private void sendCallback(String code, String state) throws Exception {
