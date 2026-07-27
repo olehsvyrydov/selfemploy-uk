@@ -35,8 +35,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -266,9 +268,15 @@ public class ImportOrchestrationService {
      *
      * <p>Rows are written to {@code bank_transactions} with review status PENDING under a single
      * import batch id, rather than committed straight to income/expense. The Bank Review screen is
-     * where a reviewer turns them into income/expense records. A row whose deterministic hash already
-     * exists in {@code bank_transactions} is skipped, so re-importing the same statement stages
-     * nothing new.</p>
+     * where a reviewer turns them into income/expense records. A row whose key already exists in
+     * {@code bank_transactions} is skipped, so re-importing the same statement stages nothing new.</p>
+     *
+     * <p>The key counts occurrences within this statement (see {@link #duplicateKey}), so a statement
+     * containing the same payment twice stages both. That only separates repeats <em>within one
+     * statement</em>: the count restarts on every import, so two separate statements each containing one
+     * identical row still resolve to the same key and the second is skipped. Telling those apart would
+     * need something this import does not capture — the row's account, or the bank's own transaction id.
+     * See {@code skipsAnIdenticalRowFromASeparateStatement} for that boundary.</p>
      *
      * @param transactions the transactions to stage
      * @param progressCallback callback for progress updates (0.0 to 1.0)
@@ -287,14 +295,20 @@ public class ImportOrchestrationService {
         int total = transactions.size();
         List<UUID> stagedIds = new ArrayList<>();
 
+        // How many rows in this statement have already used each key. A statement can legitimately
+        // contain the same payment twice — two identical coffees on one day — and those rows are
+        // indistinguishable by date, amount and description alone.
+        Map<String, Integer> occurrences = new HashMap<>();
+
         for (int i = 0; i < total; i++) {
             ImportedTransactionRow row = transactions.get(i);
 
             try {
                 // Include direction so a credit and a debit with the same date/amount/description
                 // do not collide and wrongly skip one another as a duplicate.
-                String hash = MatchingUtils.createExactKey(row.date(), row.amount(), row.description())
+                String baseKey = MatchingUtils.createExactKey(row.date(), row.amount(), row.description())
                     + "|" + row.type();
+                String hash = duplicateKey(baseKey, occurrences.merge(baseKey, 1, Integer::sum));
                 if (bankTransactionService.existsByHash(hash)) {
                     skipped++;
                 } else {
@@ -340,6 +354,33 @@ public class ImportOrchestrationService {
         }
 
         return new ImportResult(staged, errors, skipped, batchId);
+    }
+
+    /**
+     * The stored key for the {@code occurrence}-th row in a statement carrying {@code baseKey}.
+     *
+     * <p>Date, amount, description and direction cannot tell a re-import from a genuine repeat: someone
+     * who buys the same coffee twice in a day produces two identical rows, and skipping the second loses
+     * a real transaction. Counting occurrences within the statement separates the two cases — the same
+     * file always yields the same counts, so re-importing it still matches and stages nothing, while a
+     * second genuine repeat gets a key of its own.
+     *
+     * <p>The first occurrence deliberately keeps the bare key, which is the format written before this
+     * distinction existed. That keeps already-imported statements recognised, and means a repeat that an
+     * earlier import dropped is picked up the next time the statement is imported.
+     *
+     * <p>What this does <em>not</em> solve: the count restarts on every import, so two separate
+     * statements each holding one identical row still produce the same key, and the second is skipped.
+     * A content-only key cannot tell "the same row again" from "a different row that looks the same"; a
+     * complete answer needs the account or the bank's transaction id, neither of which this import path
+     * records today.
+     *
+     * <p>{@code |#} separates the count because {@code |} alone already separates the base key's fields
+     * and descriptions are not stripped of it. That narrows the ambiguity rather than removing it: a
+     * description ending in {@code |#2} could still collide.
+     */
+    private static String duplicateKey(String baseKey, int occurrence) {
+        return occurrence == 1 ? baseKey : baseKey + "|#" + occurrence;
     }
 
     /**
