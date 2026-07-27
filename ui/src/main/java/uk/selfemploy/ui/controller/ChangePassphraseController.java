@@ -21,7 +21,7 @@ import java.util.Arrays;
  * The current passphrase is verified through the same rate-limited unlock path as the startup screen,
  * so this dialog cannot be used as an unthrottled oracle for guessing it.
  */
-public class ChangePassphraseController {
+public class ChangePassphraseController implements AppLockDialog {
 
     @FXML private PasswordField currentField;
     @FXML private PasswordField newField;
@@ -44,10 +44,12 @@ public class ChangePassphraseController {
                 Messages.format("protect.passphrase.hint", AppProtectViewModel.MIN_PASSPHRASE_LENGTH));
     }
 
+    @Override
     public void setAppLockService(AppLockService appLock) {
         this.appLock = appLock;
     }
 
+    @Override
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
     }

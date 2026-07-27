@@ -281,8 +281,10 @@ public final class AppLockService {
      * Confirms a freshly built slot unwraps to the database key it was meant to wrap, before it replaces
      * a slot that currently works. Without this a wrapping defect would be discovered only at the next
      * unlock — by which time the slot it replaced is gone.
+     *
+     * <p>Package-private so tests can drive it with a slot that unwraps to the wrong key.
      */
-    private void verifyUnwraps(int version, Vault.Slot slot, char[] secret, byte[] expectedDbKey) {
+    void verifyUnwraps(int version, Vault.Slot slot, char[] secret, byte[] expectedDbKey) {
         byte[] roundTripped;
         try {
             roundTripped = unwrap(version, slot, secret);

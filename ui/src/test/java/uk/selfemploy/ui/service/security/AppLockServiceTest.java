@@ -196,16 +196,38 @@ class AppLockServiceTest {
     }
 
     @Test
-    @DisplayName("a vault that vanished mid-operation fails loudly rather than with a NullPointerException")
-    void missingVaultFailsLoudly() throws Exception {
+    @DisplayName("a deleted vault reports an incorrect passphrase, because the unlock reads it first")
+    void deletedVaultIsReportedAsAWrongPassphrase() throws Exception {
         enable("correct horse battery");
-        DbKey key = service.unlock(pw("correct horse battery"));
-        assertThat(key).isNotNull();
         Files.delete(vault);
 
+        // changePassphrase unlocks before it re-reads the vault, so a vault that is already gone surfaces
+        // here rather than at requireVault(). That guard covers the narrower race of the file vanishing
+        // between those two reads, which this test deliberately does not attempt to drive.
         assertThatThrownBy(() -> service.changePassphrase(pw("correct horse battery"), pw("staple mountain glass")))
-                .isInstanceOf(Exception.class)
-                .isNotInstanceOf(NullPointerException.class);
+                .isInstanceOf(WrongPassphraseException.class);
+    }
+
+    @Test
+    @DisplayName("a slot that does not unwrap to the database key is refused before it can replace a working one")
+    void aBadSlotIsRefusedBeforeReplacingAWorkingOne() throws Exception {
+        enable("correct horse battery");
+        DbKey key = service.unlock(pw("correct horse battery"));
+        Vault stored = Vault.read(vault);
+
+        // A slot built for a different key: unwrapping it succeeds but yields the wrong bytes, which is
+        // exactly the silent failure the verification exists to catch.
+        AppLockService other = new AppLockService(dir.resolve("other.vault"), clock::get);
+        AppLockService.PendingProtection unrelated = other.prepareProtection(pw("a different passphrase"));
+        unrelated.commit();
+        Vault.Slot foreignSlot = Vault.read(dir.resolve("other.vault")).slot(Vault.SLOT_PASSPHRASE);
+
+        assertThatThrownBy(() -> service.verifyUnwraps(
+                stored.vaultVersion(), foreignSlot, pw("a different passphrase"), key.bytes()))
+                .isInstanceOf(IllegalStateException.class)
+                // Specifically the key comparison, not the unwrap itself: the foreign slot unwraps fine,
+                // it just yields someone else's key. Both failures share the "refusing to replace" tail.
+                .hasMessageContaining("unwrapped to the wrong key");
     }
 
     @Test

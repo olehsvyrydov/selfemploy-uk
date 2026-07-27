@@ -21,7 +21,7 @@ import java.util.Arrays;
  * {@link #getUnlockedKey()}. Closing the window without unlocking leaves the key null, and the launcher
  * exits — the app never opens against an encrypted database it cannot read.
  */
-public class AppUnlockController {
+public class AppUnlockController implements AppLockDialog {
 
     @FXML private Label titleLabel;
     @FXML private Label subtitleLabel;
@@ -37,10 +37,12 @@ public class AppUnlockController {
     private DbKey unlockedKey;
     private boolean recoveryMode;
 
+    @Override
     public void setAppLockService(AppLockService appLock) {
         this.appLock = appLock;
     }
 
+    @Override
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
     }

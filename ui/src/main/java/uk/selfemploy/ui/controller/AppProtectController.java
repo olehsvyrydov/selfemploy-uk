@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  * this never disturbs the open database in the current session. Skipping leaves the app unprotected
  * (plaintext), unchanged. The one-time recovery code is shown once and never stored in the clear.
  */
-public class AppProtectController {
+public class AppProtectController implements AppLockDialog {
 
     private static final Logger LOG = Logger.getLogger(AppProtectController.class.getName());
 
@@ -45,6 +45,7 @@ public class AppProtectController {
     private AppLockService appLock;
     private AppLockService.PendingProtection pending;
     private Stage dialogStage;
+    private String copiedCode;
 
     @FXML
     private void initialize() {
@@ -52,12 +53,18 @@ public class AppProtectController {
                 Messages.format("protect.passphrase.hint", AppProtectViewModel.MIN_PASSPHRASE_LENGTH));
     }
 
+    @Override
     public void setAppLockService(AppLockService appLock) {
         this.appLock = appLock;
     }
 
+    @Override
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
+        // Covers every way the window can go away, including the title-bar close button: the code must
+        // not outlive the window that showed it. The 30-second timer only runs while the app does, and
+        // on Windows and macOS the clipboard survives the process.
+        dialogStage.setOnHidden(event -> RecoveryCodeClipboard.clearIfStillHolding(copiedCode));
     }
 
     @FXML
@@ -114,7 +121,8 @@ public class AppProtectController {
 
     @FXML
     private void handleCopy() {
-        RecoveryCodeClipboard.copyWithAutoClear(recoveryCodeLabel.getText(), this::hideCopyStatus);
+        copiedCode = recoveryCodeLabel.getText();
+        RecoveryCodeClipboard.copyWithAutoClear(copiedCode, this::hideCopyStatus);
         copyStatusLabel.setText(
                 Messages.format("protect.recovery.copied", RecoveryCodeClipboard.CLEAR_AFTER_SECONDS));
         copyStatusLabel.setVisible(true);

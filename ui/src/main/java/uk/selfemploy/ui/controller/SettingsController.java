@@ -35,7 +35,6 @@ import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 import uk.selfemploy.ui.service.security.AppLockService;
-import uk.selfemploy.ui.service.security.DatabaseMigrator;
 import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
 import uk.selfemploy.ui.viewmodel.SecuritySettingsViewModel;
 
@@ -1365,69 +1364,68 @@ public class SettingsController implements Initializable, MainController.TaxYear
 
     private SecuritySettingsViewModel.ProtectionStatus currentProtectionStatus() {
         boolean vaultExists = new AppLockService().isProtectionEnabled();
-        boolean plaintext = DatabaseMigrator.databaseIsPlaintext(SqliteDataStore.databaseFilePath());
-        return securityViewModel.status(vaultExists, plaintext);
+        // Whether the data is encrypted is read from the running store rather than by probing the
+        // database file: the app-lock gate provisions the key before the store opens and fails closed
+        // otherwise, so this is the same answer without a JDBC connection on the FX thread.
+        boolean databaseUnencrypted = !SqliteDataStore.isKeyProvisioned();
+        return securityViewModel.status(vaultExists, databaseUnencrypted);
     }
 
     @FXML
     void handleEnableProtection(ActionEvent event) {
         // Reuses the onboarding screen: it writes the vault only after the recovery code is acknowledged.
         // The database is open right now, so the encryption itself is deferred to the next launch.
-        showSecurityDialog("/fxml/app-protect.fxml", "settings.security.title", loader -> {
-            AppProtectController controller = loader.getController();
-            controller.setAppLockService(new AppLockService());
-            return controller::setDialogStage;
-        });
+        showSecurityDialog("/fxml/app-protect.fxml", "settings.security.title", AppProtectController.class);
         updateSecuritySection();
     }
 
     @FXML
     void handleChangePassphrase(ActionEvent event) {
-        showSecurityDialog("/fxml/change-passphrase.fxml", "changePassphrase.title", loader -> {
-            ChangePassphraseController controller = loader.getController();
-            controller.setAppLockService(new AppLockService());
-            return controller::setDialogStage;
-        });
+        ChangePassphraseController controller = showSecurityDialog(
+                "/fxml/change-passphrase.fxml", "changePassphrase.title", ChangePassphraseController.class);
+        if (controller != null && controller.wasChanged()) {
+            AppDialog.info(Messages.get("changePassphrase.title"), Messages.get("changePassphrase.success"));
+        }
     }
 
     @FXML
     void handleRegenerateRecovery(ActionEvent event) {
-        showSecurityDialog("/fxml/regenerate-recovery.fxml", "regenerateRecovery.title", loader -> {
-            RegenerateRecoveryController controller = loader.getController();
-            controller.setAppLockService(new AppLockService());
-            return controller::setDialogStage;
-        });
+        RegenerateRecoveryController controller = showSecurityDialog(
+                "/fxml/regenerate-recovery.fxml", "regenerateRecovery.title", RegenerateRecoveryController.class);
+        if (controller != null && controller.wasRegenerated()) {
+            AppDialog.info(Messages.get("regenerateRecovery.title"), Messages.get("regenerateRecovery.success"));
+        }
     }
 
     /**
-     * Loads an app-lock dialog modally. The wiring callback receives the loader (so it can pull the
-     * controller and inject its service) and returns the setter for the dialog's own stage.
+     * Loads an app-lock dialog modally, injects the app-lock service and blocks until it closes.
+     *
+     * @return the dialog's controller, so the caller can act on its outcome, or null if it failed to open
      */
-    private void showSecurityDialog(String fxml, String titleKey,
-                                    java.util.function.Function<FXMLLoader, java.util.function.Consumer<Stage>> wire) {
+    private <T extends AppLockDialog> T showSecurityDialog(String fxml, String titleKey, Class<T> controllerType) {
         try {
             FXMLLoader loader = Messages.loader(getClass().getResource(fxml));
             Parent root = loader.load();
-            java.util.function.Consumer<Stage> stageSetter = wire.apply(loader);
+            T controller = controllerType.cast(loader.getController());
+            controller.setAppLockService(new AppLockService());
 
             Stage dialog = new Stage();
-            dialog.initOwner(currentWindow());
+            Window owner = getOwnerWindow();
+            if (owner != null) {
+                dialog.initOwner(owner);
+            }
             dialog.initModality(Modality.APPLICATION_MODAL);
             dialog.setTitle(Messages.get(titleKey));
             Scene scene = new Scene(root);
             addStylesheets(scene, "/css/main.css", "/css/onboarding.css");
             dialog.setScene(scene);
-            stageSetter.accept(dialog);
+            controller.setDialogStage(dialog);
             dialog.showAndWait();
+            return controller;
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Could not open the security dialog " + fxml, e);
+            return null;
         }
-    }
-
-    private Window currentWindow() {
-        return protectionStatusLabel != null && protectionStatusLabel.getScene() != null
-                ? protectionStatusLabel.getScene().getWindow()
-                : null;
     }
 
     private void addStylesheets(Scene scene, String... resources) {

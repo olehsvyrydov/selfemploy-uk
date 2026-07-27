@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  * user closed the window without reading the replacement — a loss they would discover only after
  * forgetting their passphrase.
  */
-public class RegenerateRecoveryController {
+public class RegenerateRecoveryController implements AppLockDialog {
 
     private static final Logger LOG = Logger.getLogger(RegenerateRecoveryController.class.getName());
 
@@ -49,14 +49,21 @@ public class RegenerateRecoveryController {
     private AppLockService appLock;
     private AppLockService.PendingRecoveryCode pending;
     private Stage dialogStage;
+    private String copiedCode;
     private boolean regenerated;
 
+    @Override
     public void setAppLockService(AppLockService appLock) {
         this.appLock = appLock;
     }
 
+    @Override
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
+        // Covers every way the window can go away, including the title-bar close button: the code must
+        // not outlive the window that showed it. The 30-second timer only runs while the app does, and
+        // on Windows and macOS the clipboard survives the process.
+        dialogStage.setOnHidden(event -> RecoveryCodeClipboard.clearIfStillHolding(copiedCode));
     }
 
     /** Whether a replacement code was actually written, so the caller can confirm it to the user. */
@@ -109,7 +116,8 @@ public class RegenerateRecoveryController {
 
     @FXML
     private void handleCopy() {
-        RecoveryCodeClipboard.copyWithAutoClear(recoveryCodeLabel.getText(), this::hideCopyStatus);
+        copiedCode = recoveryCodeLabel.getText();
+        RecoveryCodeClipboard.copyWithAutoClear(copiedCode, this::hideCopyStatus);
         copyStatusLabel.setText(
                 Messages.format("protect.recovery.copied", RecoveryCodeClipboard.CLEAR_AFTER_SECONDS));
         copyStatusLabel.setVisible(true);
