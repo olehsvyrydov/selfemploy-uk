@@ -26,6 +26,7 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.export.DataExportService;
 import uk.selfemploy.core.export.DataImportService;
+import uk.selfemploy.core.export.ExportOptions;
 import uk.selfemploy.core.export.ExportResult;
 import uk.selfemploy.core.export.ImportException;
 import uk.selfemploy.core.export.ImportOptions;
@@ -36,6 +37,7 @@ import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
 import uk.selfemploy.ui.service.security.AppLockService;
+import uk.selfemploy.ui.service.security.BackupEncryption;
 import uk.selfemploy.ui.viewmodel.AutoLockViewModel;
 import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
 import uk.selfemploy.ui.viewmodel.SecuritySettingsViewModel;
@@ -71,11 +73,13 @@ import uk.selfemploy.ui.util.BrowserUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.UUID;
@@ -1475,6 +1479,16 @@ public class SettingsController implements Initializable, MainController.TaxYear
      * @return the dialog's controller, so the caller can act on its outcome, or null if it failed to open
      */
     private <T extends AppLockDialog> T showSecurityDialog(String fxml, String titleKey, Class<T> controllerType) {
+        return showSecurityDialog(fxml, titleKey, controllerType, controller -> { });
+    }
+
+    /**
+     * As above, but runs {@code beforeShow} on the controller while the dialog is still hidden — for
+     * screens that need their subject handed to them, which after {@code showAndWait} returns would be
+     * too late to matter.
+     */
+    private <T extends AppLockDialog> T showSecurityDialog(String fxml, String titleKey,
+                                                           Class<T> controllerType, Consumer<T> beforeShow) {
         try {
             FXMLLoader loader = Messages.loader(getClass().getResource(fxml));
             Parent root = loader.load();
@@ -1492,6 +1506,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
             addStylesheets(scene, "/css/main.css", "/css/onboarding.css");
             dialog.setScene(scene);
             controller.setDialogStage(dialog);
+            beforeShow.accept(controller);
             dialog.showAndWait();
             return controller;
         } catch (Exception e) {
@@ -1641,7 +1656,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 String fileName = file.getName().toLowerCase();
 
                 if (fileName.endsWith(".json")) {
-                    result = exportService.exportToJson(businessId, taxYears, file.toPath());
+                    result = exportJsonBackup(exportService, businessId, taxYears, file.toPath());
+                    if (result == null) {
+                        return;     // the user closed the dialog without choosing
+                    }
                 } else if (fileName.endsWith(".csv")) {
                     // For CSV, export income by default
                     result = exportService.exportIncomeToCsv(businessId, taxYears, file.toPath());
@@ -1690,16 +1708,20 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 List<Expense> importedExpenses;
 
                 if (fileName.endsWith(".json")) {
-                    // Preview first for validation
-                    ImportPreview preview = importService.previewJsonImport(filePath);
+                    // An encrypted backup is unwrapped here; a plain export reads exactly as it always
+                    // did, so files written before backups could be encrypted still restore.
+                    byte[] json = readBackupJson(filePath);
+                    if (json == null) {
+                        return;     // could not be read, or the user closed the passphrase prompt
+                    }
+                    ImportPreview preview = importService.previewJsonImport(json);
                     if (!preview.isValid() && preview.errors() != null && !preview.errors().isEmpty()) {
                         int maxErrors = Math.min(5, preview.errors().size());
                         showError("Import Validation Failed",
                             "Found validation errors:\n" + String.join("\n", preview.errors().subList(0, maxErrors)));
                         return;
                     }
-                    // Parse the JSON to get income and expense records
-                    var parsedData = importService.parseJsonFile(filePath);
+                    var parsedData = importService.parseJson(json);
                     importedIncomes = parsedData.incomes();
                     importedExpenses = parsedData.expenses();
                 } else if (fileName.endsWith(".csv")) {
@@ -1958,6 +1980,70 @@ public class SettingsController implements Initializable, MainController.TaxYear
             LOG.log(Level.SEVERE, "Failed to load legal document: " + fxmlPath, e);
             showError("Error", "Failed to open " + title + ": " + e.getMessage());
         }
+    }
+
+    /**
+     * Writes a JSON backup, encrypted if the user asks for it.
+     *
+     * <p>The export is built in memory and encrypted before anything is written, so the plaintext never
+     * reaches the filesystem. Writing it first and encrypting afterwards would leave the very records
+     * being protected lying on disk, and the cleanup would be best-effort.
+     *
+     * @return the result, or null if the user closed the dialog without choosing
+     */
+    private ExportResult exportJsonBackup(DataExportService exportService, UUID businessId,
+                                          TaxYear[] taxYears, Path target) {
+        BackupPassphraseController choice = showSecurityDialog(
+                "/fxml/backup-passphrase.fxml", "backup.title", BackupPassphraseController.class);
+        if (choice == null || !choice.isConfirmed()) {
+            return null;
+        }
+
+        char[] passphrase = choice.getPassphrase();
+        try {
+            DataExportService.JsonExport export =
+                    exportService.buildJsonExport(businessId, taxYears, ExportOptions.noFilter());
+            byte[] bytes = choice.isEncrypting()
+                    ? BackupEncryption.encrypt(export.json(), passphrase)
+                    : export.json();
+            Files.write(target, bytes);
+            return ExportResult.success(target, export.incomeCount(), export.expenseCount());
+        } catch (IOException | RuntimeException e) {
+            LOG.log(Level.SEVERE, "Failed to write the backup", e);
+            return ExportResult.failure("Failed to export data: " + e.getMessage());
+        } finally {
+            if (passphrase != null) {
+                Arrays.fill(passphrase, '\0');
+            }
+        }
+    }
+
+    /**
+     * Reads a backup, decrypting it if it is one of ours.
+     *
+     * <p>Whether a file is encrypted is read from the file rather than from its name, so a user who
+     * renamed it still gets the right treatment. Plaintext exports are returned untouched: files written
+     * before backups could be encrypted have to keep restoring.
+     *
+     * @return the export's JSON, or null if it could not be read or the user closed the prompt
+     */
+    private byte[] readBackupJson(Path filePath) {
+        byte[] fileBytes;
+        try {
+            fileBytes = Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Could not read the backup file", e);
+            showError("Import Error", "Failed to read file: " + e.getMessage());
+            return null;
+        }
+        if (!BackupEncryption.isEncrypted(fileBytes)) {
+            return fileBytes;
+        }
+
+        BackupUnlockController prompt = showSecurityDialog(
+                "/fxml/backup-unlock.fxml", "backupUnlock.title", BackupUnlockController.class,
+                controller -> controller.setEncryptedBackup(fileBytes));
+        return prompt == null ? null : prompt.getDecrypted();
     }
 
     private Window getOwnerWindow() {

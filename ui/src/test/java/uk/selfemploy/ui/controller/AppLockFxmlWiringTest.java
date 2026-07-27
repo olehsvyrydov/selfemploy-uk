@@ -63,6 +63,8 @@ class AppLockFxmlWiringTest {
         assertThat(loadOnFxThread("/fxml/app-protect.fxml")).isInstanceOf(AppProtectController.class);
         assertThat(loadOnFxThread("/fxml/change-passphrase.fxml")).isInstanceOf(ChangePassphraseController.class);
         assertThat(loadOnFxThread("/fxml/regenerate-recovery.fxml")).isInstanceOf(RegenerateRecoveryController.class);
+        assertThat(loadOnFxThread("/fxml/backup-passphrase.fxml")).isInstanceOf(BackupPassphraseController.class);
+        assertThat(loadOnFxThread("/fxml/backup-unlock.fxml")).isInstanceOf(BackupUnlockController.class);
     }
 
     @Test

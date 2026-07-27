@@ -115,9 +115,20 @@ public class DataImportService {
      */
     public ImportPreview previewJsonImport(Path filePath) {
         validateFilePath(filePath);
+        return previewJsonImport(readAllBytes(filePath));
+    }
 
+    /**
+     * Previews an export held in memory.
+     *
+     * <p>Exists so a caller holding decrypted bytes never has to write them to a file to be read back.
+     *
+     * @param json the export's JSON bytes
+     * @return Import preview with validation results
+     */
+    public ImportPreview previewJsonImport(byte[] json) {
         try {
-            JsonNode root = objectMapper.readTree(filePath.toFile());
+            JsonNode root = objectMapper.readTree(json);
 
             List<String> errors = new ArrayList<>();
             List<String> warnings = new ArrayList<>();
@@ -256,10 +267,22 @@ public class DataImportService {
      */
     public ImportResult importJson(UUID businessId, Path filePath, ImportOptions options) {
         validateFilePath(filePath);
+        return importJson(businessId, readAllBytes(filePath), options);
+    }
+
+    /**
+     * Imports an export held in memory, so decrypted bytes need never touch disk.
+     *
+     * @param businessId Business ID to import data for
+     * @param json       the export's JSON bytes
+     * @param options    Import options
+     * @return Import result
+     */
+    public ImportResult importJson(UUID businessId, byte[] json, ImportOptions options) {
         validateBusinessId(businessId);
 
         try {
-            JsonNode root = objectMapper.readTree(filePath.toFile());
+            JsonNode root = objectMapper.readTree(json);
 
             int importedCount = 0;
             int skippedCount = 0;
@@ -307,9 +330,18 @@ public class DataImportService {
      */
     public ParsedJsonData parseJsonFile(Path filePath) {
         validateFilePath(filePath);
+        return parseJson(readAllBytes(filePath));
+    }
 
+    /**
+     * Parses an export held in memory, so decrypted bytes need never touch disk.
+     *
+     * @param json the export's JSON bytes
+     * @return Parsed data containing income and expense lists
+     */
+    public ParsedJsonData parseJson(byte[] json) {
         try {
-            JsonNode root = objectMapper.readTree(filePath.toFile());
+            JsonNode root = objectMapper.readTree(json);
             List<Income> incomes = new ArrayList<>();
             List<Expense> expenses = new ArrayList<>();
 
@@ -450,6 +482,14 @@ public class DataImportService {
     public record ParsedJsonData(List<Income> incomes, List<Expense> expenses) {}
 
     // Validation methods
+
+    private static byte[] readAllBytes(Path filePath) {
+        try {
+            return Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            throw new ImportException("Failed to read file: " + e.getMessage(), e);
+        }
+    }
 
     private void validateFilePath(Path filePath) {
         if (filePath == null) {

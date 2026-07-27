@@ -68,63 +68,83 @@ public class DataExportService {
      * @return Export result
      */
     public ExportResult exportToJson(UUID businessId, TaxYear[] taxYears, Path outputFile, ExportOptions options) {
-        validateInputs(businessId, taxYears);
-
         try {
-            List<Income> allIncomes = new ArrayList<>();
-            List<Expense> allExpenses = new ArrayList<>();
-
-            for (TaxYear taxYear : taxYears) {
-                List<Income> yearIncomes = incomeService.findByTaxYear(businessId, taxYear);
-                List<Expense> yearExpenses = expenseService.findByTaxYear(businessId, taxYear);
-
-                if (options.hasDateFilter()) {
-                    yearIncomes = yearIncomes.stream()
-                        .filter(i -> options.isWithinRange(i.date()))
-                        .collect(Collectors.toList());
-                    yearExpenses = yearExpenses.stream()
-                        .filter(e -> options.isWithinRange(e.date()))
-                        .collect(Collectors.toList());
-                }
-
-                allIncomes.addAll(yearIncomes);
-                allExpenses.addAll(yearExpenses);
-            }
-
-            // Build export structure
-            Map<String, Object> exportData = new LinkedHashMap<>();
-
-            // Metadata
-            Map<String, Object> metadata = new LinkedHashMap<>();
-            metadata.put("appVersion", APP_VERSION);
-            metadata.put("exportDate", LocalDateTime.now().toString());
-            metadata.put("taxYears", Arrays.stream(taxYears)
-                .map(TaxYear::label)
-                .collect(Collectors.toList()));
-            if (options.hasDateFilter()) {
-                metadata.put("filterStartDate", options.startDate() != null ? options.startDate().toString() : null);
-                metadata.put("filterEndDate", options.endDate() != null ? options.endDate().toString() : null);
-            }
-            exportData.put("metadata", metadata);
-
-            // Income data
-            exportData.put("incomes", allIncomes.stream()
-                .map(this::incomeToMap)
-                .collect(Collectors.toList()));
-
-            // Expense data
-            exportData.put("expenses", allExpenses.stream()
-                .map(this::expenseToMap)
-                .collect(Collectors.toList()));
-
-            // Write to file
-            objectMapper.writeValue(outputFile.toFile(), exportData);
-
-            return ExportResult.success(outputFile, allIncomes.size(), allExpenses.size());
-
+            JsonExport export = buildJsonExport(businessId, taxYears, options);
+            Files.write(outputFile, export.json());
+            return ExportResult.success(outputFile, export.incomeCount(), export.expenseCount());
         } catch (IOException e) {
             return ExportResult.failure("Failed to export data: " + e.getMessage());
         }
+    }
+
+    /** An export held in memory: the JSON itself, and what went into it. */
+    public record JsonExport(byte[] json, int incomeCount, int expenseCount) {}
+
+    /**
+     * Builds the export without writing it anywhere.
+     *
+     * <p>Exists so a caller can encrypt the result before it reaches disk. Writing a plaintext file and
+     * encrypting it afterwards would leave the very data being protected lying in the filesystem, however
+     * briefly, and the deletion would be best-effort.
+     *
+     * @param businessId The business ID
+     * @param taxYears   The tax years to export
+     * @param options    Export options for filtering
+     * @return the JSON bytes and the record counts
+     * @throws IOException if the export cannot be serialised
+     */
+    public JsonExport buildJsonExport(UUID businessId, TaxYear[] taxYears, ExportOptions options)
+            throws IOException {
+        validateInputs(businessId, taxYears);
+
+        List<Income> allIncomes = new ArrayList<>();
+        List<Expense> allExpenses = new ArrayList<>();
+
+        for (TaxYear taxYear : taxYears) {
+            List<Income> yearIncomes = incomeService.findByTaxYear(businessId, taxYear);
+            List<Expense> yearExpenses = expenseService.findByTaxYear(businessId, taxYear);
+
+            if (options.hasDateFilter()) {
+                yearIncomes = yearIncomes.stream()
+                    .filter(i -> options.isWithinRange(i.date()))
+                    .collect(Collectors.toList());
+                yearExpenses = yearExpenses.stream()
+                    .filter(e -> options.isWithinRange(e.date()))
+                    .collect(Collectors.toList());
+            }
+
+            allIncomes.addAll(yearIncomes);
+            allExpenses.addAll(yearExpenses);
+        }
+
+        // Build export structure
+        Map<String, Object> exportData = new LinkedHashMap<>();
+
+        // Metadata
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("appVersion", APP_VERSION);
+        metadata.put("exportDate", LocalDateTime.now().toString());
+        metadata.put("taxYears", Arrays.stream(taxYears)
+            .map(TaxYear::label)
+            .collect(Collectors.toList()));
+        if (options.hasDateFilter()) {
+            metadata.put("filterStartDate", options.startDate() != null ? options.startDate().toString() : null);
+            metadata.put("filterEndDate", options.endDate() != null ? options.endDate().toString() : null);
+        }
+        exportData.put("metadata", metadata);
+
+        // Income data
+        exportData.put("incomes", allIncomes.stream()
+            .map(this::incomeToMap)
+            .collect(Collectors.toList()));
+
+        // Expense data
+        exportData.put("expenses", allExpenses.stream()
+            .map(this::expenseToMap)
+            .collect(Collectors.toList()));
+
+        return new JsonExport(objectMapper.writeValueAsBytes(exportData),
+                    allIncomes.size(), allExpenses.size());
     }
 
     /**
