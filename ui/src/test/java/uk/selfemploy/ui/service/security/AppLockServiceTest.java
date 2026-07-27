@@ -130,6 +130,85 @@ class AppLockServiceTest {
     }
 
     @Test
+    @DisplayName("preparing a replacement recovery code writes nothing: the existing code still works")
+    void prepareRecoveryCodeLeavesTheOldCodeWorking() throws Exception {
+        String original = enable("correct horse battery");
+        DbKey expected = service.unlockWithRecovery(original.toCharArray());
+
+        AppLockService.PendingRecoveryCode pending = service.prepareRecoveryCode(pw("correct horse battery"));
+        assertThat(pending.recoveryCode()).matches("[A-Z2-7]{5}(-[A-Z2-7]{5}){4}");
+        assertThat(pending.recoveryCode()).isNotEqualTo(original);
+
+        // Abandoning the flow must leave the working recovery path untouched.
+        assertThat(service.unlockWithRecovery(original.toCharArray()).hex()).isEqualTo(expected.hex());
+    }
+
+    @Test
+    @DisplayName("committing a replacement recovery code unlocks the same key and retires the old code")
+    void commitRecoveryCodeReplacesTheOldOne() throws Exception {
+        String original = enable("correct horse battery");
+        DbKey expected = service.unlockWithRecovery(original.toCharArray());
+
+        AppLockService.PendingRecoveryCode pending = service.prepareRecoveryCode(pw("correct horse battery"));
+        String replacement = pending.recoveryCode();
+        pending.commit();
+
+        assertThat(service.unlockWithRecovery(replacement.toCharArray()).hex()).isEqualTo(expected.hex());
+        assertThatThrownBy(() -> service.unlockWithRecovery(original.toCharArray()))
+                .isInstanceOf(WrongPassphraseException.class);
+        // The passphrase is untouched by a recovery-code change.
+        assertThat(service.unlock(pw("correct horse battery")).hex()).isEqualTo(expected.hex());
+    }
+
+    @Test
+    @DisplayName("a replacement recovery code cannot be prepared with the wrong passphrase")
+    void prepareRecoveryCodeRequiresThePassphrase() throws Exception {
+        String original = enable("correct horse battery");
+
+        assertThatThrownBy(() -> service.prepareRecoveryCode(pw("wrong passphrase")))
+                .isInstanceOf(WrongPassphraseException.class);
+        assertThat(service.unlockWithRecovery(original.toCharArray())).isNotNull();
+    }
+
+    @Test
+    @DisplayName("a replacement recovery code is accepted however it is retyped")
+    void replacementRecoveryCodeIsAlsoNormalized() throws Exception {
+        enable("correct horse battery");
+        AppLockService.PendingRecoveryCode pending = service.prepareRecoveryCode(pw("correct horse battery"));
+        String replacement = pending.recoveryCode();
+        pending.commit();
+
+        DbKey viaExact = service.unlockWithRecovery(replacement.toCharArray());
+        assertThat(service.unlockWithRecovery(replacement.toLowerCase().replace("-", " ").toCharArray()).hex())
+                .isEqualTo(viaExact.hex());
+    }
+
+    @Test
+    @DisplayName("changing the passphrase leaves the recovery code working")
+    void changePassphraseLeavesRecoveryIntact() throws Exception {
+        String recovery = enable("correct horse battery");
+        DbKey expected = service.unlock(pw("correct horse battery"));
+
+        service.changePassphrase(pw("correct horse battery"), pw("staple mountain glass"));
+
+        assertThat(service.unlock(pw("staple mountain glass")).hex()).isEqualTo(expected.hex());
+        assertThat(service.unlockWithRecovery(recovery.toCharArray()).hex()).isEqualTo(expected.hex());
+    }
+
+    @Test
+    @DisplayName("a vault that vanished mid-operation fails loudly rather than with a NullPointerException")
+    void missingVaultFailsLoudly() throws Exception {
+        enable("correct horse battery");
+        DbKey key = service.unlock(pw("correct horse battery"));
+        assertThat(key).isNotNull();
+        Files.delete(vault);
+
+        assertThatThrownBy(() -> service.changePassphrase(pw("correct horse battery"), pw("staple mountain glass")))
+                .isInstanceOf(Exception.class)
+                .isNotInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     @DisplayName("repeated failures trigger an escalating rate-limit that clears after the delay")
     void rateLimiting() throws Exception {
         enable("real");

@@ -7,8 +7,13 @@ package uk.selfemploy.ui.viewmodel;
  */
 public class AppProtectViewModel {
 
-    /** Shortest passphrase the setup step accepts. */
-    public static final int MIN_PASSPHRASE_LENGTH = 8;
+    /**
+     * Shortest passphrase accepted, wherever a passphrase is chosen. There is no backdoor and no
+     * escrow, so this passphrase is the whole security boundary around the data — and the vault file it
+     * protects can be attacked offline. Long enough to make that attack impractical, phrased in the UI
+     * to steer towards several words rather than a longer single word.
+     */
+    public static final int MIN_PASSPHRASE_LENGTH = 12;
 
     /** The outcome of checking the passphrase pair, carrying the message that describes it. */
     public enum Validation {

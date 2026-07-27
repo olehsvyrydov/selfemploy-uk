@@ -14,6 +14,7 @@ import java.security.GeneralSecurityException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
@@ -202,14 +203,98 @@ public final class AppLockService {
         DbKey key = unlock(current);
         byte[] dbKey = key.bytes();
         try {
-            Vault vault = Vault.read(vaultPath);
+            Vault vault = requireVault();
             // Bind the new slot's AAD to the vault's stored version (not the compiled constant), so a
             // vault written by a different-versioned binary still unwraps after a passphrase change.
             Vault.Slot slot = wrapSlot(vault.vaultVersion(), Vault.SLOT_PASSPHRASE, next, dbKey);
+            verifyUnwraps(vault.vaultVersion(), slot, next, dbKey);
             vault.withSlot(slot).write(vaultPath);
         } finally {
             Arrays.fill(dbKey, (byte) 0);
             key.destroy();
+        }
+    }
+
+    // ==================== Recovery code regeneration (two-phase) ====================
+
+    /**
+     * A prepared-but-not-yet-written replacement recovery code. Held in memory so the UI can display
+     * the new code and have the user acknowledge it <em>before</em> the old one stops working: writing
+     * first would destroy a working recovery path and leave nothing in its place if the user closed the
+     * screen without reading the replacement.
+     */
+    public final class PendingRecoveryCode {
+        private final Vault vault;
+        private final String recoveryCode;
+
+        private PendingRecoveryCode(Vault vault, String recoveryCode) {
+            this.vault = vault;
+            this.recoveryCode = recoveryCode;
+        }
+
+        /** The new one-time-displayed recovery code. The previous code keeps working until {@link #commit()}. */
+        public String recoveryCode() {
+            return recoveryCode;
+        }
+
+        /** Writes the vault, replacing the recovery slot. The previous recovery code stops working here. */
+        public void commit() throws IOException {
+            vault.write(vaultPath);
+        }
+    }
+
+    /**
+     * Builds a replacement recovery code in memory, wrapping the same database key, after verifying the
+     * passphrase. Nothing is written until {@link PendingRecoveryCode#commit()}, so abandoning the flow
+     * leaves the existing recovery code intact.
+     */
+    public PendingRecoveryCode prepareRecoveryCode(char[] passphrase)
+            throws WrongPassphraseException, RateLimitedException, IOException {
+        DbKey key = unlock(passphrase);
+        byte[] dbKey = key.bytes();
+        char[] recovery = generateRecoveryCode();
+        char[] recoveryKey = normalizeRecoveryCode(recovery);
+        try {
+            Vault vault = requireVault();
+            Vault.Slot slot = wrapSlot(vault.vaultVersion(), Vault.SLOT_RECOVERY, recoveryKey, dbKey);
+            verifyUnwraps(vault.vaultVersion(), slot, recoveryKey, dbKey);
+            String recoveryString = new String(recovery);
+            return new PendingRecoveryCode(vault.withSlot(slot), recoveryString);
+        } finally {
+            Arrays.fill(recovery, '\0');
+            Arrays.fill(recoveryKey, '\0');
+            Arrays.fill(dbKey, (byte) 0);
+            key.destroy();
+        }
+    }
+
+    /** The vault, or a failure if it vanished between an unlock and this read. */
+    private Vault requireVault() throws IOException {
+        Vault vault = Vault.read(vaultPath);
+        if (vault == null) {
+            throw new IOException("The key vault is missing: " + vaultPath);
+        }
+        return vault;
+    }
+
+    /**
+     * Confirms a freshly built slot unwraps to the database key it was meant to wrap, before it replaces
+     * a slot that currently works. Without this a wrapping defect would be discovered only at the next
+     * unlock — by which time the slot it replaced is gone.
+     */
+    private void verifyUnwraps(int version, Vault.Slot slot, char[] secret, byte[] expectedDbKey) {
+        byte[] roundTripped;
+        try {
+            roundTripped = unwrap(version, slot, secret);
+        } catch (WrongPassphraseException e) {
+            throw new IllegalStateException("A newly wrapped key slot did not unwrap; refusing to replace the old one", e);
+        }
+        try {
+            if (!MessageDigest.isEqual(roundTripped, expectedDbKey)) {
+                throw new IllegalStateException("A newly wrapped key slot unwrapped to the wrong key; refusing to replace the old one");
+            }
+        } finally {
+            Arrays.fill(roundTripped, (byte) 0);
         }
     }
 

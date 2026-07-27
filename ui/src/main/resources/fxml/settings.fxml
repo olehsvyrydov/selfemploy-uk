@@ -232,6 +232,56 @@
             <!-- Disclaimer removed per SLFEMPUK-22: ToS covers liability -->
         </VBox>
 
+        <!-- Security Section -->
+        <VBox styleClass="settings-section, settings-section-security" spacing="16">
+            <Label text="%settings.security.title" styleClass="section-title"/>
+
+            <!-- Protection status -->
+            <HBox styleClass="settings-card-row, settings-card-security" alignment="CENTER_LEFT" spacing="12">
+                <FontIcon iconLiteral="fas-lock" iconSize="20" styleClass="settings-icon"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="%settings.security.status.label" styleClass="settings-label"/>
+                    <Label fx:id="protectionStatusLabel" styleClass="settings-value"/>
+                    <Label fx:id="protectionStatusDescription" styleClass="settings-description" wrapText="true"/>
+                </VBox>
+                <Button fx:id="enableProtectionButton" text="%settings.security.enable.button"
+                        styleClass="button-primary" onAction="#handleEnableProtection"/>
+            </HBox>
+
+            <!-- Change passphrase -->
+            <HBox fx:id="changePassphraseRow" styleClass="settings-card-row, settings-card-security"
+                  alignment="CENTER_LEFT" spacing="12" visible="false" managed="false">
+                <FontIcon iconLiteral="fas-key" iconSize="20" styleClass="settings-icon"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="%settings.security.changePassphrase.label" styleClass="settings-label"/>
+                    <Label text="%settings.security.changePassphrase.description" styleClass="settings-description" wrapText="true"/>
+                </VBox>
+                <Button fx:id="changePassphraseButton" text="%settings.security.changePassphrase.button"
+                        styleClass="button-secondary" onAction="#handleChangePassphrase"/>
+            </HBox>
+
+            <!-- Recovery code -->
+            <HBox fx:id="recoveryCodeRow" styleClass="settings-card-row, settings-card-security"
+                  alignment="CENTER_LEFT" spacing="12" visible="false" managed="false">
+                <FontIcon iconLiteral="fas-life-ring" iconSize="20" styleClass="settings-icon"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="%settings.security.recovery.label" styleClass="settings-label"/>
+                    <Label text="%settings.security.recovery.description" styleClass="settings-description" wrapText="true"/>
+                </VBox>
+                <Button fx:id="regenerateRecoveryButton" text="%settings.security.recovery.button"
+                        styleClass="button-secondary" onAction="#handleRegenerateRecovery"/>
+            </HBox>
+
+            <!-- Backups are not encrypted -->
+            <HBox styleClass="settings-card-row, settings-card-security" alignment="CENTER_LEFT" spacing="12">
+                <FontIcon iconLiteral="fas-exclamation-triangle" iconSize="20" styleClass="settings-icon"/>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="%settings.security.backup.label" styleClass="settings-label"/>
+                    <Label text="%settings.security.backup.description" styleClass="settings-description" wrapText="true"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
         <!-- Data Management Section -->
         <VBox styleClass="settings-section, settings-section-data" spacing="16">
             <Label text="%settings.data.title" styleClass="section-title"/>
