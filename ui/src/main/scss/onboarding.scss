@@ -339,3 +339,28 @@
     -fx-padding: 16 48;
     -fx-font-size: 16px;
 }
+
+// App-lock / data-protection screens (Epic 10)
+.field-error {
+  -fx-text-fill: t.$danger;
+  -fx-font-size: t.$font-sm;
+}
+
+.onboarding-icon-circle {
+  -fx-background-color: t.$primary-light;
+  -fx-background-radius: 28;
+}
+
+.onboarding-icon {
+  -fx-icon-color: t.$primary;
+}
+
+.recovery-code {
+  -fx-font-family: "monospace";
+  -fx-font-size: 18px;
+  -fx-font-weight: bold;
+  -fx-text-fill: t.$text;
+  -fx-padding: 8 14;
+  -fx-background-color: t.$gray-100;
+  -fx-background-radius: 8;
+}

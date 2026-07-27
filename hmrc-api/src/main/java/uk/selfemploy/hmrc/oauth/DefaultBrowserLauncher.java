@@ -11,6 +11,8 @@ import java.util.logging.Logger;
 /**
  * Default browser launcher using OS-specific commands.
  * Avoids java.awt.Desktop which can conflict with JavaFX.
+ *
+ * <p>The authorization URL is never logged: it carries the OAuth state and PKCE code_challenge.
  */
 @ApplicationScoped
 public class DefaultBrowserLauncher implements BrowserLauncher {
@@ -19,7 +21,7 @@ public class DefaultBrowserLauncher implements BrowserLauncher {
 
     @Override
     public void openUrl(String url) throws HmrcOAuthException {
-        LOG.info("Opening browser with URL: " + url);
+        LOG.info("Opening the system browser for HMRC authorization");
 
         try {
             openUrlWithOsCommand(url);

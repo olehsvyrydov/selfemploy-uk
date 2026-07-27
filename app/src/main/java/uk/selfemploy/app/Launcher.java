@@ -9,6 +9,8 @@ import javafx.stage.Modality;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.Stage;
 import uk.selfemploy.common.util.EnvLoader;
+import uk.selfemploy.ui.controller.AppProtectController;
+import uk.selfemploy.ui.controller.AppUnlockController;
 import uk.selfemploy.ui.controller.MainController;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.controller.OnboardingController;
@@ -16,11 +18,29 @@ import uk.selfemploy.ui.controller.SettingsController;
 import uk.selfemploy.ui.controller.TermsOfServiceController;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.OnboardingSetupService;
+import uk.selfemploy.ui.service.SqliteDataStore;
+import uk.selfemploy.ui.service.security.AppLockService;
+import uk.selfemploy.ui.service.security.DatabaseMigrator;
+import uk.selfemploy.ui.service.security.DbKey;
 import uk.selfemploy.ui.util.DialogBounds;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 /**
  * Main application launcher for UK Self-Employment Manager.
@@ -35,9 +55,19 @@ public class Launcher extends Application {
     private static final String APP_TITLE = "UK Self-Employment Manager";
     private static final int DEFAULT_WIDTH = 1280;
     private static final int DEFAULT_HEIGHT = 720;
+    private static final String CSS_DIRECTORY = "/css";
+    private static final String BASE_STYLESHEET = "main.css";
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        List<String> stylesheets = stylesheetUrls();
+
+        // Data-protection gate: unlock the encrypted database before any database access. Fails closed
+        // (a locked, un-unlocked app exits rather than opening against a database it cannot read).
+        if (!requireUnlock(stylesheets)) {
+            return; // locked out — the app is exiting
+        }
+
         // Apply stored HMRC settings (environment URLs and credentials) before UI loads
         SettingsController.loadAndApplyStoredEnvironment();
         SettingsController.loadAndApplyStoredCredentials();
@@ -49,26 +79,7 @@ public class Launcher extends Application {
 
         // Create the scene
         Scene scene = new Scene(root, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-
-        // Load all CSS stylesheets (loaded here to avoid JPMS issues with FXML)
-        String[] stylesheets = {
-            "/css/main.css",
-            "/css/tax-summary.css",
-            "/css/legal.css",
-            "/css/annual-submission.css",
-            "/css/submission-history.css",
-            "/css/onboarding.css",
-            "/css/bank-import.css",
-            "/css/notifications.css",
-            "/css/receipt-attachment.css",
-            "/css/help.css"
-        };
-        for (String css : stylesheets) {
-            var resource = getClass().getResource(css);
-            if (resource != null) {
-                scene.getStylesheets().add(resource.toExternalForm());
-            }
-        }
+        scene.getStylesheets().addAll(stylesheets);
 
         // Configure the stage
         primaryStage.setTitle(APP_TITLE);
@@ -82,9 +93,148 @@ public class Launcher extends Application {
             return; // terms declined — the app is exiting
         }
         boolean firstRun = maybeRunFirstRunOnboarding(primaryStage, scene.getStylesheets());
-        if (firstRun && mainController != null) {
-            // Introduce the app with the guided tour, once the main window is laid out.
-            Platform.runLater(mainController::startTour);
+        if (firstRun) {
+            // Offer to protect the data with a passphrase right after the details are gathered.
+            maybeOfferProtection(primaryStage, scene.getStylesheets());
+            if (mainController != null) {
+                // Introduce the app with the guided tour, once the main window is laid out.
+                Platform.runLater(mainController::startTour);
+            }
+        }
+    }
+
+    /** The app's stylesheet URLs (resolved once, reused by the main scene and the modal gates). */
+    private List<String> stylesheetUrls() {
+        List<String> urls = new ArrayList<>();
+        for (String name : stylesheetNames()) {
+            URL resource = getClass().getResource(CSS_DIRECTORY + "/" + name);
+            if (resource != null) {
+                urls.add(resource.toExternalForm());
+            }
+        }
+        return urls;
+    }
+
+    /**
+     * Every stylesheet in the {@code /css} resource directory, base stylesheet first so the
+     * per-screen ones override it, then alphabetically. The directory is read through the NIO file
+     * system so it works both from an exploded classes directory and from inside the packaged jar.
+     * A directory that cannot be read yields no stylesheets rather than failing startup.
+     */
+    private List<String> stylesheetNames() {
+        URL directory = getClass().getResource(CSS_DIRECTORY);
+        if (directory == null) {
+            return List.of();
+        }
+        try {
+            URI uri = directory.toURI();
+            if (!"jar".equals(uri.getScheme())) {
+                return stylesheetNamesIn(Paths.get(uri));
+            }
+            try (FileSystem jar = FileSystems.newFileSystem(uri, Map.of())) {
+                return stylesheetNamesIn(jar.getPath(CSS_DIRECTORY));
+            } catch (FileSystemAlreadyExistsException alreadyOpen) {
+                // Another part of the app opened this jar first; it owns the file system, so use it
+                // without closing it.
+                return stylesheetNamesIn(FileSystems.getFileSystem(uri).getPath(CSS_DIRECTORY));
+            }
+        } catch (URISyntaxException | IOException e) {
+            LOG.log(Level.WARNING, "Could not list the stylesheet directory; continuing without styles", e);
+            return List.of();
+        }
+    }
+
+    private static List<String> stylesheetNamesIn(Path directory) throws IOException {
+        try (Stream<Path> entries = Files.list(directory)) {
+            return entries.map(entry -> entry.getFileName().toString())
+                    .filter(name -> name.endsWith(".css"))
+                    .sorted(Comparator.comparing((String name) -> !BASE_STYLESHEET.equals(name))
+                            .thenComparing(Comparator.naturalOrder()))
+                    .toList();
+        }
+    }
+
+    /**
+     * Shows the unlock screen when the database is passphrase-protected, provisioning the database key
+     * on success. Also runs the one-time encryption if protection was enabled but the database is still
+     * plaintext (deferred migration, done here with no open connections). Fails closed: any failure, or
+     * closing the screen without unlocking, exits the app rather than opening unprotected.
+     *
+     * @return true to continue starting the app, false if it is exiting
+     */
+    private boolean requireUnlock(List<String> stylesheets) {
+        Path dbPath = SqliteDataStore.databaseFilePath();
+        DatabaseMigrator.restoreFromBackupIfInterrupted(dbPath);
+        AppLockService appLock = new AppLockService();
+        if (!appLock.isProtectionEnabled()) {
+            return true; // no passphrase set — the database is plaintext, unchanged behaviour
+        }
+        try {
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/app-unlock.fxml"));
+            Parent root = loader.load();
+            AppUnlockController controller = loader.getController();
+            controller.setAppLockService(appLock);
+
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle(APP_TITLE);
+            Scene dialogScene = new Scene(root);
+            dialogScene.getStylesheets().addAll(stylesheets);
+            dialog.setScene(dialogScene);
+            controller.setDialogStage(dialog);
+            dialog.showAndWait();
+
+            DbKey key = controller.getUnlockedKey();
+            if (key == null) {
+                LOG.info("Unlock cancelled; exiting");
+                Platform.exit();
+                return false;
+            }
+            if (DatabaseMigrator.databaseIsPlaintext(dbPath)) {
+                DatabaseMigrator.encrypt(dbPath, key);
+            }
+            SqliteDataStore.provisionKey(key);
+            // Force the store to actually open the encrypted database (keyed connection + schema
+            // migrations) and only then remove the plaintext safety-net backup. If this throws, the
+            // outer catch exits with the backup retained for recovery.
+            SqliteDataStore.getInstance();
+            DatabaseMigrator.deleteBackup(dbPath);
+            return true;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "App-lock gate failed; exiting to avoid opening unprotected", e);
+            Platform.exit();
+            return false;
+        }
+    }
+
+    /**
+     * Offers the optional "protect your data" step after first-run onboarding. Enabling writes the key
+     * vault; the database is encrypted on the next launch (see {@link #requireUnlock}). A failure to show
+     * it is swallowed — an optional step never blocks the app.
+     */
+    private void maybeOfferProtection(Stage owner, List<String> stylesheets) {
+        AppLockService appLock = new AppLockService();
+        if (appLock.isProtectionEnabled()) {
+            return;
+        }
+        try {
+            FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/app-protect.fxml"));
+            Parent root = loader.load();
+            AppProtectController controller = loader.getController();
+            controller.setAppLockService(appLock);
+
+            Stage dialog = new Stage();
+            dialog.initOwner(owner);
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle(APP_TITLE);
+            Scene dialogScene = new Scene(root);
+            dialogScene.getStylesheets().addAll(stylesheets);
+            dialog.setScene(dialogScene);
+            controller.setDialogStage(dialog);
+            fitDialogToScreen(dialog);
+            dialog.showAndWait();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Could not show the data-protection step; continuing", e);
         }
     }
 

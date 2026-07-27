@@ -43,11 +43,21 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
-        <!-- SQLite for local data persistence -->
+        <!-- SQLite for local data persistence. willena/sqlite-jdbc-crypt is a drop-in fork of
+             org.xerial:sqlite-jdbc (same org.sqlite.JDBC driver / jdbc:sqlite: URL) that bundles the
+             SQLCipher/wxSQLite3 native layer, so the database can be encrypted at rest via PRAGMA key.
+             Do NOT add org.xerial:sqlite-jdbc alongside it — both register org.sqlite.JDBC. -->
         <dependency>
-            <groupId>org.xerial</groupId>
+            <groupId>io.github.willena</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.45.1.0</version>
+            <version>3.53.2.0</version>
+        </dependency>
+
+        <!-- Argon2id password KDF (pure-JVM, no native libs) for the app-lock passphrase. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.85</version>
         </dependency>
 
         <!-- Markdown for the help system (rendered to JavaFX nodes) -->

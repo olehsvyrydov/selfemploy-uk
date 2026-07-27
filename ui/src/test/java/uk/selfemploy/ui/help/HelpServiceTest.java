@@ -242,14 +242,17 @@ class HelpServiceTest {
         void securityHelpMustNotOverstateEncryption() {
             String body = helpService.getHelp(HelpTopic.SECURITY_PRIVACY).orElseThrow().body();
 
-            // The data file is plaintext SQLite; only HMRC credentials + the NINO are encrypted.
+            // Whole-database encryption is OPTIONAL (an opt-in passphrase). The copy must not claim it
+            // is unconditional, must not mention the not-yet-built OS-keychain unlock, and must stay
+            // honest that without a passphrase the data is not encrypted.
             assertThat(body)
                 .doesNotContain("Database encrypted")
                 .doesNotContain("All data at rest is encrypted")
                 .doesNotContain("OS keychain");
             assertThat(body).contains("AES-256-GCM");
             assertThat(body).contains("National Insurance number");
-            assertThat(body).contains("not yet encrypted at rest");
+            assertThat(body).contains("Without a passphrase");
+            assertThat(body).contains("not encrypted");
         }
 
         @Test

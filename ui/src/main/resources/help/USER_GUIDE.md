@@ -73,7 +73,7 @@ Your password is never shared with the app — you enter it only on HMRC's websi
 
 **Local-only storage** — all data stays on your computer; there are no cloud servers and the app has no access to your data.
 
-**Encryption** — your HMRC API credentials and National Insurance number are encrypted (AES-256-GCM). Your financial data is stored in a local database on your device (not yet encrypted at rest).
+**Encryption** — your HMRC API credentials and National Insurance number are encrypted (AES-256-GCM). You can also protect the whole database with a passphrase, which encrypts all of your financial data at rest (SQLCipher, AES-256); without a passphrase the database is not encrypted.
 
 When you submit, only your tax figures and the fraud-prevention headers HMRC requires are sent.
 
