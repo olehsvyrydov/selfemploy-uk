@@ -4,9 +4,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.ui.viewmodel.AutoLockViewModel;
+import uk.selfemploy.ui.viewmodel.LockReason;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,15 +26,15 @@ class AppLockSessionTest {
 
     private AtomicLong clock;
     private AtomicBoolean modalOpen;
-    private AtomicBoolean locked;
+    private AtomicReference<LockReason> lockedWith;
     private AppLockSession session;
 
     @BeforeEach
     void setUp() {
         clock = new AtomicLong(0);
         modalOpen = new AtomicBoolean(false);
-        locked = new AtomicBoolean(false);
-        session = new AppLockSession(clock::get, modalOpen::get, () -> locked.set(true));
+        lockedWith = new AtomicReference<>();
+        session = new AppLockSession(clock::get, modalOpen::get, lockedWith::set);
         session.configure(15, true);
     }
 
@@ -52,7 +54,7 @@ class AppLockSessionTest {
                 lock.run();
             }
         }
-        return locked.get();
+        return lockedWith.get() != null;
     }
 
     /** One tick after a jump in the wall clock, which is what waking from suspend looks like. */
@@ -62,7 +64,7 @@ class AppLockSessionTest {
         if (lock != null) {
             lock.run();
         }
-        return locked.get();
+        return lockedWith.get() != null;
     }
 
     @Test
@@ -105,6 +107,18 @@ class AppLockSessionTest {
         // Barely idle, then the machine slept for two hours between one tick and the next.
         assertThat(idleFor(MINUTE)).isFalse();
         assertThat(tickAfterClockJump(2 * 60 * MINUTE)).isTrue();
+    }
+
+    @Test
+    @DisplayName("the session reports why it locked: idle when time simply passed, suspend after a jump")
+    void reportsWhyItLocked() {
+        assertThat(idleFor(16 * MINUTE)).isTrue();
+        assertThat(lockedWith.get()).isEqualTo(LockReason.IDLE);
+
+        lockedWith.set(null);
+        session.configure(15, true);
+        assertThat(tickAfterClockJump(2 * 60 * MINUTE)).isTrue();
+        assertThat(lockedWith.get()).isEqualTo(LockReason.SUSPEND);
     }
 
     @Test

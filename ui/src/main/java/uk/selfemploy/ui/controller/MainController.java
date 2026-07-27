@@ -35,6 +35,7 @@ import uk.selfemploy.ui.service.security.AppLockService;
 import uk.selfemploy.ui.service.security.AppLockSession;
 import uk.selfemploy.ui.service.security.DbKey;
 import uk.selfemploy.ui.viewmodel.AutoLockViewModel;
+import uk.selfemploy.ui.viewmodel.LockReason;
 import uk.selfemploy.ui.viewmodel.NavigationViewModel;
 import uk.selfemploy.ui.viewmodel.View;
 import uk.selfemploy.ui.i18n.Messages;
@@ -148,15 +149,17 @@ public class MainController implements Initializable {
 
     @FXML
     void handleLock(ActionEvent event) {
-        lockNow();
+        lockNow(LockReason.MANUAL);
     }
 
     /**
      * Locks the session: stops background database work, closes the database and clears the key, then
-     * blocks on the unlock screen. Fails closed like the startup gate — the screen has no way out except
+     * shows the unlock screen. Fails closed like the startup gate — the screen has no way out except
      * unlocking, and a failure to show it exits rather than leaving the app open over unlocked data.
+     *
+     * @param reason why the session is locking, which the unlock screen explains to the user
      */
-    private void lockNow() {
+    private void lockNow(LockReason reason) {
         if (lockSession == null || SqliteDataStore.getInstance().isLocked()) {
             return;
         }
@@ -165,29 +168,28 @@ public class MainController implements Initializable {
         notificationService.shutdown();
         SqliteDataStore.getInstance().lock();
         try {
-            DbKey key = showUnlockScreen();
-            if (key == null) {
-                LOG.info("Unlock cancelled after auto-lock; exiting");
-                Platform.exit();
-                return;
-            }
-            SqliteDataStore.getInstance().reopen(key);
-            notificationService.startScheduler(navigationViewModel.getSelectedTaxYear());
-            restoreView(viewBeforeLock);
-            lockSession.resume();
+            showUnlockScreen(reason, viewBeforeLock);
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to unlock after locking; exiting rather than continuing", e);
+            LOG.log(Level.SEVERE, "Failed to show the unlock screen; exiting rather than continuing", e);
             Platform.exit();
         }
     }
 
-    /** Shows the unlock screen modally over the main window. Returns null if it was closed unlocked. */
-    private DbKey showUnlockScreen() throws Exception {
+    /**
+     * Shows the unlock screen over the main window and continues once it closes.
+     *
+     * <p>Deliberately {@code show()} with the outcome handled on close, rather than blocking in
+     * {@code showAndWait()}. Auto-lock reaches this from a timeline tick by way of
+     * {@code Platform.runLater}, so blocking here would enter a nested event loop from inside the
+     * toolkit's own invoke-later dispatch — a shape worth avoiding on a screen the user cannot get past
+     * if it misbehaves. Not blocking also means no nested loop to unwind if the reopen fails.
+     */
+    private void showUnlockScreen(LockReason reason, View viewBeforeLock) throws Exception {
         FXMLLoader loader = Messages.loader(getClass().getResource("/fxml/app-unlock.fxml"));
         Parent root = loader.load();
         AppUnlockController controller = loader.getController();
         controller.setAppLockService(new AppLockService());
-        controller.setRelocked(true);
+        controller.setLockReason(reason.messageKey());
 
         Stage dialog = new Stage();
         dialog.initOwner(rootStack.getScene().getWindow());
@@ -197,8 +199,26 @@ public class MainController implements Initializable {
         scene.getStylesheets().addAll(rootStack.getScene().getStylesheets());
         dialog.setScene(scene);
         controller.setDialogStage(dialog);
-        dialog.showAndWait();
-        return controller.getUnlockedKey();
+        dialog.setOnHidden(event -> resumeAfterUnlock(controller.getUnlockedKey(), viewBeforeLock));
+        dialog.show();
+    }
+
+    /** Restores the session once the unlock screen closes, or exits if it closed without unlocking. */
+    private void resumeAfterUnlock(DbKey key, View viewBeforeLock) {
+        if (key == null) {
+            LOG.info("Unlock screen closed without unlocking; exiting");
+            Platform.exit();
+            return;
+        }
+        try {
+            SqliteDataStore.getInstance().reopen(key);
+            notificationService.startScheduler(navigationViewModel.getSelectedTaxYear());
+            restoreView(viewBeforeLock);
+            lockSession.resume();
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to reopen the database after unlocking; exiting", e);
+            Platform.exit();
+        }
     }
 
     /**

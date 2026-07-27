@@ -14,8 +14,10 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 
 import uk.selfemploy.ui.viewmodel.AutoLockViewModel;
+import uk.selfemploy.ui.viewmodel.LockReason;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 /**
@@ -35,7 +37,7 @@ public final class AppLockSession {
     private final AutoLockViewModel viewModel = new AutoLockViewModel();
     private final LongSupplier nowMillis;
     private final BooleanSupplier modalOpen;
-    private final Runnable onLockRequested;
+    private final Consumer<LockReason> onLockRequested;
     private final Timeline timer;
 
     private long lastActivityMillis;
@@ -45,9 +47,9 @@ public final class AppLockSession {
 
     /**
      * @param nowMillis       the clock, injectable so tests can drive it
-     * @param onLockRequested run on the FX thread when the session should lock
+     * @param onLockRequested run on the FX thread when the session should lock, told why
      */
-    public AppLockSession(LongSupplier nowMillis, Runnable onLockRequested) {
+    public AppLockSession(LongSupplier nowMillis, Consumer<LockReason> onLockRequested) {
         this(nowMillis, AppLockSession::anyModalWindowShowing, onLockRequested);
     }
 
@@ -55,7 +57,7 @@ public final class AppLockSession {
      * @param modalOpen whether a modal dialog is on screen; injectable because the default scans the
      *                  live window list, which a test without a JavaFX toolkit cannot do
      */
-    AppLockSession(LongSupplier nowMillis, BooleanSupplier modalOpen, Runnable onLockRequested) {
+    AppLockSession(LongSupplier nowMillis, BooleanSupplier modalOpen, Consumer<LockReason> onLockRequested) {
         this.nowMillis = nowMillis;
         this.modalOpen = modalOpen;
         this.onLockRequested = onLockRequested;
@@ -111,15 +113,19 @@ public final class AppLockSession {
         lastTickMillis = now;
         AutoLockViewModel.Decision decision = viewModel.decide(
                 now - lastActivityMillis, clockGap, modalOpen.getAsBoolean(), protectionEnabled, timeoutMinutes);
-        return decision == AutoLockViewModel.Decision.LOCK ? onLockRequested : null;
+        if (decision != AutoLockViewModel.Decision.LOCK) {
+            return null;
+        }
+        LockReason reason = viewModel.reasonFor(clockGap);
+        return () -> onLockRequested.accept(reason);
     }
 
     private void tick() {
         Runnable lock = tickDecision();
         if (lock != null) {
-            // Deferred deliberately. This runs inside the animation pulse, and the lock screen uses
-            // Stage.showAndWait(), which throws IllegalStateException during animation or layout
-            // processing. runLater moves it to the next pulse, outside that window.
+            // Deferred deliberately. This runs inside the animation pulse, and showing the lock screen
+            // there throws IllegalStateException ("not allowed during animation or layout processing").
+            // runLater moves it to the next pulse, outside that window.
             Platform.runLater(lock);
         }
     }

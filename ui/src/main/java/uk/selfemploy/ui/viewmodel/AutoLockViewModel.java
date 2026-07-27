@@ -65,6 +65,14 @@ public class AutoLockViewModel {
         return modalOpen ? Decision.POSTPONE : Decision.LOCK;
     }
 
+    /**
+     * Why a lock is happening, given the gap since the previous check. Used to tell the user whether the
+     * machine slept or simply sat idle, which are different enough that guessing would be misleading.
+     */
+    public LockReason reasonFor(long clockGapMillis) {
+        return clockGapMillis >= SUSPEND_THRESHOLD_MILLIS ? LockReason.SUSPEND : LockReason.IDLE;
+    }
+
     /** The stored timeout, or the default when the user has never chosen one. */
     public int timeoutOrDefault(Integer stored) {
         return stored == null ? DEFAULT_MINUTES : stored;

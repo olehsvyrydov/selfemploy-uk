@@ -48,13 +48,14 @@ public class AppUnlockController implements AppLockDialog {
     }
 
     /**
-     * Switches the copy to explain a mid-session lock. Without this the same screen appears with startup
-     * wording, leaving a user who stepped away unsure whether the app restarted or something went wrong.
+     * Explains a mid-session lock. Without this the screen appears with startup wording, leaving a user
+     * who stepped away unsure whether the app restarted or something went wrong — and telling someone who
+     * locked deliberately that they timed out.
+     *
+     * @param messageKey the subtitle describing why the session locked
      */
-    public void setRelocked(boolean relocked) {
-        if (relocked) {
-            subtitleLabel.setText(Messages.get("unlock.relocked.subtitle"));
-        }
+    public void setLockReason(String messageKey) {
+        subtitleLabel.setText(Messages.get(messageKey));
     }
 
     /** The unlocked database key, or {@code null} if the user closed the screen without unlocking. */
