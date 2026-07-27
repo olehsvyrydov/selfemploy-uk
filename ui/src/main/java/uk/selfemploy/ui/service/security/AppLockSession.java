@@ -3,6 +3,7 @@ package uk.selfemploy.ui.service.security;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -14,6 +15,7 @@ import javafx.util.Duration;
 
 import uk.selfemploy.ui.viewmodel.AutoLockViewModel;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 /**
@@ -32,6 +34,7 @@ public final class AppLockSession {
 
     private final AutoLockViewModel viewModel = new AutoLockViewModel();
     private final LongSupplier nowMillis;
+    private final BooleanSupplier modalOpen;
     private final Runnable onLockRequested;
     private final Timeline timer;
 
@@ -45,7 +48,16 @@ public final class AppLockSession {
      * @param onLockRequested run on the FX thread when the session should lock
      */
     public AppLockSession(LongSupplier nowMillis, Runnable onLockRequested) {
+        this(nowMillis, AppLockSession::anyModalWindowShowing, onLockRequested);
+    }
+
+    /**
+     * @param modalOpen whether a modal dialog is on screen; injectable because the default scans the
+     *                  live window list, which a test without a JavaFX toolkit cannot do
+     */
+    AppLockSession(LongSupplier nowMillis, BooleanSupplier modalOpen, Runnable onLockRequested) {
         this.nowMillis = nowMillis;
+        this.modalOpen = modalOpen;
         this.onLockRequested = onLockRequested;
         this.lastActivityMillis = nowMillis.getAsLong();
         this.lastTickMillis = this.lastActivityMillis;
@@ -98,14 +110,17 @@ public final class AppLockSession {
         long clockGap = now - lastTickMillis;
         lastTickMillis = now;
         AutoLockViewModel.Decision decision = viewModel.decide(
-                now - lastActivityMillis, clockGap, isModalOpen(), protectionEnabled, timeoutMinutes);
+                now - lastActivityMillis, clockGap, modalOpen.getAsBoolean(), protectionEnabled, timeoutMinutes);
         return decision == AutoLockViewModel.Decision.LOCK ? onLockRequested : null;
     }
 
     private void tick() {
         Runnable lock = tickDecision();
         if (lock != null) {
-            lock.run();
+            // Deferred deliberately. This runs inside the animation pulse, and the lock screen uses
+            // Stage.showAndWait(), which throws IllegalStateException during animation or layout
+            // processing. runLater moves it to the next pulse, outside that window.
+            Platform.runLater(lock);
         }
     }
 
@@ -113,7 +128,7 @@ public final class AppLockSession {
      * Whether a modal dialog is on screen. Such a window may hold input the user has typed but not saved,
      * which an idle timer must not throw away.
      */
-    private static boolean isModalOpen() {
+    private static boolean anyModalWindowShowing() {
         return Window.getWindows().stream()
                 .filter(Window::isShowing)
                 .filter(Stage.class::isInstance)

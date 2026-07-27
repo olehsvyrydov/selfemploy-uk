@@ -106,29 +106,43 @@ public class MainController implements Initializable {
      * hidden entirely rather than offered and refused.
      */
     private void setupAutoLock() {
-        boolean protectionEnabled = new AppLockService().isProtectionEnabled();
-        lockButton.setVisible(protectionEnabled);
-        lockButton.setManaged(protectionEnabled);
-        if (!protectionEnabled) {
-            return;
-        }
-        lockSession = new AppLockSession(System::currentTimeMillis, this::lockNow);
+        // The scene is normally attached after this controller is built, so watch for it; but do not
+        // depend on that order — a root that already has one would never fire the listener.
         rootStack.sceneProperty().addListener((obs, old, scene) -> {
             if (scene != null) {
-                lockSession.attachTo(scene);
-                lockSession.configure(configuredAutoLockMinutes(), true);
+                attachLockSession(scene);
             }
         });
+        if (rootStack.getScene() != null) {
+            attachLockSession(rootStack.getScene());
+        }
+        refreshAutoLockState();
+    }
+
+    private void attachLockSession(Scene scene) {
+        if (lockSession != null) {
+            return;     // already watching this window
+        }
+        lockSession = new AppLockSession(System::currentTimeMillis, this::lockNow);
+        lockSession.attachTo(scene);
+        refreshAutoLockState();
     }
 
     private int configuredAutoLockMinutes() {
         return new AutoLockViewModel().timeoutOrDefault(SqliteDataStore.getInstance().loadAutoLockMinutes());
     }
 
-    /** Re-reads the auto-lock timeout, so a change in Settings takes effect without a restart. */
-    public void refreshAutoLockSetting() {
+    /**
+     * Re-reads whether protection is on and how long the timeout is, so both a passphrase enabled from
+     * Settings and a changed timeout take effect in this session rather than at the next restart.
+     */
+    public void refreshAutoLockState() {
+        boolean protectionEnabled = new AppLockService().isProtectionEnabled();
+        lockButton.setVisible(protectionEnabled);
+        lockButton.setManaged(protectionEnabled);
         if (lockSession != null) {
-            lockSession.configure(configuredAutoLockMinutes(), true);
+            lockSession.configure(protectionEnabled ? configuredAutoLockMinutes() : AutoLockViewModel.OFF,
+                    protectionEnabled);
         }
     }
 
@@ -396,7 +410,7 @@ public class MainController implements Initializable {
 
                 // Apply an auto-lock timeout change to the running session, without a restart
                 if (controller instanceof SettingsController settingsController) {
-                    settingsController.setAutoLockChangeListener(this::refreshAutoLockSetting);
+                    settingsController.setSecuritySettingsChangeListener(this::refreshAutoLockState);
                 }
 
                 // Wire empty-state calls to action for the Tax Summary screen

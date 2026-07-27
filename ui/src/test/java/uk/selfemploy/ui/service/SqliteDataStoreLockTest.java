@@ -36,8 +36,9 @@ class SqliteDataStoreLockTest {
     @DisplayName("a locked store refuses to serve data, and serves it again once reopened")
     void lockThenReopen() throws Exception {
         Path db = dir.resolve("selfemploy.db");
-        DbKey key = randomKey();
-        SqliteDataStore store = new SqliteDataStore(db, new CredentialEncryption(), key);
+        byte[] raw = new byte[32];
+        new SecureRandom().nextBytes(raw);
+        SqliteDataStore store = new SqliteDataStore(db, new CredentialEncryption(), new DbKey(raw));
         try {
             store.saveDisplayName("Ada Lovelace");
             assertThat(store.loadDisplayName()).isEqualTo("Ada Lovelace");
@@ -51,10 +52,50 @@ class SqliteDataStoreLockTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("locked");
 
-            store.reopen(key);
+            // The same bytes, in a fresh holder: the one handed over at construction has been wiped.
+            store.reopen(new DbKey(raw));
 
             assertThat(store.isLocked()).isFalse();
             assertThat(store.loadDisplayName()).isEqualTo("Ada Lovelace");
+        } finally {
+            store.close();
+        }
+    }
+
+    @Test
+    @DisplayName("locking wipes the key the store was given")
+    void lockWipesTheKey() {
+        Path db = dir.resolve("selfemploy.db");
+        DbKey key = randomKey();
+        String hexBefore = key.hex();
+        SqliteDataStore store = new SqliteDataStore(db, new CredentialEncryption(), key);
+        try {
+            assertThat(hexBefore).isNotEqualTo("0".repeat(64));
+
+            store.lock();
+
+            // The store holds the very object it was handed, so a caller's reference is wiped too.
+            assertThat(key.hex()).isEqualTo("0".repeat(64));
+        } finally {
+            store.close();
+        }
+    }
+
+    @Test
+    @DisplayName("a store with its own key never writes the shared slot the singleton reads")
+    void ownKeyStoreLeavesTheSharedSlotAlone() {
+        Path db = dir.resolve("selfemploy.db");
+        boolean provisionedBefore = SqliteDataStore.isKeyProvisioned();
+        byte[] raw = new byte[32];
+        new SecureRandom().nextBytes(raw);
+        SqliteDataStore store = new SqliteDataStore(db, new CredentialEncryption(), new DbKey(raw));
+        try {
+            store.lock();
+            store.reopen(new DbKey(raw));
+
+            // Otherwise a test store would leave isKeyProvisioned() lying for the rest of the JVM,
+            // and the Settings protection status reads exactly that.
+            assertThat(SqliteDataStore.isKeyProvisioned()).isEqualTo(provisionedBefore);
         } finally {
             store.close();
         }

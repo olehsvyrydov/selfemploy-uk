@@ -63,8 +63,15 @@ public final class SqliteDataStore {
      */
     private static volatile DbKey provisionedKey;
 
-    /** This store's key: the provisioned key for the singleton, null (plaintext) for test stores. */
-    private final DbKey dbKey;
+    /** This store's own key. Null for the singleton, which reads the shared {@link #provisionedKey}. */
+    private DbKey dbKey;
+
+    /**
+     * Whether this store's key lives in the shared static slot. Fixed at construction so a lock never
+     * reaches across to the singleton's key from a store that owns its own — which would otherwise let a
+     * test clear or set state the rest of the JVM can see.
+     */
+    private final boolean usesSharedKey;
 
     /** Set by {@link #lock()}; every connection request is refused until {@link #reopen(DbKey)}. */
     private volatile boolean locked;
@@ -102,8 +109,14 @@ public final class SqliteDataStore {
         close();
         connection = null;
         threadConnection.remove();
-        DbKey key = provisionedKey;
-        provisionedKey = null;
+        DbKey key;
+        if (usesSharedKey) {
+            key = provisionedKey;
+            provisionedKey = null;
+        } else {
+            key = dbKey;
+            dbKey = null;
+        }
         locked = true;
         if (key != null) {
             key.destroy();
@@ -121,7 +134,13 @@ public final class SqliteDataStore {
         if (key == null) {
             throw new IllegalArgumentException("Cannot reopen the data store without a key");
         }
-        provisionedKey = key;
+        // Put the key back where this store reads it from. A store that owns its key must not write the
+        // shared slot, which the singleton and isKeyProvisioned() read.
+        if (usesSharedKey) {
+            provisionedKey = key;
+        } else {
+            dbKey = key;
+        }
         locked = false;
         initializeDatabase();
         restrictDatabaseFiles();
@@ -143,6 +162,7 @@ public final class SqliteDataStore {
         // The singleton reads the provisioned key live (see openRawConnection) rather than snapshotting
         // it, so a key provisioned around construction is never missed; test stores pass an explicit key.
         this.dbKey = null;
+        this.usesSharedKey = true;
         this.databasePath = inMemory ? null : resolveDatabasePath();
         if (!inMemory) {
             ensureDirectoryExists();
@@ -181,6 +201,7 @@ public final class SqliteDataStore {
         this.credentialEncryption = credentialEncryption;
         this.inMemory = false;
         this.dbKey = dbKey;
+        this.usesSharedKey = dbKey == null;
         this.databasePath = databasePath;
         ensureDirectoryExists();
         initializeDatabase();

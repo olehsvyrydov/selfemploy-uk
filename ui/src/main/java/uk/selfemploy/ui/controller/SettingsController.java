@@ -207,7 +207,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
     private final HmrcBusinessProfileService profileService = new HmrcBusinessProfileService();
     private final SecuritySettingsViewModel securityViewModel = new SecuritySettingsViewModel();
     private final AutoLockViewModel autoLockViewModel = new AutoLockViewModel();
-    private Runnable autoLockChangeListener;
+    private Runnable securitySettingsChangeListener;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -1406,14 +1406,21 @@ public class SettingsController implements Initializable, MainController.TaxYear
         }
         SqliteDataStore.getInstance().saveAutoLockMinutes(minutes);
         // Apply immediately: a user who has just shortened the timeout should not have to restart for it.
-        if (autoLockChangeListener != null) {
-            autoLockChangeListener.run();
-        }
+        notifySecuritySettingsChanged();
     }
 
-    /** Lets the shell re-read the timeout when it changes here, so the running session picks it up. */
-    public void setAutoLockChangeListener(Runnable listener) {
-        this.autoLockChangeListener = listener;
+    /**
+     * Lets the shell re-read the security settings when they change here, so enabling protection or
+     * changing the timeout takes effect in this session rather than at the next restart.
+     */
+    public void setSecuritySettingsChangeListener(Runnable listener) {
+        this.securitySettingsChangeListener = listener;
+    }
+
+    private void notifySecuritySettingsChanged() {
+        if (securitySettingsChangeListener != null) {
+            securitySettingsChangeListener.run();
+        }
     }
 
     private SecuritySettingsViewModel.ProtectionStatus currentProtectionStatus() {
@@ -1431,6 +1438,8 @@ public class SettingsController implements Initializable, MainController.TaxYear
         // The database is open right now, so the encryption itself is deferred to the next launch.
         showSecurityDialog("/fxml/app-protect.fxml", "settings.security.title", AppProtectController.class);
         updateSecuritySection();
+        // Protection may have just been switched on, which is what enables auto-lock and the lock action.
+        notifySecuritySettingsChanged();
     }
 
     @FXML
