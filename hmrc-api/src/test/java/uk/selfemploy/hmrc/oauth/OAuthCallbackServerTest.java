@@ -290,13 +290,10 @@ class OAuthCallbackServerTest {
             try {
                 CompletableFuture<String> future = shortTimeoutServer.startAndAwaitCallback("state");
 
-                // Wait for timeout to fire
-                Thread.sleep(2000);
-
-                // Future should have completed with TIMEOUT (not USER_CANCELLED)
-                assertThat(future.isCompletedExceptionally()).isTrue();
-
-                assertThatThrownBy(() -> future.get(1, TimeUnit.SECONDS))
+                // Wait on the future rather than sleeping past the timeout. A scheduled task can fire
+                // late on a loaded machine, so any fixed sleep is a guess about how late is too late;
+                // this waits for the outcome itself and returns as soon as it arrives.
+                assertThatThrownBy(() -> future.get(10, TimeUnit.SECONDS))
                     .isInstanceOf(ExecutionException.class)
                     .hasCauseInstanceOf(HmrcOAuthException.class)
                     .cause()
