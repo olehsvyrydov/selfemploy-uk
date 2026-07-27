@@ -34,7 +34,9 @@ import uk.selfemploy.core.export.ImportType;
 import uk.selfemploy.core.service.PrivacyAcknowledgmentService;
 import uk.selfemploy.core.service.TermsAcceptanceService;
 import uk.selfemploy.hmrc.oauth.dto.OAuthTokens;
+import uk.selfemploy.ui.service.security.AppLockService;
 import uk.selfemploy.ui.viewmodel.HmrcConnectionWizardViewModel;
+import uk.selfemploy.ui.viewmodel.SecuritySettingsViewModel;
 
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.common.util.VersionInfo;
@@ -59,6 +61,7 @@ import uk.selfemploy.ui.i18n.Messages;
 import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -180,6 +183,15 @@ public class SettingsController implements Initializable, MainController.TaxYear
     @FXML private FontIcon checkOAuth;
     @FXML private FontIcon checkProfile;
 
+    // Security section FXML fields
+    @FXML private Label protectionStatusLabel;
+    @FXML private Label protectionStatusDescription;
+    @FXML private Button enableProtectionButton;
+    @FXML private HBox changePassphraseRow;
+    @FXML private Button changePassphraseButton;
+    @FXML private HBox recoveryCodeRow;
+    @FXML private Button regenerateRecoveryButton;
+
     // === State ===
 
     private TaxYear taxYear;
@@ -189,6 +201,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
     private NinoVerificationStatus ninoVerificationStatus = NinoVerificationStatus.NOT_VERIFIED;
 
     private final HmrcBusinessProfileService profileService = new HmrcBusinessProfileService();
+    private final SecuritySettingsViewModel securityViewModel = new SecuritySettingsViewModel();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -210,6 +223,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         loadHmrcCredentialsStatus();
         initHmrcEnvironmentCombo();
         updateHmrcConnectionStatus();
+        updateSecuritySection();
         initAboutSection();
     }
 
@@ -1319,6 +1333,108 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 "  - " + Disclaimers.CONSUMER_RIGHTS_RECOMMENDATION_3 + "\n\n" +
                 Disclaimers.PDF_CONFIRMATION_DISCLAIMER + "\n\n" +
                 Disclaimers.CONSUMER_RIGHTS_ACKNOWLEDGMENT);
+    }
+
+    // === Security Section ===
+
+    /**
+     * Refreshes the protection status and the controls it allows. The status is read from the world,
+     * not remembered: the vault file says whether the user enabled protection, and the database file
+     * says whether the deferred encryption has actually run yet.
+     */
+    private void updateSecuritySection() {
+        if (protectionStatusLabel == null) {
+            return;     // section not present in this scene
+        }
+        SecuritySettingsViewModel.ProtectionStatus status = currentProtectionStatus();
+
+        protectionStatusLabel.setText(Messages.get(status.labelKey()));
+        protectionStatusDescription.setText(Messages.get(status.descriptionKey()));
+
+        boolean canEnable = securityViewModel.canEnableProtection(status);
+        enableProtectionButton.setVisible(canEnable);
+        enableProtectionButton.setManaged(canEnable);
+
+        boolean canManageKeys = securityViewModel.canManageKeys(status);
+        changePassphraseRow.setVisible(canManageKeys);
+        changePassphraseRow.setManaged(canManageKeys);
+        recoveryCodeRow.setVisible(canManageKeys);
+        recoveryCodeRow.setManaged(canManageKeys);
+    }
+
+    private SecuritySettingsViewModel.ProtectionStatus currentProtectionStatus() {
+        boolean vaultExists = new AppLockService().isProtectionEnabled();
+        // Whether the data is encrypted is read from the running store rather than by probing the
+        // database file: the app-lock gate provisions the key before the store opens and fails closed
+        // otherwise, so this is the same answer without a JDBC connection on the FX thread.
+        boolean databaseUnencrypted = !SqliteDataStore.isKeyProvisioned();
+        return securityViewModel.status(vaultExists, databaseUnencrypted);
+    }
+
+    @FXML
+    void handleEnableProtection(ActionEvent event) {
+        // Reuses the onboarding screen: it writes the vault only after the recovery code is acknowledged.
+        // The database is open right now, so the encryption itself is deferred to the next launch.
+        showSecurityDialog("/fxml/app-protect.fxml", "settings.security.title", AppProtectController.class);
+        updateSecuritySection();
+    }
+
+    @FXML
+    void handleChangePassphrase(ActionEvent event) {
+        ChangePassphraseController controller = showSecurityDialog(
+                "/fxml/change-passphrase.fxml", "changePassphrase.title", ChangePassphraseController.class);
+        if (controller != null && controller.wasChanged()) {
+            AppDialog.info(Messages.get("changePassphrase.title"), Messages.get("changePassphrase.success"));
+        }
+    }
+
+    @FXML
+    void handleRegenerateRecovery(ActionEvent event) {
+        RegenerateRecoveryController controller = showSecurityDialog(
+                "/fxml/regenerate-recovery.fxml", "regenerateRecovery.title", RegenerateRecoveryController.class);
+        if (controller != null && controller.wasRegenerated()) {
+            AppDialog.info(Messages.get("regenerateRecovery.title"), Messages.get("regenerateRecovery.success"));
+        }
+    }
+
+    /**
+     * Loads an app-lock dialog modally, injects the app-lock service and blocks until it closes.
+     *
+     * @return the dialog's controller, so the caller can act on its outcome, or null if it failed to open
+     */
+    private <T extends AppLockDialog> T showSecurityDialog(String fxml, String titleKey, Class<T> controllerType) {
+        try {
+            FXMLLoader loader = Messages.loader(getClass().getResource(fxml));
+            Parent root = loader.load();
+            T controller = controllerType.cast(loader.getController());
+            controller.setAppLockService(new AppLockService());
+
+            Stage dialog = new Stage();
+            Window owner = getOwnerWindow();
+            if (owner != null) {
+                dialog.initOwner(owner);
+            }
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle(Messages.get(titleKey));
+            Scene scene = new Scene(root);
+            addStylesheets(scene, "/css/main.css", "/css/onboarding.css");
+            dialog.setScene(scene);
+            controller.setDialogStage(dialog);
+            dialog.showAndWait();
+            return controller;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Could not open the security dialog " + fxml, e);
+            return null;
+        }
+    }
+
+    private void addStylesheets(Scene scene, String... resources) {
+        for (String resource : resources) {
+            URL url = getClass().getResource(resource);
+            if (url != null) {
+                scene.getStylesheets().add(url.toExternalForm());
+            }
+        }
     }
 
     // === About Section ===

@@ -74,6 +74,15 @@ public final class SqliteDataStore {
         provisionedKey = key;
     }
 
+    /**
+     * Whether this session opened the database with an encryption key. Since the app-lock gate provisions
+     * the key before the store is first created, and fails closed otherwise, this answers "is the data on
+     * disk encrypted?" without touching the file — unlike probing the database, which costs a connection.
+     */
+    public static boolean isKeyProvisioned() {
+        return provisionedKey != null;
+    }
+
     private SqliteDataStore() {
         this(false);
     }
