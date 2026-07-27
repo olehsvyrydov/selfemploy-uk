@@ -357,14 +357,6 @@ public class ImportOrchestrationService {
     }
 
     /**
-     * Populates an expense transaction's suggested category and confidence for Bank Review.
-     *
-     * <p>A category the user chose in the wizard is kept as a high-confidence suggestion. Otherwise
-     * the keyword categorizer runs: a keyword match yields its category and confidence, while no
-     * match leaves the category unset (shown as needing review) and records low confidence rather
-     * than asserting a fallback category the user did not choose.</p>
-     */
-    /**
      * The stored key for the {@code occurrence}-th row in a statement carrying {@code baseKey}.
      *
      * <p>Date, amount, description and direction cannot tell a re-import from a genuine repeat: someone
@@ -391,6 +383,14 @@ public class ImportOrchestrationService {
         return occurrence == 1 ? baseKey : baseKey + "|#" + occurrence;
     }
 
+    /**
+     * Populates an expense transaction's suggested category and confidence for Bank Review.
+     *
+     * <p>A category the user chose in the wizard is kept as a high-confidence suggestion. Otherwise
+     * the keyword categorizer runs: a keyword match yields its category and confidence, while no
+     * match leaves the category unset (shown as needing review) and records low confidence rather
+     * than asserting a fallback category the user did not choose.</p>
+     */
     private BankTransaction applyExpenseSuggestion(BankTransaction tx, ImportedTransactionRow row, Instant now) {
         if (row.category() != null) {
             return tx.withSuggestion(row.category(), CONFIDENCE_HIGH, now);
