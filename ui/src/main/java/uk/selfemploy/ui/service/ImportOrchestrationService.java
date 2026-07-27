@@ -268,9 +268,15 @@ public class ImportOrchestrationService {
      *
      * <p>Rows are written to {@code bank_transactions} with review status PENDING under a single
      * import batch id, rather than committed straight to income/expense. The Bank Review screen is
-     * where a reviewer turns them into income/expense records. A row whose deterministic hash already
-     * exists in {@code bank_transactions} is skipped, so re-importing the same statement stages
-     * nothing new.</p>
+     * where a reviewer turns them into income/expense records. A row whose key already exists in
+     * {@code bank_transactions} is skipped, so re-importing the same statement stages nothing new.</p>
+     *
+     * <p>The key counts occurrences within this statement (see {@link #duplicateKey}), so a statement
+     * containing the same payment twice stages both. That only separates repeats <em>within one
+     * statement</em>: the count restarts on every import, so two separate statements each containing one
+     * identical row still resolve to the same key and the second is skipped. Telling those apart would
+     * need something this import does not capture — the row's account, or the bank's own transaction id.
+     * See {@code skipsAnIdenticalRowFromASeparateStatement} for that boundary.</p>
      *
      * @param transactions the transactions to stage
      * @param progressCallback callback for progress updates (0.0 to 1.0)
@@ -332,9 +338,6 @@ public class ImportOrchestrationService {
 
         LOG.info("Import staged: {} new, {} duplicate(s) skipped, {} error(s) out of {} total",
                 staged, skipped, errors, total);
-        if (skipped > 0) {
-            LOG.info("Skipped rows were already staged by an earlier import of the same statement");
-        }
 
         // Record the import so it appears in Import History and can be undone. The audit id is the
         // batch id already stamped on each staged transaction (bank_transactions.import_audit_id).
@@ -373,6 +376,16 @@ public class ImportOrchestrationService {
      * <p>The first occurrence deliberately keeps the bare key, which is the format written before this
      * distinction existed. That keeps already-imported statements recognised, and means a repeat that an
      * earlier import dropped is picked up the next time the statement is imported.
+     *
+     * <p>What this does <em>not</em> solve: the count restarts on every import, so two separate
+     * statements each holding one identical row still produce the same key, and the second is skipped.
+     * A content-only key cannot tell "the same row again" from "a different row that looks the same"; a
+     * complete answer needs the account or the bank's transaction id, neither of which this import path
+     * records today.
+     *
+     * <p>{@code |#} separates the count because {@code |} alone already separates the base key's fields
+     * and descriptions are not stripped of it. That narrows the ambiguity rather than removing it: a
+     * description ending in {@code |#2} could still collide.
      */
     private static String duplicateKey(String baseKey, int occurrence) {
         return occurrence == 1 ? baseKey : baseKey + "|#" + occurrence;

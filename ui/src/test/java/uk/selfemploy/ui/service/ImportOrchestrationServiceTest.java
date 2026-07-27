@@ -394,6 +394,40 @@ class ImportOrchestrationServiceTest {
         }
 
         @Test
+        @DisplayName("known limit: an identical row in a separate statement is still skipped")
+        void skipsAnIdenticalRowFromASeparateStatement() {
+            // Pins a boundary rather than approving of it. The occurrence count restarts on each import,
+            // which is what makes re-importing a statement stage nothing — and the same property means a
+            // genuinely different row that happens to look identical, in a separate statement, is taken
+            // for a re-import. Telling them apart needs the account or the bank's transaction id, which
+            // this import path does not record. If that changes, this test should fail and be deleted.
+            ImportedTransactionRow rowInStatementA = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+            ImportedTransactionRow identicalRowInStatementB = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+
+            Set<String> stored = new HashSet<>();
+            when(bankTransactionService.existsByHash(anyString()))
+                    .thenAnswer(call -> stored.contains(call.getArgument(0, String.class)));
+            doAnswer(call -> {
+                stored.add(call.getArgument(0, BankTransaction.class).transactionHash());
+                return null;
+            }).when(bankTransactionService).save(any());
+
+            service.importTransactions(List.of(rowInStatementA), "account-a.csv", null);
+
+            ImportOrchestrationService.ImportResult fromB =
+                    service.importTransactions(List.of(identicalRowInStatementB), "account-b.csv", null);
+
+            assertThat(fromB.skippedCount())
+                    .as("still skipped — the documented limit of a content-only key")
+                    .isEqualTo(1);
+            assertThat(fromB.importedCount()).isZero();
+        }
+
+        @Test
         @DisplayName("a repeat dropped by an earlier import is picked up next time, without re-staging the first")
         void recoversARepeatAnEarlierImportDropped() {
             // A database written before repeats were distinguished holds only the bare key.
