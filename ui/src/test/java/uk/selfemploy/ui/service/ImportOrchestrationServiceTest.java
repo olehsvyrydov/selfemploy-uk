@@ -28,8 +28,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -334,6 +336,88 @@ class ImportOrchestrationServiceTest {
             assertThat(result.importedCount()).isZero();
             assertThat(result.skippedCount()).isEqualTo(1);
             verify(bankTransactionService, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("stages both halves of a genuine repeat: the same payment twice in one statement")
+        void stagesGenuineRepeatsWithinOneStatement() {
+            // Real statements contain these — the same coffee bought twice in a day is two rows that
+            // are identical in date, amount and description. Skipping the second loses a real payment.
+            ImportedTransactionRow first = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+            ImportedTransactionRow second = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+
+            ImportOrchestrationService.ImportResult result =
+                    service.importTransactions(List.of(first, second), "statement.csv", null);
+
+            assertThat(result.importedCount()).isEqualTo(2);
+            assertThat(result.skippedCount()).isZero();
+
+            ArgumentCaptor<BankTransaction> captor = ArgumentCaptor.forClass(BankTransaction.class);
+            verify(bankTransactionService, times(2)).save(captor.capture());
+            assertThat(captor.getAllValues()).extracting(BankTransaction::transactionHash)
+                    .as("each occurrence needs its own key, or one would overwrite the other's identity")
+                    .doesNotHaveDuplicates();
+        }
+
+        @Test
+        @DisplayName("re-importing the same statement still stages nothing, repeats included")
+        void reImportingTheSameStatementStagesNothing() {
+            ImportedTransactionRow first = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+            ImportedTransactionRow second = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+
+            // First import: nothing is on record, so both rows stage and their keys are remembered.
+            Set<String> stored = new HashSet<>();
+            when(bankTransactionService.existsByHash(anyString()))
+                    .thenAnswer(call -> stored.contains(call.getArgument(0, String.class)));
+            doAnswer(call -> {
+                stored.add(call.getArgument(0, BankTransaction.class).transactionHash());
+                return null;
+            }).when(bankTransactionService).save(any());
+
+            service.importTransactions(List.of(first, second), "statement.csv", null);
+            assertThat(stored).hasSize(2);
+
+            // Same file again: both rows must be recognised, which is the property the key exists for.
+            ImportOrchestrationService.ImportResult secondRun =
+                    service.importTransactions(List.of(first, second), "statement.csv", null);
+
+            assertThat(secondRun.importedCount()).isZero();
+            assertThat(secondRun.skippedCount()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("a repeat dropped by an earlier import is picked up next time, without re-staging the first")
+        void recoversARepeatAnEarlierImportDropped() {
+            // A database written before repeats were distinguished holds only the bare key.
+            ImportedTransactionRow first = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+            ImportedTransactionRow second = ImportedTransactionRow.create(
+                    LocalDate.of(2026, 3, 4), "COFFEE SHOP", new BigDecimal("3.20"),
+                    TransactionType.EXPENSE, null, false, 0);
+
+            ArgumentCaptor<BankTransaction> firstPass = ArgumentCaptor.forClass(BankTransaction.class);
+            service.importTransactions(List.of(first), "statement.csv", null);
+            verify(bankTransactionService).save(firstPass.capture());
+            String legacyKey = firstPass.getValue().transactionHash();
+
+            reset(bankTransactionService);
+            when(bankTransactionService.existsByHash(anyString()))
+                    .thenAnswer(call -> legacyKey.equals(call.getArgument(0, String.class)));
+
+            ImportOrchestrationService.ImportResult result =
+                    service.importTransactions(List.of(first, second), "statement.csv", null);
+
+            assertThat(result.skippedCount()).as("the row already on record").isEqualTo(1);
+            assertThat(result.importedCount()).as("the repeat it previously lost").isEqualTo(1);
         }
 
         @Test

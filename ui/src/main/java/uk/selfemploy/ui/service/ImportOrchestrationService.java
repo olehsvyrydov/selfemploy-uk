@@ -35,8 +35,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -287,14 +289,20 @@ public class ImportOrchestrationService {
         int total = transactions.size();
         List<UUID> stagedIds = new ArrayList<>();
 
+        // How many rows in this statement have already used each key. A statement can legitimately
+        // contain the same payment twice — two identical coffees on one day — and those rows are
+        // indistinguishable by date, amount and description alone.
+        Map<String, Integer> occurrences = new HashMap<>();
+
         for (int i = 0; i < total; i++) {
             ImportedTransactionRow row = transactions.get(i);
 
             try {
                 // Include direction so a credit and a debit with the same date/amount/description
                 // do not collide and wrongly skip one another as a duplicate.
-                String hash = MatchingUtils.createExactKey(row.date(), row.amount(), row.description())
+                String baseKey = MatchingUtils.createExactKey(row.date(), row.amount(), row.description())
                     + "|" + row.type();
+                String hash = duplicateKey(baseKey, occurrences.merge(baseKey, 1, Integer::sum));
                 if (bankTransactionService.existsByHash(hash)) {
                     skipped++;
                 } else {
@@ -324,6 +332,9 @@ public class ImportOrchestrationService {
 
         LOG.info("Import staged: {} new, {} duplicate(s) skipped, {} error(s) out of {} total",
                 staged, skipped, errors, total);
+        if (skipped > 0) {
+            LOG.info("Skipped rows were already staged by an earlier import of the same statement");
+        }
 
         // Record the import so it appears in Import History and can be undone. The audit id is the
         // batch id already stamped on each staged transaction (bank_transactions.import_audit_id).
@@ -350,6 +361,23 @@ public class ImportOrchestrationService {
      * match leaves the category unset (shown as needing review) and records low confidence rather
      * than asserting a fallback category the user did not choose.</p>
      */
+    /**
+     * The stored key for the {@code occurrence}-th row in a statement carrying {@code baseKey}.
+     *
+     * <p>Date, amount, description and direction cannot tell a re-import from a genuine repeat: someone
+     * who buys the same coffee twice in a day produces two identical rows, and skipping the second loses
+     * a real transaction. Counting occurrences within the statement separates the two cases — the same
+     * file always yields the same counts, so re-importing it still matches and stages nothing, while a
+     * second genuine repeat gets a key of its own.
+     *
+     * <p>The first occurrence deliberately keeps the bare key, which is the format written before this
+     * distinction existed. That keeps already-imported statements recognised, and means a repeat that an
+     * earlier import dropped is picked up the next time the statement is imported.
+     */
+    private static String duplicateKey(String baseKey, int occurrence) {
+        return occurrence == 1 ? baseKey : baseKey + "|#" + occurrence;
+    }
+
     private BankTransaction applyExpenseSuggestion(BankTransaction tx, ImportedTransactionRow row, Instant now) {
         if (row.category() != null) {
             return tx.withSuggestion(row.category(), CONFIDENCE_HIGH, now);
