@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -67,7 +68,7 @@ class OAuthConnectionHandlerTest {
     void setUp() {
         mockOAuthService = mock(HmrcOAuthService.class);
         mockRepository = mock(WizardProgressRepository.class);
-        statusUpdates = new ArrayList<>();
+        statusUpdates = new CopyOnWriteArrayList<>();
         resultRef = new AtomicReference<>();
 
         statusCallback = statusUpdates::add;
@@ -111,11 +112,8 @@ class OAuthConnectionHandlerTest {
             // When
             handler.startConnection();
 
-            // Allow async processing
-            Thread.sleep(50);
-
             // Then
-            assertThat(statusUpdates).contains(ConnectionStatus.OPENING_BROWSER);
+            awaitStatus(ConnectionStatus.OPENING_BROWSER);
         }
 
         @Test
@@ -128,11 +126,8 @@ class OAuthConnectionHandlerTest {
             // When
             handler.startConnection();
 
-            // Allow async processing for status transitions
-            Thread.sleep(150);
-
             // Then
-            assertThat(statusUpdates).contains(ConnectionStatus.WAITING_FOR_AUTH);
+            awaitStatus(ConnectionStatus.WAITING_FOR_AUTH);
         }
 
         @Test
@@ -331,7 +326,7 @@ class OAuthConnectionHandlerTest {
             );
 
             asyncHandler.startConnection();
-            Thread.sleep(50); // Let it start
+            awaitStatus(ConnectionStatus.OPENING_BROWSER);
 
             // When
             asyncHandler.cancel();
@@ -461,7 +456,7 @@ class OAuthConnectionHandlerTest {
             );
 
             asyncHandler.startConnection();
-            Thread.sleep(50);
+            awaitStatus(ConnectionStatus.OPENING_BROWSER);
 
             // When
             asyncHandler.cancel();
@@ -702,4 +697,24 @@ class OAuthConnectionHandlerTest {
             "read:vat write:vat"
         );
     }
+
+    /**
+     * Waits until {@code status} has been reported.
+     *
+     * <p>These statuses arrive on the handler's own thread, so a fixed sleep is a bet on how long that
+     * hop takes — a bet that loses on a loaded machine, turning a timing-sensitive test into a red build
+     * on somebody else's change. Waiting for the condition itself is both robust and quicker, since it
+     * returns as soon as the status appears.
+     */
+    private void awaitStatus(ConnectionStatus status) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            if (statusUpdates.contains(status)) {
+                return;
+            }
+            Thread.sleep(5);
+        }
+        throw new AssertionError("Status " + status + " was never reported; saw " + statusUpdates);
+    }
+
 }

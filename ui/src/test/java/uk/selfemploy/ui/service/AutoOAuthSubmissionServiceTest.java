@@ -23,6 +23,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -290,13 +291,8 @@ class AutoOAuthSubmissionServiceTest {
             });
             submissionThread.start();
 
-            // Wait for OAuth to start
-            Thread.sleep(100);
-
             // Then: Progress should show AUTHENTICATING
-            assertThat(lastProgress.get()).isNotNull();
-            assertThat(lastProgress.get().stage())
-                    .isEqualTo(AutoOAuthSubmissionService.SubmissionStage.AUTHENTICATING);
+            awaitStage(lastProgress, AutoOAuthSubmissionService.SubmissionStage.AUTHENTICATING);
 
             // Cleanup
             oauthFuture.completeExceptionally(new RuntimeException("Test timeout"));
@@ -455,6 +451,10 @@ class AutoOAuthSubmissionServiceTest {
 
             QuarterlyReviewData reviewData = createReviewData(Quarter.Q1);
 
+            AtomicReference<AutoOAuthSubmissionService.SubmissionProgress> cancelProgress =
+                    new AtomicReference<>();
+            service.setProgressCallback(cancelProgress::set);
+
             // Start submission in background
             AtomicReference<Throwable> error = new AtomicReference<>();
             Thread submissionThread = new Thread(() -> {
@@ -466,8 +466,9 @@ class AutoOAuthSubmissionServiceTest {
             });
             submissionThread.start();
 
-            // Wait for OAuth to start
-            Thread.sleep(100);
+            // Wait until the submission has actually reached OAuth, rather than assuming 100ms is
+            // long enough — cancelling before it gets there would test nothing.
+            awaitStage(cancelProgress, AutoOAuthSubmissionService.SubmissionStage.AUTHENTICATING);
 
             // When: Cancel the submission
             service.cancel();
@@ -585,4 +586,26 @@ class AutoOAuthSubmissionServiceTest {
                 TEST_NINO
         );
     }
+
+    /**
+     * Waits until the submission reports {@code stage}.
+     *
+     * <p>The submission runs on its own thread, so sleeping a fixed interval before asserting is a bet
+     * on how fast it gets there. Waiting for the stage itself both removes the race and makes the intent
+     * explicit: the test needs the submission to have reached this point, not merely for time to pass.
+     */
+    private static void awaitStage(
+            AtomicReference<AutoOAuthSubmissionService.SubmissionProgress> progress,
+            AutoOAuthSubmissionService.SubmissionStage stage) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            AutoOAuthSubmissionService.SubmissionProgress current = progress.get();
+            if (current != null && current.stage() == stage) {
+                return;
+            }
+            Thread.sleep(5);
+        }
+        throw new AssertionError("Submission never reached " + stage + "; last was " + progress.get());
+    }
+
 }
