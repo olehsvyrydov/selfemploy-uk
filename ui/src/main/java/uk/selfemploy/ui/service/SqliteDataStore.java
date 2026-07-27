@@ -588,11 +588,8 @@ public final class SqliteDataStore {
         return "true".equals(loadSetting("onboarding_completed"));
     }
 
-    // === Update Check Operations ===
+    // === Auto-lock Operations ===
 
-    /**
-     * Records whether the app may check GitHub for newer releases (the update-check opt-out).
-     */
     /**
      * Stores the idle auto-lock timeout in minutes, or 0 for off. Lives in the encrypted database, which
      * is fine because it is only ever needed after an unlock.
@@ -618,6 +615,11 @@ public final class SqliteDataStore {
         }
     }
 
+    // === Update Check Operations ===
+
+    /**
+     * Records whether the app may check GitHub for newer releases (the update-check opt-out).
+     */
     public synchronized void saveUpdateCheckEnabled(boolean enabled) {
         saveSetting("update_check_enabled", enabled ? "true" : "false");
     }

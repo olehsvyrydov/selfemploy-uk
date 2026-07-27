@@ -208,6 +208,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
     private final SecuritySettingsViewModel securityViewModel = new SecuritySettingsViewModel();
     private final AutoLockViewModel autoLockViewModel = new AutoLockViewModel();
     private Runnable securitySettingsChangeListener;
+    private boolean applyingStoredAutoLock;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -1394,14 +1395,22 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 }
             });
         }
-        autoLockCombo.setValue(
-                autoLockViewModel.timeoutOrDefault(SqliteDataStore.getInstance().loadAutoLockMinutes()));
+        // Showing the stored value is not the user choosing it. A ComboBox with a skin fires an
+        // ActionEvent from its value listener, so without this guard merely opening Settings would
+        // persist the default — overwriting "never chosen" — and restart the idle countdown.
+        applyingStoredAutoLock = true;
+        try {
+            autoLockCombo.setValue(
+                    autoLockViewModel.timeoutOrDefault(SqliteDataStore.getInstance().loadAutoLockMinutes()));
+        } finally {
+            applyingStoredAutoLock = false;
+        }
     }
 
     @FXML
     void handleAutoLockChanged(ActionEvent event) {
         Integer minutes = autoLockCombo.getValue();
-        if (minutes == null) {
+        if (minutes == null || applyingStoredAutoLock) {
             return;
         }
         SqliteDataStore.getInstance().saveAutoLockMinutes(minutes);
