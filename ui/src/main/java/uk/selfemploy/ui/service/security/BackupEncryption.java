@@ -152,11 +152,13 @@ public final class BackupEncryption {
      * of the file, so a prefix scan finds it even when the JSON never closes.
      */
     public static boolean looksLikeDamagedBackup(byte[] fileBytes) {
-        if (isEncrypted(fileBytes)) {
-            return false;   // intact, whatever else may be wrong with it
-        }
         int prefix = Math.min(fileBytes.length, 512);
-        return new String(fileBytes, 0, prefix, StandardCharsets.UTF_8).contains(TYPE);
+        if (!new String(fileBytes, 0, prefix, StandardCharsets.UTF_8).contains(TYPE)) {
+            // Nothing claims to be ours, so there is no need to parse it. This is the ordinary path for a
+            // plaintext export, which the caller has already parsed once and may be megabytes long.
+            return false;
+        }
+        return !isEncrypted(fileBytes);   // carries the marker but will not parse: damaged
     }
 
     private static byte[] deriveKey(char[] passphrase, Kdf kdf) {
