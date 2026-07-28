@@ -1,0 +1,64 @@
+# Nightly E2E Suite
+#
+# The e2e-tagged tests need a JavaFX toolkit, so PR CI excludes them — and they rot unseen as a
+# result. Two test classes had been failing since January before anyone looked.
+#
+# This runs them nightly and never blocks a PR. It does not simply report red forever, which teaches
+# people to ignore it: it fails only when the number of broken tests goes UP, so the suite cannot rot
+# further while the backlog is repaired. See scripts/e2e-baseline.txt.
+
+name: Nightly E2E
+
+on:
+  schedule:
+    # 03:00 UTC, after the day's merges have landed
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: E2E suite (JavaFX)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      # xvfb-run gives a real X server, so TestFX needs no headless mode. Do NOT add
+      # -Dtestfx.headless=true here: it requires Monocle, which is not a dependency, and turns
+      # passing tests into errors.
+      #
+      # --fail-never so one failing module cannot skip the ones after it; the ratchet below is what
+      # decides whether this job passes.
+      - name: Run e2e-tagged tests
+        run: |
+          xvfb-run --auto-servernum mvn -B --fail-never test \
+            -Dsurefire.excludedGroups= -Dgroups=e2e --no-transfer-progress
+        env:
+          MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+
+      - name: Report and enforce the ratchet
+        run: bash scripts/e2e-report.sh
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-surefire-reports
+          path: '*/target/surefire-reports/*'
+          retention-days: 14
+          if-no-files-found: warn
