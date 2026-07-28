@@ -1,11 +1,15 @@
-77
+76
 
-The number of e2e-tagged tests currently known to be broken. The nightly run fails only if the
-count exceeds this, so the suite cannot rot further while it is being repaired.
+The number of e2e-tagged tests known to be broken. The nightly run fails only if the count exceeds
+this, so the suite cannot rot further while it is being repaired.
 
-Two full runs on 2026-07-28 measured 76 and 77 broken out of 883, so at least one test is flaky.
-The baseline sits at the higher of the two deliberately: a ratchet that trips on a coin flip gets
-ignored, which is how the suite reached this state. Finding and fixing that flake is worth doing —
-it would let the baseline drop to the real number.
+Measured in CI, which is where it is enforced: 75 broken of 883 on 2026-07-28. Set one higher
+because two identical local runs differed by one failure, so at least one test is flaky, and a
+ratchet that trips on a coin flip gets ignored - which is how the suite reached this state. Finding
+that flake would let this drop.
+
+For reference the same suite reports 77 broken on a developer desktop. Do not calibrate this from a
+local run: before the job ran a window manager it reported 225, and none of that difference was the
+tests.
 
 Lower this in the same commit that fixes tests. Never raise it.

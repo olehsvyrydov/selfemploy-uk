@@ -7,6 +7,9 @@
 # speaks when something got worse.
 #
 # When the count goes down, lower scripts/e2e-baseline.txt in the same commit that fixed them.
+#
+# It sums every surefire report it finds, so run it after `mvn clean` or on a fresh checkout as CI
+# does. Reports left by an earlier, different run are counted too.
 set -uo pipefail
 
 BASELINE_FILE="${BASELINE_FILE:-scripts/e2e-baseline.txt}"
