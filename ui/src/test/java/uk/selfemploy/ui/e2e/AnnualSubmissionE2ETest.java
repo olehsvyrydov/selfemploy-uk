@@ -125,7 +125,8 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
     }
 
     /**
-     * Ticks a declaration checkbox, bringing it into view first.
+     * Clicks a declaration checkbox, bringing it into view first. Toggles: callers use it to clear a
+     * declaration as well as to confirm one.
      *
      * <p>The six declarations sit in a scroll pane and the last of them is below the fold at this
      * window size, so a plain click fails with "no nodes were visible" rather than doing anything.
