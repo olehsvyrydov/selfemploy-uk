@@ -1,7 +1,6 @@
 package uk.selfemploy.ui.e2e;
 
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import uk.selfemploy.ui.service.DeadlineNotification;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
@@ -56,7 +55,10 @@ class NotificationPanelE2ETest {
 
     @BeforeEach
     void setUp(TestInfo testInfo) {
-        label = testInfo.getTestMethod().map(java.lang.reflect.Method::getName).orElse("Test");
+        // Falls back to the display name rather than a fixed string: a shared fallback would put
+        // the collision straight back for any test JUnit describes without a method.
+        label = testInfo.getTestMethod().map(java.lang.reflect.Method::getName)
+                .orElseGet(testInfo::getDisplayName);
 
         // Create notification service
         notificationService = new DeadlineNotificationService();
