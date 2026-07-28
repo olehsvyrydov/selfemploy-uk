@@ -96,9 +96,11 @@ class ExpenseListViewModelTest {
         }
 
         @Test
-        @DisplayName("should initialize with default page size of 20")
+        @DisplayName("should initialize with the default page size")
         void shouldInitializeWithDefaultPageSize() {
-            assertThat(viewModel.getPageSize()).isEqualTo(20);
+            // The one place the default is asserted. The pagination tests set their own size, so
+            // changing this default breaks this test alone rather than half the class.
+            assertThat(viewModel.getPageSize()).isEqualTo(10);
         }
     }
 
@@ -357,6 +359,14 @@ class ExpenseListViewModelTest {
     @DisplayName("Pagination")
     class Pagination {
 
+        /** Page size these tests are written against: 25 expenses become 10 + 10 + 5. */
+        private static final int PAGE_SIZE = 10;
+
+        @BeforeEach
+        void fixThePageSize() {
+            viewModel.setPageSize(PAGE_SIZE);
+        }
+
         @Test
         @DisplayName("should paginate results correctly")
         void shouldPaginateResults() {
@@ -368,9 +378,9 @@ class ExpenseListViewModelTest {
             viewModel.loadExpenses();
 
             // Then - first page
-            assertThat(viewModel.getCurrentPageItems()).hasSize(20);
+            assertThat(viewModel.getCurrentPageItems()).hasSize(10);
             assertThat(viewModel.getCurrentPage()).isZero();
-            assertThat(viewModel.getTotalPages()).isEqualTo(2);
+            assertThat(viewModel.getTotalPages()).isEqualTo(3);
         }
 
         @Test
@@ -388,7 +398,7 @@ class ExpenseListViewModelTest {
 
             // Then
             assertThat(viewModel.getCurrentPage()).isEqualTo(1);
-            assertThat(viewModel.getCurrentPageItems()).hasSize(5);
+            assertThat(viewModel.getCurrentPageItems()).hasSize(10);
         }
 
         @Test
@@ -435,13 +445,15 @@ class ExpenseListViewModelTest {
             when(expenseService.getTotalByTaxYear(any(), any())).thenReturn(BigDecimal.ZERO);
             when(expenseService.getDeductibleTotal(any(), any())).thenReturn(BigDecimal.ZERO);
             viewModel.loadExpenses();
-            viewModel.nextPage();
 
-            // When
-            viewModel.nextPage();
+            // When - pushed well past the end
+            for (int i = 0; i < 5; i++) {
+                viewModel.nextPage();
+            }
 
-            // Then
-            assertThat(viewModel.getCurrentPage()).isEqualTo(1);
+            // Then - stops on the last page rather than running off it
+            assertThat(viewModel.getCurrentPage()).isEqualTo(2);
+            assertThat(viewModel.getCurrentPageItems()).hasSize(5);
         }
 
         @Test
@@ -456,6 +468,8 @@ class ExpenseListViewModelTest {
 
             // Then
             assertThat(viewModel.hasNextPage()).isTrue();
+            viewModel.nextPage();
+            assertThat(viewModel.hasNextPage()).as("page 2 of 3 still has one after it").isTrue();
             viewModel.nextPage();
             assertThat(viewModel.hasNextPage()).isFalse();
         }
@@ -487,7 +501,9 @@ class ExpenseListViewModelTest {
             viewModel.loadExpenses();
 
             // Then
-            assertThat(viewModel.getResultCountText()).isEqualTo("Showing 1-20 of 25 entries");
+            assertThat(viewModel.getResultCountText()).isEqualTo("Showing 1-10 of 25 entries");
+            viewModel.nextPage();
+            assertThat(viewModel.getResultCountText()).isEqualTo("Showing 11-20 of 25 entries");
             viewModel.nextPage();
             assertThat(viewModel.getResultCountText()).isEqualTo("Showing 21-25 of 25 entries");
         }

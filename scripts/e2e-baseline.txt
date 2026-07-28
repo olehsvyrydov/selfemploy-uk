@@ -1,0 +1,11 @@
+77
+
+The number of e2e-tagged tests currently known to be broken. The nightly run fails only if the
+count exceeds this, so the suite cannot rot further while it is being repaired.
+
+Two full runs on 2026-07-28 measured 76 and 77 broken out of 883, so at least one test is flaky.
+The baseline sits at the higher of the two deliberately: a ratchet that trips on a coin flip gets
+ignored, which is how the suite reached this state. Finding and fixing that flake is worth doing —
+it would let the baseline drop to the real number.
+
+Lower this in the same commit that fixes tests. Never raise it.
