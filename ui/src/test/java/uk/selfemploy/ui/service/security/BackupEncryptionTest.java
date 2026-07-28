@@ -155,6 +155,38 @@ class BackupEncryptionTest {
     }
 
     @Test
+    @DisplayName("a corrupted header fails as a damaged file, not as a raw crash")
+    void corruptedKdfHeaderFailsCleanly() throws Exception {
+        byte[] envelope = BackupEncryption.encrypt(
+                EXPORT_JSON.getBytes(StandardCharsets.UTF_8), pw("correct horse battery staple"));
+
+        // An unreadable salt makes Base64 decoding throw during key derivation. That has to come out as
+        // "this did not open" like every other damaged-file case, not as an unhandled runtime failure.
+        Map<String, Object> parsed = MAPPER.readValue(envelope, Map.class);
+        Map<String, Object> kdf = (Map<String, Object>) parsed.get("kdf");
+        kdf.put("saltB64", "!!! not base64 !!!");
+
+        byte[] corrupted = MAPPER.writeValueAsBytes(parsed);
+        assertThatThrownBy(() -> BackupEncryption.decrypt(corrupted, pw("correct horse battery staple")))
+                .isInstanceOf(WrongPassphraseException.class);
+    }
+
+    @Test
+    @DisplayName("a file with the right shape but not our marker is refused")
+    void aFileWithoutOurMarkerIsRefused() throws Exception {
+        byte[] envelope = BackupEncryption.encrypt(
+                EXPORT_JSON.getBytes(StandardCharsets.UTF_8), pw("correct horse battery staple"));
+
+        Map<String, Object> parsed = MAPPER.readValue(envelope, Map.class);
+        parsed.put("type", "something.else");
+
+        byte[] notOurs = MAPPER.writeValueAsBytes(parsed);
+        assertThatThrownBy(() -> BackupEncryption.decrypt(notOurs, pw("correct horse battery staple")))
+                .isInstanceOf(java.io.IOException.class)
+                .hasMessageContaining("not a readable encrypted backup");
+    }
+
+    @Test
     @DisplayName("a file claiming to be a backup but missing its parts is reported as unreadable")
     void malformedEnvelopeIsReported() {
         byte[] claimsToBeOurs = ("{\"type\":\"" + BackupEncryption.TYPE + "\",\"version\":1}")

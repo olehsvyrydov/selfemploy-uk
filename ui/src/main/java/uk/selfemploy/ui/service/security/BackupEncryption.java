@@ -91,7 +91,8 @@ public final class BackupEncryption {
     public static byte[] decrypt(byte[] envelopeBytes, char[] passphrase)
             throws WrongPassphraseException, IOException {
         Envelope envelope = MAPPER.readValue(envelopeBytes, Envelope.class);
-        if (envelope.kdf() == null || envelope.nonceB64() == null || envelope.ciphertextB64() == null) {
+        if (!TYPE.equals(envelope.type())
+                || envelope.kdf() == null || envelope.nonceB64() == null || envelope.ciphertextB64() == null) {
             throw new IOException("This file is not a readable encrypted backup");
         }
         if (envelope.version() > VERSION) {
@@ -102,8 +103,12 @@ public final class BackupEncryption {
             // unchecked field would quietly become a downgrade vector the day a second cipher exists.
             throw new IOException("This backup uses an unsupported cipher: " + envelope.cipher());
         }
-        byte[] key = deriveKey(passphrase, envelope.kdf());
+        // Derivation is inside the guarded region on purpose: a corrupted header - an unreadable salt,
+        // say - makes Base64 decoding throw, and outside it that would escape as a raw runtime failure
+        // rather than the "this did not open" every other damaged-file case produces.
+        byte[] key = null;
         try {
+            key = deriveKey(passphrase, envelope.kdf());
             return PassphraseCrypto.gcm(Cipher.DECRYPT_MODE, key,
                     Base64.getDecoder().decode(envelope.nonceB64()),
                     aad(envelope.version(), envelope.kdf()),
@@ -115,7 +120,9 @@ public final class BackupEncryption {
             // A provider or policy problem must not be reported to the user as a wrong passphrase.
             throw new IllegalStateException("Failed to decrypt the backup", e);
         } finally {
-            Arrays.fill(key, (byte) 0);
+            if (key != null) {
+                Arrays.fill(key, (byte) 0);
+            }
         }
     }
 

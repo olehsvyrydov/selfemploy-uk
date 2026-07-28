@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.controller;
 
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -10,11 +11,13 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import uk.selfemploy.ui.i18n.Messages;
+import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.security.AppLockService;
 import uk.selfemploy.ui.service.security.RateLimitedException;
 import uk.selfemploy.ui.service.security.WrongPassphraseException;
 import uk.selfemploy.ui.viewmodel.AppProtectViewModel;
 import uk.selfemploy.ui.viewmodel.BackupExportViewModel;
+import uk.selfemploy.ui.viewmodel.SecuritySettingsViewModel;
 
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -49,6 +52,7 @@ public class BackupPassphraseController implements AppLockDialog {
     @FXML private Hyperlink cancelLink;
 
     private final BackupExportViewModel viewModel = new BackupExportViewModel();
+    private final SecuritySettingsViewModel securityViewModel = new SecuritySettingsViewModel();
 
     private AppLockService appLock;
     private Stage dialogStage;
@@ -64,6 +68,8 @@ public class BackupPassphraseController implements AppLockDialog {
     public void setAppLockService(AppLockService appLock) {
         this.appLock = appLock;
         boolean protectionEnabled = appLock.isProtectionEnabled();
+        SecuritySettingsViewModel.ProtectionStatus status = securityViewModel.status(
+                protectionEnabled, !SqliteDataStore.isKeyProvisioned());
 
         encryptCheckbox.setSelected(viewModel.encryptByDefault(protectionEnabled));
         useAppPassphraseCheckbox.setVisible(protectionEnabled);
@@ -71,8 +77,11 @@ public class BackupPassphraseController implements AppLockDialog {
         useAppPassphraseHint.setVisible(protectionEnabled);
         useAppPassphraseHint.setManaged(protectionEnabled);
         useAppPassphraseCheckbox.setSelected(protectionEnabled);
-        subtitleLabel.setText(Messages.get(protectionEnabled
-                ? "backup.subtitle.protected" : "backup.subtitle.unprotected"));
+        subtitleLabel.setText(Messages.get(switch (status) {
+            case ON -> "backup.subtitle.protected";
+            case PENDING_RESTART -> "backup.subtitle.pending";
+            case OFF -> "backup.subtitle.unprotected";
+        }));
         applyMode();
     }
 
@@ -146,18 +155,55 @@ public class BackupPassphraseController implements AppLockDialog {
         }
 
         char[] chosen = passphraseField.getText().toCharArray();
-        if (reusing) {
-            String problem = whyNotTheAppPassphrase(chosen);
-            if (problem != null) {
-                Arrays.fill(chosen, '\0');
-                showError(problem);
-                return;
-            }
+        if (!reusing) {
+            passphrase = chosen;
+            confirmed = true;
+            close();
+            return;
         }
 
-        passphrase = chosen;
-        confirmed = true;
-        close();
+        // Checking it against the vault runs Argon2id, which is deliberately slow — on the FX thread
+        // that is a frozen window for the duration, which reads as the app having hung.
+        setBusy(true);
+        Task<String> verification = new Task<>() {
+            @Override
+            protected String call() {
+                return whyNotTheAppPassphrase(chosen);
+            }
+        };
+        verification.setOnSucceeded(e -> {
+            String problem = verification.getValue();
+            if (problem != null) {
+                Arrays.fill(chosen, '\0');
+                setBusy(false);
+                showError(problem);
+                passphraseField.requestFocus();
+                return;
+            }
+            passphrase = chosen;
+            confirmed = true;
+            close();
+        });
+        verification.setOnFailed(e -> {
+            Arrays.fill(chosen, '\0');
+            setBusy(false);
+            LOG.log(Level.WARNING, "Could not verify the app passphrase for a backup",
+                    verification.getException());
+            showError(Messages.get("backup.error.generic"));
+        });
+        Thread thread = new Thread(verification, "backup-verify-passphrase");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void setBusy(boolean busy) {
+        exportButton.setDisable(busy);
+        encryptCheckbox.setDisable(busy);
+        useAppPassphraseCheckbox.setDisable(busy);
+        passphraseField.setDisable(busy);
+        confirmField.setDisable(busy);
+        cancelLink.setDisable(busy);
+        exportButton.setText(Messages.get(busy ? "backup.checking" : "backup.export"));
     }
 
     /**
