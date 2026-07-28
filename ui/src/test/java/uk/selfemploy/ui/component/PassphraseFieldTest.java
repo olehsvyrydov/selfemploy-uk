@@ -74,7 +74,7 @@ class PassphraseFieldTest {
             PasswordField hidden = new PasswordField();
             TextField shown = new TextField();
             ToggleButton toggle = new ToggleButton();
-            PassphraseField.wireReveal(hidden, shown, toggle);
+            PassphraseField.wireReveal(hidden, shown, toggle, "Show passphrase", "Hide passphrase");
 
             hidden.setText("correct horse battery staple");
 
@@ -91,6 +91,50 @@ class PassphraseFieldTest {
             assertThat(hidden.getText())
                     .as("callers keep reading the password field and never ask which is showing")
                     .isEqualTo("typed while visible");
+        });
+    }
+
+    @Test
+    @DisplayName("the caret stays where it was, so revealing mid-edit does not move the user")
+    void revealKeepsTheCaret() throws Exception {
+        onFxThread(() -> {
+            PasswordField hidden = new PasswordField();
+            TextField shown = new TextField();
+            ToggleButton toggle = new ToggleButton();
+            PassphraseField.wireReveal(hidden, shown, toggle, "Show passphrase", "Hide passphrase");
+
+            hidden.setText("correct horse battery staple");
+            hidden.positionCaret(7);
+
+            toggle.setSelected(true);
+            assertThat(shown.getCaretPosition())
+                    .as("checking a passphrase mid-word must not send the next keystroke to the end")
+                    .isEqualTo(7);
+
+            shown.positionCaret(3);
+            toggle.setSelected(false);
+            assertThat(hidden.getCaretPosition()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    @DisplayName("the toggle announces the action it will perform, not the one it just did")
+    void accessibleTextFollowsTheState() throws Exception {
+        onFxThread(() -> {
+            PasswordField hidden = new PasswordField();
+            TextField shown = new TextField();
+            ToggleButton toggle = new ToggleButton();
+            PassphraseField.wireReveal(hidden, shown, toggle, "Show passphrase", "Hide passphrase");
+
+            assertThat(toggle.getAccessibleText()).isEqualTo("Show passphrase");
+
+            toggle.setSelected(true);
+            assertThat(toggle.getAccessibleText())
+                    .as("a fixed label would tell a screen-reader user to show what is already shown")
+                    .isEqualTo("Hide passphrase");
+
+            toggle.setSelected(false);
+            assertThat(toggle.getAccessibleText()).isEqualTo("Show passphrase");
         });
     }
 

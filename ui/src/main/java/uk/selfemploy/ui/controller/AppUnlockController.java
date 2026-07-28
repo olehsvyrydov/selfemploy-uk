@@ -44,7 +44,8 @@ public class AppUnlockController implements AppLockDialog {
 
     @FXML
     private void initialize() {
-        PassphraseField.wireReveal(secretField, revealedField, revealButton);
+        PassphraseField.wireReveal(secretField, revealedField, revealButton,
+                Messages.get("unlock.reveal"), Messages.get("unlock.hide"));
         PassphraseField.warnAboutCapsLock(secretField, capsLockHint);
         PassphraseField.warnAboutCapsLock(revealedField, capsLockHint);
     }

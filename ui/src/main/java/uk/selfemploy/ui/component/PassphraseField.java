@@ -25,11 +25,18 @@ public final class PassphraseField {
     /**
      * Binds a revealed {@link TextField} to a {@link PasswordField} and drives both from {@code toggle}.
      *
-     * @param hidden the masked field, which stays the one callers read
-     * @param shown  the revealed field, hidden until the toggle is selected
-     * @param toggle the control that swaps them
+     * <p>The toggle's accessible text is driven from its state. A fixed "Show passphrase" would keep
+     * announcing "Show" once the passphrase was already shown, describing the wrong action to the one
+     * user who cannot see which state the control is in.
+     *
+     * @param hidden      the masked field, which stays the one callers read
+     * @param shown       the revealed field, hidden until the toggle is selected
+     * @param toggle      the control that swaps them
+     * @param revealLabel accessible text while the passphrase is masked
+     * @param hideLabel   accessible text while it is visible
      */
-    public static void wireReveal(PasswordField hidden, TextField shown, ToggleButton toggle) {
+    public static void wireReveal(PasswordField hidden, TextField shown, ToggleButton toggle,
+                                  String revealLabel, String hideLabel) {
         shown.textProperty().bindBidirectional(hidden.textProperty());
         shown.promptTextProperty().bind(hidden.promptTextProperty());
         shown.disableProperty().bind(hidden.disableProperty());
@@ -39,11 +46,16 @@ public final class PassphraseField {
         hidden.visibleProperty().bind(toggle.selectedProperty().not());
         hidden.managedProperty().bind(toggle.selectedProperty().not());
 
-        // Keep the caret where the user was looking rather than dropping them back to the start.
+        toggle.setAccessibleText(revealLabel);
+        // Carry the caret across rather than dropping the user at either end of what they typed. The two
+        // fields share their text, so the offset means the same thing in both.
         toggle.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            TextField from = wasSelected ? shown : hidden;
             TextField target = isSelected ? shown : hidden;
+            int caret = from.getCaretPosition();
+            toggle.setAccessibleText(isSelected ? hideLabel : revealLabel);
             target.requestFocus();
-            target.positionCaret(target.getText().length());
+            target.positionCaret(caret);
         });
     }
 
