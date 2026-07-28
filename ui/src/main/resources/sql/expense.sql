@@ -15,12 +15,14 @@ SELECT * FROM expenses WHERE business_id = ? ORDER BY date DESC;
 -- name: findExpensesByBusinessAndDateRange
 SELECT * FROM expenses WHERE business_id = ? AND date >= ? AND date <= ? ORDER BY date DESC;
 
--- name: sumExpensesByBusinessAndDateRange
-SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM expenses
+-- name: selectExpenseAmountsByBusinessAndDateRange
+-- Amounts, not a SUM: SQLite has no decimal type, so SUM() over these returns a float and
+-- 10.10 three times over comes to 30.299999999999997. They are added up in BigDecimal instead.
+SELECT amount FROM expenses
 WHERE business_id = ? AND date >= ? AND date <= ?;
 
--- name: sumAllowableExpensesByBusinessAndDateRange
-SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM expenses
+-- name: selectAllowableExpenseAmountsByBusinessAndDateRange
+SELECT amount FROM expenses
 WHERE business_id = ? AND date >= ? AND date <= ? AND category IN (%s);
 
 -- name: deleteExpenseById

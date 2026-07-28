@@ -15,8 +15,9 @@ SELECT * FROM income WHERE business_id = ? ORDER BY date DESC;
 -- name: findIncomeByBusinessAndDateRange
 SELECT * FROM income WHERE business_id = ? AND date >= ? AND date <= ? ORDER BY date DESC;
 
--- name: sumIncomeByBusinessAndDateRange
-SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) FROM income
+-- name: selectIncomeAmountsByBusinessAndDateRange
+-- Amounts, not a SUM: see the note in expense.sql - SQLite sums money as floating point.
+SELECT amount FROM income
 WHERE business_id = ? AND date >= ? AND date <= ?;
 
 -- name: deleteIncomeById
