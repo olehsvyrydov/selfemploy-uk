@@ -1478,7 +1478,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
      *
      * @return the dialog's controller, so the caller can act on its outcome, or null if it failed to open
      */
-    private <T extends AppLockDialog> T showSecurityDialog(String fxml, String titleKey, Class<T> controllerType) {
+    private <T extends DialogStageAware> T showSecurityDialog(String fxml, String titleKey, Class<T> controllerType) {
         return showSecurityDialog(fxml, titleKey, controllerType, controller -> { });
     }
 
@@ -1487,13 +1487,17 @@ public class SettingsController implements Initializable, MainController.TaxYear
      * screens that need their subject handed to them, which after {@code showAndWait} returns would be
      * too late to matter.
      */
-    private <T extends AppLockDialog> T showSecurityDialog(String fxml, String titleKey,
-                                                           Class<T> controllerType, Consumer<T> beforeShow) {
+    private <T extends DialogStageAware> T showSecurityDialog(String fxml, String titleKey,
+                                                              Class<T> controllerType, Consumer<T> beforeShow) {
         try {
             FXMLLoader loader = Messages.loader(getClass().getResource(fxml));
             Parent root = loader.load();
             T controller = controllerType.cast(loader.getController());
-            controller.setAppLockService(new AppLockService());
+            // Only screens that work on the key vault get one; restoring a backup does not, and should
+            // not have to implement an interface saying otherwise.
+            if (controller instanceof AppLockDialog appLockDialog) {
+                appLockDialog.setAppLockService(new AppLockService());
+            }
 
             Stage dialog = new Stage();
             Window owner = getOwnerWindow();
@@ -1510,7 +1514,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
             dialog.showAndWait();
             return controller;
         } catch (Exception e) {
+            // Tell the user. A caller reads null as "they closed it", so staying quiet here would turn a
+            // failure to open into a button that silently does nothing.
             LOG.log(Level.SEVERE, "Could not open the security dialog " + fxml, e);
+            showError(Messages.get("dialog.error.title"), Messages.get("dialog.error.couldNotOpen"));
             return null;
         }
     }
@@ -2003,10 +2010,7 @@ public class SettingsController implements Initializable, MainController.TaxYear
         try {
             DataExportService.JsonExport export =
                     exportService.buildJsonExport(businessId, taxYears, ExportOptions.noFilter());
-            byte[] bytes = choice.isEncrypting()
-                    ? BackupEncryption.encrypt(export.json(), passphrase)
-                    : export.json();
-            Files.write(target, bytes);
+            Files.write(target, backupContent(choice.isEncrypting(), export.json(), passphrase));
             return ExportResult.success(target, export.incomeCount(), export.expenseCount());
         } catch (IOException | RuntimeException e) {
             LOG.log(Level.SEVERE, "Failed to write the backup", e);
@@ -2044,6 +2048,25 @@ public class SettingsController implements Initializable, MainController.TaxYear
                 "/fxml/backup-unlock.fxml", "backupUnlock.title", BackupUnlockController.class,
                 controller -> controller.setEncryptedBackup(fileBytes));
         return prompt == null ? null : prompt.getDecrypted();
+    }
+
+    /**
+     * Turns the user's choice into the bytes that get written.
+     *
+     * <p>Small and package-private because it is the decision that actually matters: whether the file
+     * leaving the app carries the records in the clear. Everything around it needs a JavaFX dialog, which
+     * would put this behind a test the pipeline skips.
+     *
+     * @param passphrase required when encrypting, ignored otherwise
+     */
+    static byte[] backupContent(boolean encrypting, byte[] json, char[] passphrase) {
+        if (!encrypting) {
+            return json;
+        }
+        if (passphrase == null || passphrase.length == 0) {
+            throw new IllegalArgumentException("Cannot encrypt a backup without a passphrase");
+        }
+        return BackupEncryption.encrypt(json, passphrase);
     }
 
     private Window getOwnerWindow() {

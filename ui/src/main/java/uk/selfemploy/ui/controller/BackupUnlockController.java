@@ -9,7 +9,6 @@ import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
 
 import uk.selfemploy.ui.i18n.Messages;
-import uk.selfemploy.ui.service.security.AppLockService;
 import uk.selfemploy.ui.service.security.BackupEncryption;
 import uk.selfemploy.ui.service.security.WrongPassphraseException;
 
@@ -24,7 +23,7 @@ import java.util.logging.Logger;
  * the passphrase is whatever the backup was written under — which may have been on another machine, or
  * before the current vault existed. Deriving the key is deliberately slow, so it runs off the FX thread.
  */
-public class BackupUnlockController implements AppLockDialog {
+public class BackupUnlockController implements DialogStageAware {
 
     private static final Logger LOG = Logger.getLogger(BackupUnlockController.class.getName());
 
@@ -36,12 +35,6 @@ public class BackupUnlockController implements AppLockDialog {
     private Stage dialogStage;
     private byte[] encryptedBackup;
     private byte[] decrypted;
-
-    @Override
-    public void setAppLockService(AppLockService appLock) {
-        // Not used: a backup's passphrase is the one it was written under, not the one guarding this
-        // installation's database. Implemented so the shared dialog plumbing can load this screen.
-    }
 
     @Override
     public void setDialogStage(Stage dialogStage) {
