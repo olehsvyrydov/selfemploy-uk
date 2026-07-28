@@ -125,6 +125,33 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
     }
 
     /**
+     * Clicks a declaration checkbox, bringing it into view first. Toggles: callers use it to clear a
+     * declaration as well as to confirm one.
+     *
+     * <p>The six declarations sit in a scroll pane and the last of them is below the fold at this
+     * window size, so a plain click fails with "no nodes were visible" rather than doing anything.
+     * The user scrolls; the robot has to as well.
+     */
+    private void checkDeclaration(String id) {
+        CheckBox box = lookup(id).queryAs(CheckBox.class);
+        interact(() -> {
+            ScrollPane scroll = lookup("#rootScroll").queryAs(ScrollPane.class);
+            javafx.geometry.Bounds viewport = scroll.getViewportBounds();
+            javafx.geometry.Bounds target =
+                    scroll.getContent().sceneToLocal(box.localToScene(box.getBoundsInLocal()));
+            double content = scroll.getContent().getBoundsInLocal().getHeight();
+            double scrollable = content - viewport.getHeight();
+            if (scrollable > 0) {
+                double centred = target.getMinY() - viewport.getHeight() / 2 + target.getHeight() / 2;
+                scroll.setVvalue(Math.clamp(centred / scrollable, 0.0, 1.0));
+            }
+        });
+        waitForFxEvents();
+        clickOn(box);
+        waitForFxEvents();
+    }
+
+    /**
      * Waits for JavaFX events to complete.
      */
     private void waitForFxEvents() {
@@ -379,14 +406,14 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
             assertThat(decl1.isSelected()).isFalse();
 
             // When: Click checkbox 1
-            clickOn("#decl1Checkbox");
+            checkDeclaration("#decl1Checkbox");
             waitForFxEvents();
 
             // Then: Checkbox 1 should be checked
             assertThat(decl1.isSelected()).isTrue();
 
             // When: Click checkbox 1 again
-            clickOn("#decl1Checkbox");
+            checkDeclaration("#decl1Checkbox");
             waitForFxEvents();
 
             // Then: Checkbox 1 should be unchecked
@@ -401,24 +428,24 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
             assertThat(progressLabel.getText()).contains("0 of 6");
 
             // When: Check first checkbox
-            clickOn("#decl1Checkbox");
+            checkDeclaration("#decl1Checkbox");
             waitForFxEvents();
 
             // Then: Progress shows 1 of 6
             assertThat(progressLabel.getText()).contains("1 of 6");
 
             // When: Check second checkbox
-            clickOn("#decl2Checkbox");
+            checkDeclaration("#decl2Checkbox");
             waitForFxEvents();
 
             // Then: Progress shows 2 of 6
             assertThat(progressLabel.getText()).contains("2 of 6");
 
             // When: Check remaining checkboxes
-            clickOn("#decl3Checkbox");
-            clickOn("#decl4Checkbox");
-            clickOn("#decl5Checkbox");
-            clickOn("#decl6Checkbox");
+            checkDeclaration("#decl3Checkbox");
+            checkDeclaration("#decl4Checkbox");
+            checkDeclaration("#decl5Checkbox");
+            checkDeclaration("#decl6Checkbox");
             waitForFxEvents();
 
             // Then: Progress shows 6 of 6
@@ -433,12 +460,12 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
             assertThat(timestampSection.isVisible()).isFalse();
 
             // When: Check all 6 checkboxes
-            clickOn("#decl1Checkbox");
-            clickOn("#decl2Checkbox");
-            clickOn("#decl3Checkbox");
-            clickOn("#decl4Checkbox");
-            clickOn("#decl5Checkbox");
-            clickOn("#decl6Checkbox");
+            checkDeclaration("#decl1Checkbox");
+            checkDeclaration("#decl2Checkbox");
+            checkDeclaration("#decl3Checkbox");
+            checkDeclaration("#decl4Checkbox");
+            checkDeclaration("#decl5Checkbox");
+            checkDeclaration("#decl6Checkbox");
             waitForFxEvents();
 
             // Then: Timestamp section should be visible
@@ -458,14 +485,14 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
             assertThat(decl1Row.getStyleClass()).doesNotContain("checked");
 
             // When: Check checkbox 1
-            clickOn("#decl1Checkbox");
+            checkDeclaration("#decl1Checkbox");
             waitForFxEvents();
 
             // Then: Row 1 should have 'checked' style
             assertThat(decl1Row.getStyleClass()).contains("checked");
 
             // When: Uncheck checkbox 1
-            clickOn("#decl1Checkbox");
+            checkDeclaration("#decl1Checkbox");
             waitForFxEvents();
 
             // Then: Row 1 should not have 'checked' style
@@ -509,11 +536,11 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
         @DisplayName("AS-021: Submit button is disabled when 5 checkboxes checked (CRITICAL)")
         void submitButtonDisabledWhenFiveCheckboxesChecked() {
             // When: Check only 5 checkboxes (not all 6)
-            clickOn("#decl1Checkbox");
-            clickOn("#decl2Checkbox");
-            clickOn("#decl3Checkbox");
-            clickOn("#decl4Checkbox");
-            clickOn("#decl5Checkbox");
+            checkDeclaration("#decl1Checkbox");
+            checkDeclaration("#decl2Checkbox");
+            checkDeclaration("#decl3Checkbox");
+            checkDeclaration("#decl4Checkbox");
+            checkDeclaration("#decl5Checkbox");
             waitForFxEvents();
 
             // Then: Submit button should still be disabled
@@ -529,12 +556,12 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
             assertThat(submitButton.isDisabled()).isTrue();
 
             // When: Check all 6 checkboxes
-            clickOn("#decl1Checkbox");
-            clickOn("#decl2Checkbox");
-            clickOn("#decl3Checkbox");
-            clickOn("#decl4Checkbox");
-            clickOn("#decl5Checkbox");
-            clickOn("#decl6Checkbox");
+            checkDeclaration("#decl1Checkbox");
+            checkDeclaration("#decl2Checkbox");
+            checkDeclaration("#decl3Checkbox");
+            checkDeclaration("#decl4Checkbox");
+            checkDeclaration("#decl5Checkbox");
+            checkDeclaration("#decl6Checkbox");
             waitForFxEvents();
 
             // Then: Submit button should be enabled
@@ -545,19 +572,19 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
         @DisplayName("AS-021: Submit button becomes disabled again if checkbox unchecked (CRITICAL)")
         void submitButtonBecomesDisabledIfCheckboxUnchecked() {
             // Given: All 6 checkboxes are checked and submit is enabled
-            clickOn("#decl1Checkbox");
-            clickOn("#decl2Checkbox");
-            clickOn("#decl3Checkbox");
-            clickOn("#decl4Checkbox");
-            clickOn("#decl5Checkbox");
-            clickOn("#decl6Checkbox");
+            checkDeclaration("#decl1Checkbox");
+            checkDeclaration("#decl2Checkbox");
+            checkDeclaration("#decl3Checkbox");
+            checkDeclaration("#decl4Checkbox");
+            checkDeclaration("#decl5Checkbox");
+            checkDeclaration("#decl6Checkbox");
             waitForFxEvents();
 
             Button submitButton = lookup("#submitButton").queryAs(Button.class);
             assertThat(submitButton.isDisabled()).isFalse();
 
             // When: Uncheck one checkbox
-            clickOn("#decl1Checkbox");
+            checkDeclaration("#decl1Checkbox");
             waitForFxEvents();
 
             // Then: Submit button should be disabled again
@@ -572,12 +599,12 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
             assertThat(submitHelperText.getText().toLowerCase()).contains("please confirm");
 
             // When: Check all 6 checkboxes
-            clickOn("#decl1Checkbox");
-            clickOn("#decl2Checkbox");
-            clickOn("#decl3Checkbox");
-            clickOn("#decl4Checkbox");
-            clickOn("#decl5Checkbox");
-            clickOn("#decl6Checkbox");
+            checkDeclaration("#decl1Checkbox");
+            checkDeclaration("#decl2Checkbox");
+            checkDeclaration("#decl3Checkbox");
+            checkDeclaration("#decl4Checkbox");
+            checkDeclaration("#decl5Checkbox");
+            checkDeclaration("#decl6Checkbox");
             waitForFxEvents();
 
             // Then: Helper text should indicate ready
@@ -649,7 +676,7 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
 
             // And: There should be no close/dismiss button in the disclaimer
             // The disclaimer should remain visible after any interaction
-            clickOn("#decl1Checkbox"); // Interact with page
+            checkDeclaration("#decl1Checkbox"); // Interact with page
             waitForFxEvents();
 
             assertThat(disclaimerBanner.isVisible()).isTrue();
