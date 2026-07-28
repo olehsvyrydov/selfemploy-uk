@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.e2e;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import uk.selfemploy.ui.service.DeadlineNotification;
 import uk.selfemploy.ui.service.DeadlineNotificationService;
@@ -42,8 +43,21 @@ class NotificationPanelE2ETest {
     private DeadlineNotificationService notificationService;
     private NotificationPanelViewModel viewModel;
 
+    /**
+     * A deadline label unique to the running test.
+     *
+     * <p>A notification's identity is its label, date and trigger offset, and read/snooze state is
+     * remembered against it. Ten tests here used the same label and date, so they described the same
+     * notification: any state one of them left behind was inherited by the next. Two of them alternate
+     * between passing and failing in CI, always with a badge of 0 where 1 was expected, which is what
+     * inheriting a read state looks like.
+     */
+    private String label;
+
     @BeforeEach
-    void setUp() {
+    void setUp(TestInfo testInfo) {
+        label = testInfo.getTestMethod().map(java.lang.reflect.Method::getName).orElse("Test");
+
         // Create notification service
         notificationService = new DeadlineNotificationService();
 
@@ -127,7 +141,7 @@ class NotificationPanelE2ETest {
             assertThat(viewModel.getBadgeCount()).isZero();
 
             // When: Add notification
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(7));
             notificationService.triggerNotification(deadline, 7);
             viewModel.refreshBadge();
             waitForFxEvents();
@@ -292,7 +306,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-013: Mark single notification as read")
         void markSingleAsRead() {
             // Given: Unread notification
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(7));
             notificationService.triggerNotification(deadline, 7);
             UUID notificationId = notificationService.getNotificationHistory().get(0).id();
 
@@ -359,7 +373,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-016: Snooze notification for 1 hour")
         void snoozeFor1Hour() {
             // Given: Unread notification
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(7));
             notificationService.triggerNotification(deadline, 7);
             UUID notificationId = notificationService.getNotificationHistory().get(0).id();
 
@@ -376,7 +390,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-017: Snooze notification for 24 hours")
         void snoozeFor24Hours() {
             // Given: Unread notification
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(7));
             notificationService.triggerNotification(deadline, 7);
             UUID notificationId = notificationService.getNotificationHistory().get(0).id();
 
@@ -461,7 +475,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-021: Click notification marks it as read")
         void clickNotificationMarksAsRead() {
             // Given: Unread notification
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(7));
             notificationService.triggerNotification(deadline, 7);
             UUID notificationId = notificationService.getNotificationHistory().get(0).id();
             assertThat(notificationService.getNotificationHistory().get(0).isRead()).isFalse();
@@ -486,7 +500,7 @@ class NotificationPanelE2ETest {
             notificationService.getPreferences().setEnabled(false);
 
             // When: Check deadline
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(7));
             List<DeadlineNotification> notifications = notificationService.checkDeadline(deadline);
 
             // Then: No notifications triggered
@@ -500,7 +514,7 @@ class NotificationPanelE2ETest {
             notificationService.getPreferences().setTriggerDays(List.of(14, 3));
 
             // When: Check deadline at 14 days
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(14));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(14));
             List<DeadlineNotification> notifications = notificationService.checkDeadline(deadline);
 
             // Then: Notification triggered
@@ -563,7 +577,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-025: Dismiss notification removes from unread")
         void dismissNotificationRemovesFromUnread() {
             // Given: Unread notification
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(7));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(7));
             notificationService.triggerNotification(deadline, 7);
             viewModel.loadNotifications();
             viewModel.refreshBadge();
@@ -662,7 +676,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-033: Notification item has correct priority style")
         void notificationItemHasCorrectPriorityStyle() {
             // Given: HIGH priority notification (1 day away)
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(1));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(1));
             notificationService.triggerNotification(deadline, 1);
             viewModel.loadNotifications();
             waitForFxEvents();
@@ -770,7 +784,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-043: High priority notification has actions")
         void highPriorityNotificationHasActions() {
             // Given: HIGH priority notification (1 day away)
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(1));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(1));
             notificationService.triggerNotification(deadline, 1);
             viewModel.loadNotifications();
             waitForFxEvents();
@@ -783,7 +797,7 @@ class NotificationPanelE2ETest {
         @DisplayName("TC-502-044: Low priority notification has no actions")
         void lowPriorityNotificationHasNoActions() {
             // Given: LOW priority notification (30 days away)
-            Deadline deadline = Deadline.of("Test", LocalDate.now().plusDays(30));
+            Deadline deadline = Deadline.of(label, LocalDate.now().plusDays(30));
             notificationService.triggerNotification(deadline, 30);
             viewModel.loadNotifications();
             waitForFxEvents();
