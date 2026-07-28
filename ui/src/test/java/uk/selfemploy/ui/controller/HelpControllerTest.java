@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
@@ -16,16 +17,13 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for HelpController.
- * Tests the controller logic for the Help page.
+ * What the help page's controller answers about a topic: its content, its category, its icon and
+ * its colour.
  *
- * Test Coverage (as per Sprint 8 Test Design):
- * - TC-HLP-001 to TC-HLP-008: Help Topic Cards Display
- * - TC-HLP-010 to TC-HLP-020: Help Topic Click Handlers
- * - TC-HLP-030 to TC-HLP-037: Quick Links Functionality
- * - TC-HLP-040 to TC-HLP-043: Support Links
- * - TC-HLP-050 to TC-HLP-053: Search Functionality
- * - TC-HLP-060 to TC-HLP-064: Accessibility
+ * <p>The page itself — that every topic row and quick link is wired to a handler — is covered by
+ * {@link HelpTopicButtonTest}, which loads the real FXML. That split matters: the content a user
+ * reads lives in the markdown resources and the message bundle, so a test here can only check that
+ * the controller looks it up correctly, never that it exists.
  */
 @DisplayName("HelpController")
 class HelpControllerTest {
@@ -111,15 +109,34 @@ class HelpControllerTest {
     }
 
     @Nested
-    @DisplayName("Help topic icons")
-    class HelpTopicCardsDisplay {
+    @DisplayName("How a topic is presented")
+    class TopicPresentation {
 
         @Test
-        @DisplayName("every topic has an icon, since the dialog asks for one by topic")
+        @DisplayName("every topic on the page belongs to a category the colours know")
+        void everyTopicHasAKnownCategory() {
+            // The colour is looked up by category name, and an unknown name silently returns a
+            // generic blue. Checking the returned colour cannot catch that, because that same blue
+            // is HMRC Submission's real colour - so the name itself is what gets pinned.
+            for (HelpTopic topic : HelpController.topicsOnHelpPage()) {
+                assertThat(controller.getCategoryForTopic(topic))
+                        .as("category for %s", topic)
+                        .isIn(HelpController.CATEGORY_USER_GUIDE, HelpController.CATEGORY_TAX,
+                                HelpController.CATEGORY_EXPENSES, HelpController.CATEGORY_HMRC,
+                                HelpController.CATEGORY_GENERAL);
+            }
+        }
+
+        @Test
+        @DisplayName("every topic on the page has an icon of its own, not the generic fallback")
         void shouldHaveIconForTopics() {
-            for (HelpTopic topic : HelpTopic.values()) {
-                Ikon icon = controller.getTopicIcon(topic);
-                assertThat(icon).isNotNull();
+            // Asserting non-null proves nothing: getTopicIcon answers INFO_CIRCLE for a topic that
+            // was never given an icon, so a forgotten entry would ship a generic glyph and pass.
+            for (HelpTopic topic : HelpController.topicsOnHelpPage()) {
+                assertThat(controller.getTopicIcon(topic))
+                        .as("icon for %s", topic)
+                        .isNotNull()
+                        .isNotEqualTo(FontAwesomeSolid.INFO_CIRCLE);
             }
         }
 

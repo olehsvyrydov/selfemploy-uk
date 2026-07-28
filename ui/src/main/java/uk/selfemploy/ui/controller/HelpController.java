@@ -39,39 +39,41 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      */
     public static final String GITHUB_ISSUES_URL = "https://github.com/olehsvyrydov/selfemploy-uk/issues";
 
-    private static final Map<String, List<HelpTopic>> CATEGORY_TOPICS;
+    /**
+     * Category names. Constants rather than repeated literals because each one is the join between
+     * a topic's category, the colour its dialog is drawn in, and — for the user guide — a direct
+     * lookup; a typo in any one of them silently falls back to grey instead of failing.
+     */
+    static final String CATEGORY_USER_GUIDE = "User Guide";
+    static final String CATEGORY_TAX = "Tax & Calculation";
+    static final String CATEGORY_EXPENSES = "Expenses";
+    static final String CATEGORY_HMRC = "HMRC Submission";
+    static final String CATEGORY_GENERAL = "General";
+
+    /** Keyed by topic, the only direction it is ever read. */
+    private static final Map<HelpTopic, String> TOPIC_CATEGORIES;
     private static final Map<HelpTopic, Ikon> TOPIC_ICONS;
     private static final Map<String, String> CATEGORY_COLORS;
 
     static {
-        CATEGORY_TOPICS = new LinkedHashMap<>();
-        CATEGORY_TOPICS.put("User Guide", Arrays.asList(
-            HelpTopic.GETTING_STARTED,
-            HelpTopic.BANK_IMPORT,
-            HelpTopic.HMRC_CONNECTION,
-            HelpTopic.SECURITY_PRIVACY,
-            HelpTopic.FAQ
-        ));
-        CATEGORY_TOPICS.put("Tax & Calculation", Arrays.asList(
-            HelpTopic.NET_PROFIT,
-            HelpTopic.INCOME_TAX,
-            HelpTopic.PERSONAL_ALLOWANCE,
-            HelpTopic.NI_CLASS_4,
-            HelpTopic.NI_CLASS_2,
-            HelpTopic.PAYMENTS_ON_ACCOUNT
-        ));
-        CATEGORY_TOPICS.put("Expenses", Arrays.asList(
-            HelpTopic.EXPENSE_CATEGORY,
-            HelpTopic.ALLOWABLE_EXPENSES
-        ));
-        CATEGORY_TOPICS.put("HMRC Submission", Arrays.asList(
-            HelpTopic.DECLARATION,
-            HelpTopic.HMRC_SUBMISSION
-        ));
-        CATEGORY_TOPICS.put("General", Arrays.asList(
-            HelpTopic.TAX_YEAR,
-            HelpTopic.SA103_FORM
-        ));
+        TOPIC_CATEGORIES = new EnumMap<>(HelpTopic.class);
+        TOPIC_CATEGORIES.put(HelpTopic.GETTING_STARTED, CATEGORY_USER_GUIDE);
+        TOPIC_CATEGORIES.put(HelpTopic.BANK_IMPORT, CATEGORY_USER_GUIDE);
+        TOPIC_CATEGORIES.put(HelpTopic.HMRC_CONNECTION, CATEGORY_USER_GUIDE);
+        TOPIC_CATEGORIES.put(HelpTopic.SECURITY_PRIVACY, CATEGORY_USER_GUIDE);
+        TOPIC_CATEGORIES.put(HelpTopic.FAQ, CATEGORY_USER_GUIDE);
+        TOPIC_CATEGORIES.put(HelpTopic.NET_PROFIT, CATEGORY_TAX);
+        TOPIC_CATEGORIES.put(HelpTopic.INCOME_TAX, CATEGORY_TAX);
+        TOPIC_CATEGORIES.put(HelpTopic.PERSONAL_ALLOWANCE, CATEGORY_TAX);
+        TOPIC_CATEGORIES.put(HelpTopic.NI_CLASS_4, CATEGORY_TAX);
+        TOPIC_CATEGORIES.put(HelpTopic.NI_CLASS_2, CATEGORY_TAX);
+        TOPIC_CATEGORIES.put(HelpTopic.PAYMENTS_ON_ACCOUNT, CATEGORY_TAX);
+        TOPIC_CATEGORIES.put(HelpTopic.EXPENSE_CATEGORY, CATEGORY_EXPENSES);
+        TOPIC_CATEGORIES.put(HelpTopic.ALLOWABLE_EXPENSES, CATEGORY_EXPENSES);
+        TOPIC_CATEGORIES.put(HelpTopic.DECLARATION, CATEGORY_HMRC);
+        TOPIC_CATEGORIES.put(HelpTopic.HMRC_SUBMISSION, CATEGORY_HMRC);
+        TOPIC_CATEGORIES.put(HelpTopic.TAX_YEAR, CATEGORY_GENERAL);
+        TOPIC_CATEGORIES.put(HelpTopic.SA103_FORM, CATEGORY_GENERAL);
 
         // Topic icons (FontAwesome)
         TOPIC_ICONS = new EnumMap<>(HelpTopic.class);
@@ -94,13 +96,12 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
         TOPIC_ICONS.put(HelpTopic.SECURITY_PRIVACY, FontAwesomeSolid.LOCK);
         TOPIC_ICONS.put(HelpTopic.FAQ, FontAwesomeSolid.QUESTION_CIRCLE);
 
-        // Category colors (matching /aura's design)
         CATEGORY_COLORS = new HashMap<>();
-        CATEGORY_COLORS.put("User Guide", "#7c3aed");         // Purple (indigo/violet)
-        CATEGORY_COLORS.put("Tax & Calculation", "#059669");  // Green
-        CATEGORY_COLORS.put("Expenses", "#d97706");           // Orange
-        CATEGORY_COLORS.put("HMRC Submission", "#0066cc");    // Blue
-        CATEGORY_COLORS.put("General", "#6b7280");            // Gray
+        CATEGORY_COLORS.put(CATEGORY_USER_GUIDE, "#7c3aed");
+        CATEGORY_COLORS.put(CATEGORY_TAX, "#059669");
+        CATEGORY_COLORS.put(CATEGORY_EXPENSES, "#d97706");
+        CATEGORY_COLORS.put(CATEGORY_HMRC, "#0066cc");
+        CATEGORY_COLORS.put(CATEGORY_GENERAL, "#6b7280");
     }
 
     // === Constants ===
@@ -184,15 +185,24 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     }
 
     /**
-     * Returns the category for a given topic.
+     * The category a topic belongs to, which decides the colour its help dialog is drawn in.
+     *
+     * @return {@link #CATEGORY_GENERAL} for a topic that was never assigned one
      */
     public String getCategoryForTopic(HelpTopic topic) {
-        for (Map.Entry<String, List<HelpTopic>> entry : CATEGORY_TOPICS.entrySet()) {
-            if (entry.getValue().contains(topic)) {
-                return entry.getKey();
-            }
-        }
-        return "General";
+        return TOPIC_CATEGORIES.getOrDefault(topic, CATEGORY_GENERAL);
+    }
+
+    /**
+     * The topics this controller presents on the help page.
+     *
+     * <p>Not every {@link HelpTopic} — the income and expense screens open a few of their own
+     * (paid/unpaid income, non-deductible expenses) through their own dialogs. Exposed so tests can
+     * hold every topic the help page does show to having its own icon and category rather than
+     * falling back to a generic one.
+     */
+    static Set<HelpTopic> topicsOnHelpPage() {
+        return Collections.unmodifiableSet(TOPIC_CATEGORIES.keySet());
     }
 
     // === FXML Event Handlers ===
@@ -418,7 +428,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      */
     private void showUserGuideDialog() {
         getHelpForTopic(HelpTopic.USER_GUIDE).ifPresentOrElse(userGuideContent -> {
-            String color = getCategoryColor("User Guide");
+            String color = getCategoryColor(CATEGORY_USER_GUIDE);
             HelpDialog dialog = new HelpDialog(
                 userGuideContent, FontAwesomeSolid.BOOK, color, helpService, HelpDialog.DialogSize.LARGE);
             dialog.showAndWaitDialog();

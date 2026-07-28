@@ -36,27 +36,48 @@ jobs:
           cache: maven
 
       # openbox because Xvfb alone has no window manager: without one a stage never takes focus, so
-      # TestFX's key and click events go nowhere and its lookups find no nodes.
+      # TestFX's key and click events go nowhere and its lookups find no nodes. x11-utils supplies
+      # xdpyinfo, which is how the next step knows the display is actually up.
       - name: Install Xvfb and a window manager
-        run: sudo apt-get update && sudo apt-get install -y xvfb openbox
+        run: sudo apt-get update && sudo apt-get install -y xvfb openbox x11-utils
 
-      # xvfb-run gives a real X server, so TestFX needs no headless mode. Do NOT add
-      # -Dtestfx.headless=true here: it requires Monocle, which is not a dependency, and turns
-      # passing tests into errors.
-      #
-      # The screen is set explicitly because xvfb-run defaults to 1280x1024x8, and at 8-bit depth
-      # JavaFX cannot render properly: the first run on defaults reported 224 broken against 76 on a
-      # normal desktop, over half of them "no node in the scene-graph".
-      #
-      # --fail-never so one failing module cannot skip the ones after it; the ratchet below is what
-      # decides whether this job passes.
-      - name: Run e2e-tagged tests
+      # Brings the display up and refuses to run without it. A background process cannot fail this
+      # step on its own - `bash -e` never sees its exit status - so both are started and then proved
+      # alive. Otherwise an X server that died or was slow to bind would make every JavaFX test
+      # error at once, and the ratchet would report an infrastructure fault as a mass regression.
+      - name: Start the display
         run: |
           Xvfb :99 -screen 0 1920x1080x24 &
-          export DISPLAY=:99
-          sleep 3
-          openbox &
+          xvfb_pid=$!
+          for _ in $(seq 30); do
+            xdpyinfo -display :99 >/dev/null 2>&1 && break
+            sleep 1
+          done
+          if ! xdpyinfo -display :99 >/dev/null 2>&1; then
+            echo "::error::Xvfb never came up on :99; not running the suite against no display."
+            exit 1
+          fi
+
+          DISPLAY=:99 openbox &
+          openbox_pid=$!
           sleep 2
+          if ! kill -0 "$xvfb_pid" 2>/dev/null || ! kill -0 "$openbox_pid" 2>/dev/null; then
+            echo "::error::The display or its window manager died on startup; TestFX would find no nodes."
+            exit 1
+          fi
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+
+      # Do NOT add -Dtestfx.headless=true here: it requires Monocle, which is not a dependency, and
+      # turns passing tests into errors. The display above is a real X server.
+      #
+      # The screen depth is set explicitly because xvfb-run defaults to 8-bit, where JavaFX cannot
+      # render. That alone was not the problem though - see scripts/e2e-baseline.txt for what the
+      # numbers actually showed.
+      #
+      # --fail-never so one failing module cannot skip the ones after it; the ratchet below is what
+      # decides whether this job passes, and it checks how many tests ran, not just how many failed.
+      - name: Run e2e-tagged tests
+        run: |
           mvn -B --fail-never test \
             -Dsurefire.excludedGroups= -Dgroups=e2e --no-transfer-progress
         env:
