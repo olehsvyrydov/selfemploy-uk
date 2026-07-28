@@ -111,11 +111,11 @@ class HelpControllerTest {
     }
 
     @Nested
-    @DisplayName("Help Topic Cards Display - TC-HLP-001 to TC-HLP-008")
+    @DisplayName("Help topic icons")
     class HelpTopicCardsDisplay {
 
         @Test
-        @DisplayName("TC-HLP-006: should have icon for each topic")
+        @DisplayName("every topic has an icon, since the dialog asks for one by topic")
         void shouldHaveIconForTopics() {
             for (HelpTopic topic : HelpTopic.values()) {
                 Ikon icon = controller.getTopicIcon(topic);

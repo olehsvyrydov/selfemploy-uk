@@ -42,11 +42,16 @@ jobs:
       # -Dtestfx.headless=true here: it requires Monocle, which is not a dependency, and turns
       # passing tests into errors.
       #
+      # The screen is set explicitly because xvfb-run defaults to 1280x1024x8, and at 8-bit depth
+      # JavaFX cannot render properly: the first run on defaults reported 224 broken against 76 on a
+      # normal desktop, over half of them "no node in the scene-graph".
+      #
       # --fail-never so one failing module cannot skip the ones after it; the ratchet below is what
       # decides whether this job passes.
       - name: Run e2e-tagged tests
         run: |
-          xvfb-run --auto-servernum mvn -B --fail-never test \
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+            mvn -B --fail-never test \
             -Dsurefire.excludedGroups= -Dgroups=e2e --no-transfer-progress
         env:
           MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn

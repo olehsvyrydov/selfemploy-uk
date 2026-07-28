@@ -73,10 +73,6 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
             HelpTopic.SA103_FORM
         ));
 
-        // User Guide topics
-
-        // User Guide topics
-
         // Topic icons (FontAwesome)
         TOPIC_ICONS = new EnumMap<>(HelpTopic.class);
         TOPIC_ICONS.put(HelpTopic.NET_PROFIT, FontAwesomeSolid.CHART_LINE);
