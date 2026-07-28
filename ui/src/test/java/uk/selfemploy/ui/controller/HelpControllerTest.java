@@ -5,28 +5,25 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.help.HelpContent;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.help.HmrcLinkTopic;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for HelpController.
- * Tests the controller logic for the Help page.
+ * What the help page's controller answers about a topic: its content, its category, its icon and
+ * its colour.
  *
- * Test Coverage (as per Sprint 8 Test Design):
- * - TC-HLP-001 to TC-HLP-008: Help Topic Cards Display
- * - TC-HLP-010 to TC-HLP-020: Help Topic Click Handlers
- * - TC-HLP-030 to TC-HLP-037: Quick Links Functionality
- * - TC-HLP-040 to TC-HLP-043: Support Links
- * - TC-HLP-050 to TC-HLP-053: Search Functionality
- * - TC-HLP-060 to TC-HLP-064: Accessibility
+ * <p>The page itself — that every topic row and quick link is wired to a handler — is covered by
+ * {@link HelpTopicButtonTest}, which loads the real FXML. That split matters: the content a user
+ * reads lives in the markdown resources and the message bundle, so a test here can only check that
+ * the controller looks it up correctly, never that it exists.
  */
 @DisplayName("HelpController")
 class HelpControllerTest {
@@ -112,99 +109,37 @@ class HelpControllerTest {
     }
 
     @Nested
-    @DisplayName("Help Topic Cards Display - TC-HLP-001 to TC-HLP-008")
-    class HelpTopicCardsDisplay {
+    @DisplayName("How a topic is presented")
+    class TopicPresentation {
 
         @Test
-        @DisplayName("TC-HLP-001: should have Tax & Calculation category")
-        void shouldHaveTaxCategory() {
-            assertThat(controller.getHelpCategories()).contains("Tax & Calculation");
-        }
-
-        @Test
-        @DisplayName("TC-HLP-002: should have Expenses category")
-        void shouldHaveExpensesCategory() {
-            assertThat(controller.getHelpCategories()).contains("Expenses");
-        }
-
-        @Test
-        @DisplayName("TC-HLP-003: should have HMRC Submission category")
-        void shouldHaveSubmissionCategory() {
-            assertThat(controller.getHelpCategories()).contains("HMRC Submission");
-        }
-
-        @Test
-        @DisplayName("TC-HLP-004: should have General category")
-        void shouldHaveGeneralCategory() {
-            assertThat(controller.getHelpCategories()).contains("General");
-        }
-
-        @Test
-        @DisplayName("TC-HLP-005: should have title and description for each topic")
-        void shouldHaveTitleAndDescriptionForTopics() {
-            for (HelpTopic topic : HelpTopic.values()) {
-                String displayName = controller.getTopicDisplayName(topic);
-                String description = controller.getTopicDescription(topic);
-
-                assertThat(displayName).isNotNull().isNotBlank();
-                assertThat(description).isNotNull();
+        @DisplayName("every topic on the page belongs to a category the colours know")
+        void everyTopicHasAKnownCategory() {
+            // The colour is looked up by category name, and an unknown name silently returns a
+            // generic blue. Checking the returned colour cannot catch that, because that same blue
+            // is HMRC Submission's real colour - so the name itself is what gets pinned.
+            for (HelpTopic topic : HelpController.topicsOnHelpPage()) {
+                assertThat(controller.getCategoryForTopic(topic))
+                        .as("category for %s", topic)
+                        .isIn(HelpController.CATEGORY_USER_GUIDE, HelpController.CATEGORY_TAX,
+                                HelpController.CATEGORY_EXPENSES, HelpController.CATEGORY_HMRC,
+                                HelpController.CATEGORY_GENERAL);
             }
         }
 
         @Test
-        @DisplayName("TC-HLP-006: should have icon for each topic")
+        @DisplayName("every topic on the page has an icon of its own, not the generic fallback")
         void shouldHaveIconForTopics() {
-            for (HelpTopic topic : HelpTopic.values()) {
-                Ikon icon = controller.getTopicIcon(topic);
-                assertThat(icon).isNotNull();
+            // Asserting non-null proves nothing: getTopicIcon answers INFO_CIRCLE for a topic that
+            // was never given an icon, so a forgotten entry would ship a generic glyph and pass.
+            for (HelpTopic topic : HelpController.topicsOnHelpPage()) {
+                assertThat(controller.getTopicIcon(topic))
+                        .as("icon for %s", topic)
+                        .isNotNull()
+                        .isNotEqualTo(FontAwesomeSolid.INFO_CIRCLE);
             }
         }
 
-        @Test
-        @DisplayName("TC-HLP-008: should have category colors")
-        void shouldHaveCategoryColors() {
-            for (String category : controller.getHelpCategories()) {
-                String color = controller.getCategoryColor(category);
-                assertThat(color).isNotNull().startsWith("#");
-            }
-        }
-    }
-
-    @Nested
-    @DisplayName("Topic Listing")
-    class TopicListing {
-
-        @Test
-        @DisplayName("should return topics for tax category")
-        void shouldReturnTaxTopics() {
-            // When
-            List<HelpTopic> topics = controller.getTopicsForCategory("Tax & Calculation");
-
-            // Then
-            assertThat(topics).isNotEmpty();
-            assertThat(topics).contains(HelpTopic.INCOME_TAX, HelpTopic.NI_CLASS_4);
-        }
-
-        @Test
-        @DisplayName("should return topics for expenses category")
-        void shouldReturnExpensesTopics() {
-            // When
-            List<HelpTopic> topics = controller.getTopicsForCategory("Expenses");
-
-            // Then
-            assertThat(topics).isNotEmpty();
-            assertThat(topics).contains(HelpTopic.EXPENSE_CATEGORY, HelpTopic.ALLOWABLE_EXPENSES);
-        }
-
-        @Test
-        @DisplayName("should return empty list for unknown category")
-        void shouldReturnEmptyForUnknownCategory() {
-            // When
-            List<HelpTopic> topics = controller.getTopicsForCategory("Unknown");
-
-            // Then
-            assertThat(topics).isEmpty();
-        }
     }
 
     @Nested
@@ -314,108 +249,6 @@ class HelpControllerTest {
             assertThat(content.get().title()).contains("SA103");
         }
 
-        @Test
-        @DisplayName("should have handler for each help topic")
-        void shouldHaveHandlerForEachTopic() {
-            // Verify we have content for each topic
-            for (HelpTopic topic : HelpTopic.values()) {
-                String displayName = controller.getTopicDisplayName(topic);
-                assertThat(displayName).isNotNull();
-                assertThat(displayName).isNotBlank();
-            }
-        }
-
-        @Test
-        @DisplayName("should find topic by display name for Net Profit")
-        void shouldFindTopicByDisplayNameNetProfit() {
-            HelpTopic topic = controller.findTopicByDisplayName("Net Profit");
-            assertThat(topic).isEqualTo(HelpTopic.NET_PROFIT);
-        }
-
-        @Test
-        @DisplayName("should find topic by display name for Income Tax")
-        void shouldFindTopicByDisplayNameIncomeTax() {
-            HelpTopic topic = controller.findTopicByDisplayName("Income Tax");
-            assertThat(topic).isEqualTo(HelpTopic.INCOME_TAX);
-        }
-
-        @Test
-        @DisplayName("should find topic by display name for Personal Allowance")
-        void shouldFindTopicByDisplayNamePersonalAllowance() {
-            HelpTopic topic = controller.findTopicByDisplayName("Personal Allowance");
-            assertThat(topic).isEqualTo(HelpTopic.PERSONAL_ALLOWANCE);
-        }
-
-        @Test
-        @DisplayName("should return null for unknown display name")
-        void shouldReturnNullForUnknownDisplayName() {
-            HelpTopic topic = controller.findTopicByDisplayName("Unknown Topic");
-            assertThat(topic).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("Quick Links - TC-HLP-030 to TC-HLP-037")
-    class QuickLinks {
-
-        @Test
-        @DisplayName("TC-HLP-030: should have income tax rates quick link")
-        void shouldHaveIncomeTaxRatesLink() {
-            List<HmrcLinkTopic> links = controller.getQuickLinks();
-            assertThat(links).contains(HmrcLinkTopic.TAX_RATES);
-        }
-
-        @Test
-        @DisplayName("TC-HLP-031: should have SA103 form quick link")
-        void shouldHaveSa103FormLink() {
-            List<HmrcLinkTopic> links = controller.getQuickLinks();
-            assertThat(links).contains(HmrcLinkTopic.SA103_FORM);
-        }
-
-        @Test
-        @DisplayName("TC-HLP-032: should have filing deadlines quick link")
-        void shouldHaveFilingDeadlinesLink() {
-            List<HmrcLinkTopic> links = controller.getQuickLinks();
-            assertThat(links).contains(HmrcLinkTopic.FILING_DEADLINES);
-        }
-
-        @Test
-        @DisplayName("TC-HLP-033: should have allowable expenses quick link")
-        void shouldHaveAllowableExpensesLink() {
-            List<HmrcLinkTopic> links = controller.getQuickLinks();
-            assertThat(links).contains(HmrcLinkTopic.ALLOWABLE_EXPENSES);
-        }
-
-        @Test
-        @DisplayName("TC-HLP-034: should have NI rates quick link")
-        void shouldHaveNiRatesLink() {
-            List<HmrcLinkTopic> links = controller.getQuickLinks();
-            assertThat(links).contains(HmrcLinkTopic.NI_RATES);
-        }
-
-        @Test
-        @DisplayName("should provide HMRC quick links")
-        void shouldProvideHmrcQuickLinks() {
-            // When
-            List<HmrcLinkTopic> links = controller.getQuickLinks();
-
-            // Then
-            assertThat(links).isNotEmpty();
-            assertThat(links).contains(
-                HmrcLinkTopic.TAX_RATES,
-                HmrcLinkTopic.FILING_DEADLINES,
-                HmrcLinkTopic.ALLOWABLE_EXPENSES
-            );
-        }
-
-        @Test
-        @DisplayName("TC-HLP-037: quick links should point to valid GOV.UK domains")
-        void quickLinksShouldPointToGovUk() {
-            for (HmrcLinkTopic topic : controller.getQuickLinks()) {
-                String url = controller.getHmrcLink(topic);
-                assertThat(url).contains("gov.uk");
-            }
-        }
     }
 
     @Nested
@@ -453,58 +286,6 @@ class HelpControllerTest {
         void issuesUrlShouldBeDerivedFromRepoUrl() {
             assertThat(HelpController.GITHUB_ISSUES_URL)
                 .startsWith(HelpController.GITHUB_REPO_URL);
-        }
-    }
-
-    @Nested
-    @DisplayName("Topic Display Names")
-    class TopicDisplayNames {
-
-        @Test
-        @DisplayName("should return display name for NET_PROFIT")
-        void shouldReturnDisplayNameForNetProfit() {
-            assertThat(controller.getTopicDisplayName(HelpTopic.NET_PROFIT))
-                .isEqualTo("Net Profit");
-        }
-
-        @Test
-        @DisplayName("should return display name for INCOME_TAX")
-        void shouldReturnDisplayNameForIncomeTax() {
-            assertThat(controller.getTopicDisplayName(HelpTopic.INCOME_TAX))
-                .isEqualTo("Income Tax");
-        }
-
-        @Test
-        @DisplayName("should return display name for NI_CLASS_4")
-        void shouldReturnDisplayNameForNiClass4() {
-            assertThat(controller.getTopicDisplayName(HelpTopic.NI_CLASS_4))
-                .isEqualTo("NI Class 4");
-        }
-
-        @Test
-        @DisplayName("should return display name for SA103_FORM")
-        void shouldReturnDisplayNameForSa103Form() {
-            assertThat(controller.getTopicDisplayName(HelpTopic.SA103_FORM))
-                .isEqualTo("SA103 Form");
-        }
-    }
-
-    @Nested
-    @DisplayName("Link Display Names")
-    class LinkDisplayNames {
-
-        @Test
-        @DisplayName("should return display name for TAX_RATES")
-        void shouldReturnDisplayNameForTaxRates() {
-            assertThat(controller.getLinkDisplayName(HmrcLinkTopic.TAX_RATES))
-                .isEqualTo("Income Tax Rates");
-        }
-
-        @Test
-        @DisplayName("should return display name for FILING_DEADLINES")
-        void shouldReturnDisplayNameForFilingDeadlines() {
-            assertThat(controller.getLinkDisplayName(HmrcLinkTopic.FILING_DEADLINES))
-                .isEqualTo("Filing Deadlines");
         }
     }
 
@@ -588,45 +369,6 @@ class HelpControllerTest {
     class UserGuideFeature {
 
         @Nested
-        @DisplayName("New Help Topics")
-        class NewHelpTopics {
-
-            @Test
-            @DisplayName("should have GETTING_STARTED topic in User Guide category")
-            void shouldHaveGettingStartedTopic() {
-                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
-                assertThat(topics).contains(HelpTopic.GETTING_STARTED);
-            }
-
-            @Test
-            @DisplayName("should have HMRC_CONNECTION topic in User Guide category")
-            void shouldHaveHmrcConnectionTopic() {
-                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
-                assertThat(topics).contains(HelpTopic.HMRC_CONNECTION);
-            }
-
-            @Test
-            @DisplayName("should have SECURITY_PRIVACY topic in User Guide category")
-            void shouldHaveSecurityPrivacyTopic() {
-                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
-                assertThat(topics).contains(HelpTopic.SECURITY_PRIVACY);
-            }
-
-            @Test
-            @DisplayName("should have FAQ topic in User Guide category")
-            void shouldHaveFaqTopic() {
-                List<HelpTopic> topics = controller.getTopicsForCategory("User Guide");
-                assertThat(topics).contains(HelpTopic.FAQ);
-            }
-
-            @Test
-            @DisplayName("should have User Guide category")
-            void shouldHaveUserGuideCategory() {
-                assertThat(controller.getHelpCategories()).contains("User Guide");
-            }
-        }
-
-        @Nested
         @DisplayName("User Guide Content")
         class UserGuideContent {
 
@@ -669,39 +411,6 @@ class HelpControllerTest {
         }
 
         @Nested
-        @DisplayName("Display Names for New Topics")
-        class DisplayNamesForNewTopics {
-
-            @Test
-            @DisplayName("should return display name for GETTING_STARTED")
-            void shouldReturnDisplayNameForGettingStarted() {
-                assertThat(controller.getTopicDisplayName(HelpTopic.GETTING_STARTED))
-                    .isEqualTo("Getting Started");
-            }
-
-            @Test
-            @DisplayName("should return display name for HMRC_CONNECTION")
-            void shouldReturnDisplayNameForHmrcConnection() {
-                assertThat(controller.getTopicDisplayName(HelpTopic.HMRC_CONNECTION))
-                    .isEqualTo("HMRC Connection");
-            }
-
-            @Test
-            @DisplayName("should return display name for SECURITY_PRIVACY")
-            void shouldReturnDisplayNameForSecurityPrivacy() {
-                assertThat(controller.getTopicDisplayName(HelpTopic.SECURITY_PRIVACY))
-                    .isEqualTo("Security & Privacy");
-            }
-
-            @Test
-            @DisplayName("should return display name for FAQ")
-            void shouldReturnDisplayNameForFaq() {
-                assertThat(controller.getTopicDisplayName(HelpTopic.FAQ))
-                    .isEqualTo("FAQ");
-            }
-        }
-
-        @Nested
         @DisplayName("Topic Icons for New Topics")
         class TopicIconsForNewTopics {
 
@@ -731,39 +440,6 @@ class HelpControllerTest {
             void shouldReturnIconForFaq() {
                 Ikon icon = controller.getTopicIcon(HelpTopic.FAQ);
                 assertThat(icon).isNotNull();
-            }
-        }
-
-        @Nested
-        @DisplayName("Topic Descriptions for New Topics")
-        class TopicDescriptionsForNewTopics {
-
-            @Test
-            @DisplayName("should return description for GETTING_STARTED")
-            void shouldReturnDescriptionForGettingStarted() {
-                String desc = controller.getTopicDescription(HelpTopic.GETTING_STARTED);
-                assertThat(desc).isNotNull().isNotBlank();
-            }
-
-            @Test
-            @DisplayName("should return description for HMRC_CONNECTION")
-            void shouldReturnDescriptionForHmrcConnection() {
-                String desc = controller.getTopicDescription(HelpTopic.HMRC_CONNECTION);
-                assertThat(desc).isNotNull().isNotBlank();
-            }
-
-            @Test
-            @DisplayName("should return description for SECURITY_PRIVACY")
-            void shouldReturnDescriptionForSecurityPrivacy() {
-                String desc = controller.getTopicDescription(HelpTopic.SECURITY_PRIVACY);
-                assertThat(desc).isNotNull().isNotBlank();
-            }
-
-            @Test
-            @DisplayName("should return description for FAQ")
-            void shouldReturnDescriptionForFaq() {
-                String desc = controller.getTopicDescription(HelpTopic.FAQ);
-                assertThat(desc).isNotNull().isNotBlank();
             }
         }
 

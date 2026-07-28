@@ -1,11 +1,28 @@
-77
+broken=77
+tests=883
 
-The number of e2e-tagged tests currently known to be broken. The nightly run fails only if the
-count exceeds this, so the suite cannot rot further while it is being repaired.
+What the nightly e2e run is measured against.
 
-Two full runs on 2026-07-28 measured 76 and 77 broken out of 883, so at least one test is flaky.
-The baseline sits at the higher of the two deliberately: a ratchet that trips on a coin flip gets
-ignored, which is how the suite reached this state. Finding and fixing that flake is worth doing —
-it would let the baseline drop to the real number.
+  broken  The number of e2e-tagged tests known to be failing. The run fails only if the count
+          exceeds this, so the suite cannot rot further while it is being repaired.
+  tests   How many tests a whole-suite run produces. Checked as well as the failure count, because
+          a run that never happened reports zero failures and would otherwise look like a clean
+          sweep. A count far above it means reports from an earlier run are being counted too.
 
-Lower this in the same commit that fixes tests. Never raise it.
+Measurements on 2026-07-28, all of the same commit, all 883 tests:
+
+  75   CI, once Xvfb had a window manager
+  76   developer desktop
+  77   developer desktop, a second run
+
+`broken` is the highest of those, not the lowest. Two runs of the same tree in one environment
+differed by one, so at least one test is flaky, and a ratchet that trips on a coin flip gets ignored
+like any other false alarm - which is how this suite reached its current state. Calibrating to the
+CI figure alone would also make the script fail on a clean checkout locally, where it is the obvious
+thing to run before pushing a fix. Finding the flaky test would let this drop to 75.
+
+For the record, before the job ran a window manager the same commit reported 224 broken on xvfb-run
+defaults and 225 with 24-bit colour. None of that difference was the tests: without a window manager
+a stage never takes focus, so TestFX finds no nodes. Never calibrate this from a broken display.
+
+Lower `broken` in the same commit that fixes tests. Never raise it.
