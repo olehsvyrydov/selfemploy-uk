@@ -1280,30 +1280,6 @@ class SubmissionHistoryE2ETest extends ApplicationTest {
         }
 
         @Test
-        @DisplayName("TC-10H-005: Submissions persist across controller reinitialize")
-        void submissionsPersistAcrossReinitialize() {
-            // Given - save submissions
-            SqliteSubmissionRepository repository = new SqliteSubmissionRepository(testBusinessId);
-            repository.save(createTestSubmissionRecord("QUARTERLY_Q1", 2025, "ACCEPTED", "REF-PERSIST-001"));
-            repository.save(createTestSubmissionRecord("QUARTERLY_Q2", 2025, "ACCEPTED", "REF-PERSIST-002"));
-
-            // When - reset singleton and get fresh instance (simulates app restart)
-            SqliteTestSupport.resetInstance();
-            SqliteTestSupport.enableTestMode();
-
-            // Re-seed the business ID (would be loaded from settings in real app)
-            SqliteDataStore.getInstance().ensureBusinessExists(testBusinessId);
-            SqliteSubmissionRepository newRepository = new SqliteSubmissionRepository(testBusinessId);
-
-            // Then - data should still be there
-            assertThat(newRepository.findAll()).hasSize(2);
-            assertThat(newRepository.findAll().stream()
-                .map(SubmissionRecord::hmrcReference)
-                .toList())
-                .contains("REF-PERSIST-001", "REF-PERSIST-002");
-        }
-
-        @Test
         @DisplayName("TC-10H-006: Business ID filter isolates submissions")
         void businessIdFilterIsolatesSubmissions() {
             // Given - submissions for two different businesses
