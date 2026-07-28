@@ -3,6 +3,9 @@
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
@@ -22,9 +25,23 @@
                wrapText="true"/>
 
         <VBox styleClass="form-field" spacing="6" maxWidth="340">
-            <PasswordField fx:id="secretField" styleClass="form-input"
-                           promptText="%unlock.passphrase.prompt"
-                           onAction="#handleUnlock"/>
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <StackPane HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <PasswordField fx:id="secretField" styleClass="form-input"
+                                   promptText="%unlock.passphrase.prompt"
+                                   onAction="#handleUnlock"/>
+                    <TextField fx:id="revealedField" styleClass="form-input"
+                               onAction="#handleUnlock" visible="false" managed="false"/>
+                </StackPane>
+                <ToggleButton fx:id="revealButton" styleClass="button-secondary"
+                              accessibleText="%unlock.reveal">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-eye" iconSize="14"/>
+                    </graphic>
+                </ToggleButton>
+            </HBox>
+            <Label fx:id="capsLockHint" text="%unlock.capsLock" styleClass="field-hint" wrapText="true"
+                   visible="false" managed="false"/>
             <Label fx:id="errorLabel" styleClass="field-error" wrapText="true"
                    visible="false" managed="false"/>
         </VBox>

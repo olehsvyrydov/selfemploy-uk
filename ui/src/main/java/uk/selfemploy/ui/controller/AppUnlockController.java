@@ -1,13 +1,19 @@
 package uk.selfemploy.ui.controller;
 
+import javafx.animation.TranslateTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
+import uk.selfemploy.ui.component.PassphraseField;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.service.security.AppLockService;
 import uk.selfemploy.ui.service.security.DbKey;
@@ -27,10 +33,22 @@ public class AppUnlockController implements AppLockDialog {
     @FXML private Label subtitleLabel;
     @FXML private Label errorLabel;
     @FXML private PasswordField secretField;
+    @FXML private TextField revealedField;
+    @FXML private ToggleButton revealButton;
+    @FXML private Label capsLockHint;
     @FXML private Button unlockButton;
     @FXML private Hyperlink recoveryLink;
+    @FXML private VBox card;
 
     private final AppUnlockViewModel viewModel = new AppUnlockViewModel();
+
+    @FXML
+    private void initialize() {
+        PassphraseField.wireReveal(secretField, revealedField, revealButton,
+                Messages.get("unlock.reveal"), Messages.get("unlock.hide"));
+        PassphraseField.warnAboutCapsLock(secretField, capsLockHint);
+        PassphraseField.warnAboutCapsLock(revealedField, capsLockHint);
+    }
 
     private AppLockService appLock;
     private Stage dialogStage;
@@ -112,7 +130,8 @@ public class AppUnlockController implements AppLockDialog {
 
     private void setBusy(boolean busy) {
         unlockButton.setDisable(busy);
-        secretField.setDisable(busy);
+        secretField.setDisable(busy);   // the revealed field follows it
+        revealButton.setDisable(busy);
         recoveryLink.setDisable(busy);
         unlockButton.setText(Messages.get(busy ? "unlock.unlocking" : "unlock.button"));
     }
@@ -121,6 +140,22 @@ public class AppUnlockController implements AppLockDialog {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
         errorLabel.setManaged(true);
+        shakeCard();
+    }
+
+    /**
+     * Nudges the card sideways once. A message that merely appears below a field is easy to miss when you
+     * are already looking at the field, and this screen is the one place where not noticing costs a
+     * retry against a throttle that grows.
+     */
+    private void shakeCard() {
+        TranslateTransition shake = new TranslateTransition(Duration.millis(60), card);
+        shake.setFromX(0);
+        shake.setByX(8);
+        shake.setCycleCount(6);
+        shake.setAutoReverse(true);
+        shake.setOnFinished(event -> card.setTranslateX(0));
+        shake.play();
     }
 
     private void hideError() {
