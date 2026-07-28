@@ -35,8 +35,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Install Xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
+      # openbox because Xvfb alone has no window manager: without one a stage never takes focus, so
+      # TestFX's key and click events go nowhere and its lookups find no nodes.
+      - name: Install Xvfb and a window manager
+        run: sudo apt-get update && sudo apt-get install -y xvfb openbox
 
       # xvfb-run gives a real X server, so TestFX needs no headless mode. Do NOT add
       # -Dtestfx.headless=true here: it requires Monocle, which is not a dependency, and turns
@@ -50,8 +52,12 @@ jobs:
       # decides whether this job passes.
       - name: Run e2e-tagged tests
         run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
-            mvn -B --fail-never test \
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          sleep 3
+          openbox &
+          sleep 2
+          mvn -B --fail-never test \
             -Dsurefire.excludedGroups= -Dgroups=e2e --no-transfer-progress
         env:
           MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
