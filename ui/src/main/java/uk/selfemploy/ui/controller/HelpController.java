@@ -39,18 +39,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      */
     public static final String GITHUB_ISSUES_URL = "https://github.com/olehsvyrydov/selfemploy-uk/issues";
 
-    private static final List<String> HELP_CATEGORIES = Arrays.asList(
-        "User Guide",
-        "Tax & Calculation",
-        "Expenses",
-        "HMRC Submission",
-        "General"
-    );
-
     private static final Map<String, List<HelpTopic>> CATEGORY_TOPICS;
-    private static final Map<HelpTopic, String> TOPIC_DISPLAY_NAMES;
-    private static final Map<HmrcLinkTopic, String> LINK_DISPLAY_NAMES;
-    private static final Map<HelpTopic, String> TOPIC_DESCRIPTIONS;
     private static final Map<HelpTopic, Ikon> TOPIC_ICONS;
     private static final Map<String, String> CATEGORY_COLORS;
 
@@ -84,58 +73,9 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
             HelpTopic.SA103_FORM
         ));
 
-        TOPIC_DISPLAY_NAMES = new EnumMap<>(HelpTopic.class);
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.NET_PROFIT, "Net Profit");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.INCOME_TAX, "Income Tax");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.PERSONAL_ALLOWANCE, "Personal Allowance");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.NI_CLASS_4, "NI Class 4");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.NI_CLASS_2, "NI Class 2");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.PAYMENTS_ON_ACCOUNT, "Payments on Account");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.EXPENSE_CATEGORY, "Expense Categories");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.ALLOWABLE_EXPENSES, "Allowable Expenses");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.DECLARATION, "Declaration");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.HMRC_SUBMISSION, "HMRC Submission");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.TAX_YEAR, "Tax Year");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.SA103_FORM, "SA103 Form");
         // User Guide topics
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.GETTING_STARTED, "Getting Started");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.BANK_IMPORT, "Bank Statement Import");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.HMRC_CONNECTION, "HMRC Connection");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.SECURITY_PRIVACY, "Security & Privacy");
-        TOPIC_DISPLAY_NAMES.put(HelpTopic.FAQ, "FAQ");
 
-        LINK_DISPLAY_NAMES = new EnumMap<>(HmrcLinkTopic.class);
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.TAX_RATES, "Income Tax Rates");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.NI_RATES, "NI Rates for Self-Employed");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.ALLOWABLE_EXPENSES, "Allowable Expenses Guide");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.FILING_DEADLINES, "Filing Deadlines");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.PAYMENTS_ON_ACCOUNT, "Payments on Account");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.PERSONAL_ALLOWANCE, "Personal Allowance");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.SA103_FORM, "SA103 Form & Notes");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.MTD_FOR_ITSA, "Making Tax Digital");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.STATE_PENSION, "State Pension Forecast");
-        LINK_DISPLAY_NAMES.put(HmrcLinkTopic.NI_RECORD, "Check NI Record");
-
-        // Topic descriptions for rich help topic cards
-        TOPIC_DESCRIPTIONS = new EnumMap<>(HelpTopic.class);
-        TOPIC_DESCRIPTIONS.put(HelpTopic.NET_PROFIT, "Understanding your taxable profit calculation");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.INCOME_TAX, "Tax bands and rates for the current tax year");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.PERSONAL_ALLOWANCE, "Tax-free income allowance explained");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.NI_CLASS_4, "National Insurance for self-employed profits");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.NI_CLASS_2, "Weekly National Insurance contributions");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.PAYMENTS_ON_ACCOUNT, "Advance tax payments to HMRC");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.EXPENSE_CATEGORY, "SA103 expense categories explained");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.ALLOWABLE_EXPENSES, "What expenses can you claim?");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.DECLARATION, "Legal declaration requirements");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.HMRC_SUBMISSION, "Submitting your Self Assessment");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.TAX_YEAR, "UK tax year dates and deadlines");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.SA103_FORM, "Self-employment supplementary pages");
         // User Guide topics
-        TOPIC_DESCRIPTIONS.put(HelpTopic.GETTING_STARTED, "Quick overview of app features and first steps");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.BANK_IMPORT, "Import CSV bank statements from 9 major UK banks");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.HMRC_CONNECTION, "How OAuth2 works and password safety");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.SECURITY_PRIVACY, "Local storage, encryption and data handling");
-        TOPIC_DESCRIPTIONS.put(HelpTopic.FAQ, "Common questions and answers");
 
         // Topic icons (FontAwesome)
         TOPIC_ICONS = new EnumMap<>(HelpTopic.class);
@@ -234,55 +174,6 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     }
 
     /**
-     * Returns the list of help categories.
-     */
-    public List<String> getHelpCategories() {
-        return HELP_CATEGORIES;
-    }
-
-    /**
-     * Returns topics for a given category.
-     */
-    public List<HelpTopic> getTopicsForCategory(String category) {
-        return CATEGORY_TOPICS.getOrDefault(category, Collections.emptyList());
-    }
-
-    /**
-     * Returns quick links to HMRC resources.
-     */
-    public List<HmrcLinkTopic> getQuickLinks() {
-        return Arrays.asList(
-            HmrcLinkTopic.TAX_RATES,
-            HmrcLinkTopic.NI_RATES,
-            HmrcLinkTopic.ALLOWABLE_EXPENSES,
-            HmrcLinkTopic.FILING_DEADLINES,
-            HmrcLinkTopic.PAYMENTS_ON_ACCOUNT,
-            HmrcLinkTopic.SA103_FORM
-        );
-    }
-
-    /**
-     * Returns a display-friendly name for a help topic.
-     */
-    public String getTopicDisplayName(HelpTopic topic) {
-        return TOPIC_DISPLAY_NAMES.getOrDefault(topic, topic.name());
-    }
-
-    /**
-     * Returns a display-friendly name for an HMRC link topic.
-     */
-    public String getLinkDisplayName(HmrcLinkTopic topic) {
-        return LINK_DISPLAY_NAMES.getOrDefault(topic, topic.name());
-    }
-
-    /**
-     * Returns the description for a help topic.
-     */
-    public String getTopicDescription(HelpTopic topic) {
-        return TOPIC_DESCRIPTIONS.getOrDefault(topic, "");
-    }
-
-    /**
      * Returns the icon for a help topic.
      */
     public Ikon getTopicIcon(HelpTopic topic) {
@@ -306,21 +197,6 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
             }
         }
         return "General";
-    }
-
-    /**
-     * Finds a HelpTopic by its display name.
-     *
-     * @param displayName the display name to search for
-     * @return the matching HelpTopic, or null if not found
-     */
-    public HelpTopic findTopicByDisplayName(String displayName) {
-        for (Map.Entry<HelpTopic, String> entry : TOPIC_DISPLAY_NAMES.entrySet()) {
-            if (entry.getValue().equals(displayName)) {
-                return entry.getKey();
-            }
-        }
-        return null;
     }
 
     // === FXML Event Handlers ===
