@@ -6,7 +6,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import org.kordamp.ikonli.Ikon;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.component.HelpDialog.DialogSize;
@@ -123,7 +122,7 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
     /**
      * The category a topic belongs to, which decides the colour its help dialog is drawn in.
      *
-     * @return {@link #CATEGORY_GENERAL} for a topic that was never assigned one
+     * @return {@link HelpTopicStyle#CATEGORY_GENERAL} for a topic that was never assigned one
      */
     public String getCategoryForTopic(HelpTopic topic) {
         return HelpTopicStyle.categoryFor(topic);
@@ -353,9 +352,10 @@ public class HelpController implements Initializable, MainController.TaxYearAwar
      */
     private void showUserGuideDialog() {
         getHelpForTopic(HelpTopic.USER_GUIDE).ifPresentOrElse(userGuideContent -> {
-            String color = getCategoryColor(HelpTopicStyle.CATEGORY_USER_GUIDE);
-            HelpDialog dialog = new HelpDialog(
-                userGuideContent, FontAwesomeSolid.BOOK, color, helpService, HelpDialog.DialogSize.LARGE);
+            HelpDialog dialog = new HelpDialog(userGuideContent,
+                HelpTopicStyle.iconFor(HelpTopic.USER_GUIDE),
+                HelpTopicStyle.colourFor(HelpTopic.USER_GUIDE),
+                helpService, HelpDialog.DialogSize.LARGE);
             dialog.showAndWaitDialog();
         }, () -> LOG.warning("User Guide help content is unavailable"));
     }

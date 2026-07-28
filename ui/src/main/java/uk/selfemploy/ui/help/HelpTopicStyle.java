@@ -107,4 +107,15 @@ public final class HelpTopicStyle {
     public static Map<String, String> colours() {
         return Collections.unmodifiableMap(COLOURS);
     }
+
+    /**
+     * The categories actually declared, topic by topic.
+     *
+     * <p>Exposed because {@link #categoryFor} cannot answer the question a test needs to ask: it
+     * returns {@link #CATEGORY_GENERAL} for a topic with no category, which is indistinguishable
+     * from a topic genuinely filed under General. A missing entry would otherwise look correct.
+     */
+    public static Map<HelpTopic, String> declaredCategories() {
+        return Collections.unmodifiableMap(CATEGORIES);
+    }
 }

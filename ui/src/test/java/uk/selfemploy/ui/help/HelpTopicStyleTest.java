@@ -28,8 +28,20 @@ class HelpTopicStyleTest {
     }
 
     @Test
-    @DisplayName("every topic belongs to a category that has a colour")
-    void everyTopicHasAColouredCategory() {
+    @DisplayName("every topic is filed under a category deliberately, not by fallback")
+    void everyTopicHasADeclaredCategory() {
+        // Asking categoryFor would prove nothing: it answers General for a topic that has no
+        // category, which reads exactly like a topic genuinely filed under General.
+        for (HelpTopic topic : HelpTopic.values()) {
+            assertThat(HelpTopicStyle.declaredCategories())
+                    .as("topic %s has no category of its own", topic)
+                    .containsKey(topic);
+        }
+    }
+
+    @Test
+    @DisplayName("every category in use has a colour")
+    void everyCategoryHasAColour() {
         for (HelpTopic topic : HelpTopic.values()) {
             String category = HelpTopicStyle.categoryFor(topic);
             assertThat(HelpTopicStyle.colours())
