@@ -1,4 +1,4 @@
-broken=76
+broken=74
 tests=882
 
 What the nightly e2e run is measured against.
@@ -14,6 +14,12 @@ Measurements on 2026-07-28, all of the same commit, all 883 tests:
   75   CI, once Xvfb had a window manager
   76   developer desktop
   77   developer desktop, a second run
+
+Later readings, same suite: 73 broken of 882 in CI on 2026-07-28 after the declaration tests were
+taught to scroll. That change fixes seven of them on a desktop but only one in CI, where the window
+manager does not honour the size a test asks for - a stage asking for 700px wide is measured at 900 -
+so clicks land somewhere other than the control. Several of the remaining failures look like the same
+cause and would go together if it were solved.
 
 One of those 75 has since been deleted rather than fixed: it saved records, reset the in-memory
 database, and asserted the records were still there, which cannot happen. Real coverage of the same
