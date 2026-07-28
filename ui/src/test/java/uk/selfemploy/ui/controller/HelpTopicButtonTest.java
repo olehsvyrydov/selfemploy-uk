@@ -67,6 +67,7 @@ class HelpTopicButtonTest {
     void everyTopicRowIsLegible(FxRobot robot) {
         var rows = robot.lookup(".help-topic-row").queryAllAs(HBox.class);
 
+        assertThat(rows).as("the help page lists topics").isNotEmpty();
         for (HBox row : rows) {
             assertThat(labelIn(row, "help-topic-title")).as("topic title").isNotBlank();
             assertThat(labelIn(row, "help-topic-desc")).as("topic description").isNotBlank();
