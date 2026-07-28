@@ -1,5 +1,5 @@
-broken=77
-tests=883
+broken=76
+tests=882
 
 What the nightly e2e run is measured against.
 
@@ -14,6 +14,12 @@ Measurements on 2026-07-28, all of the same commit, all 883 tests:
   75   CI, once Xvfb had a window manager
   76   developer desktop
   77   developer desktop, a second run
+
+One of those 75 has since been deleted rather than fixed: it saved records, reset the in-memory
+database, and asserted the records were still there, which cannot happen. Real coverage of the same
+claim now lives in SubmissionPersistenceTest, against a file. So the totals drop by one to 882 tests
+and an expected 74-75 broken, and this baseline drops to 76 - the same one-test headroom over the
+highest expected reading.
 
 `broken` is the highest of those, not the lowest. Two runs of the same tree in one environment
 differed by one, so at least one test is flaky, and a ratchet that trips on a coin flip gets ignored

@@ -40,11 +40,25 @@ public class SqliteSubmissionRepository implements SubmissionRepository {
      * @throws IllegalArgumentException if businessId is null
      */
     public SqliteSubmissionRepository(UUID businessId) {
+        this(businessId, SqliteDataStore.getInstance());
+    }
+
+    /**
+     * Test seam: binds the repository to an explicit store rather than the singleton.
+     *
+     * <p>The singleton runs in memory under test, so nothing reached through it can show that a
+     * submission survives a restart — the records and the database disappear together. Pointing this
+     * at a file-backed store is what makes that provable.
+     */
+    SqliteSubmissionRepository(UUID businessId, SqliteDataStore dataStore) {
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
+        if (dataStore == null) {
+            throw new IllegalArgumentException("Data store cannot be null");
+        }
         this.businessId = businessId;
-        this.dataStore = SqliteDataStore.getInstance();
+        this.dataStore = dataStore;
         // Ensure business exists for FK constraints
         dataStore.ensureBusinessExists(businessId);
     }
