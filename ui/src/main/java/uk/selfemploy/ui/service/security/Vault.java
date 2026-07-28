@@ -51,6 +51,15 @@ public record Vault(int vaultVersion, String cipher, List<Slot> slots) {
         return AppDataDirectory.resolve().resolve(FILE_NAME);
     }
 
+    /**
+     * The vault protecting the database at {@code databasePath}. A vault always sits beside the database
+     * it unlocks, so a store opened against some other path asks about that path's vault rather than the
+     * logged-in user's.
+     */
+    public static Path besideDatabase(Path databasePath) {
+        return databasePath.resolveSibling(FILE_NAME);
+    }
+
     /** Reads the vault, or {@code null} if no vault file exists (protection not enabled). */
     public static Vault read(Path path) throws IOException {
         if (!Files.exists(path)) {
@@ -59,8 +68,18 @@ public record Vault(int vaultVersion, String cipher, List<Slot> slots) {
         return MAPPER.readValue(Files.readAllBytes(path), Vault.class);
     }
 
-    /** Writes the vault owner-only (0600) and atomically. */
+    /**
+     * Writes the vault owner-only (0600) and atomically.
+     *
+     * <p>Creates the directory if it is missing. In the app it never is — the store makes it long before
+     * protection can be enabled — but relying on that leaves this failing with a temp-file error if the
+     * order ever changes, which says nothing about what went wrong.
+     */
     public void write(Path path) throws IOException {
+        Path parent = path.getParent();
+        if (parent != null) {
+            AppDataDirectory.createRestricted(parent);
+        }
         AppDataDirectory.writeRestricted(path, MAPPER.writeValueAsBytes(this));
     }
 

@@ -138,8 +138,27 @@ public final class BackupEncryption {
             JsonNode root = MAPPER.readTree(fileBytes);
             return root != null && root.has("type") && TYPE.equals(root.get("type").asText());
         } catch (IOException | RuntimeException notOurs) {
+            // Unparseable, so not recognisably ours. It may still be a damaged backup rather than some
+            // other file, which is why the caller checks looksLikeDamagedBackup before giving up.
             return false;
         }
+    }
+
+    /**
+     * Whether a file that could not be read as either format still looks like one of our backups.
+     *
+     * <p>A truncated envelope parses as neither an export nor an envelope, and reporting "invalid export
+     * file structure" would point the user at the wrong thing entirely. The marker appears near the start
+     * of the file, so a prefix scan finds it even when the JSON never closes.
+     */
+    public static boolean looksLikeDamagedBackup(byte[] fileBytes) {
+        int prefix = Math.min(fileBytes.length, 512);
+        if (!new String(fileBytes, 0, prefix, StandardCharsets.UTF_8).contains(TYPE)) {
+            // Nothing claims to be ours, so there is no need to parse it. This is the ordinary path for a
+            // plaintext export, which the caller has already parsed once and may be megabytes long.
+            return false;
+        }
+        return !isEncrypted(fileBytes);   // carries the marker but will not parse: damaged
     }
 
     private static byte[] deriveKey(char[] passphrase, Kdf kdf) {

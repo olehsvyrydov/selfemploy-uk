@@ -2010,7 +2010,13 @@ public class SettingsController implements Initializable, MainController.TaxYear
         try {
             DataExportService.JsonExport export =
                     exportService.buildJsonExport(businessId, taxYears, ExportOptions.noFilter());
-            Files.write(target, backupContent(choice.isEncrypting(), export.json(), passphrase));
+            byte[] content = backupContent(choice.isEncrypting(), export.json(), passphrase);
+            Files.write(target, content);
+            if (choice.isEncrypting()) {
+                // The records only had to exist in the clear long enough to be encrypted. Best effort,
+                // as ever with the JVM, but consistent with how key material is treated elsewhere.
+                Arrays.fill(export.json(), (byte) 0);
+            }
             return ExportResult.success(target, export.incomeCount(), export.expenseCount());
         } catch (IOException | RuntimeException e) {
             LOG.log(Level.SEVERE, "Failed to write the backup", e);
@@ -2041,6 +2047,10 @@ public class SettingsController implements Initializable, MainController.TaxYear
             return null;
         }
         if (!BackupEncryption.isEncrypted(fileBytes)) {
+            if (BackupEncryption.looksLikeDamagedBackup(fileBytes)) {
+                showError(Messages.get("backupUnlock.title"), Messages.get("backup.error.damaged"));
+                return null;
+            }
             return fileBytes;
         }
 

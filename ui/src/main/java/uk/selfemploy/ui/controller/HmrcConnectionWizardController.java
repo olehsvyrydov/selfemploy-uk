@@ -1392,12 +1392,6 @@ public class HmrcConnectionWizardController implements Initializable {
     // === Factory Method ===
 
     /**
-     * Creates and shows the wizard dialog.
-     *
-     * @param ownerStage the owner stage for the dialog
-     * @return the view model for checking result
-     */
-    /**
      * Creates and shows the wizard dialog. The wizard owns the entire connection flow: it performs
      * OAuth, resolves and persists the business profile, and shows the outcome. The caller reads the
      * final persisted state after this returns rather than being called back mid-flow.
