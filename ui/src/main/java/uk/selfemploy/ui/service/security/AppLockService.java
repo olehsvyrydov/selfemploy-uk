@@ -1,14 +1,10 @@
 package uk.selfemploy.ui.service.security;
 
-import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
-import org.bouncycastle.crypto.params.Argon2Parameters;
 
 import uk.selfemploy.ui.service.AppDataDirectory;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.nio.charset.StandardCharsets;
@@ -36,14 +32,13 @@ public final class AppLockService {
 
     private static final Logger LOG = Logger.getLogger(AppLockService.class.getName());
 
-    // OWASP-current Argon2id parameters (2026): 64 MiB memory, 3 iterations, single lane.
-    private static final int ARGON2_MEMORY_KIB = 65536;
-    private static final int ARGON2_ITERATIONS = 3;
-    private static final int ARGON2_PARALLELISM = 1;
-    private static final int KEY_LEN = 32;      // 256-bit KEK and database key
-    private static final int SALT_LEN = 16;
-    private static final int NONCE_LEN = 12;
-    private static final int GCM_TAG_BITS = 128;
+    // Argon2id and AES-GCM parameters are shared with the backup envelope; see PassphraseCrypto.
+    private static final int ARGON2_MEMORY_KIB = PassphraseCrypto.ARGON2_MEMORY_KIB;
+    private static final int ARGON2_ITERATIONS = PassphraseCrypto.ARGON2_ITERATIONS;
+    private static final int ARGON2_PARALLELISM = PassphraseCrypto.ARGON2_PARALLELISM;
+    private static final int KEY_LEN = PassphraseCrypto.KEY_LEN;    // 256-bit KEK and database key
+    private static final int SALT_LEN = PassphraseCrypto.SALT_LEN;
+    private static final int NONCE_LEN = PassphraseCrypto.NONCE_LEN;
 
     // Rate limiting: no delay for the first few tries, then escalating and capped, persisted across
     // restarts so relaunching cannot reset the throttle.
@@ -343,25 +338,13 @@ public final class AppLockService {
 
     private static byte[] gcm(int mode, byte[] key, byte[] nonce, byte[] aad, byte[] input)
             throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        cipher.init(mode, new SecretKeySpec(key, "AES"), new GCMParameterSpec(GCM_TAG_BITS, nonce));
-        cipher.updateAAD(aad);
-        return cipher.doFinal(input);
+        return PassphraseCrypto.gcm(mode, key, nonce, aad, input);
     }
 
+    /** Derives the key-encryption key from a slot's stored KDF parameters. */
     private static byte[] deriveKek(char[] secret, Vault.KdfParams kdf) {
-        Argon2Parameters params = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
-                .withVersion(Argon2Parameters.ARGON2_VERSION_13)
-                .withSalt(Base64.getDecoder().decode(kdf.saltB64()))
-                .withMemoryAsKB(kdf.memoryKib())
-                .withIterations(kdf.iterations())
-                .withParallelism(kdf.parallelism())
-                .build();
-        Argon2BytesGenerator generator = new Argon2BytesGenerator();
-        generator.init(params);
-        byte[] kek = new byte[KEY_LEN];
-        generator.generateBytes(secret, kek);
-        return kek;
+        return PassphraseCrypto.deriveKey(secret, Base64.getDecoder().decode(kdf.saltB64()),
+                kdf.memoryKib(), kdf.iterations(), kdf.parallelism());
     }
 
     // ==================== Recovery code ====================
