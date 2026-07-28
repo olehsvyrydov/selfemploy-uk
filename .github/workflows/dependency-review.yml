@@ -30,9 +30,14 @@ jobs:
           comment-summary-in-pr: always
           # Allow specific licenses (Apache 2.0, MIT, etc.)
           allow-licenses: Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause, ISC, MPL-2.0, LGPL-2.1, EPL-1.0, EPL-2.0
-          # Exempt specific permissively-licensed packages from the license check.
+          # Exempt specific permissively-licensed packages from the license check. Each was checked
+          # against the licence its own POM declares, not just waved through for being reported
+          # "unknown": io.github.willena:sqlite-jdbc declares Apache-2.0, which is already allowed, but
+          # the scanner cannot map the free-text name to an SPDX id; org.bouncycastle:bcprov-jdk18on
+          # declares "Bouncy Castle Licence", whose text is the MIT licence under a name SPDX does not
+          # recognise.
           # These are Apache-2.0 (Jackson, Error Prone) or EDL-1.0/BSD-3-Clause (JAXB,
           # Jakarta XML Bind, Angus) but the license scanner reports misleading compound
           # SPDX expressions (e.g. bundled BSL-1.0/MIT texts, or CDDL/GPL dual-license
           # notices) that fall outside the allow-list. Exempted by package, all versions.
-          allow-dependencies-licenses: pkg:maven/com.fasterxml.jackson.core/jackson-core, pkg:maven/com.google.errorprone/error_prone_annotations, pkg:maven/jakarta.xml.bind/jakarta.xml.bind-api, pkg:maven/org.eclipse.angus/angus-activation, pkg:maven/org.glassfish.jaxb/jaxb-runtime, pkg:maven/org.glassfish.jaxb/txw2
+          allow-dependencies-licenses: pkg:maven/com.fasterxml.jackson.core/jackson-core, pkg:maven/com.google.errorprone/error_prone_annotations, pkg:maven/jakarta.xml.bind/jakarta.xml.bind-api, pkg:maven/org.eclipse.angus/angus-activation, pkg:maven/org.glassfish.jaxb/jaxb-runtime, pkg:maven/org.glassfish.jaxb/txw2, pkg:maven/io.github.willena/sqlite-jdbc, pkg:maven/org.bouncycastle/bcprov-jdk18on

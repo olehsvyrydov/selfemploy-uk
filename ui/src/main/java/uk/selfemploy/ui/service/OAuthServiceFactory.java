@@ -194,9 +194,6 @@ public final class OAuthServiceFactory {
     }
 
     /**
-     * Checks if HMRC credentials are configured.
-     */
-    /**
      * Returns the configured OAuth authentication timeout in seconds.
      *
      * @return timeout in seconds

@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import uk.selfemploy.ui.service.db.SqliteMigrationRunner;
 import uk.selfemploy.ui.service.security.DbKey;
 import uk.selfemploy.ui.service.security.SqlCipherSupport;
+import uk.selfemploy.ui.service.security.Vault;
 
 import java.sql.*;
 import java.time.Instant;
@@ -223,7 +224,7 @@ public final class SqliteDataStore {
      * Resolves the database path based on the operating system.
      */
     private Path resolveDatabasePath() {
-        return AppDataDirectory.resolve().resolve(DB_FILE);
+        return databaseFilePath();
     }
 
     /** The production database file path — used by the app-lock gate for migration/rollback. */
@@ -260,6 +261,13 @@ public final class SqliteDataStore {
         String url = inMemory ? "jdbc:sqlite::memory:" : "jdbc:sqlite:" + databasePath.toAbsolutePath();
         // A test store carries its own key; the singleton uses the live provisioned key.
         DbKey key = dbKey != null ? dbKey : provisionedKey;
+        if (!inMemory && key == null && Files.exists(Vault.besideDatabase(databasePath))) {
+            // Protection is on but no key has arrived, so the app-lock gate has not run. Opening
+            // unkeyed would fail later as "file is not a database", pointing at the file rather than
+            // at the ordering that caused it.
+            throw new IllegalStateException(
+                    "The database is passphrase-protected but no key has been provisioned; unlock first");
+        }
         if (inMemory || key == null) {
             return DriverManager.getConnection(url);
         }

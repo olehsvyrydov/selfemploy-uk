@@ -187,6 +187,31 @@ class BackupEncryptionTest {
     }
 
     @Test
+    @DisplayName("a truncated backup is recognised as damaged, not reported as a bad export")
+    void truncatedBackupIsRecognisedAsDamaged() {
+        byte[] envelope = BackupEncryption.encrypt(
+                EXPORT_JSON.getBytes(StandardCharsets.UTF_8), pw("correct horse battery staple"));
+        byte[] truncated = java.util.Arrays.copyOf(envelope, envelope.length / 3);
+
+        // It parses as neither format, so without this it would fall through to the import path and be
+        // reported as an invalid export - describing the wrong problem entirely.
+        assertThat(BackupEncryption.isEncrypted(truncated)).isFalse();
+        assertThat(BackupEncryption.looksLikeDamagedBackup(truncated)).isTrue();
+    }
+
+    @Test
+    @DisplayName("an intact backup and an ordinary export are not called damaged")
+    void healthyFilesAreNotCalledDamaged() {
+        byte[] envelope = BackupEncryption.encrypt(
+                EXPORT_JSON.getBytes(StandardCharsets.UTF_8), pw("correct horse battery staple"));
+
+        assertThat(BackupEncryption.looksLikeDamagedBackup(envelope)).isFalse();
+        assertThat(BackupEncryption.looksLikeDamagedBackup(EXPORT_JSON.getBytes(StandardCharsets.UTF_8)))
+                .isFalse();
+        assertThat(BackupEncryption.looksLikeDamagedBackup(new byte[0])).isFalse();
+    }
+
+    @Test
     @DisplayName("a file claiming to be a backup but missing its parts is reported as unreadable")
     void malformedEnvelopeIsReported() {
         byte[] claimsToBeOurs = ("{\"type\":\"" + BackupEncryption.TYPE + "\",\"version\":1}")
