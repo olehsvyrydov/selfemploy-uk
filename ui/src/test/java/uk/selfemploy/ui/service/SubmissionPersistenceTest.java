@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * A submitted return is still there after the app is closed and reopened.
@@ -91,6 +92,14 @@ class SubmissionPersistenceTest {
         } finally {
             after.close();
         }
+    }
+
+    @Test
+    @DisplayName("a missing store is refused, rather than failing later as a null dereference")
+    void aNullStoreIsRefused() {
+        assertThatThrownBy(() -> new SqliteSubmissionRepository(UUID.randomUUID(), null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Data store");
     }
 
     private static SubmissionRecord quarterlyReturn(

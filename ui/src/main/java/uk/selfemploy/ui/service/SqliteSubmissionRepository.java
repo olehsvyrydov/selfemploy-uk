@@ -54,6 +54,9 @@ public class SqliteSubmissionRepository implements SubmissionRepository {
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
+        if (dataStore == null) {
+            throw new IllegalArgumentException("Data store cannot be null");
+        }
         this.businessId = businessId;
         this.dataStore = dataStore;
         // Ensure business exists for FK constraints
