@@ -36,6 +36,7 @@ import uk.selfemploy.core.service.ReceiptStorageService;
 import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
+import uk.selfemploy.ui.help.HelpTopicStyle;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.service.SubmittedPeriodIndex;
@@ -582,33 +583,13 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
 
     private void showHelpDialog(HelpTopic topic) {
         helpService.getHelp(topic).ifPresent(content -> {
-            // Use styled HelpDialog matching the Help page pattern
-            Ikon icon = getIconForTopic(topic);
-            String color = getColorForTopic(topic);
-
-            HelpDialog dialog = new HelpDialog(content, icon, color, helpService);
+            HelpDialog dialog = new HelpDialog(
+                    content, HelpTopicStyle.iconFor(topic), HelpTopicStyle.colourFor(topic), helpService);
             dialog.showAndWait();
         });
     }
 
-    /**
-     * Returns the icon for a help topic.
-     */
-    private Ikon getIconForTopic(HelpTopic topic) {
-        return switch (topic) {
-            case ALLOWABLE_EXPENSES -> FontAwesomeSolid.CHECK_CIRCLE;
-            case NON_DEDUCTIBLE_EXPENSES -> FontAwesomeSolid.TIMES_CIRCLE;
-            default -> FontAwesomeSolid.INFO_CIRCLE;
-        };
-    }
 
-    /**
-     * Returns the color for a help topic based on its category.
-     */
-    private String getColorForTopic(HelpTopic topic) {
-        // Expense-related topics use orange (matching Expenses page theme)
-        return "#d97706";
-    }
 
     private void handleEditExpense(ExpenseTableRow row) {
         if (expenseService == null) return;

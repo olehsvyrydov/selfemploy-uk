@@ -28,6 +28,7 @@ import uk.selfemploy.ui.component.ToastNotification;
 import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
+import uk.selfemploy.ui.help.HelpTopicStyle;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.SubmissionRecord;
 import uk.selfemploy.ui.service.SubmittedPeriodIndex;
@@ -618,33 +619,13 @@ public class IncomeController implements Initializable, MainController.TaxYearAw
 
     private void showHelpDialog(HelpTopic topic) {
         helpService.getHelp(topic).ifPresent(content -> {
-            // Use styled HelpDialog matching the Help page pattern
-            Ikon icon = getIconForTopic(topic);
-            String color = getColorForTopic(topic);
-
-            HelpDialog dialog = new HelpDialog(content, icon, color, helpService);
+            HelpDialog dialog = new HelpDialog(
+                    content, HelpTopicStyle.iconFor(topic), HelpTopicStyle.colourFor(topic), helpService);
             dialog.showAndWait();
         });
     }
 
-    /**
-     * Returns the icon for a help topic.
-     */
-    private Ikon getIconForTopic(HelpTopic topic) {
-        return switch (topic) {
-            case PAID_INCOME -> FontAwesomeSolid.POUND_SIGN;
-            case UNPAID_INCOME -> FontAwesomeSolid.CLIPBOARD;
-            default -> FontAwesomeSolid.INFO_CIRCLE;
-        };
-    }
 
-    /**
-     * Returns the color for a help topic based on its category.
-     */
-    private String getColorForTopic(HelpTopic topic) {
-        // Income-related topics use green (matching Income page theme)
-        return "#059669";
-    }
 
     private void showSuccessToast(String message) {
         LOG.info("Income operation: {}", message);

@@ -17,6 +17,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.ui.component.HelpDialog;
 import uk.selfemploy.ui.help.HelpService;
 import uk.selfemploy.ui.help.HelpTopic;
+import uk.selfemploy.ui.help.HelpTopicStyle;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.legal.Disclaimers;
 import uk.selfemploy.core.service.ExpenseService;
@@ -672,21 +673,22 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
     @FXML
     void handleShowPOAInfo(ActionEvent event) {
-        showTopicHelp(HelpTopic.PAYMENTS_ON_ACCOUNT, FontAwesomeSolid.CHART_BAR);
+        showTopicHelp(HelpTopic.PAYMENTS_ON_ACCOUNT);
     }
 
     @FXML
     void handleShowClass2Help(ActionEvent event) {
-        showTopicHelp(HelpTopic.NI_CLASS_2, FontAwesomeSolid.HEARTBEAT);
+        showTopicHelp(HelpTopic.NI_CLASS_2);
     }
 
     /**
      * Opens a shared help topic so the Tax Summary page uses the same year-aware, markdown-rendered
      * content as the Help page, rather than a hand-built duplicate that can drift or fail to render.
      */
-    private void showTopicHelp(HelpTopic topic, org.kordamp.ikonli.Ikon icon) {
+    private void showTopicHelp(HelpTopic topic) {
         helpService.getHelp(topic).ifPresentOrElse(content -> {
-            HelpDialog dialog = new HelpDialog(content, icon, "#059669", helpService); // Tax category green
+            HelpDialog dialog = new HelpDialog(
+                    content, HelpTopicStyle.iconFor(topic), HelpTopicStyle.colourFor(topic), helpService);
             dialog.showAndWait();
         }, () -> LOG.warning("No help content available for topic: " + topic));
     }
