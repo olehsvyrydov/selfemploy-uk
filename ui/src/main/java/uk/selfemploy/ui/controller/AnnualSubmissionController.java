@@ -376,8 +376,11 @@ public class AnnualSubmissionController {
     }
 
     /**
-     * Updates the dialog width based on the current step.
-     * Step 1: 700px, Step 2: 900px, Step 3+: 1200px
+     * Widens the dialog as the user moves through the steps, since each one shows more.
+     *
+     * <p>The widths are {@link #STEP_1_WIDTH}, {@link #STEP_2_WIDTH} and {@link #STEP_3_WIDTH}
+     * rather than repeated here, because a comment naming figures drifts from the constants and
+     * this one already had.
      */
     private void updateDialogWidth(int currentStep) {
         if (dialogStage == null) {
