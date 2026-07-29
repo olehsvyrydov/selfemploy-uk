@@ -30,14 +30,15 @@ public class InMemoryExpenseService extends ExpenseService {
     @Override
     public Expense create(UUID businessId, LocalDate date, BigDecimal amount,
                           String description, ExpenseCategory category,
-                          String receiptPath, String notes) {
+                          String receiptPath, String notes, int businessUsePercentage) {
         validateBusinessId(businessId);
         validateDate(date);
         validateAmount(amount);
         validateDescription(description);
         validateCategory(category);
 
-        Expense expense = Expense.create(businessId, date, amount, description, category, receiptPath, notes);
+        Expense expense = Expense.create(businessId, date, amount, description, category, receiptPath, notes)
+            .withBusinessUsePercentage(businessUsePercentage);
         return repository.save(expense);
     }
 
@@ -84,6 +85,14 @@ public class InMemoryExpenseService extends ExpenseService {
         );
 
         return repository.update(updatedExpense);
+    }
+
+    @Override
+    public Expense update(UUID id, LocalDate date, BigDecimal amount,
+                          String description, ExpenseCategory category,
+                          String receiptPath, String notes, int businessUsePercentage) {
+        return repository.update(update(id, date, amount, description, category, receiptPath, notes)
+            .withBusinessUsePercentage(businessUsePercentage));
     }
 
     @Override

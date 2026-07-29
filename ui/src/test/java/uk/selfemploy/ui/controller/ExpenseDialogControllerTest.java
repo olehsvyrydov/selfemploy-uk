@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -336,7 +337,7 @@ class ExpenseDialogControllerTest {
     class SaveOperation {
 
         private void setupCreateMock() {
-            when(expenseService.create(any(), any(), any(), any(), any(), any(), any()))
+            when(expenseService.create(any(), any(), any(), any(), any(), any(), any(), anyInt()))
                 .thenAnswer(invocation -> {
                     UUID bId = invocation.getArgument(0);
                     LocalDate date = invocation.getArgument(1);
@@ -367,7 +368,8 @@ class ExpenseDialogControllerTest {
                 eq("Test expense"),
                 eq(ExpenseCategory.OFFICE_COSTS),
                 isNull(),
-                isNull()
+                isNull(),
+                eq(Expense.FULLY_BUSINESS)
             );
         }
 
@@ -423,7 +425,7 @@ class ExpenseDialogControllerTest {
                 null
             );
 
-            when(expenseService.update(any(), any(), any(), any(), any(), any(), any()))
+            when(expenseService.update(any(), any(), any(), any(), any(), any(), any(), anyInt()))
                 .thenAnswer(invocation -> {
                     UUID id = invocation.getArgument(0);
                     LocalDate date = invocation.getArgument(1);
@@ -451,7 +453,8 @@ class ExpenseDialogControllerTest {
                 eq("Updated description"),
                 any(),
                 any(),
-                any()
+                any(),
+                anyInt()
             );
         }
     }

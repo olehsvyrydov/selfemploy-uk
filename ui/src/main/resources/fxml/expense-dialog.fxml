@@ -97,6 +97,23 @@
             </VBox>
         </HBox>
 
+        <!-- Business use share -->
+        <VBox styleClass="form-field" spacing="6">
+            <HBox alignment="CENTER_LEFT" spacing="4">
+                <Label text="%expenseDialog.field.businessUse" styleClass="field-label"/>
+                <Label text="%expenseDialog.optional" styleClass="optional-indicator"/>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <TextField fx:id="businessUseField" promptText="100"
+                           styleClass="form-input" prefWidth="80"/>
+                <Label text="%expenseDialog.businessUse.suffix" styleClass="field-suffix"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="claimableAmountLabel" styleClass="checkbox-helper"/>
+            </HBox>
+            <Label text="%expenseDialog.businessUse.helper" styleClass="checkbox-helper" wrapText="true"/>
+            <Label fx:id="businessUseError" styleClass="field-error" managed="false" visible="false"/>
+        </VBox>
+
         <!-- Notes Field -->
         <VBox styleClass="form-field" spacing="6">
             <HBox alignment="CENTER_LEFT" spacing="4">

@@ -2,6 +2,7 @@ package uk.selfemploy.ui.controller;
 import uk.selfemploy.ui.component.AppDialog;
 
 import javafx.event.ActionEvent;
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -29,6 +30,7 @@ import uk.selfemploy.core.service.ReceiptMetadata;
 import uk.selfemploy.core.service.ReceiptStorageService;
 import uk.selfemploy.ui.service.DataStoreException;
 import uk.selfemploy.ui.util.Stylesheets;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.viewmodel.ExpenseDialogViewModel;
 
 import java.awt.Desktop;
@@ -60,6 +62,9 @@ public class ExpenseDialogController implements Initializable {
     @FXML private Label descriptionError;
     @FXML private TextField amountField;
     @FXML private Label amountError;
+    @FXML private TextField businessUseField;
+    @FXML private Label businessUseError;
+    @FXML private Label claimableAmountLabel;
     @FXML private ComboBox<ExpenseCategory> categoryField;
     @FXML private Label categoryError;
 
@@ -275,6 +280,15 @@ public class ExpenseDialogController implements Initializable {
         categoryField.valueProperty().bindBidirectional(viewModel.categoryProperty());
         deductibleCheckbox.selectedProperty().bindBidirectional(viewModel.deductibleProperty());
         notesField.textProperty().bindBidirectional(viewModel.notesProperty());
+        businessUseField.textProperty().bindBidirectional(viewModel.businessUsePercentageProperty());
+
+        // What the stated share works out to, so the claim is arithmetic the user can see rather
+        // than one they have to trust.
+        claimableAmountLabel.textProperty().bind(Bindings.createStringBinding(
+            () -> viewModel.getClaimableAmount() == null || viewModel.getClaimableAmount().isBlank()
+                ? ""
+                : Messages.format("expenseDialog.businessUse.claimable", viewModel.getClaimableAmount()),
+            viewModel.claimableAmountProperty()));
 
         // Error label visibility
         viewModel.dateErrorProperty().addListener((obs, oldVal, newVal) -> {
@@ -296,6 +310,13 @@ public class ExpenseDialogController implements Initializable {
             amountError.setText(newVal);
             amountError.setVisible(hasError);
             amountError.setManaged(hasError);
+        });
+
+        viewModel.businessUseErrorProperty().addListener((obs, oldVal, newVal) -> {
+            boolean hasError = newVal != null && !newVal.isEmpty();
+            businessUseError.setText(newVal);
+            businessUseError.setVisible(hasError);
+            businessUseError.setManaged(hasError);
         });
 
         viewModel.categoryErrorProperty().addListener((obs, oldVal, newVal) -> {

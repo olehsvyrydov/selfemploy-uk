@@ -37,14 +37,15 @@ public class SqliteExpenseService extends ExpenseService {
     @Override
     public Expense create(UUID businessId, LocalDate date, BigDecimal amount,
                           String description, ExpenseCategory category,
-                          String receiptPath, String notes) {
+                          String receiptPath, String notes, int businessUsePercentage) {
         validateBusinessId(businessId);
         validateDate(date);
         validateAmount(amount);
         validateDescription(description);
         validateCategory(category);
 
-        Expense expense = Expense.create(businessId, date, amount, description, category, receiptPath, notes);
+        Expense expense = Expense.create(businessId, date, amount, description, category, receiptPath, notes)
+                .withBusinessUsePercentage(businessUsePercentage);
         return repository.save(expense);
     }
 
@@ -91,6 +92,14 @@ public class SqliteExpenseService extends ExpenseService {
         );
 
         return repository.save(updatedExpense);
+    }
+
+    @Override
+    public Expense update(UUID id, LocalDate date, BigDecimal amount,
+                          String description, ExpenseCategory category,
+                          String receiptPath, String notes, int businessUsePercentage) {
+        return repository.save(update(id, date, amount, description, category, receiptPath, notes)
+                .withBusinessUsePercentage(businessUsePercentage));
     }
 
     @Override
