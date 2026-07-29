@@ -133,10 +133,6 @@ class ExpenseControllerTest {
         @Test
         @DisplayName("TC-EXP-003: should display what cannot be claimed")
         void shouldDisplayNonDeductibleTotal() {
-            // Given - the expenses themselves, because this figure is the spend in categories that
-            // cannot be claimed. Taking total minus deductible instead would count the private share
-            // of an apportioned expense as disallowed, and report money against a count of no
-            // non-deductible entries.
             LocalDate date = LocalDate.of(2025, 6, 10);
             when(expenseService.findByTaxYear(any(), any())).thenReturn(List.of(
                 Expense.create(UUID.randomUUID(), date, new BigDecimal("7980.00"), "Software",
@@ -150,7 +146,9 @@ class ExpenseControllerTest {
             viewModel.loadExpenses();
 
             // Then
-            assertThat(viewModel.getFormattedNonDeductibleTotal()).isEqualTo("£250.50");
+            assertThat(viewModel.getFormattedNonDeductibleTotal())
+                .as("the depreciation, which is money that cannot be deducted")
+                .isEqualTo("£250.50");
         }
 
         @Test

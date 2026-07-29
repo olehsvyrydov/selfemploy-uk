@@ -174,11 +174,17 @@ public class SqliteExpenseRepository implements ExpenseRepository {
     }
 
     /**
-     * Adds up the claimable share of each row: its amount times its business-use percentage.
+     * Adds up the claimable part of each row, as the expense itself defines it.
      *
      * <p>Each share is rounded to the penny before being added, so the total is the sum of the
-     * figures shown against the individual expenses. Apportioning the total instead would give a
-     * number that does not match its own breakdown.
+     * figures shown against the individual expenses; apportioning the total instead gives a number
+     * that does not match its own breakdown. Allowability is decided by the expense rather than by
+     * a category filter in SQL, because the database cannot see the business-use share and two
+     * places deciding one question is how they come to disagree.
+     *
+     * <p>A row that cannot be read - a blank amount, or a category written by a newer version - is
+     * skipped rather than thrown, so one bad row cannot take down the dashboard and the submission
+     * screen. The query this replaced behaved the same way.
      */
     private BigDecimal sumBusinessUseShares(PreparedStatement pstmt) throws SQLException {
         BigDecimal total = BigDecimal.ZERO;
@@ -187,10 +193,6 @@ public class SqliteExpenseRepository implements ExpenseRepository {
                 try {
                     total = total.add(mapExpense(rs).allowableAmount());
                 } catch (RuntimeException unreadableRow) {
-                    // A blank amount, or a category name this build does not know because the file
-                    // has been opened by a newer version. Skipping keeps the rest of the year's
-                    // total available; letting it out would take down the dashboard and the
-                    // submission screen over one bad row, which the previous query never did.
                     LOG.log(Level.WARNING, "Skipping an unreadable expense row while totalling",
                         unreadableRow);
                 }
@@ -237,9 +239,6 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }
-        // Every expense in the range, with the claimable part of each decided by the expense itself.
-        // Filtering allowable categories in SQL as well would put the same rule in two places, and
-        // the one in the database cannot see the business-use share.
         try (PreparedStatement pstmt = dataStore.connection()
                  .prepareStatement(SQL.get("findExpensesByBusinessAndDateRange"))) {
             pstmt.setString(1, businessId.toString());
@@ -260,8 +259,7 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         return findByTaxYear(taxYear).stream()
             .collect(Collectors.groupingBy(
                 Expense::category,
-                // The claimable share: these totals feed the Tax Summary and the SA103 breakdown.
-                Collectors.reducing(BigDecimal.ZERO, Expense::allowableAmount, BigDecimal::add)
+                        Collectors.reducing(BigDecimal.ZERO, Expense::allowableAmount, BigDecimal::add)
             ));
     }
 

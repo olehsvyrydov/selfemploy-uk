@@ -97,9 +97,6 @@ class BusinessUseApportionmentTest {
     @Test
     @DisplayName("the total is the sum of the rounded shares, so it matches its own breakdown")
     void theTotalMatchesItsBreakdown() {
-        // Each of these apportions to 3.3033, which shows as 3.30 against the expense. Three of them
-        // total 9.90. Apportioning the summed 30.03 instead would give 9.91 - a total that does not
-        // add up from the figures beside it.
         for (int i = 0; i < 3; i++) {
             expenses.save(Expense.create(businessId, WITHIN, new BigDecimal("10.01"),
                     "Shared cost " + i, ExpenseCategory.OFFICE_COSTS, null, null)
@@ -107,6 +104,7 @@ class BusinessUseApportionmentTest {
         }
 
         assertThat(expenses.getAllowableTotalByTaxYear(TAX_YEAR))
+                .as("three shares of 3.30, not one apportionment of the 30.03 total, which is 9.91")
                 .isEqualByComparingTo(new BigDecimal("9.90"));
     }
 
@@ -116,7 +114,6 @@ class BusinessUseApportionmentTest {
         SqliteExpenseService service = new SqliteExpenseService(businessId);
         Expense saved = expenses.save(phoneBill("60.00", 60));
 
-        // Correcting the description is the commonest edit there is.
         Expense edited = service.update(saved.id(), saved.date(), saved.amount(),
                 "Phone bill - corrected", saved.category(), null, null);
 
@@ -129,9 +126,6 @@ class BusinessUseApportionmentTest {
     @Test
     @DisplayName("the category breakdown apportions too, so the screens cannot disagree")
     void theCategoryBreakdownApportions() {
-        // The Tax Summary builds its allowable figure from this breakdown while the Dashboard uses
-        // the total. If only one of them apportioned, the two screens would report different tax on
-        // the same year.
         expenses.save(phoneBill("60.00", 60));
 
         assertThat(expenses.getTotalsByCategoryForTaxYear(TAX_YEAR))
@@ -145,8 +139,6 @@ class BusinessUseApportionmentTest {
     @Test
     @DisplayName("the in-memory store answers the same as the database one")
     void bothImplementationsAgree() {
-        // The consistency tests that prove the Dashboard and Tax Summary agree run on the in-memory
-        // double. If it did not apportion, those tests could pass while the shipped figures diverged.
         InMemoryExpenseRepository inMemory = new InMemoryExpenseRepository();
         Expense apportioned = phoneBill("60.00", 60);
         Expense whole = Expense.create(businessId, WITHIN, new BigDecimal("40.00"), "Stationery",

@@ -282,8 +282,6 @@ public class ExpenseDialogController implements Initializable {
         notesField.textProperty().bindBidirectional(viewModel.notesProperty());
         businessUseField.textProperty().bindBidirectional(viewModel.businessUsePercentageProperty());
 
-        // What the stated share works out to, so the claim is arithmetic the user can see rather
-        // than one they have to trust.
         claimableAmountLabel.textProperty().bind(Bindings.createStringBinding(
             () -> viewModel.getClaimableAmount() == null || viewModel.getClaimableAmount().isBlank()
                 ? ""

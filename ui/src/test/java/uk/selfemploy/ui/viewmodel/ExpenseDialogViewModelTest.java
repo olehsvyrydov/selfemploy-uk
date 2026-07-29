@@ -514,10 +514,8 @@ class ExpenseDialogViewModelTest {
         }
 
         @Test
-        @DisplayName("a date the form has not accepted does not break the preview")
+        @DisplayName("a date the form has not accepted yet does not break the preview")
         void aFutureDateDoesNotThrow() {
-            // The date property holds whatever is typed; only validation flags it. Building an
-            // Expense from it would throw out of a property listener and freeze the dialog.
             viewModel.setDate(LocalDate.now().plusYears(1));
             viewModel.setDescription("Post-dated invoice");
             viewModel.setAmount("60.00");

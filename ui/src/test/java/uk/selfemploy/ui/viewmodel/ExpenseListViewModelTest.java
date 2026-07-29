@@ -144,11 +144,9 @@ class ExpenseListViewModelTest {
             // Then
             assertThat(viewModel.getTotalExpenses()).isEqualByComparingTo(new BigDecimal("350.00"));
             assertThat(viewModel.getDeductibleTotal()).isEqualByComparingTo(new BigDecimal("300.00"));
-            // The 250.00 depreciation, which is the only expense here in a category that cannot be
-            // claimed. Not total minus deductible: that subtraction would count the private share of
-            // an apportioned expense as though it were disallowed spending, and the stubbed totals
-            // above do not describe this sample anyway.
-            assertThat(viewModel.getNonDeductibleTotal()).isEqualByComparingTo(new BigDecimal("250.00"));
+            assertThat(viewModel.getNonDeductibleTotal())
+                .as("everything not claimed: 350.00 recorded less the 300.00 that is deductible")
+                .isEqualByComparingTo(new BigDecimal("50.00"));
         }
 
         @Test

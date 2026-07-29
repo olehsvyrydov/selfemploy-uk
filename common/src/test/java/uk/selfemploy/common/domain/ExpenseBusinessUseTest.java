@@ -51,22 +51,24 @@ class ExpenseBusinessUseTest {
     @Test
     @DisplayName("a share that does not divide evenly is rounded to the penny, half up")
     void roundsToThePenny() {
-        // 33% of 10.00 is 3.30 exactly; 33% of 10.01 is 3.3033, which has to become a penny amount.
-        assertThat(of("10.01", 33).allowableAmount()).isEqualByComparingTo(new BigDecimal("3.30"));
-        // 3.335 rounds up, not to even.
-        assertThat(of("6.67", 50).allowableAmount()).isEqualByComparingTo(new BigDecimal("3.34"));
+        assertThat(of("10.01", 33).allowableAmount())
+                .as("33%% of 10.01 is 3.3033, and a claim has to be a real number of pence")
+                .isEqualByComparingTo(new BigDecimal("3.30"));
+        assertThat(of("6.67", 50).allowableAmount())
+                .as("3.335 rounds up, not to even")
+                .isEqualByComparingTo(new BigDecimal("3.34"));
     }
 
     @Test
     @DisplayName("a wholly-business amount is not rounded, so adding the column changes no total")
     void aWhollyBusinessAmountIsUntouched() {
-        // An amount can carry more than two decimals: bank and JSON imports parse whatever the file
-        // holds. Rounding it here would change an allowable total that was correct before the
-        // business-use column existed - including for a year already filed.
         Expense threeDecimals = Expense.create(BUSINESS, DATE, new BigDecimal("10.005"), "Imported",
                 ExpenseCategory.OFFICE_COSTS, null, null);
 
-        assertThat(threeDecimals.allowableAmount()).isEqualByComparingTo(new BigDecimal("10.005"));
+        assertThat(threeDecimals.allowableAmount())
+                .as("imports carry whatever precision the file holds; rounding it would move a total "
+                    + "that was right before this column existed")
+                .isEqualByComparingTo(new BigDecimal("10.005"));
         assertThat(threeDecimals.allowableAmount()).isEqualTo(threeDecimals.amount());
     }
 

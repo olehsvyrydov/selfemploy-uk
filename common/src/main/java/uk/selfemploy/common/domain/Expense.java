@@ -93,9 +93,6 @@ public record Expense(
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
         if (businessUsePercentage == FULLY_BUSINESS) {
-            // Returned untouched rather than multiplied by 100 and divided again. Rounding here
-            // would change the totals of every expense already recorded, including for a year
-            // already filed, purely because the column was added.
             return amount;
         }
         return amount

@@ -8,6 +8,7 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.ui.i18n.Messages;
+import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.core.service.ReceiptMetadata;
 import uk.selfemploy.core.service.ReceiptStorageException;
 import uk.selfemploy.core.service.ReceiptStorageService;
@@ -48,13 +49,10 @@ public class ExpenseDialogViewModel {
     private final BooleanProperty deductible = new SimpleBooleanProperty(true);
     private final StringProperty notes = new SimpleStringProperty("");
 
-    private static final java.text.NumberFormat CURRENCY_FORMAT =
-        java.text.NumberFormat.getCurrencyInstance(java.util.Locale.UK);
-
     /** The share the user says is business use, 0 to 100. Most expenses are wholly business. */
     private final StringProperty businessUsePercentage =
         new SimpleStringProperty(String.valueOf(Expense.FULLY_BUSINESS));
-    /** What that share works out to, shown so the claim is arithmetic the user can see. */
+    /** What the share works out to, so the claim is arithmetic the user can see. */
     private final StringProperty claimableAmount = new SimpleStringProperty("");
     private final StringProperty businessUseError = new SimpleStringProperty("");
 
@@ -118,8 +116,6 @@ public class ExpenseDialogViewModel {
             if (!ignoreChanges) dirty.set(true);
             onCategoryChanged(newVal);
             validateCategory();
-            // The claimable figure depends on the category as well as the share: a capital purchase
-            // claims nothing however the share is set.
             updateClaimableAmount();
             validateForm();
         });
@@ -264,7 +260,6 @@ public class ExpenseDialogViewModel {
             valid = false;
         }
 
-        // Business-use share
         if (parseBusinessUsePercentage() == null) {
             valid = false;
         }
@@ -300,8 +295,10 @@ public class ExpenseDialogViewModel {
      * Recalculates what would actually be claimed.
      *
      * <p>Built from a real {@link Expense} rather than repeating the arithmetic, so the figure shown
-     * here is the one that reaches the totals and the return - including zero for a category that
-     * cannot be claimed at all.
+     * is the one that reaches the totals and the return - including zero for a category that cannot
+     * be claimed at all. It is dated today rather than from the form, because the claim does not
+     * depend on the date and an expense refuses a future one: a user part-way through entering a
+     * post-dated invoice would otherwise throw from inside a property listener.
      */
     private void updateClaimableAmount() {
         Integer share = parseBusinessUsePercentage();
@@ -310,13 +307,10 @@ public class ExpenseDialogViewModel {
             claimableAmount.set("");
             return;
         }
-        // Today's date, not the one being typed: the claim does not depend on the date, and Expense
-        // rejects a future one - which a user entering a post-dated invoice has on screen while they
-        // are still filling the form. Throwing out of a property listener would freeze the dialog.
         Expense candidate = Expense.create(businessId != null ? businessId : UUID.randomUUID(),
                 LocalDate.now(), new BigDecimal(amount.get()), "preview",
                 cat, null, null).withBusinessUsePercentage(share);
-        claimableAmount.set(CURRENCY_FORMAT.format(candidate.allowableAmount()));
+        claimableAmount.set(Money.format(candidate.allowableAmount()));
     }
 
     private void validateDate() {

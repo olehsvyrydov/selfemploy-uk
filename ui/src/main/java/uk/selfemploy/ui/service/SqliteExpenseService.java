@@ -86,8 +86,6 @@ public class SqliteExpenseService extends ExpenseService {
                 existingExpense.supplierRef(),
                 existingExpense.invoiceNumber(),
                 existingExpense.bankTransactionId(),
-                // Carried, not defaulted: an edit that says nothing about the business-use share
-                // must not turn a partial claim into a whole one.
                 existingExpense.businessUsePercentage()
         );
 

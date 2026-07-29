@@ -40,8 +40,6 @@ class BusinessUseRoundTripTest {
     }
 
     private static String exportedExpense(Expense expense) {
-        // The export writes the same map for every expense; building it directly keeps this test on
-        // the mapping rather than on file plumbing.
         return """
             {"metadata":{"appVersion":"1.0"},"incomes":[],"expenses":[
               {"id":"%s","date":"%s","amount":"%s","description":"%s","category":"%s",
@@ -72,9 +70,6 @@ class BusinessUseRoundTripTest {
     @Test
     @DisplayName("restoring a backup writes the share, not just reads it")
     void restoringKeepsTheShare() {
-        // The previous version of this test only checked the preview parser. The path that actually
-        // writes records is a different method, and it was still discarding the share - so a restore
-        // claimed the whole of every partial expense while this suite stayed green.
         Expense phoneBill = Expense.create(BUSINESS, DATE, new BigDecimal("60.00"), "Phone bill",
                 ExpenseCategory.OFFICE_COSTS, null, null).withBusinessUsePercentage(60);
         ExpenseService expenseService = mock(ExpenseService.class);

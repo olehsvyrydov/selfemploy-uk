@@ -109,7 +109,6 @@ final class ExpenseServiceTestSupport {
                     existingExpense.supplierRef(),
                     existingExpense.invoiceNumber(),
                     existingExpense.bankTransactionId(),
-                    // Carried, so an edit does not turn a partial claim into a whole one.
                     existingExpense.businessUsePercentage()
             );
 
