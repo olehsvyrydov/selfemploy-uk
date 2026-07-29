@@ -153,14 +153,21 @@ public class SqliteIncomeRepository implements IncomeRepository {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }
         try (PreparedStatement pstmt =
-                 dataStore.connection().prepareStatement(SQL.get("sumIncomeByBusinessAndDateRange"))) {
+                 dataStore.connection()
+                     .prepareStatement(SQL.get("selectIncomeAmountsByBusinessAndDateRange"))) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, startDate.toString());
             pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
+            BigDecimal total = BigDecimal.ZERO;
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String amount = rs.getString(1);
+                    if (amount != null && !amount.isBlank()) {
+                        total = total.add(new BigDecimal(amount));
+                    }
+                }
             }
+            return total;
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to calculate total income", e);
         }

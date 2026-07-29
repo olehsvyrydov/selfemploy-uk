@@ -139,6 +139,27 @@ public class SqliteExpenseRepository implements ExpenseRepository {
             .collect(Collectors.toList());
     }
 
+    /**
+     * Adds up an amount-per-row result exactly.
+     *
+     * <p>The amounts are stored as text because SQLite has no decimal type. Letting SQLite add them
+     * up coerces them to floating point, where three amounts of 10.10 come to 30.299999999999997 and
+     * the error grows with the number of records. These are the figures a tax return is built from,
+     * so they are added in {@link BigDecimal}.
+     */
+    private static BigDecimal sumAmounts(PreparedStatement pstmt) throws SQLException {
+        BigDecimal total = BigDecimal.ZERO;
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                String amount = rs.getString(1);
+                if (amount != null && !amount.isBlank()) {
+                    total = total.add(new BigDecimal(amount));
+                }
+            }
+        }
+        return total;
+    }
+
     @Override
     public BigDecimal getTotalByTaxYear(TaxYear taxYear) {
         if (taxYear == null) {
@@ -152,15 +173,12 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }
-        try (PreparedStatement pstmt =
-                 dataStore.connection().prepareStatement(SQL.get("sumExpensesByBusinessAndDateRange"))) {
+        try (PreparedStatement pstmt = dataStore.connection()
+                 .prepareStatement(SQL.get("selectExpenseAmountsByBusinessAndDateRange"))) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, startDate.toString());
             pstmt.setString(3, endDate.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
+            return sumAmounts(pstmt);
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to calculate total expenses", e);
         }
@@ -189,7 +207,8 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         }
 
         String placeholders = allowableCategories.stream().map(c -> "?").collect(Collectors.joining(","));
-        String sql = String.format(SQL.get("sumAllowableExpensesByBusinessAndDateRange"), placeholders);
+        String sql = String.format(
+            SQL.get("selectAllowableExpenseAmountsByBusinessAndDateRange"), placeholders);
         try (PreparedStatement pstmt = dataStore.connection().prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, startDate.toString());
@@ -198,10 +217,7 @@ public class SqliteExpenseRepository implements ExpenseRepository {
             for (String category : allowableCategories) {
                 pstmt.setString(idx++, category);
             }
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new BigDecimal(rs.getString(1));
-            }
+            return sumAmounts(pstmt);
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
         }
