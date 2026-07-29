@@ -104,15 +104,38 @@ class MoneyTotalsAreExactTest {
     @Test
     @DisplayName("a year of small amounts does not drift")
     void manyRecordsDoNotDrift() {
-        // 365 daily amounts of 0.07: the kind of volume a bank import produces, and an amount with
-        // no exact binary form.
-        for (int i = 0; i < 365; i++) {
-            expenses.save(Expense.create(businessId, WITHIN, new BigDecimal("0.07"),
-                    "Daily " + i, ExpenseCategory.OFFICE_COSTS, null, null));
+        // One 0.07 on every day of the tax year: the volume a bank import produces, at an amount
+        // with no exact binary form. Dated day by day from 6 April so the last falls on 5 April,
+        // which also holds the range filter to the year's boundaries.
+        LocalDate day = TAX_YEAR.startDate();
+        int days = 0;
+        while (!day.isAfter(TAX_YEAR.endDate())) {
+            expenses.save(Expense.create(businessId, day, new BigDecimal("0.07"),
+                    "Daily " + days, ExpenseCategory.OFFICE_COSTS, null, null));
+            day = day.plusDays(1);
+            days++;
         }
 
+        assertThat(days).as("6 April to 5 April inclusive").isEqualTo(365);
         assertThat(expenses.getAllowableTotalByTaxYear(TAX_YEAR))
                 .as("365 x 0.07 is 25.55 exactly")
                 .isEqualByComparingTo(new BigDecimal("25.55"));
+    }
+
+    @Test
+    @DisplayName("amounts outside the tax year are left out of it")
+    void amountsOutsideTheYearAreExcluded() {
+        expenses.save(Expense.create(businessId, TAX_YEAR.startDate().minusDays(1),
+                new BigDecimal("100.00"), "Last year", ExpenseCategory.OFFICE_COSTS, null, null));
+        expenses.save(Expense.create(businessId, TAX_YEAR.startDate(), new BigDecimal("10.10"),
+                "First day", ExpenseCategory.OFFICE_COSTS, null, null));
+        expenses.save(Expense.create(businessId, TAX_YEAR.endDate(), new BigDecimal("10.10"),
+                "Last day", ExpenseCategory.OFFICE_COSTS, null, null));
+        expenses.save(Expense.create(businessId, TAX_YEAR.endDate().plusDays(1),
+                new BigDecimal("100.00"), "Next year", ExpenseCategory.OFFICE_COSTS, null, null));
+
+        assertThat(expenses.getAllowableTotalByTaxYear(TAX_YEAR))
+                .as("both boundary days count, and neither neighbour does")
+                .isEqualByComparingTo(new BigDecimal("20.20"));
     }
 }
