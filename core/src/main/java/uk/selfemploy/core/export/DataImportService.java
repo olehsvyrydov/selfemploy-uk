@@ -472,8 +472,15 @@ public class DataImportService {
             ? expense.get("supplierRef").asText() : null;
         String invoiceNumber = expense.has("invoiceNumber") && !expense.get("invoiceNumber").isNull()
             ? expense.get("invoiceNumber").asText() : null;
+        // A file written before expenses could be apportioned has no share in it, and every expense
+        // in it meant the whole amount - the same reading the database migration takes.
+        int businessUsePercentage = expense.has("businessUsePercentage")
+                && !expense.get("businessUsePercentage").isNull()
+            ? expense.get("businessUsePercentage").asInt(Expense.FULLY_BUSINESS)
+            : Expense.FULLY_BUSINESS;
+
         return new Expense(UUID.randomUUID(), placeholderBusinessId, date, amount, description, category, null, notes,
-            bankTransactionRef, supplierRef, invoiceNumber, null);
+            bankTransactionRef, supplierRef, invoiceNumber, null, businessUsePercentage);
     }
 
     /**

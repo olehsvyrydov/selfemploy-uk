@@ -54,6 +54,10 @@ public class ExpenseEntity {
     @Column(name = "bank_transaction_id")
     private UUID bankTransactionId;
 
+    /** The share of the expense that is business use; 100 unless the user stated otherwise. */
+    @Column(name = "business_use_pct", nullable = false)
+    private int businessUsePercentage = Expense.FULLY_BUSINESS;
+
     // Soft delete support (Sprint 10B)
     @Column(name = "deleted_at")
     private Instant deletedAt;
@@ -84,6 +88,7 @@ public class ExpenseEntity {
         entity.supplierRef = expense.supplierRef();
         entity.invoiceNumber = expense.invoiceNumber();
         entity.bankTransactionId = expense.bankTransactionId();
+        entity.businessUsePercentage = expense.businessUsePercentage();
         return entity;
     }
 
@@ -91,9 +96,6 @@ public class ExpenseEntity {
      * Converts this entity to a domain Expense.
      */
     public Expense toDomain() {
-        // No business-use share here: this entity belongs to the dormant server stack and its table
-        // has no column for one, so every expense it maps back is wholly business. Add the column
-        // before reviving this path, or partial claims will silently become whole ones.
         return new Expense(
             id,
             businessId,
@@ -106,7 +108,8 @@ public class ExpenseEntity {
             bankTransactionRef,
             supplierRef,
             invoiceNumber,
-            bankTransactionId
+            bankTransactionId,
+            businessUsePercentage
         );
     }
 

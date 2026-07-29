@@ -6,7 +6,11 @@ package uk.selfemploy.common.enums;
  * These categories map directly to the Self-Employment (Full) SA103F
  * supplementary pages of the Self Assessment tax return.
  *
- * <p>Box numbers correspond to SA103F 2024-25 (boxes 17-30 for expenses).</p>
+ * <p>Box numbers correspond to SA103F 2024-25: boxes 17-30 for expenses, and 49-52 for categories
+ * that are claimed as capital allowances rather than deducted as expenses. A box number records
+ * where the cost belongs on the form, not that this app has put it there — capital allowances are
+ * not calculated here, and a category carrying one of those boxes reports {@code false} from
+ * {@link #isAllowable()} so it never reaches an expense total.</p>
  *
  * @see <a href="https://www.gov.uk/government/publications/self-assessment-self-employment-full-sa103f">HMRC SA103F</a>
  */

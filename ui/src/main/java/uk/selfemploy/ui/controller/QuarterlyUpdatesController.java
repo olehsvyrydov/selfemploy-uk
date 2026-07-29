@@ -815,8 +815,10 @@ public class QuarterlyUpdatesController implements Initializable, MainController
                     .collect(Collectors.groupingBy(Expense::category));
 
             for (Map.Entry<ExpenseCategory, List<Expense>> entry : grouped.entrySet()) {
+                // The claimable share, not the whole bill: this figure is filed to HMRC, so a phone
+                // bill the user marked 60% business must be declared at 60%.
                 BigDecimal categoryTotal = entry.getValue().stream()
-                        .map(Expense::amount)
+                        .map(Expense::allowableAmount)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 int categoryCount = entry.getValue().size();
                 expensesByCategory.put(entry.getKey(), new CategorySummary(categoryTotal, categoryCount));

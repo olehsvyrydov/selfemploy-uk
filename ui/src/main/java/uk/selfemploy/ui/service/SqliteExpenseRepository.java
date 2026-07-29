@@ -180,23 +180,15 @@ public class SqliteExpenseRepository implements ExpenseRepository {
      * figures shown against the individual expenses. Apportioning the total instead would give a
      * number that does not match its own breakdown.
      */
-    private static BigDecimal sumBusinessUseShares(PreparedStatement pstmt) throws SQLException {
+    private BigDecimal sumBusinessUseShares(PreparedStatement pstmt) throws SQLException {
         BigDecimal total = BigDecimal.ZERO;
         try (ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
-                String amount = rs.getString("amount");
-                if (amount == null || amount.isBlank()) {
-                    continue;
-                }
-                total = total.add(new BigDecimal(amount)
-                    .multiply(BigDecimal.valueOf(rs.getInt("business_use_pct")))
-                    .divide(HUNDRED, 2, RoundingMode.HALF_UP));
+                total = total.add(mapExpense(rs).allowableAmount());
             }
         }
         return total;
     }
-
-    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     @Override
     public BigDecimal getTotalByTaxYear(TaxYear taxYear) {
@@ -236,25 +228,14 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }
-        List<String> allowableCategories = Arrays.stream(ExpenseCategory.values())
-            .filter(ExpenseCategory::isAllowable)
-            .map(Enum::name)
-            .toList();
-        if (allowableCategories.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        String placeholders = allowableCategories.stream().map(c -> "?").collect(Collectors.joining(","));
-        String sql = String.format(
-            SQL.get("selectAllowableExpenseSharesByBusinessAndDateRange"), placeholders);
-        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(sql)) {
+        // Every expense in the range, with the claimable part of each decided by the expense itself.
+        // Filtering allowable categories in SQL as well would put the same rule in two places, and
+        // the one in the database cannot see the business-use share.
+        try (PreparedStatement pstmt = dataStore.connection()
+                 .prepareStatement(SQL.get("findExpensesByBusinessAndDateRange"))) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, startDate.toString());
             pstmt.setString(3, endDate.toString());
-            int idx = 4;
-            for (String category : allowableCategories) {
-                pstmt.setString(idx++, category);
-            }
             return sumBusinessUseShares(pstmt);
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
@@ -270,7 +251,8 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         return findByTaxYear(taxYear).stream()
             .collect(Collectors.groupingBy(
                 Expense::category,
-                Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
+                // The claimable share: these totals feed the Tax Summary and the SA103 breakdown.
+                Collectors.reducing(BigDecimal.ZERO, Expense::allowableAmount, BigDecimal::add)
             ));
     }
 

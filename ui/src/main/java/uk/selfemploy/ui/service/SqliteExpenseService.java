@@ -199,7 +199,7 @@ public class SqliteExpenseService extends ExpenseService {
         return expenses.stream()
                 .collect(Collectors.groupingBy(
                         Expense::category,
-                        Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
+                        Collectors.reducing(BigDecimal.ZERO, Expense::allowableAmount, BigDecimal::add)
                 ));
     }
 

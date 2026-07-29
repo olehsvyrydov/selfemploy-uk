@@ -612,8 +612,11 @@ class ExpenseDialogControllerTest {
 
             var categories = viewModel.getAvailableCategories();
 
-            // Every category except the CIS-only one.
-            assertThat(categories).hasSize(ExpenseCategory.values().length - 1);
+            // Counted deliberately, not derived from ExpenseCategory.values(): the list under test
+            // is built from that enum, so deriving the expectation from it too would assert nothing.
+            // Adding a category should make someone look at this number and decide whether it
+            // belongs in front of users.
+            assertThat(categories).hasSize(17);
             assertThat(categories).contains(
                 ExpenseCategory.COST_OF_GOODS,
                 ExpenseCategory.STAFF_COSTS,
@@ -642,7 +645,7 @@ class ExpenseDialogControllerTest {
 
             var categories = viewModel.getAvailableCategories();
 
-            assertThat(categories).hasSize(ExpenseCategory.values().length);
+            assertThat(categories).hasSize(18);
             assertThat(categories).containsExactlyInAnyOrder(ExpenseCategory.values());
         }
 

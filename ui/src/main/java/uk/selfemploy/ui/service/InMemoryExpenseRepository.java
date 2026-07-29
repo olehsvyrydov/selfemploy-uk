@@ -81,9 +81,10 @@ public class InMemoryExpenseRepository {
      * Calculates total allowable expenses for a business within a date range.
      */
     public BigDecimal calculateAllowableTotalForDateRange(UUID businessId, LocalDate startDate, LocalDate endDate) {
+        // allowableAmount already answers zero for a category that is not allowable and applies the
+        // business-use share, so this must agree with the SQLite repository figure for the same data.
         return findByDateRange(businessId, startDate, endDate).stream()
-            .filter(Expense::isAllowable)
-            .map(Expense::amount)
+            .map(Expense::allowableAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
@@ -94,7 +95,7 @@ public class InMemoryExpenseRepository {
         return findByDateRange(businessId, startDate, endDate).stream()
             .collect(Collectors.groupingBy(
                 Expense::category,
-                Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
+                Collectors.reducing(BigDecimal.ZERO, Expense::allowableAmount, BigDecimal::add)
             ));
     }
 

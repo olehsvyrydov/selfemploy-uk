@@ -127,6 +127,44 @@ class BusinessUseApportionmentTest {
     }
 
     @Test
+    @DisplayName("the category breakdown apportions too, so the screens cannot disagree")
+    void theCategoryBreakdownApportions() {
+        // The Tax Summary builds its allowable figure from this breakdown while the Dashboard uses
+        // the total. If only one of them apportioned, the two screens would report different tax on
+        // the same year.
+        expenses.save(phoneBill("60.00", 60));
+
+        assertThat(expenses.getTotalsByCategoryForTaxYear(TAX_YEAR))
+                .containsEntry(ExpenseCategory.OFFICE_COSTS, new BigDecimal("36.00"));
+        assertThat(expenses.getTotalsByCategoryForTaxYear(TAX_YEAR).values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .as("the breakdown adds up to the same allowable total")
+                .isEqualByComparingTo(expenses.getAllowableTotalByTaxYear(TAX_YEAR));
+    }
+
+    @Test
+    @DisplayName("the in-memory store answers the same as the database one")
+    void bothImplementationsAgree() {
+        // The consistency tests that prove the Dashboard and Tax Summary agree run on the in-memory
+        // double. If it did not apportion, those tests could pass while the shipped figures diverged.
+        InMemoryExpenseRepository inMemory = new InMemoryExpenseRepository();
+        Expense apportioned = phoneBill("60.00", 60);
+        Expense whole = Expense.create(businessId, WITHIN, new BigDecimal("40.00"), "Stationery",
+                ExpenseCategory.OFFICE_COSTS, null, null);
+        Expense laptop = Expense.create(businessId, WITHIN, new BigDecimal("899.00"), "Laptop",
+                ExpenseCategory.EQUIPMENT_CAPITAL, null, null);
+
+        for (Expense expense : java.util.List.of(apportioned, whole, laptop)) {
+            expenses.save(expense);
+            inMemory.save(expense);
+        }
+
+        assertThat(inMemory.calculateAllowableTotalForDateRange(
+                businessId, TAX_YEAR.startDate(), TAX_YEAR.endDate()))
+                .isEqualByComparingTo(expenses.getAllowableTotalByTaxYear(TAX_YEAR));
+    }
+
+    @Test
     @DisplayName("equipment is recorded but not claimed as an expense")
     void equipmentIsKeptOutOfTheAllowableTotal() {
         expenses.save(Expense.create(businessId, WITHIN, new BigDecimal("899.00"),

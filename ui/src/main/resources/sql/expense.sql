@@ -21,12 +21,6 @@ SELECT * FROM expenses WHERE business_id = ? AND date >= ? AND date <= ? ORDER B
 SELECT amount FROM expenses
 WHERE business_id = ? AND date >= ? AND date <= ?;
 
--- name: selectAllowableExpenseSharesByBusinessAndDateRange
--- Amount and business-use share per row. The claimable part of each is worked out and rounded in
--- Java, so the total matches the figures shown against the individual expenses.
-SELECT amount, business_use_pct FROM expenses
-WHERE business_id = ? AND date >= ? AND date <= ? AND category IN (%s);
-
 -- name: deleteExpenseById
 DELETE FROM expenses WHERE id = ?;
 

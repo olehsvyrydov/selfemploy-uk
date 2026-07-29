@@ -365,6 +365,10 @@ public class DataExportService {
         map.put("category", expense.category().name());
         map.put("sa103Box", expense.category().getSa103Box());
         map.put("allowable", expense.category().isAllowable());
+        // Without these two the file cannot describe a partial claim, and re-importing it would turn
+        // a 60% phone bill back into a whole one.
+        map.put("businessUsePercentage", expense.businessUsePercentage());
+        map.put("allowableAmount", expense.allowableAmount().toPlainString());
         map.put("receiptPath", expense.receiptPath());
         map.put("notes", expense.notes());
         return map;

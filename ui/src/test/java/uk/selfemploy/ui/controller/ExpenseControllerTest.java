@@ -131,17 +131,25 @@ class ExpenseControllerTest {
         }
 
         @Test
-        @DisplayName("TC-EXP-003: should display non-deductible total as calculated difference")
+        @DisplayName("TC-EXP-003: should display what cannot be claimed")
         void shouldDisplayNonDeductibleTotal() {
-            // Given
-            when(expenseService.findByTaxYear(any(), any())).thenReturn(List.of());
+            // Given - the expenses themselves, because this figure is the spend in categories that
+            // cannot be claimed. Taking total minus deductible instead would count the private share
+            // of an apportioned expense as disallowed, and report money against a count of no
+            // non-deductible entries.
+            LocalDate date = LocalDate.of(2025, 6, 10);
+            when(expenseService.findByTaxYear(any(), any())).thenReturn(List.of(
+                Expense.create(UUID.randomUUID(), date, new BigDecimal("7980.00"), "Software",
+                    ExpenseCategory.OFFICE_COSTS, null, null),
+                Expense.create(UUID.randomUUID(), date, new BigDecimal("250.50"), "Depreciation",
+                    ExpenseCategory.DEPRECIATION, null, null)));
             when(expenseService.getTotalByTaxYear(any(), any())).thenReturn(new BigDecimal("8230.50"));
             when(expenseService.getDeductibleTotal(any(), any())).thenReturn(new BigDecimal("7980.00"));
 
             // When
             viewModel.loadExpenses();
 
-            // Then - non-deductible = total - deductible
+            // Then
             assertThat(viewModel.getFormattedNonDeductibleTotal()).isEqualTo("£250.50");
         }
 

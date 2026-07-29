@@ -58,6 +58,19 @@ class ExpenseBusinessUseTest {
     }
 
     @Test
+    @DisplayName("a wholly-business amount is not rounded, so adding the column changes no total")
+    void aWhollyBusinessAmountIsUntouched() {
+        // An amount can carry more than two decimals: bank and JSON imports parse whatever the file
+        // holds. Rounding it here would change an allowable total that was correct before the
+        // business-use column existed - including for a year already filed.
+        Expense threeDecimals = Expense.create(BUSINESS, DATE, new BigDecimal("10.005"), "Imported",
+                ExpenseCategory.OFFICE_COSTS, null, null);
+
+        assertThat(threeDecimals.allowableAmount()).isEqualByComparingTo(new BigDecimal("10.005"));
+        assertThat(threeDecimals.allowableAmount()).isEqualTo(threeDecimals.amount());
+    }
+
+    @Test
     @DisplayName("nothing is claimable at nought percent")
     void zeroPercentClaimsNothing() {
         assertThat(of("60.00", 0).allowableAmount()).isEqualByComparingTo(BigDecimal.ZERO);
