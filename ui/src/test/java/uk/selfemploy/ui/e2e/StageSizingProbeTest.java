@@ -47,5 +47,10 @@ class StageSizingProbeTest {
         report("in test body");
         stage.setWidth(840);
         report("after asking for 840");
+
+        stage.setMinWidth(0);
+        report("after clearing minWidth");
+        stage.setWidth(700);
+        report("after clearing minWidth and asking for 700");
     }
 }
