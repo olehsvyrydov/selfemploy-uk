@@ -424,6 +424,18 @@ public class ExpenseDialogViewModel {
                 "Depreciation is not an allowable expense for tax purposes. Consider using Capital Allowances instead (SA103 Box 29)",
                 List.of("Use Annual Investment Allowance for equipment", "Consider capital allowances for vehicles", "Records kept for accounting purposes only")
             );
+            case EQUIPMENT_CAPITAL -> new CategoryHelpContent(
+                "Equipment and Capital Purchases",
+                "Equipment you keep and use in the business — a laptop, tools, machinery — is not "
+                    + "claimed in the expense boxes. It is claimed as a capital allowance, usually the "
+                    + "Annual Investment Allowance, which for most sole traders covers the full cost in "
+                    + "the year of purchase (SA103 boxes 49-52)",
+                List.of(
+                    "Recorded here, and left out of your allowable expenses total",
+                    "This app does not calculate capital allowances yet",
+                    "Keep the invoice: the claim is made on the return itself",
+                    "Repairs to equipment you already own are an ordinary expense — use Repairs")
+            );
             case OTHER_EXPENSES -> new CategoryHelpContent(
                 "Other Business Expenses",
                 "Other allowable business expenses not covered elsewhere (SA103 Box 30)",

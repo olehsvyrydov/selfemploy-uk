@@ -6,6 +6,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.ui.service.sql.NamedSql;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,11 +38,22 @@ public class SqliteExpenseRepository implements ExpenseRepository {
     private final UUID businessId;
 
     public SqliteExpenseRepository(UUID businessId) {
+        this(businessId, SqliteDataStore.getInstance());
+    }
+
+    /**
+     * Test seam: binds the repository to an explicit store rather than the singleton, so a real
+     * database file can be opened and read back.
+     */
+    SqliteExpenseRepository(UUID businessId, SqliteDataStore dataStore) {
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
+        if (dataStore == null) {
+            throw new IllegalArgumentException("Data store cannot be null");
+        }
         this.businessId = businessId;
-        this.dataStore = SqliteDataStore.getInstance();
+        this.dataStore = dataStore;
         dataStore.ensureBusinessExists(businessId);
     }
 
@@ -59,6 +71,7 @@ public class SqliteExpenseRepository implements ExpenseRepository {
             pstmt.setString(6, expense.category().name());
             pstmt.setString(7, expense.receiptPath());
             pstmt.setString(8, expense.notes());
+            pstmt.setInt(9, expense.businessUsePercentage());
             pstmt.executeUpdate();
             LOG.fine("Saved expense: " + expense.id());
         } catch (SQLException e) {
@@ -160,6 +173,31 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         return total;
     }
 
+    /**
+     * Adds up the claimable share of each row: its amount times its business-use percentage.
+     *
+     * <p>Each share is rounded to the penny before being added, so the total is the sum of the
+     * figures shown against the individual expenses. Apportioning the total instead would give a
+     * number that does not match its own breakdown.
+     */
+    private static BigDecimal sumBusinessUseShares(PreparedStatement pstmt) throws SQLException {
+        BigDecimal total = BigDecimal.ZERO;
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                String amount = rs.getString("amount");
+                if (amount == null || amount.isBlank()) {
+                    continue;
+                }
+                total = total.add(new BigDecimal(amount)
+                    .multiply(BigDecimal.valueOf(rs.getInt("business_use_pct")))
+                    .divide(HUNDRED, 2, RoundingMode.HALF_UP));
+            }
+        }
+        return total;
+    }
+
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+
     @Override
     public BigDecimal getTotalByTaxYear(TaxYear taxYear) {
         if (taxYear == null) {
@@ -208,7 +246,7 @@ public class SqliteExpenseRepository implements ExpenseRepository {
 
         String placeholders = allowableCategories.stream().map(c -> "?").collect(Collectors.joining(","));
         String sql = String.format(
-            SQL.get("selectAllowableExpenseAmountsByBusinessAndDateRange"), placeholders);
+            SQL.get("selectAllowableExpenseSharesByBusinessAndDateRange"), placeholders);
         try (PreparedStatement pstmt = dataStore.connection().prepareStatement(sql)) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, startDate.toString());
@@ -217,7 +255,7 @@ public class SqliteExpenseRepository implements ExpenseRepository {
             for (String category : allowableCategories) {
                 pstmt.setString(idx++, category);
             }
-            return sumAmounts(pstmt);
+            return sumBusinessUseShares(pstmt);
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
         }
@@ -282,7 +320,8 @@ public class SqliteExpenseRepository implements ExpenseRepository {
             null, // bankTransactionRef - not stored in SQLite yet
             null, // supplierRef - not stored in SQLite yet
             null, // invoiceNumber - not stored in SQLite yet
-            null  // bankTransactionId - not stored in SQLite yet
+            null, // bankTransactionId - not stored in SQLite yet
+            rs.getInt("business_use_pct")
         );
     }
 }

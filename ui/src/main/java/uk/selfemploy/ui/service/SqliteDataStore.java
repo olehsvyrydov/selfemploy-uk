@@ -311,8 +311,20 @@ public final class SqliteDataStore {
             SqliteMigrationRunner.java(2, "legacy nullable columns", this::addLegacyColumns),
             SqliteMigrationRunner.java(3, "honest submission history", this::migrateSubmissionHonesty),
             SqliteMigrationRunner.script(4, "import audit trail", "/db/migration-sqlite/V4__import_audit.sql"),
-            SqliteMigrationRunner.script(5, "notification state", "/db/migration-sqlite/V5__notification_state.sql")
+            SqliteMigrationRunner.script(5, "notification state", "/db/migration-sqlite/V5__notification_state.sql"),
+            SqliteMigrationRunner.java(6, "business use share on expenses", this::addBusinessUseColumn)
         );
+    }
+
+    /**
+     * Adds the business-use share to expenses.
+     *
+     * <p>Defaulted to 100 so every expense already recorded keeps exactly the meaning it had: no
+     * stated split is the same as wholly business. Nothing is reinterpreted, and the allowable total
+     * is unchanged for anyone who never sets a share.
+     */
+    private void addBusinessUseColumn(Connection conn) throws SQLException {
+        addColumnIfMissing(conn, "expenses", "business_use_pct", "INTEGER NOT NULL DEFAULT 100");
     }
 
     /**

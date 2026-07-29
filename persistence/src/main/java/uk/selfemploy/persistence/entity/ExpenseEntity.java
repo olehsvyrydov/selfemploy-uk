@@ -91,6 +91,9 @@ public class ExpenseEntity {
      * Converts this entity to a domain Expense.
      */
     public Expense toDomain() {
+        // No business-use share here: this entity belongs to the dormant server stack and its table
+        // has no column for one, so every expense it maps back is wholly business. Add the column
+        // before reviving this path, or partial claims will silently become whole ones.
         return new Expense(
             id,
             businessId,

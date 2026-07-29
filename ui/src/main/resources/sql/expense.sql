@@ -3,8 +3,8 @@
 
 -- name: insertExpense
 INSERT OR REPLACE INTO expenses
-    (id, business_id, date, amount, description, category, receipt_path, notes)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    (id, business_id, date, amount, description, category, receipt_path, notes, business_use_pct)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: findExpenseById
 SELECT * FROM expenses WHERE id = ?;
@@ -21,8 +21,10 @@ SELECT * FROM expenses WHERE business_id = ? AND date >= ? AND date <= ? ORDER B
 SELECT amount FROM expenses
 WHERE business_id = ? AND date >= ? AND date <= ?;
 
--- name: selectAllowableExpenseAmountsByBusinessAndDateRange
-SELECT amount FROM expenses
+-- name: selectAllowableExpenseSharesByBusinessAndDateRange
+-- Amount and business-use share per row. The claimable part of each is worked out and rounded in
+-- Java, so the total matches the figures shown against the individual expenses.
+SELECT amount, business_use_pct FROM expenses
 WHERE business_id = ? AND date >= ? AND date <= ? AND category IN (%s);
 
 -- name: deleteExpenseById

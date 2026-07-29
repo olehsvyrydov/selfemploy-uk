@@ -89,6 +89,7 @@ public record ExpenseTableRow(
             case BAD_DEBTS -> "Bad Debt";
             case PROFESSIONAL_FEES -> "Prof. Fees";
             case DEPRECIATION -> "Deprec.";
+            case EQUIPMENT_CAPITAL -> "Equipment";
             case OTHER_EXPENSES -> "Other";
             case HOME_OFFICE_SIMPLIFIED -> "Home";
             case BUSINESS_ENTERTAINMENT -> "Entertain.";
@@ -113,6 +114,7 @@ public record ExpenseTableRow(
             case BAD_DEBTS -> "category-bad-debts";
             case PROFESSIONAL_FEES -> "category-professional";
             case DEPRECIATION -> "category-depreciation";
+            case EQUIPMENT_CAPITAL -> "category-equipment";
             case OTHER_EXPENSES -> "category-other";
             case HOME_OFFICE_SIMPLIFIED -> "category-home-office";
             case BUSINESS_ENTERTAINMENT -> "category-entertainment";

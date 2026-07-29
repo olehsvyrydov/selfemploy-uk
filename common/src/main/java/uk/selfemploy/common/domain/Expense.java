@@ -3,6 +3,7 @@ package uk.selfemploy.common.domain;
 import uk.selfemploy.common.enums.ExpenseCategory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -30,8 +31,12 @@ public record Expense(
     String bankTransactionRef,
     String supplierRef,
     String invoiceNumber,
-    UUID bankTransactionId
+    UUID bankTransactionId,
+    int businessUsePercentage
 ) {
+    /** An expense with no split stated is wholly business, which is the ordinary case. */
+    public static final int FULLY_BUSINESS = 100;
+
     /**
      * Compact constructor for validation.
      */
@@ -41,6 +46,64 @@ public record Expense(
         validateAmount(amount);
         validateDescription(description);
         validateCategory(category);
+        validateBusinessUsePercentage(businessUsePercentage);
+    }
+
+    /**
+     * An expense that is wholly business use.
+     *
+     * <p>Kept so that every caller written before expenses could be apportioned still compiles and
+     * still means what it did: no stated split is the same as all of it.
+     */
+    public Expense(
+            UUID id,
+            UUID businessId,
+            LocalDate date,
+            BigDecimal amount,
+            String description,
+            ExpenseCategory category,
+            String receiptPath,
+            String notes,
+            String bankTransactionRef,
+            String supplierRef,
+            String invoiceNumber,
+            UUID bankTransactionId) {
+        this(id, businessId, date, amount, description, category, receiptPath, notes,
+             bankTransactionRef, supplierRef, invoiceNumber, bankTransactionId, FULLY_BUSINESS);
+    }
+
+    /**
+     * The part of this expense that may be claimed: the stated business-use share of the amount,
+     * to the penny.
+     *
+     * <p>Zero for a category that is not an allowable expense — depreciation and capital purchases
+     * are claimed as capital allowances instead, which this app does not yet calculate, so counting
+     * them here would overstate the deduction.
+     *
+     * @return the claimable amount, rounded half up to two decimal places
+     */
+    public BigDecimal allowableAmount() {
+        if (!category.isAllowable()) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return amount
+            .multiply(BigDecimal.valueOf(businessUsePercentage))
+            .divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP);
+    }
+
+    /** A copy of this expense with a different business-use share. */
+    public Expense withBusinessUsePercentage(int percentage) {
+        return new Expense(id, businessId, date, amount, description, category, receiptPath, notes,
+                bankTransactionRef, supplierRef, invoiceNumber, bankTransactionId, percentage);
+    }
+
+    private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+
+    private static void validateBusinessUsePercentage(int percentage) {
+        if (percentage < 0 || percentage > 100) {
+            throw new IllegalArgumentException(
+                "Business use percentage must be between 0 and 100, but was " + percentage);
+        }
     }
 
     /**

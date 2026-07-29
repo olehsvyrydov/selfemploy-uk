@@ -612,8 +612,8 @@ class ExpenseDialogControllerTest {
 
             var categories = viewModel.getAvailableCategories();
 
-            // Should have 16 categories (17 total minus 1 CIS-only)
-            assertThat(categories).hasSize(16);
+            // Every category except the CIS-only one.
+            assertThat(categories).hasSize(ExpenseCategory.values().length - 1);
             assertThat(categories).contains(
                 ExpenseCategory.COST_OF_GOODS,
                 ExpenseCategory.STAFF_COSTS,
@@ -628,6 +628,7 @@ class ExpenseDialogControllerTest {
                 ExpenseCategory.BAD_DEBTS,
                 ExpenseCategory.PROFESSIONAL_FEES,
                 ExpenseCategory.DEPRECIATION,
+                ExpenseCategory.EQUIPMENT_CAPITAL,
                 ExpenseCategory.OTHER_EXPENSES,
                 ExpenseCategory.HOME_OFFICE_SIMPLIFIED,
                 ExpenseCategory.BUSINESS_ENTERTAINMENT
@@ -635,13 +636,13 @@ class ExpenseDialogControllerTest {
         }
 
         @Test
-        @DisplayName("should include all 17 categories for CIS business")
-        void shouldIncludeAll17CategoriesForCisBusiness() {
+        @DisplayName("should include every category for a CIS business")
+        void shouldIncludeAllCategoriesForCisBusiness() {
             viewModel.setCisBusiness(true);
 
             var categories = viewModel.getAvailableCategories();
 
-            assertThat(categories).hasSize(17);
+            assertThat(categories).hasSize(ExpenseCategory.values().length);
             assertThat(categories).containsExactlyInAnyOrder(ExpenseCategory.values());
         }
 

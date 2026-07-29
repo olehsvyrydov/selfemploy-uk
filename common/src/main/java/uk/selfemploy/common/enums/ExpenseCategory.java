@@ -116,6 +116,20 @@ public enum ExpenseCategory {
     DEPRECIATION("Depreciation (not allowable)", "29", false, false),
 
     /**
+     * Equipment and other capital purchases - NOT an allowable expense.
+     *
+     * <p>A laptop, tools or machinery are not deducted in the expense boxes. They are claimed as
+     * capital allowances, which for most sole traders means the Annual Investment Allowance and
+     * usually the full cost in the year of purchase - a better outcome than the expense boxes give,
+     * but a separate claim in boxes 49-52.
+     *
+     * <p>This app does not calculate capital allowances yet, so an expense filed here is recorded and
+     * kept out of the allowable total rather than being claimed. That is the safe direction: counting
+     * it as an ordinary expense would overstate the deduction and misstate the return.
+     */
+    EQUIPMENT_CAPITAL("Equipment and capital purchases (claim as capital allowances)", "49", false, false),
+
+    /**
      * Other business expenses.
      * SA103F Box 30
      * <p>Includes trade subscriptions, sundry expenses, and net VAT payments.</p>
@@ -173,6 +187,7 @@ public enum ExpenseCategory {
             case BAD_DEBTS -> "Bad Debts";
             case PROFESSIONAL_FEES -> "Professional Fees";
             case DEPRECIATION -> "Depreciation";
+            case EQUIPMENT_CAPITAL -> "Equipment (capital)";
             case OTHER_EXPENSES -> "Other Expenses";
             case HOME_OFFICE_SIMPLIFIED -> "Home Office";
             case BUSINESS_ENTERTAINMENT -> "Entertainment";

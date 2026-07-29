@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     category TEXT NOT NULL,
     receipt_path TEXT,
     notes TEXT,
+    business_use_pct INTEGER NOT NULL DEFAULT 100,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE
