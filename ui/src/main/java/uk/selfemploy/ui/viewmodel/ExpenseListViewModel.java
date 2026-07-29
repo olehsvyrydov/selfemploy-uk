@@ -95,14 +95,13 @@ public class ExpenseListViewModel {
             // Load totals from service
             BigDecimal total = expenseService.getTotalByTaxYear(businessId, taxYear);
             BigDecimal allowable = expenseService.getDeductibleTotal(businessId, taxYear);
-            // The disallowed spend, not "everything that is not allowable". Subtracting would fold
-            // the private share of an apportioned expense in with it, so a wholly-allowable phone
-            // bill at 60% business would report non-deductible money beside a count of no
-            // non-deductible expenses.
-            BigDecimal nonAllowable = expenses.stream()
-                .filter(expense -> !expense.category().isAllowable())
-                .map(Expense::amount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // Everything not claimed: spend in categories that cannot be deducted, plus the private
+            // share of any part-business expense. Taken as a subtraction so the three cards
+            // reconcile - a user checking that deductible and non-deductible add up to the total
+            // should find that they do. The tooltip says what the figure includes, because the
+            // private share of an allowable expense is money that cannot be deducted without being
+            // a non-deductible category.
+            BigDecimal nonAllowable = total.subtract(allowable);
 
             totalExpenses.set(total);
             deductibleTotal.set(allowable);

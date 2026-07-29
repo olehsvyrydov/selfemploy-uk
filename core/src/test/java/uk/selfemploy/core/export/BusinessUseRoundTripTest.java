@@ -4,6 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.core.service.IncomeService;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -11,6 +14,11 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * A partial claim survives being exported and imported again.
@@ -59,6 +67,29 @@ class BusinessUseRoundTripTest {
             assertThat(imported.amount()).isEqualByComparingTo(new BigDecimal("60.00"));
             assertThat(imported.allowableAmount()).isEqualByComparingTo(new BigDecimal("36.00"));
         });
+    }
+
+    @Test
+    @DisplayName("restoring a backup writes the share, not just reads it")
+    void restoringKeepsTheShare() {
+        // The previous version of this test only checked the preview parser. The path that actually
+        // writes records is a different method, and it was still discarding the share - so a restore
+        // claimed the whole of every partial expense while this suite stayed green.
+        Expense phoneBill = Expense.create(BUSINESS, DATE, new BigDecimal("60.00"), "Phone bill",
+                ExpenseCategory.OFFICE_COSTS, null, null).withBusinessUsePercentage(60);
+        ExpenseService expenseService = mock(ExpenseService.class);
+        when(expenseService.create(any(), any(), any(), any(), any(), any(), any(), anyInt()))
+                .thenReturn(phoneBill);
+
+        new DataImportService(mock(IncomeService.class), expenseService).importJson(BUSINESS,
+                exportedExpense(phoneBill).getBytes(StandardCharsets.UTF_8),
+                new ImportOptions(false, false));
+
+        ArgumentCaptor<Integer> share = ArgumentCaptor.forClass(Integer.class);
+        verify(expenseService).create(any(), any(), any(), any(), any(), any(), any(), share.capture());
+        assertThat(share.getValue())
+                .as("the share reaching the database on a restore")
+                .isEqualTo(60);
     }
 
     @Test

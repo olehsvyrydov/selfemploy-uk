@@ -342,7 +342,10 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
         for (Expense expense : expenses) {
-            viewModel.addExpenseByCategory(expense.category(), expense.amount());
+            // The claimable part, so this screen's tax estimate is computed on the same deduction
+            // that is filed. The whole amount would deduct the private share of an apportioned
+            // expense, and would credit categories that cannot be claimed at all.
+            viewModel.addExpenseByCategory(expense.category(), expense.allowableAmount());
         }
 
         // Calculate tax with the loaded data

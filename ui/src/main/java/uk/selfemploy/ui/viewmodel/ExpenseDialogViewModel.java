@@ -124,6 +124,7 @@ public class ExpenseDialogViewModel {
             validateForm();
         });
         businessUsePercentage.addListener((obs, oldVal, newVal) -> {
+            if (!ignoreChanges) dirty.set(true);
             validateBusinessUse();
             updateClaimableAmount();
             validateForm();
@@ -150,6 +151,7 @@ public class ExpenseDialogViewModel {
             amount.set(expense.amount().toPlainString());
             category.set(expense.category());
             notes.set(expense.notes() != null ? expense.notes() : "");
+            businessUsePercentage.set(String.valueOf(expense.businessUsePercentage()));
 
             // Set deductible based on category allowability
             deductible.set(expense.category().isAllowable());
@@ -308,9 +310,11 @@ public class ExpenseDialogViewModel {
             claimableAmount.set("");
             return;
         }
+        // Today's date, not the one being typed: the claim does not depend on the date, and Expense
+        // rejects a future one - which a user entering a post-dated invoice has on screen while they
+        // are still filling the form. Throwing out of a property listener would freeze the dialog.
         Expense candidate = Expense.create(businessId != null ? businessId : UUID.randomUUID(),
-                date.get() != null ? date.get() : LocalDate.now(), new BigDecimal(amount.get()),
-                description.get() == null || description.get().isBlank() ? "-" : description.get(),
+                LocalDate.now(), new BigDecimal(amount.get()), "preview",
                 cat, null, null).withBusinessUsePercentage(share);
         claimableAmount.set(CURRENCY_FORMAT.format(candidate.allowableAmount()));
     }

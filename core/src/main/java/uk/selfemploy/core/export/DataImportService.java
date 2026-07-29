@@ -474,10 +474,7 @@ public class DataImportService {
             ? expense.get("invoiceNumber").asText() : null;
         // A file written before expenses could be apportioned has no share in it, and every expense
         // in it meant the whole amount - the same reading the database migration takes.
-        int businessUsePercentage = expense.has("businessUsePercentage")
-                && !expense.get("businessUsePercentage").isNull()
-            ? expense.get("businessUsePercentage").asInt(Expense.FULLY_BUSINESS)
-            : Expense.FULLY_BUSINESS;
+        int businessUsePercentage = readBusinessUsePercentage(expense);
 
         return new Expense(UUID.randomUUID(), placeholderBusinessId, date, amount, description, category, null, notes,
             bankTransactionRef, supplierRef, invoiceNumber, null, businessUsePercentage);
@@ -659,8 +656,22 @@ public class DataImportService {
         ExpenseCategory category = ExpenseCategory.valueOf(expense.get("category").asText().toUpperCase());
         String notes = expense.has("notes") && !expense.get("notes").isNull()
             ? expense.get("notes").asText() : null;
+        int businessUsePercentage = readBusinessUsePercentage(expense);
 
-        expenseService.create(businessId, date, amount, description, category, null, notes);
+        expenseService.create(businessId, date, amount, description, category, null, notes,
+            businessUsePercentage);
+    }
+
+    /**
+     * The business-use share in an exported expense, or wholly business if the file predates it.
+     *
+     * <p>Read in one place because both the preview and the import that writes records need it, and
+     * they disagreeing is how a restored backup silently claims the whole of a partial expense.
+     */
+    private static int readBusinessUsePercentage(JsonNode expense) {
+        return expense.has("businessUsePercentage") && !expense.get("businessUsePercentage").isNull()
+            ? expense.get("businessUsePercentage").asInt(Expense.FULLY_BUSINESS)
+            : Expense.FULLY_BUSINESS;
     }
 
     // Helper methods

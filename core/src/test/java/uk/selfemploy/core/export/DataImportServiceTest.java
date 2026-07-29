@@ -475,7 +475,7 @@ class DataImportServiceTest {
 
             when(incomeService.create(eq(BUSINESS_ID), any(), any(), anyString(), any(), any()))
                 .thenReturn(mockIncome);
-            when(expenseService.create(eq(BUSINESS_ID), any(), any(), anyString(), any(), any(), any()))
+            when(expenseService.create(eq(BUSINESS_ID), any(), any(), anyString(), any(), any(), any(), anyInt()))
                 .thenReturn(mockExpense);
 
             // When
@@ -489,7 +489,7 @@ class DataImportServiceTest {
             assertThat(result.success()).isTrue();
             assertThat(result.importedCount()).isEqualTo(2);
             verify(incomeService, times(1)).create(any(), any(), any(), any(), any(), any());
-            verify(expenseService, times(1)).create(any(), any(), any(), any(), any(), any(), any());
+            verify(expenseService, times(1)).create(any(), any(), any(), any(), any(), any(), any(), anyInt());
         }
 
         @Test
@@ -1015,7 +1015,7 @@ class DataImportServiceTest {
 
             when(incomeService.create(eq(BUSINESS_ID), any(), any(), anyString(), any(), any()))
                 .thenReturn(mockIncome);
-            when(expenseService.create(eq(BUSINESS_ID), any(), any(), anyString(), any(), any(), any()))
+            when(expenseService.create(eq(BUSINESS_ID), any(), any(), anyString(), any(), any(), any(), anyInt()))
                 .thenReturn(mockExpense);
 
             // When

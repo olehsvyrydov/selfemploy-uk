@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -482,6 +483,49 @@ class ExpenseDialogViewModelTest {
     @Nested
     @DisplayName("Business use share")
     class BusinessUseShare {
+
+        @Test
+        @DisplayName("opening an apportioned expense shows the share it was saved with")
+        void editingShowsTheStoredShare() {
+            Expense apportioned = Expense.create(businessId, LocalDate.of(2025, 6, 15),
+                    new BigDecimal("60.00"), "Phone bill", ExpenseCategory.OFFICE_COSTS, null, null)
+                    .withBusinessUsePercentage(60);
+
+            viewModel.loadExpense(apportioned);
+
+            assertThat(viewModel.getBusinessUsePercentage())
+                .as("showing 100 here would save 100, wiping the claim the user made")
+                .isEqualTo("60");
+        }
+
+        @Test
+        @DisplayName("changing the share alone marks the dialog unsaved")
+        void changingTheShareIsAChange() {
+            Expense existing = Expense.create(businessId, LocalDate.of(2025, 6, 15),
+                    new BigDecimal("60.00"), "Phone bill", ExpenseCategory.OFFICE_COSTS, null, null);
+            viewModel.loadExpense(existing);
+            assertThat(viewModel.isDirty()).isFalse();
+
+            viewModel.setBusinessUsePercentage("60");
+
+            assertThat(viewModel.isDirty())
+                .as("closing without the prompt would discard the split silently")
+                .isTrue();
+        }
+
+        @Test
+        @DisplayName("a date the form has not accepted does not break the preview")
+        void aFutureDateDoesNotThrow() {
+            // The date property holds whatever is typed; only validation flags it. Building an
+            // Expense from it would throw out of a property listener and freeze the dialog.
+            viewModel.setDate(LocalDate.now().plusYears(1));
+            viewModel.setDescription("Post-dated invoice");
+            viewModel.setAmount("60.00");
+
+            assertThatCode(() -> viewModel.setCategory(ExpenseCategory.OFFICE_COSTS))
+                .doesNotThrowAnyException();
+            assertThat(viewModel.getClaimableAmount()).isEqualTo("\u00a360.00");
+        }
 
         @Test
         @DisplayName("defaults to the whole amount, which is the ordinary case")

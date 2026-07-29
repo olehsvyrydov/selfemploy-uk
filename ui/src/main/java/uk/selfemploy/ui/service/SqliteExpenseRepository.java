@@ -184,7 +184,16 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         BigDecimal total = BigDecimal.ZERO;
         try (ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
-                total = total.add(mapExpense(rs).allowableAmount());
+                try {
+                    total = total.add(mapExpense(rs).allowableAmount());
+                } catch (RuntimeException unreadableRow) {
+                    // A blank amount, or a category name this build does not know because the file
+                    // has been opened by a newer version. Skipping keeps the rest of the year's
+                    // total available; letting it out would take down the dashboard and the
+                    // submission screen over one bad row, which the previous query never did.
+                    LOG.log(Level.WARNING, "Skipping an unreadable expense row while totalling",
+                        unreadableRow);
+                }
             }
         }
         return total;

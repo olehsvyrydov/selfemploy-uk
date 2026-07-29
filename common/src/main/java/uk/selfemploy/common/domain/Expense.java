@@ -80,7 +80,13 @@ public record Expense(
      * are claimed as capital allowances instead, which this app does not yet calculate, so counting
      * them here would overstate the deduction.
      *
-     * @return the claimable amount, rounded half up to two decimal places
+     * <p>The scale is deliberately not fixed. An apportioned amount is rounded to the penny, because
+     * a claim has to be a real figure. A wholly-business amount is returned exactly as recorded,
+     * because rounding it would change totals that were correct before this column existed. Compare
+     * these values with {@code compareTo}, not {@code equals}.
+     *
+     * @return the claimable amount: rounded half up to two decimal places when a share is applied,
+     *         otherwise the amount as recorded
      */
     public BigDecimal allowableAmount() {
         if (!category.isAllowable()) {
