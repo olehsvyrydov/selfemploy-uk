@@ -342,7 +342,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
         for (Expense expense : expenses) {
-            viewModel.addExpenseByCategory(expense.category(), expense.amount());
+            viewModel.addExpenseByCategory(expense.category(), expense.allowableAmount());
         }
 
         // Calculate tax with the loaded data

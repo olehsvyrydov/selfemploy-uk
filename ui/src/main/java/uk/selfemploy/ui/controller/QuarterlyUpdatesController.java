@@ -816,7 +816,7 @@ public class QuarterlyUpdatesController implements Initializable, MainController
 
             for (Map.Entry<ExpenseCategory, List<Expense>> entry : grouped.entrySet()) {
                 BigDecimal categoryTotal = entry.getValue().stream()
-                        .map(Expense::amount)
+                        .map(Expense::allowableAmount)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 int categoryCount = entry.getValue().size();
                 expensesByCategory.put(entry.getKey(), new CategorySummary(categoryTotal, categoryCount));

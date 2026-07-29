@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -336,7 +337,7 @@ class ExpenseDialogControllerTest {
     class SaveOperation {
 
         private void setupCreateMock() {
-            when(expenseService.create(any(), any(), any(), any(), any(), any(), any()))
+            when(expenseService.create(any(), any(), any(), any(), any(), any(), any(), anyInt()))
                 .thenAnswer(invocation -> {
                     UUID bId = invocation.getArgument(0);
                     LocalDate date = invocation.getArgument(1);
@@ -367,7 +368,8 @@ class ExpenseDialogControllerTest {
                 eq("Test expense"),
                 eq(ExpenseCategory.OFFICE_COSTS),
                 isNull(),
-                isNull()
+                isNull(),
+                eq(Expense.FULLY_BUSINESS)
             );
         }
 
@@ -423,7 +425,7 @@ class ExpenseDialogControllerTest {
                 null
             );
 
-            when(expenseService.update(any(), any(), any(), any(), any(), any(), any()))
+            when(expenseService.update(any(), any(), any(), any(), any(), any(), any(), anyInt()))
                 .thenAnswer(invocation -> {
                     UUID id = invocation.getArgument(0);
                     LocalDate date = invocation.getArgument(1);
@@ -451,7 +453,8 @@ class ExpenseDialogControllerTest {
                 eq("Updated description"),
                 any(),
                 any(),
-                any()
+                any(),
+                anyInt()
             );
         }
     }
@@ -612,8 +615,11 @@ class ExpenseDialogControllerTest {
 
             var categories = viewModel.getAvailableCategories();
 
-            // Should have 16 categories (17 total minus 1 CIS-only)
-            assertThat(categories).hasSize(16);
+            // Counted deliberately, not derived from ExpenseCategory.values(): the list under test
+            // is built from that enum, so deriving the expectation from it too would assert nothing.
+            // Adding a category should make someone look at this number and decide whether it
+            // belongs in front of users.
+            assertThat(categories).hasSize(17);
             assertThat(categories).contains(
                 ExpenseCategory.COST_OF_GOODS,
                 ExpenseCategory.STAFF_COSTS,
@@ -628,6 +634,7 @@ class ExpenseDialogControllerTest {
                 ExpenseCategory.BAD_DEBTS,
                 ExpenseCategory.PROFESSIONAL_FEES,
                 ExpenseCategory.DEPRECIATION,
+                ExpenseCategory.EQUIPMENT_CAPITAL,
                 ExpenseCategory.OTHER_EXPENSES,
                 ExpenseCategory.HOME_OFFICE_SIMPLIFIED,
                 ExpenseCategory.BUSINESS_ENTERTAINMENT
@@ -635,13 +642,13 @@ class ExpenseDialogControllerTest {
         }
 
         @Test
-        @DisplayName("should include all 17 categories for CIS business")
-        void shouldIncludeAll17CategoriesForCisBusiness() {
+        @DisplayName("should include every category for a CIS business")
+        void shouldIncludeAllCategoriesForCisBusiness() {
             viewModel.setCisBusiness(true);
 
             var categories = viewModel.getAvailableCategories();
 
-            assertThat(categories).hasSize(17);
+            assertThat(categories).hasSize(18);
             assertThat(categories).containsExactlyInAnyOrder(ExpenseCategory.values());
         }
 

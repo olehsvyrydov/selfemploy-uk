@@ -3,8 +3,8 @@
 
 -- name: insertExpense
 INSERT OR REPLACE INTO expenses
-    (id, business_id, date, amount, description, category, receipt_path, notes)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    (id, business_id, date, amount, description, category, receipt_path, notes, business_use_pct)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: findExpenseById
 SELECT * FROM expenses WHERE id = ?;
@@ -20,10 +20,6 @@ SELECT * FROM expenses WHERE business_id = ? AND date >= ? AND date <= ? ORDER B
 -- 10.10 three times over comes to 30.299999999999997. They are added up in BigDecimal instead.
 SELECT amount FROM expenses
 WHERE business_id = ? AND date >= ? AND date <= ?;
-
--- name: selectAllowableExpenseAmountsByBusinessAndDateRange
-SELECT amount FROM expenses
-WHERE business_id = ? AND date >= ? AND date <= ? AND category IN (%s);
 
 -- name: deleteExpenseById
 DELETE FROM expenses WHERE id = ?;

@@ -95,6 +95,8 @@ public class ExpenseListViewModel {
             // Load totals from service
             BigDecimal total = expenseService.getTotalByTaxYear(businessId, taxYear);
             BigDecimal allowable = expenseService.getDeductibleTotal(businessId, taxYear);
+            // Everything not claimed: disallowed categories plus the private share of a
+            // part-business expense. A subtraction, so the three summary cards reconcile.
             BigDecimal nonAllowable = total.subtract(allowable);
 
             totalExpenses.set(total);

@@ -20,7 +20,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -479,12 +481,137 @@ class ExpenseDialogViewModelTest {
     }
 
     @Nested
+    @DisplayName("Business use share")
+    class BusinessUseShare {
+
+        @Test
+        @DisplayName("opening an apportioned expense shows the share it was saved with")
+        void editingShowsTheStoredShare() {
+            Expense apportioned = Expense.create(businessId, LocalDate.of(2025, 6, 15),
+                    new BigDecimal("60.00"), "Phone bill", ExpenseCategory.OFFICE_COSTS, null, null)
+                    .withBusinessUsePercentage(60);
+
+            viewModel.loadExpense(apportioned);
+
+            assertThat(viewModel.getBusinessUsePercentage())
+                .as("showing 100 here would save 100, wiping the claim the user made")
+                .isEqualTo("60");
+        }
+
+        @Test
+        @DisplayName("changing the share alone marks the dialog unsaved")
+        void changingTheShareIsAChange() {
+            Expense existing = Expense.create(businessId, LocalDate.of(2025, 6, 15),
+                    new BigDecimal("60.00"), "Phone bill", ExpenseCategory.OFFICE_COSTS, null, null);
+            viewModel.loadExpense(existing);
+            assertThat(viewModel.isDirty()).isFalse();
+
+            viewModel.setBusinessUsePercentage("60");
+
+            assertThat(viewModel.isDirty())
+                .as("closing without the prompt would discard the split silently")
+                .isTrue();
+        }
+
+        @Test
+        @DisplayName("a date the form has not accepted yet does not break the preview")
+        void aFutureDateDoesNotThrow() {
+            viewModel.setDate(LocalDate.now().plusYears(1));
+            viewModel.setDescription("Post-dated invoice");
+            viewModel.setAmount("60.00");
+
+            assertThatCode(() -> viewModel.setCategory(ExpenseCategory.OFFICE_COSTS))
+                .doesNotThrowAnyException();
+            assertThat(viewModel.getClaimableAmount()).isEqualTo("\u00a360.00");
+        }
+
+        @Test
+        @DisplayName("defaults to the whole amount, which is the ordinary case")
+        void defaultsToWhollyBusiness() {
+            assertThat(viewModel.getBusinessUsePercentage())
+                .isEqualTo(String.valueOf(Expense.FULLY_BUSINESS));
+        }
+
+        @Test
+        @DisplayName("shows what would actually be claimed")
+        void showsTheClaimableAmount() {
+            viewModel.setDate(LocalDate.of(2025, 6, 15));
+            viewModel.setDescription("Phone bill");
+            viewModel.setCategory(ExpenseCategory.OFFICE_COSTS);
+            viewModel.setAmount("60.00");
+
+            viewModel.setBusinessUsePercentage("60");
+
+            assertThat(viewModel.getClaimableAmount())
+                .as("the user should see the 36.00, not be asked to trust it")
+                .isEqualTo("\u00a336.00");
+        }
+
+        @Test
+        @DisplayName("shows nothing claimable for a category that cannot be claimed")
+        void showsNothingForACapitalPurchase() {
+            viewModel.setDate(LocalDate.of(2025, 6, 15));
+            viewModel.setDescription("Laptop");
+            viewModel.setCategory(ExpenseCategory.EQUIPMENT_CAPITAL);
+            viewModel.setAmount("899.00");
+
+            assertThat(viewModel.getClaimableAmount())
+                .as("equipment is a capital allowance claim, not an expense deduction")
+                .isEqualTo("\u00a30.00");
+        }
+
+        @Test
+        @DisplayName("a share outside 0 to 100 is refused and blocks saving")
+        void refusesAnImpossibleShare() {
+            viewModel.setDate(LocalDate.of(2025, 6, 15));
+            viewModel.setDescription("Phone bill");
+            viewModel.setCategory(ExpenseCategory.OFFICE_COSTS);
+            viewModel.setAmount("60.00");
+            assertThat(viewModel.isFormValid()).isTrue();
+
+            viewModel.setBusinessUsePercentage("120");
+
+            assertThat(viewModel.getBusinessUseError()).isNotBlank();
+            assertThat(viewModel.isFormValid())
+                .as("a nonsense share must not reach the database")
+                .isFalse();
+        }
+
+        @Test
+        @DisplayName("something that is not a number is refused")
+        void refusesNonsense() {
+            viewModel.setDate(LocalDate.of(2025, 6, 15));
+            viewModel.setDescription("Phone bill");
+            viewModel.setCategory(ExpenseCategory.OFFICE_COSTS);
+            viewModel.setAmount("60.00");
+
+            viewModel.setBusinessUsePercentage("half");
+
+            assertThat(viewModel.isFormValid()).isFalse();
+        }
+
+        @Test
+        @DisplayName("an empty box means the whole amount, not an error")
+        void blankIsWhollyBusiness() {
+            viewModel.setDate(LocalDate.of(2025, 6, 15));
+            viewModel.setDescription("Phone bill");
+            viewModel.setCategory(ExpenseCategory.OFFICE_COSTS);
+            viewModel.setAmount("60.00");
+
+            viewModel.setBusinessUsePercentage("");
+
+            assertThat(viewModel.getBusinessUseError()).isBlank();
+            assertThat(viewModel.isFormValid()).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("Save Expense - Add Mode")
     class SaveExpenseAddMode {
 
         @BeforeEach
         void setUp() {
-            when(expenseService.create(any(), any(), any(), any(), any(), any(), any()))
+            when(expenseService.create(any(), any(), any(), any(), any(), any(), any(), anyInt()))
                 .thenAnswer(invocation -> {
                     UUID bId = invocation.getArgument(0);
                     LocalDate date = invocation.getArgument(1);
@@ -515,7 +642,8 @@ class ExpenseDialogViewModelTest {
                 eq("Test expense"),
                 eq(ExpenseCategory.OFFICE_COSTS),
                 isNull(),
-                eq("Test notes")
+                eq("Test notes"),
+                eq(Expense.FULLY_BUSINESS)
             );
         }
 
@@ -560,7 +688,7 @@ class ExpenseDialogViewModelTest {
                 null
             );
 
-            when(expenseService.update(any(), any(), any(), any(), any(), any(), any()))
+            when(expenseService.update(any(), any(), any(), any(), any(), any(), any(), anyInt()))
                 .thenAnswer(invocation -> {
                     UUID id = invocation.getArgument(0);
                     LocalDate date = invocation.getArgument(1);
@@ -588,7 +716,8 @@ class ExpenseDialogViewModelTest {
                 eq("Updated description"),
                 any(),
                 any(),
-                any()
+                any(),
+                anyInt()
             );
         }
 

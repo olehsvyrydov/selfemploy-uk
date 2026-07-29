@@ -365,6 +365,8 @@ public class DataExportService {
         map.put("category", expense.category().name());
         map.put("sa103Box", expense.category().getSa103Box());
         map.put("allowable", expense.category().isAllowable());
+        map.put("businessUsePercentage", expense.businessUsePercentage());
+        map.put("allowableAmount", expense.allowableAmount().toPlainString());
         map.put("receiptPath", expense.receiptPath());
         map.put("notes", expense.notes());
         return map;

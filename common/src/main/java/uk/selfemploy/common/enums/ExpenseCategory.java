@@ -6,7 +6,11 @@ package uk.selfemploy.common.enums;
  * These categories map directly to the Self-Employment (Full) SA103F
  * supplementary pages of the Self Assessment tax return.
  *
- * <p>Box numbers correspond to SA103F 2024-25 (boxes 17-30 for expenses).</p>
+ * <p>Box numbers correspond to SA103F 2024-25: boxes 17-30 for expenses, and 49-52 for categories
+ * that are claimed as capital allowances rather than deducted as expenses. A box number records
+ * where the cost belongs on the form, not that this app has put it there — capital allowances are
+ * not calculated here, and a category carrying one of those boxes reports {@code false} from
+ * {@link #isAllowable()} so it never reaches an expense total.</p>
  *
  * @see <a href="https://www.gov.uk/government/publications/self-assessment-self-employment-full-sa103f">HMRC SA103F</a>
  */
@@ -116,6 +120,20 @@ public enum ExpenseCategory {
     DEPRECIATION("Depreciation (not allowable)", "29", false, false),
 
     /**
+     * Equipment and other capital purchases - NOT an allowable expense.
+     *
+     * <p>A laptop, tools or machinery are not deducted in the expense boxes. They are claimed as
+     * capital allowances, which for most sole traders means the Annual Investment Allowance and
+     * usually the full cost in the year of purchase - a better outcome than the expense boxes give,
+     * but a separate claim in boxes 49-52.
+     *
+     * <p>This app does not calculate capital allowances yet, so an expense filed here is recorded and
+     * kept out of the allowable total rather than being claimed. That is the safe direction: counting
+     * it as an ordinary expense would overstate the deduction and misstate the return.
+     */
+    EQUIPMENT_CAPITAL("Equipment and capital purchases (claim as capital allowances)", "49", false, false),
+
+    /**
      * Other business expenses.
      * SA103F Box 30
      * <p>Includes trade subscriptions, sundry expenses, and net VAT payments.</p>
@@ -173,6 +191,7 @@ public enum ExpenseCategory {
             case BAD_DEBTS -> "Bad Debts";
             case PROFESSIONAL_FEES -> "Professional Fees";
             case DEPRECIATION -> "Depreciation";
+            case EQUIPMENT_CAPITAL -> "Equipment (capital)";
             case OTHER_EXPENSES -> "Other Expenses";
             case HOME_OFFICE_SIMPLIFIED -> "Home Office";
             case BUSINESS_ENTERTAINMENT -> "Entertainment";

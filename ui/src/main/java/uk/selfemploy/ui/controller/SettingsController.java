@@ -1891,12 +1891,14 @@ public class SettingsController implements Initializable, MainController.TaxYear
                     if (expense != null) {
                         if (action == ImportAction.IMPORT) {
                             expenseService.create(businessId, expense.date(), expense.amount(),
-                                expense.description(), expense.category(), expense.receiptPath(), expense.notes());
+                                expense.description(), expense.category(), expense.receiptPath(),
+                                expense.notes(), expense.businessUsePercentage());
                             imported++;
                         } else if (action == ImportAction.UPDATE && candidate.getMatchedRecordId() != null) {
                             // Update existing record
                             expenseService.update(candidate.getMatchedRecordId(), expense.date(), expense.amount(),
-                                expense.description(), expense.category(), expense.receiptPath(), expense.notes());
+                                expense.description(), expense.category(), expense.receiptPath(),
+                                expense.notes(), expense.businessUsePercentage());
                             updated++;
                         }
                     }

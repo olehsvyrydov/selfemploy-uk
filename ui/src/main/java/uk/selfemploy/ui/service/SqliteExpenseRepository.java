@@ -6,6 +6,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.ui.service.sql.NamedSql;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,11 +38,22 @@ public class SqliteExpenseRepository implements ExpenseRepository {
     private final UUID businessId;
 
     public SqliteExpenseRepository(UUID businessId) {
+        this(businessId, SqliteDataStore.getInstance());
+    }
+
+    /**
+     * Test seam: binds the repository to an explicit store rather than the singleton, so a real
+     * database file can be opened and read back.
+     */
+    SqliteExpenseRepository(UUID businessId, SqliteDataStore dataStore) {
         if (businessId == null) {
             throw new IllegalArgumentException("Business ID cannot be null");
         }
+        if (dataStore == null) {
+            throw new IllegalArgumentException("Data store cannot be null");
+        }
         this.businessId = businessId;
-        this.dataStore = SqliteDataStore.getInstance();
+        this.dataStore = dataStore;
         dataStore.ensureBusinessExists(businessId);
     }
 
@@ -59,6 +71,7 @@ public class SqliteExpenseRepository implements ExpenseRepository {
             pstmt.setString(6, expense.category().name());
             pstmt.setString(7, expense.receiptPath());
             pstmt.setString(8, expense.notes());
+            pstmt.setInt(9, expense.businessUsePercentage());
             pstmt.executeUpdate();
             LOG.fine("Saved expense: " + expense.id());
         } catch (SQLException e) {
@@ -160,6 +173,34 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         return total;
     }
 
+    /**
+     * Adds up the claimable part of each row, as the expense itself defines it.
+     *
+     * <p>Each share is rounded to the penny before being added, so the total is the sum of the
+     * figures shown against the individual expenses; apportioning the total instead gives a number
+     * that does not match its own breakdown. Allowability is decided by the expense rather than by
+     * a category filter in SQL, because the database cannot see the business-use share and two
+     * places deciding one question is how they come to disagree.
+     *
+     * <p>A row that cannot be read - a blank amount, or a category written by a newer version - is
+     * skipped rather than thrown, so one bad row cannot take down the dashboard and the submission
+     * screen. The query this replaced behaved the same way.
+     */
+    private BigDecimal sumBusinessUseShares(PreparedStatement pstmt) throws SQLException {
+        BigDecimal total = BigDecimal.ZERO;
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                try {
+                    total = total.add(mapExpense(rs).allowableAmount());
+                } catch (RuntimeException unreadableRow) {
+                    LOG.log(Level.WARNING, "Skipping an unreadable expense row while totalling",
+                        unreadableRow);
+                }
+            }
+        }
+        return total;
+    }
+
     @Override
     public BigDecimal getTotalByTaxYear(TaxYear taxYear) {
         if (taxYear == null) {
@@ -198,26 +239,12 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("Start date and end date cannot be null");
         }
-        List<String> allowableCategories = Arrays.stream(ExpenseCategory.values())
-            .filter(ExpenseCategory::isAllowable)
-            .map(Enum::name)
-            .toList();
-        if (allowableCategories.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        String placeholders = allowableCategories.stream().map(c -> "?").collect(Collectors.joining(","));
-        String sql = String.format(
-            SQL.get("selectAllowableExpenseAmountsByBusinessAndDateRange"), placeholders);
-        try (PreparedStatement pstmt = dataStore.connection().prepareStatement(sql)) {
+        try (PreparedStatement pstmt = dataStore.connection()
+                 .prepareStatement(SQL.get("findExpensesByBusinessAndDateRange"))) {
             pstmt.setString(1, businessId.toString());
             pstmt.setString(2, startDate.toString());
             pstmt.setString(3, endDate.toString());
-            int idx = 4;
-            for (String category : allowableCategories) {
-                pstmt.setString(idx++, category);
-            }
-            return sumAmounts(pstmt);
+            return sumBusinessUseShares(pstmt);
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Failed to calculate allowable expenses", e);
         }
@@ -232,7 +259,7 @@ public class SqliteExpenseRepository implements ExpenseRepository {
         return findByTaxYear(taxYear).stream()
             .collect(Collectors.groupingBy(
                 Expense::category,
-                Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
+                        Collectors.reducing(BigDecimal.ZERO, Expense::allowableAmount, BigDecimal::add)
             ));
     }
 
@@ -282,7 +309,8 @@ public class SqliteExpenseRepository implements ExpenseRepository {
             null, // bankTransactionRef - not stored in SQLite yet
             null, // supplierRef - not stored in SQLite yet
             null, // invoiceNumber - not stored in SQLite yet
-            null  // bankTransactionId - not stored in SQLite yet
+            null, // bankTransactionId - not stored in SQLite yet
+            rs.getInt("business_use_pct")
         );
     }
 }

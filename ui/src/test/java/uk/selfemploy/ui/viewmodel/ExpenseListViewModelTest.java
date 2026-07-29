@@ -144,7 +144,9 @@ class ExpenseListViewModelTest {
             // Then
             assertThat(viewModel.getTotalExpenses()).isEqualByComparingTo(new BigDecimal("350.00"));
             assertThat(viewModel.getDeductibleTotal()).isEqualByComparingTo(new BigDecimal("300.00"));
-            assertThat(viewModel.getNonDeductibleTotal()).isEqualByComparingTo(new BigDecimal("50.00"));
+            assertThat(viewModel.getNonDeductibleTotal())
+                .as("everything not claimed: 350.00 recorded less the 300.00 that is deductible")
+                .isEqualByComparingTo(new BigDecimal("50.00"));
         }
 
         @Test

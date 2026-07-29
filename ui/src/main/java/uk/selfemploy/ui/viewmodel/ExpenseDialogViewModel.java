@@ -7,6 +7,8 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
+import uk.selfemploy.ui.i18n.Messages;
+import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.core.service.ReceiptMetadata;
 import uk.selfemploy.core.service.ReceiptStorageException;
 import uk.selfemploy.core.service.ReceiptStorageService;
@@ -46,6 +48,13 @@ public class ExpenseDialogViewModel {
     private final ObjectProperty<ExpenseCategory> category = new SimpleObjectProperty<>(null);
     private final BooleanProperty deductible = new SimpleBooleanProperty(true);
     private final StringProperty notes = new SimpleStringProperty("");
+
+    /** The share the user says is business use, 0 to 100. Most expenses are wholly business. */
+    private final StringProperty businessUsePercentage =
+        new SimpleStringProperty(String.valueOf(Expense.FULLY_BUSINESS));
+    /** What the share works out to, so the claim is arithmetic the user can see. */
+    private final StringProperty claimableAmount = new SimpleStringProperty("");
+    private final StringProperty businessUseError = new SimpleStringProperty("");
 
     // Category help
     private final StringProperty categoryHelpTitle = new SimpleStringProperty("");
@@ -100,14 +109,23 @@ public class ExpenseDialogViewModel {
         amount.addListener((obs, oldVal, newVal) -> {
             if (!ignoreChanges) dirty.set(true);
             validateAmount();
+            updateClaimableAmount();
             validateForm();
         });
         category.addListener((obs, oldVal, newVal) -> {
             if (!ignoreChanges) dirty.set(true);
             onCategoryChanged(newVal);
             validateCategory();
+            updateClaimableAmount();
             validateForm();
         });
+        businessUsePercentage.addListener((obs, oldVal, newVal) -> {
+            if (!ignoreChanges) dirty.set(true);
+            validateBusinessUse();
+            updateClaimableAmount();
+            validateForm();
+        });
+
         notes.addListener((obs, oldVal, newVal) -> {
             if (!ignoreChanges) dirty.set(true);
         });
@@ -129,6 +147,7 @@ public class ExpenseDialogViewModel {
             amount.set(expense.amount().toPlainString());
             category.set(expense.category());
             notes.set(expense.notes() != null ? expense.notes() : "");
+            businessUsePercentage.set(String.valueOf(expense.businessUsePercentage()));
 
             // Set deductible based on category allowability
             deductible.set(expense.category().isAllowable());
@@ -241,7 +260,57 @@ public class ExpenseDialogViewModel {
             valid = false;
         }
 
+        if (parseBusinessUsePercentage() == null) {
+            valid = false;
+        }
+
         formValid.set(valid);
+    }
+
+    /**
+     * The share as a number, or null if what was typed is not a whole percentage.
+     *
+     * <p>Blank counts as wholly business: an empty box should mean the ordinary case, not an error.
+     */
+    private Integer parseBusinessUsePercentage() {
+        String raw = businessUsePercentage.get();
+        if (raw == null || raw.isBlank()) {
+            return Expense.FULLY_BUSINESS;
+        }
+        try {
+            int value = Integer.parseInt(raw.trim());
+            return value >= 0 && value <= 100 ? value : null;
+        } catch (NumberFormatException notANumber) {
+            return null;
+        }
+    }
+
+    private void validateBusinessUse() {
+        businessUseError.set(parseBusinessUsePercentage() == null
+            ? Messages.get("expenseDialog.businessUse.error")
+            : "");
+    }
+
+    /**
+     * Recalculates what would actually be claimed.
+     *
+     * <p>Built from a real {@link Expense} rather than repeating the arithmetic, so the figure shown
+     * is the one that reaches the totals and the return - including zero for a category that cannot
+     * be claimed at all. It is dated today rather than from the form, because the claim does not
+     * depend on the date and an expense refuses a future one: a user part-way through entering a
+     * post-dated invoice would otherwise throw from inside a property listener.
+     */
+    private void updateClaimableAmount() {
+        Integer share = parseBusinessUsePercentage();
+        ExpenseCategory cat = category.get();
+        if (share == null || cat == null || !isValidAmount()) {
+            claimableAmount.set("");
+            return;
+        }
+        Expense candidate = Expense.create(businessId != null ? businessId : UUID.randomUUID(),
+                LocalDate.now(), new BigDecimal(amount.get()), "preview",
+                cat, null, null).withBusinessUsePercentage(share);
+        claimableAmount.set(Money.format(candidate.allowableAmount()));
     }
 
     private void validateDate() {
@@ -424,6 +493,18 @@ public class ExpenseDialogViewModel {
                 "Depreciation is not an allowable expense for tax purposes. Consider using Capital Allowances instead (SA103 Box 29)",
                 List.of("Use Annual Investment Allowance for equipment", "Consider capital allowances for vehicles", "Records kept for accounting purposes only")
             );
+            case EQUIPMENT_CAPITAL -> new CategoryHelpContent(
+                "Equipment and Capital Purchases",
+                "Equipment you keep and use in the business — a laptop, tools, machinery — is not "
+                    + "claimed in the expense boxes. It is claimed as a capital allowance, usually the "
+                    + "Annual Investment Allowance, which for most sole traders covers the full cost in "
+                    + "the year of purchase (SA103 boxes 49-52)",
+                List.of(
+                    "Recorded here, and left out of your allowable expenses total",
+                    "This app does not calculate capital allowances yet",
+                    "Keep the invoice: the claim is made on the return itself",
+                    "Repairs to equipment you already own are an ordinary expense — use Repairs")
+            );
             case OTHER_EXPENSES -> new CategoryHelpContent(
                 "Other Business Expenses",
                 "Other allowable business expenses not covered elsewhere (SA103 Box 30)",
@@ -442,6 +523,34 @@ public class ExpenseDialogViewModel {
         };
     }
 
+    public StringProperty businessUsePercentageProperty() {
+        return businessUsePercentage;
+    }
+
+    public String getBusinessUsePercentage() {
+        return businessUsePercentage.get();
+    }
+
+    public void setBusinessUsePercentage(String value) {
+        businessUsePercentage.set(value);
+    }
+
+    public StringProperty claimableAmountProperty() {
+        return claimableAmount;
+    }
+
+    public String getClaimableAmount() {
+        return claimableAmount.get();
+    }
+
+    public StringProperty businessUseErrorProperty() {
+        return businessUseError;
+    }
+
+    public String getBusinessUseError() {
+        return businessUseError.get();
+    }
+
     // === Save and Delete ===
 
     /**
@@ -453,6 +562,8 @@ public class ExpenseDialogViewModel {
         }
 
         BigDecimal amountValue = new BigDecimal(amount.get());
+        Integer parsedShare = parseBusinessUsePercentage();
+        int share = parsedShare != null ? parsedShare : Expense.FULLY_BUSINESS;
         Expense savedExpense;
 
         if (editMode.get()) {
@@ -463,7 +574,8 @@ public class ExpenseDialogViewModel {
                 description.get(),
                 category.get(),
                 null, // receiptPath - managed by ReceiptStorageService
-                notes.get().isBlank() ? null : notes.get()
+                notes.get().isBlank() ? null : notes.get(),
+                share
             );
         } else {
             savedExpense = expenseService.create(
@@ -473,7 +585,8 @@ public class ExpenseDialogViewModel {
                 description.get(),
                 category.get(),
                 null, // receiptPath - managed by ReceiptStorageService
-                notes.get().isBlank() ? null : notes.get()
+                notes.get().isBlank() ? null : notes.get(),
+                share
             );
 
             // Reassociate receipts from temp ID to the actual expense ID

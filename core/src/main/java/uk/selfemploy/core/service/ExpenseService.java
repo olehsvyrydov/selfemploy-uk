@@ -41,9 +41,22 @@ public abstract class ExpenseService {
      * @return The created expense
      * @throws ValidationException if validation fails
      */
+    public Expense create(UUID businessId, LocalDate date, BigDecimal amount,
+                          String description, ExpenseCategory category,
+                          String receiptPath, String notes) {
+        return create(businessId, date, amount, description, category, receiptPath, notes,
+                Expense.FULLY_BUSINESS);
+    }
+
+    /**
+     * Creates an expense of which only part is business use.
+     *
+     * @param businessUsePercentage the share the user asserts is business, 0 to 100. The amount is
+     *                              recorded whole; only the claim is the stated share of it.
+     */
     public abstract Expense create(UUID businessId, LocalDate date, BigDecimal amount,
                           String description, ExpenseCategory category,
-                          String receiptPath, String notes);
+                          String receiptPath, String notes, int businessUsePercentage);
 
     /**
      * Finds an expense by ID.
@@ -70,6 +83,16 @@ public abstract class ExpenseService {
     public abstract Expense update(UUID id, LocalDate date, BigDecimal amount,
                           String description, ExpenseCategory category,
                           String receiptPath, String notes);
+
+    /**
+     * Updates an expense including the share of it that is business use.
+     *
+     * <p>Separate from {@link #update} because that one leaves the share as it was: an edit that
+     * says nothing about it must not turn a partial claim into a whole one.
+     */
+    public abstract Expense update(UUID id, LocalDate date, BigDecimal amount,
+                          String description, ExpenseCategory category,
+                          String receiptPath, String notes, int businessUsePercentage);
 
     /**
      * Deletes an expense by ID.

@@ -82,8 +82,7 @@ public class InMemoryExpenseRepository {
      */
     public BigDecimal calculateAllowableTotalForDateRange(UUID businessId, LocalDate startDate, LocalDate endDate) {
         return findByDateRange(businessId, startDate, endDate).stream()
-            .filter(Expense::isAllowable)
-            .map(Expense::amount)
+            .map(Expense::allowableAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
@@ -94,7 +93,7 @@ public class InMemoryExpenseRepository {
         return findByDateRange(businessId, startDate, endDate).stream()
             .collect(Collectors.groupingBy(
                 Expense::category,
-                Collectors.reducing(BigDecimal.ZERO, Expense::amount, BigDecimal::add)
+                Collectors.reducing(BigDecimal.ZERO, Expense::allowableAmount, BigDecimal::add)
             ));
     }
 
