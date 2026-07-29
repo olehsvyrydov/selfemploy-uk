@@ -3,9 +3,9 @@ package uk.selfemploy.ui.viewmodel;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.*;
 
 /**
@@ -21,7 +21,6 @@ import java.util.*;
  */
 public class ColumnMappingViewModel {
 
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final int TOTAL_STEPS = 3;
 
     private static final List<String> DATE_COLUMN_KEYWORDS = List.of(
@@ -393,7 +392,7 @@ public class ColumnMappingViewModel {
         if (example == null) {
             return "No positive values found";
         }
-        String formatted = CURRENCY_FORMAT.format(example);
+        String formatted = Money.format(example);
         return String.format("+%s -> %s", formatted, getPositiveMeaning());
     }
 
@@ -405,7 +404,7 @@ public class ColumnMappingViewModel {
         if (example == null) {
             return "No negative values found";
         }
-        String formatted = CURRENCY_FORMAT.format(example.abs());
+        String formatted = Money.format(example.abs());
         return String.format("-%s -> %s", formatted, getNegativeMeaning());
     }
 
@@ -493,14 +492,14 @@ public class ColumnMappingViewModel {
      * Gets formatted income total for display.
      */
     public String getFormattedIncomeTotal() {
-        return "+" + CURRENCY_FORMAT.format(getPreviewIncomeTotal());
+        return "+" + Money.format(getPreviewIncomeTotal());
     }
 
     /**
      * Gets formatted expense total for display.
      */
     public String getFormattedExpenseTotal() {
-        return "-" + CURRENCY_FORMAT.format(getPreviewExpenseTotal());
+        return "-" + Money.format(getPreviewExpenseTotal());
     }
 
     public boolean isSavePreferenceSelected() {

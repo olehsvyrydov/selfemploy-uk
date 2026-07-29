@@ -3,11 +3,10 @@ package uk.selfemploy.ui.viewmodel;
 import javafx.beans.property.*;
 import uk.selfemploy.core.config.NIClass2Rates;
 import uk.selfemploy.core.config.TaxRateConfiguration;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
-import java.util.Locale;
 
 /**
  * ViewModel for the Class 2 NI Credit Clarification UI.
@@ -77,9 +76,6 @@ public class Class2NIClarificationViewModel {
     private static final String PENSION_INSIGHT_ZERO_LOSS =
             "Each year without Class 2 contributions may create a gap in your NI record. " +
                     "Consider checking your qualifying year count for State Pension.";
-
-    // Currency formatter
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     // === State Properties ===
     private final BooleanProperty visible = new SimpleBooleanProperty(false);
@@ -209,14 +205,14 @@ public class Class2NIClarificationViewModel {
      * Returns the formatted weekly rate (e.g., "£3.45").
      */
     public String getFormattedWeeklyRate() {
-        return CURRENCY_FORMAT.format(rates.weeklyRate());
+        return Money.format(rates.weeklyRate());
     }
 
     /**
      * Returns the formatted annual amount (e.g., "£179.40").
      */
     public String getFormattedAnnualAmount() {
-        return CURRENCY_FORMAT.format(getAnnualAmount());
+        return Money.format(getAnnualAmount());
     }
 
     /**
@@ -285,7 +281,7 @@ public class Class2NIClarificationViewModel {
      * Returns the formatted Small Profits Threshold (e.g., "£6,845").
      */
     private String getFormattedSmallProfitsThreshold() {
-        return CURRENCY_FORMAT.format(rates.smallProfitsThreshold());
+        return Money.format(rates.smallProfitsThreshold());
     }
 
     private void applyZeroLossState() {

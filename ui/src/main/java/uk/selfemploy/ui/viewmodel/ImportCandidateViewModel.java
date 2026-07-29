@@ -1,12 +1,11 @@
 package uk.selfemploy.ui.viewmodel;
 
 import javafx.beans.property.*;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -16,7 +15,6 @@ import java.util.UUID;
 public class ImportCandidateViewModel {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy");
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     private final UUID id;
     private final LocalDate date;
@@ -109,7 +107,7 @@ public class ImportCandidateViewModel {
     }
 
     public String getFormattedAmount() {
-        String formatted = CURRENCY_FORMAT.format(amount.abs());
+        String formatted = Money.format(amount.abs());
         return amount.compareTo(BigDecimal.ZERO) >= 0 ? "+" + formatted : "-" + formatted;
     }
 

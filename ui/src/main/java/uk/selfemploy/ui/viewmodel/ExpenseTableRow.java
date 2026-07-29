@@ -2,12 +2,11 @@ package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -25,7 +24,6 @@ public record ExpenseTableRow(
     int receiptCount
 ) {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM ''yy");
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     /**
      * Creates an ExpenseTableRow from an Expense domain object.
@@ -61,7 +59,7 @@ public record ExpenseTableRow(
      * Returns the formatted amount with GBP symbol (e.g., "£54.99").
      */
     public String getFormattedAmount() {
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 
     /**

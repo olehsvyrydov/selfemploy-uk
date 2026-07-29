@@ -26,18 +26,17 @@ import uk.selfemploy.ui.service.SqliteSubmissionRepository;
 import uk.selfemploy.ui.service.SubmissionCredentialGate;
 import uk.selfemploy.ui.service.SubmissionEnvironment;
 import uk.selfemploy.ui.service.SubmissionRecord;
+import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.ui.viewmodel.AnnualSubmissionViewModel;
 import uk.selfemploy.ui.viewmodel.SubmissionDeclarationViewModel;
 
 import javafx.stage.Stage;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,7 +58,6 @@ import java.util.logging.Logger;
 public class AnnualSubmissionController {
 
     private static final Logger LOG = Logger.getLogger(AnnualSubmissionController.class.getName());
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     // === FXML Injected Elements ===
 
@@ -924,7 +922,7 @@ public class AnnualSubmissionController {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 
     // === Local tax estimate (no HMRC call) ===

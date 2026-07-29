@@ -2,12 +2,11 @@ package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -40,7 +39,6 @@ public record ImportedTransactionRow(
     TransactionStatus status
 ) {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM ''yy");
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     /**
      * Creates a new transaction row with a generated UUID.
@@ -111,7 +109,7 @@ public record ImportedTransactionRow(
      * Returns the amount formatted as GBP currency (e.g., "£1,500.00").
      */
     public String getFormattedAmount() {
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 
     /**
@@ -119,7 +117,7 @@ public record ImportedTransactionRow(
      * Income: +£1,500.00, Expense: -£45.50
      */
     public String getFormattedAmountWithSign() {
-        String formatted = CURRENCY_FORMAT.format(amount);
+        String formatted = Money.format(amount);
         return type == TransactionType.INCOME ? "+" + formatted : "-" + formatted;
     }
 

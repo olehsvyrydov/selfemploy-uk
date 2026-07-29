@@ -24,6 +24,7 @@ import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.BrowserUtil;
+import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
@@ -31,7 +32,6 @@ import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 import java.io.File;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +44,6 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
 
     private static final java.util.logging.Logger LOG =
         java.util.logging.Logger.getLogger(TaxSummaryController.class.getName());
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final String TOGGLE_EXPANDED = "[v]";
     private static final String TOGGLE_COLLAPSED = "[>]";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.UK);
@@ -1012,7 +1011,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 
     private String formatCategoryDisplayName(ExpenseCategory category) {
