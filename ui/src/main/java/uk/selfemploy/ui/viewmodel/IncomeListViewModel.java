@@ -7,12 +7,11 @@ import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.IncomeStatus;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
  */
 public class IncomeListViewModel {
 
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final IncomeService incomeService;
@@ -279,7 +277,7 @@ public class IncomeListViewModel {
     }
 
     public String getFormattedTotalIncome() {
-        return CURRENCY_FORMAT.format(totalIncome.get());
+        return Money.format(totalIncome.get());
     }
 
     public BigDecimal getPaidIncome() {
@@ -291,7 +289,7 @@ public class IncomeListViewModel {
     }
 
     public String getFormattedPaidIncome() {
-        return CURRENCY_FORMAT.format(paidIncome.get());
+        return Money.format(paidIncome.get());
     }
 
     public BigDecimal getUnpaidIncome() {
@@ -303,7 +301,7 @@ public class IncomeListViewModel {
     }
 
     public String getFormattedUnpaidIncome() {
-        return CURRENCY_FORMAT.format(unpaidIncome.get());
+        return Money.format(unpaidIncome.get());
     }
 
     public int getTotalCount() {

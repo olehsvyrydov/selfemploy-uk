@@ -9,9 +9,9 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
  * Manages financial summary data and provides formatted bindings for the UI.
  */
 public class DashboardViewModel {
-
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     // Financial metrics
     private final ObjectProperty<BigDecimal> totalIncome = new SimpleObjectProperty<>(BigDecimal.ZERO);
@@ -265,7 +263,7 @@ public class DashboardViewModel {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 
     private String formatTrend(BigDecimal amount) {
@@ -419,9 +417,8 @@ public class DashboardViewModel {
         }
 
         public String getFormattedAmount() {
-            NumberFormat format = NumberFormat.getCurrencyInstance(Locale.UK);
             String prefix = isIncome ? "+ " : "- ";
-            return prefix + format.format(amount.abs());
+            return prefix + Money.format(amount.abs());
         }
     }
 }

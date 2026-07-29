@@ -4,10 +4,10 @@ import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.ui.util.Money;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
  */
 public class BankImportWizardViewModel {
 
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final int TOTAL_STEPS = 4;
 
     private static final List<String> DATE_FORMATS = List.of(
@@ -318,7 +317,7 @@ public class BankImportWizardViewModel {
     }
 
     public String getFormattedIncomeTotal() {
-        return CURRENCY_FORMAT.format(getIncomeTotal());
+        return Money.format(getIncomeTotal());
     }
 
     public int getExpenseCount() {
@@ -335,7 +334,7 @@ public class BankImportWizardViewModel {
     }
 
     public String getFormattedExpenseTotal() {
-        return CURRENCY_FORMAT.format(getExpenseTotal());
+        return Money.format(getExpenseTotal());
     }
 
     public int getDuplicateCount() {
@@ -554,7 +553,7 @@ public class BankImportWizardViewModel {
      */
     public record CategoryBreakdownItem(int count, BigDecimal total) {
         public String getFormattedTotal() {
-            return CURRENCY_FORMAT.format(total);
+            return Money.format(total);
         }
     }
 }

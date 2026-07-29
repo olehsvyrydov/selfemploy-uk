@@ -8,9 +8,9 @@ import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.ReceiptStorageService;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
  */
 public class ExpenseListViewModel {
 
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final ExpenseService expenseService;
@@ -266,7 +265,7 @@ public class ExpenseListViewModel {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 
     // === Getters and Setters ===

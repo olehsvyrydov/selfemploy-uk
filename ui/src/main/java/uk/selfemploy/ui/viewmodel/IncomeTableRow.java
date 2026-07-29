@@ -3,12 +3,11 @@ package uk.selfemploy.ui.viewmodel;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.common.enums.IncomeStatus;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -26,7 +25,6 @@ public record IncomeTableRow(
     String reference
 ) {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM ''yy");
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     /**
      * Creates an IncomeTableRow from an Income domain object.
@@ -80,7 +78,7 @@ public record IncomeTableRow(
      * Returns the amount formatted as GBP currency (e.g., "£2,500.00").
      */
     public String getFormattedAmount() {
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 
     /**

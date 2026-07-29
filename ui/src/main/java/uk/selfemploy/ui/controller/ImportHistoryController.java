@@ -19,7 +19,6 @@ import uk.selfemploy.ui.viewmodel.*;
 
 import java.math.BigDecimal;
 import java.net.URL;
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Consumer;
@@ -33,7 +32,6 @@ import java.util.function.Consumer;
 public class ImportHistoryController implements Initializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(ImportHistoryController.class);
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     // Header
     @FXML private Label headerSubtitle;

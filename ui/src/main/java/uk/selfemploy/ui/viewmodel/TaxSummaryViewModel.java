@@ -10,13 +10,12 @@ import uk.selfemploy.core.calculator.TaxLiabilityResult;
 import uk.selfemploy.core.calculator.TaxCalculationResult;
 import uk.selfemploy.core.calculator.NICalculationResult;
 import uk.selfemploy.core.calculator.Class2NICalculationResult;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.EnumMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -25,7 +24,6 @@ import java.util.Map;
  */
 public class TaxSummaryViewModel {
 
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final String TURNOVER_BOX = "15";
     private static final String NET_PROFIT_BOX = "31";
 
@@ -607,6 +605,6 @@ public class TaxSummaryViewModel {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
-        return CURRENCY_FORMAT.format(amount);
+        return Money.format(amount);
     }
 }

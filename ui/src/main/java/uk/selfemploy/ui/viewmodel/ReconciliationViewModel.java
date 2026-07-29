@@ -3,14 +3,13 @@ package uk.selfemploy.ui.viewmodel;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -19,7 +18,6 @@ import java.util.stream.Collectors;
  */
 public class ReconciliationViewModel {
 
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a");
 
     // Summary metrics
@@ -117,11 +115,11 @@ public class ReconciliationViewModel {
     // === Formatted Values ===
 
     public String getFormattedTotalIncome() {
-        return CURRENCY_FORMAT.format(totalIncome.get());
+        return Money.format(totalIncome.get());
     }
 
     public String getFormattedTotalExpenses() {
-        return CURRENCY_FORMAT.format(totalExpenses.get());
+        return Money.format(totalExpenses.get());
     }
 
     public String getIncomeCountText() {

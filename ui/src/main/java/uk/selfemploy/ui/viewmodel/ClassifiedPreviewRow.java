@@ -1,10 +1,10 @@
 package uk.selfemploy.ui.viewmodel;
 
+import uk.selfemploy.ui.util.Money;
+
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * Represents a preview row with parsed values and classification.
@@ -14,7 +14,6 @@ import java.util.Locale;
  */
 public class ClassifiedPreviewRow {
 
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM ''yy");
 
     private final PreviewRow rawRow;
@@ -65,7 +64,7 @@ public class ClassifiedPreviewRow {
      * Returns the amount formatted as GBP currency with sign.
      */
     public String getFormattedAmount() {
-        String formatted = CURRENCY_FORMAT.format(amount.abs());
+        String formatted = Money.format(amount.abs());
         if (classification == TransactionType.INCOME) {
             return "+" + formatted;
         } else {

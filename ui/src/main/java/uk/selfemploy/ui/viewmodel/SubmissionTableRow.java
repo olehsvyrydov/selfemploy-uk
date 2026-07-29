@@ -2,12 +2,11 @@ package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.common.enums.SubmissionStatus;
 import uk.selfemploy.common.enums.SubmissionType;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * Display model for submission history table rows.
@@ -44,7 +43,6 @@ public record SubmissionTableRow(
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter FULL_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy HH:mm:ss");
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     /**
      * Returns the submission date formatted for display (e.g., "24 Jan 2026").
@@ -141,28 +139,28 @@ public record SubmissionTableRow(
      * Returns the total income formatted as currency (e.g., "£45,000.00").
      */
     public String getFormattedIncome() {
-        return totalIncome != null ? CURRENCY_FORMAT.format(totalIncome) : "£0.00";
+        return totalIncome != null ? Money.format(totalIncome) : Money.format(BigDecimal.ZERO);
     }
 
     /**
      * Returns the total expenses formatted as currency (e.g., "£13,000.00").
      */
     public String getFormattedExpenses() {
-        return totalExpenses != null ? CURRENCY_FORMAT.format(totalExpenses) : "£0.00";
+        return totalExpenses != null ? Money.format(totalExpenses) : Money.format(BigDecimal.ZERO);
     }
 
     /**
      * Returns the net profit formatted as currency (e.g., "£32,000.00").
      */
     public String getFormattedProfit() {
-        return netProfit != null ? CURRENCY_FORMAT.format(netProfit) : "£0.00";
+        return netProfit != null ? Money.format(netProfit) : Money.format(BigDecimal.ZERO);
     }
 
     /**
      * Returns the tax due formatted as currency (e.g., "£5,051.80").
      */
     public String getFormattedTaxDue() {
-        return taxDue != null ? CURRENCY_FORMAT.format(taxDue) : "£0.00";
+        return taxDue != null ? Money.format(taxDue) : Money.format(BigDecimal.ZERO);
     }
 
     /**

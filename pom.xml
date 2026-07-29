@@ -243,6 +243,12 @@
                     <configuration>
                         <!-- Exclude E2E tests by default. Override with -Dsurefire.excludedGroups= to include them -->
                         <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                        <!-- Money and dates are formatted in the language the app is running in,
+                             which follows the JVM default locale. Pinned so assertions on formatted
+                             output mean the same thing on a machine in any country as they do here.
+                             It has to be argLine, not systemPropertyVariables: the default locale is
+                             fixed when the JVM starts, and those properties are set after that. -->
+                        <argLine>-Duser.language=en -Duser.country=GB</argLine>
                     </configuration>
                 </plugin>
                 <plugin>

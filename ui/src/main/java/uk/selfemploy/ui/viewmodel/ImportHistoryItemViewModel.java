@@ -2,13 +2,12 @@ package uk.selfemploy.ui.viewmodel;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -20,7 +19,6 @@ public class ImportHistoryItemViewModel {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
-    private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(Locale.UK);
 
     // Number of days within which undo is allowed (per /inga finance requirement)
     private static final int UNDO_WINDOW_DAYS = 7;
@@ -85,11 +83,11 @@ public class ImportHistoryItemViewModel {
     }
 
     public String getFormattedIncomeTotal() {
-        return "+" + CURRENCY_FORMAT.format(incomeTotal);
+        return "+" + Money.format(incomeTotal);
     }
 
     public String getFormattedExpenseTotal() {
-        return "-" + CURRENCY_FORMAT.format(expenseTotal);
+        return "-" + Money.format(expenseTotal);
     }
 
     public String getBankFormatDisplay() {
