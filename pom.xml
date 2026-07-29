@@ -86,6 +86,9 @@
             in via -Dsurefire.excludedGroups=e2e to run them.
         -->
         <surefire.excludedGroups>e2e,hmrc-sandbox</surefire.excludedGroups>
+        <!-- Empty default so the surefire argLine can prepend it, keeping whatever a coverage
+             agent contributes during the build rather than replacing it. -->
+        <argLine/>
         <jpackage-maven-plugin.version>1.4.0</jpackage-maven-plugin.version>
         <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
         <sass-embedded.version>4.4.0</sass-embedded.version>
@@ -248,7 +251,7 @@
                              output mean the same thing on a machine in any country as they do here.
                              It has to be argLine, not systemPropertyVariables: the default locale is
                              fixed when the JVM starts, and those properties are set after that. -->
-                        <argLine>-Duser.language=en -Duser.country=GB</argLine>
+                        <argLine>@{argLine} -Duser.language=en -Duser.country=GB</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
