@@ -70,6 +70,17 @@ public abstract class BaseE2ETest extends ApplicationTest {
 
     @AfterEach
     void tearDown() throws TimeoutException {
+        // The primary stage outlives this class - TestFX reuses it - so the size floor set in start()
+        // has to come back off, or a later class cannot make the window smaller than 900 and its
+        // width assertions fail for a reason that has nothing to do with it.
+        FxToolkit.setupFixture(() -> {
+            Stage stage = FxToolkit.toolkitContext().getRegisteredStage();
+            if (stage != null) {
+                stage.setMinWidth(0);
+                stage.setMinHeight(0);
+            }
+        });
+
         // Release all keys and mouse buttons
         release(new KeyCode[]{});
         release(new MouseButton[]{});

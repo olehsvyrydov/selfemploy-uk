@@ -96,6 +96,11 @@ class AnnualSubmissionE2ETest extends ApplicationTest {
 
         stage.setTitle("Annual Self Assessment Submission");
         stage.setScene(scene);
+        // TestFX hands every class the same primary stage, so any size floor a previous class left
+        // on it is still there. This one asserts on the width it asks for, and cannot get below an
+        // inherited minimum.
+        stage.setMinWidth(0);
+        stage.setMaxWidth(Double.MAX_VALUE);
         stage.setWidth(STEP_1_WIDTH);
         stage.show();
 
