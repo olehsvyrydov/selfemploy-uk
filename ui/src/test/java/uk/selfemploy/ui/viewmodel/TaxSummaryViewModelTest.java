@@ -86,14 +86,14 @@ class TaxSummaryViewModelTest {
             viewModel.addExpenseByCategory(ExpenseCategory.PROFESSIONAL_FEES, new BigDecimal("800"));
 
             // When
-            Map<ExpenseCategory, BigDecimal> breakdown = viewModel.getExpenseBreakdown();
+            Map<ExpenseCategory, CategorySpend> breakdown = viewModel.getExpenseBreakdown();
 
             // Then
-            assertThat(breakdown.get(ExpenseCategory.OFFICE_COSTS))
+            assertThat(breakdown.get(ExpenseCategory.OFFICE_COSTS).spent())
                 .isEqualByComparingTo(new BigDecimal("500"));
-            assertThat(breakdown.get(ExpenseCategory.TRAVEL))
+            assertThat(breakdown.get(ExpenseCategory.TRAVEL).spent())
                 .isEqualByComparingTo(new BigDecimal("1200"));
-            assertThat(breakdown.get(ExpenseCategory.PROFESSIONAL_FEES))
+            assertThat(breakdown.get(ExpenseCategory.PROFESSIONAL_FEES).spent())
                 .isEqualByComparingTo(new BigDecimal("800"));
         }
 
@@ -106,10 +106,10 @@ class TaxSummaryViewModelTest {
             viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("150"));
 
             // When
-            Map<ExpenseCategory, BigDecimal> breakdown = viewModel.getExpenseBreakdown();
+            Map<ExpenseCategory, CategorySpend> breakdown = viewModel.getExpenseBreakdown();
 
             // Then
-            assertThat(breakdown.get(ExpenseCategory.OFFICE_COSTS))
+            assertThat(breakdown.get(ExpenseCategory.OFFICE_COSTS).spent())
                 .isEqualByComparingTo(new BigDecimal("450"));
         }
 
@@ -149,7 +149,7 @@ class TaxSummaryViewModelTest {
             // Given
             viewModel.setTurnover(new BigDecimal("50000"));
             // Allowable expenses drive net profit; supply them as an allowable category.
-            viewModel.setExpenseBreakdown(Map.of(ExpenseCategory.OFFICE_COSTS, new BigDecimal("10000")));
+            viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("10000"));
             viewModel.setTaxYear(TaxYear.of(2025)); // 2025/26 tax year
 
             // When

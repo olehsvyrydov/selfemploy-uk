@@ -14,6 +14,7 @@ import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.SqliteExpenseService;
 import uk.selfemploy.ui.service.SqliteIncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
+import uk.selfemploy.ui.viewmodel.CategorySpend;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
@@ -177,18 +178,54 @@ class OneProfitConsistencyTest {
     @Test
     @DisplayName("the tax and National Insurance on that profit are the calculator's")
     void taxAndNiMatchTheCalculator() {
-        OneProfitFixture.seedBase(incomeService, expenseService, businessId);
-        TaxLiabilityResult expected = canonical(OneProfitFixture.TAXABLE_PROFIT);
+        OneProfitFixture.seedHighProfit(incomeService, expenseService, businessId);
+        TaxLiabilityResult expected = canonical(OneProfitFixture.HIGH_TAXABLE_PROFIT);
 
         TaxSummaryViewModel taxSummary = taxSummary();
 
+        assertThat(taxSummary.getNetProfit())
+                .isEqualByComparingTo(OneProfitFixture.HIGH_TAXABLE_PROFIT);
+        // Without these the four assertions below would hold on a calculation that never ran: the
+        // view model's tax getters start at zero and calculateTax() resets them to zero on failure.
+        assertThat(expected.incomeTax()).as("the dataset must owe income tax").isPositive();
+        assertThat(expected.niClass4()).as("the dataset must owe Class 4").isPositive();
+        assertThat(expected.niClass2()).as("the dataset must owe Class 2").isPositive();
+
         assertThat(taxSummary.getIncomeTax()).isEqualByComparingTo(expected.incomeTax());
         assertThat(taxSummary.getNiClass4()).isEqualByComparingTo(expected.niClass4());
-        assertThat(taxSummary.getNiClass2())
-                .as("this turnover sits near the Class 2 small-profits threshold, which is why the "
-                    + "fixture pins the tax year")
-                .isEqualByComparingTo(expected.niClass2());
+        assertThat(taxSummary.getNiClass2()).isEqualByComparingTo(expected.niClass2());
         assertThat(taxSummary.getTotalTax()).isEqualByComparingTo(expected.totalLiability());
+    }
+
+    @Test
+    @DisplayName("Class 2 follows the pinned year's threshold, not the calendar's")
+    void class2FollowsThePinnedYear() {
+        OneProfitFixture.seedClass2Boundary(incomeService, expenseService, businessId);
+        TaxLiabilityResult expected = canonical(OneProfitFixture.BOUNDARY_TAXABLE_PROFIT);
+
+        TaxSummaryViewModel taxSummary = taxSummary();
+
+        assertThat(taxSummary.getNetProfit())
+                .isEqualByComparingTo(OneProfitFixture.BOUNDARY_TAXABLE_PROFIT);
+        assertThat(expected.niClass2())
+                .as("£7,000 is above 2025/26's small-profits threshold of £6,845 and below 2026/27's "
+                    + "£7,105, so a Class 2 charge here is what proves the pinned year was used")
+                .isPositive();
+        assertThat(taxSummary.getNiClass2()).isEqualByComparingTo(expected.niClass2());
+    }
+
+    @Test
+    @DisplayName("no tax is invented on a profit below every threshold")
+    void noTaxBelowTheThresholds() {
+        OneProfitFixture.seedBase(incomeService, expenseService, businessId);
+
+        TaxSummaryViewModel taxSummary = taxSummary();
+
+        assertThat(taxSummary.getNetProfit()).isEqualByComparingTo(OneProfitFixture.TAXABLE_PROFIT);
+        assertThat(taxSummary.getTotalTax())
+                .as("£5,941.62 is below the personal allowance, the Class 4 lower profits limit and "
+                    + "the Class 2 small-profits threshold alike")
+                .isZero();
     }
 
     @Test
@@ -219,12 +256,34 @@ class OneProfitConsistencyTest {
     void theBreakdownReportsDisallowedSpend() {
         OneProfitFixture.seedBase(incomeService, expenseService, businessId);
 
-        TaxSummaryViewModel taxSummary = taxSummary();
+        CategorySpend entertainment = taxSummary().getExpenseBreakdown()
+                .get(ExpenseCategory.BUSINESS_ENTERTAINMENT);
 
-        assertThat(taxSummary.getExpenseBreakdown())
+        assertThat(entertainment).isNotNull();
+        assertThat(entertainment.spent())
                 .as("a return has to report what was spent in a disallowed category, not omit it: the "
                     + "amount is disallowed for profit, which is not the same as unreportable")
-                .containsEntry(ExpenseCategory.BUSINESS_ENTERTAINMENT, OneProfitFixture.ENTERTAINMENT);
+                .isEqualByComparingTo(OneProfitFixture.ENTERTAINMENT);
+        assertThat(entertainment.claimable())
+                .as("reported, but claimed for nothing — the row carries both so the screen can say so")
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("a part-business category reports the whole spend and only its share as claimable")
+    void theBreakdownApportionsWithinACategory() {
+        OneProfitFixture.seedWithPartBusinessExpense(incomeService, expenseService, businessId);
+
+        CategorySpend officeCosts = taxSummary().getExpenseBreakdown()
+                .get(ExpenseCategory.OFFICE_COSTS);
+
+        assertThat(officeCosts).isNotNull();
+        assertThat(officeCosts.spent())
+                .isEqualByComparingTo(OneProfitFixture.OFFICE_COSTS.add(OneProfitFixture.PHONE_BILL));
+        assertThat(officeCosts.claimable())
+                .as("the rent in full plus %s of the phone bill, never the private share",
+                    OneProfitFixture.PHONE_CLAIMABLE)
+                .isEqualByComparingTo(OneProfitFixture.ALLOWABLE_WITH_PHONE);
     }
 
     @Test

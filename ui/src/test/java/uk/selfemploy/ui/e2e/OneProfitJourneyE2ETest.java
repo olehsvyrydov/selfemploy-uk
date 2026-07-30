@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.e2e;
 
+import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.stage.Stage;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.ui.OneProfitFixture;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.SqliteExpenseService;
@@ -15,7 +17,9 @@ import uk.selfemploy.ui.service.SqliteIncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
 import uk.selfemploy.ui.util.Money;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,9 +55,16 @@ class OneProfitJourneyE2ETest extends BaseE2ETest {
         super.start(stage);
     }
 
+    /**
+     * The factory is cleared as well as the store, because the two are separate pieces of state.
+     * Discarding the in-memory database leaves the factory still holding services built for a business
+     * that only existed inside it, and Surefire reuses one fork — so the next class to load the app
+     * shell would read the real database under an id that is not in it.
+     */
     @AfterAll
     static void tearDownClass() {
         SqliteTestSupport.tearDownTestEnvironment();
+        SqliteTestSupport.resetCoreServiceFactory();
     }
 
     private String textOf(String id) {
@@ -117,6 +128,43 @@ class OneProfitJourneyE2ETest extends BaseE2ETest {
                     + "bill, so the three cards add up", "40%")
                 .isEqualTo(Money.format(OneProfitFixture.GROSS_SPEND_WITH_PHONE
                         .subtract(OneProfitFixture.ALLOWABLE_WITH_PHONE)));
+
+        assertThat(textOf("#nonDeductibleCount"))
+                .as("the dinner and the phone bill both put money in this card's total, so a count "
+                    + "that named only the dinner would leave part of it unexplained")
+                .isEqualTo(Messages.format("expenses.card.entries", 2));
+    }
+
+    @Test
+    @DisplayName("the Tax Summary marks the spend it is not claiming")
+    void theTaxSummaryMarksWhatIsNotClaimed() {
+        navigateTo("#navTax");
+
+        assertThat(textOf("#expensesTotalLabel"))
+                .as("the section reports what was spent, so it must not be headed as if all of it "
+                    + "were claimable")
+                .isEqualTo(Money.format(OneProfitFixture.GROSS_SPEND_WITH_PHONE));
+
+        List<String> rows = lookup(".line-item").queryAll().stream()
+                .map(node -> ((Parent) node).getChildrenUnmodifiable().stream()
+                        .filter(Label.class::isInstance)
+                        .map(label -> ((Label) label).getText())
+                        .collect(Collectors.joining(" ")))
+                .toList();
+
+        assertThat(rows)
+                .as("the disallowed dinner is reported at what it cost and marked, rather than shown "
+                    + "as £0.00 or silently counted as claimable")
+                .anySatisfy(row -> assertThat(row)
+                        .contains(Money.format(OneProfitFixture.ENTERTAINMENT))
+                        .contains(Messages.get("taxSummary.lineItem.notClaimable")));
+        assertThat(rows)
+                .as("the office row holds the rent plus the whole phone bill, annotated with the part "
+                    + "of it being claimed")
+                .anySatisfy(row -> assertThat(row)
+                        .contains(Money.format(
+                                OneProfitFixture.OFFICE_COSTS.add(OneProfitFixture.PHONE_BILL)))
+                        .contains(Money.format(OneProfitFixture.ALLOWABLE_WITH_PHONE)));
     }
 
     @Test

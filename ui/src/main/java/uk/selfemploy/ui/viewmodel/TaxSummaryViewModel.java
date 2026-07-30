@@ -76,13 +76,9 @@ public class TaxSummaryViewModel {
 
     // === Expense Breakdown ===
 
-    /** What was spent per SA103 category, which is what a return has to declare. */
-    private final ObservableMap<ExpenseCategory, BigDecimal> expenseBreakdown =
+    /** What was spent per SA103 category and how much of it may be claimed. */
+    private final ObservableMap<ExpenseCategory, CategorySpend> expenseBreakdown =
         FXCollections.observableMap(new EnumMap<>(ExpenseCategory.class));
-
-    /** The part of each category's spend that may be claimed, which is what reduces profit. */
-    private final Map<ExpenseCategory, BigDecimal> claimableBreakdown =
-        new EnumMap<>(ExpenseCategory.class);
 
     // === Calculation Results (cached) ===
 
@@ -428,11 +424,11 @@ public class TaxSummaryViewModel {
 
     // === Expense Breakdown by Category ===
 
-    public Map<ExpenseCategory, BigDecimal> getExpenseBreakdown() {
+    public Map<ExpenseCategory, CategorySpend> getExpenseBreakdown() {
         return new EnumMap<>(expenseBreakdown);
     }
 
-    public ObservableMap<ExpenseCategory, BigDecimal> expenseBreakdownProperty() {
+    public ObservableMap<ExpenseCategory, CategorySpend> expenseBreakdownProperty() {
         return expenseBreakdown;
     }
 
@@ -465,9 +461,7 @@ public class TaxSummaryViewModel {
         }
 
         expenseBreakdown.put(category,
-                expenseBreakdown.getOrDefault(category, BigDecimal.ZERO).add(amount));
-        claimableBreakdown.put(category, claimableBreakdown.getOrDefault(category, BigDecimal.ZERO)
-                .add(claimable == null ? BigDecimal.ZERO : claimable));
+                expenseBreakdown.getOrDefault(category, CategorySpend.ZERO).plus(amount, claimable));
 
         recalculateExpenseTotals();
     }
@@ -477,27 +471,8 @@ public class TaxSummaryViewModel {
      */
     public void clearExpenseBreakdown() {
         expenseBreakdown.clear();
-        claimableBreakdown.clear();
         totalExpenses.set(BigDecimal.ZERO);
         allowableExpenses.set(BigDecimal.ZERO);
-    }
-
-    /**
-     * Sets the expense breakdown from a map (replaces existing data).
-     *
-     * @param breakdown Map of expense categories to amounts
-     */
-    public void setExpenseBreakdown(Map<ExpenseCategory, BigDecimal> breakdown) {
-        expenseBreakdown.clear();
-        claimableBreakdown.clear();
-        if (breakdown != null) {
-            breakdown.forEach((category, amount) -> {
-                expenseBreakdown.put(category, amount);
-                claimableBreakdown.put(category,
-                        category.isAllowable() ? amount : BigDecimal.ZERO);
-            });
-        }
-        recalculateExpenseTotals();
     }
 
     // === Tax Calculation ===
@@ -588,13 +563,10 @@ public class TaxSummaryViewModel {
 
     private void recalculateExpenseTotals() {
         BigDecimal total = BigDecimal.ZERO;
-        for (BigDecimal amount : expenseBreakdown.values()) {
-            total = total.add(amount);
-        }
-
         BigDecimal allowable = BigDecimal.ZERO;
-        for (BigDecimal amount : claimableBreakdown.values()) {
-            allowable = allowable.add(amount);
+        for (CategorySpend spend : expenseBreakdown.values()) {
+            total = total.add(spend.spent());
+            allowable = allowable.add(spend.claimable());
         }
 
         totalExpenses.set(total);

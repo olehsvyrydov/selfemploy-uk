@@ -13,6 +13,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
 import java.math.BigDecimal;
@@ -250,8 +251,8 @@ class TaxSummaryControllerTest {
 
             // Then - expenses should be grouped by category
             var breakdown = viewModel.getExpenseBreakdown();
-            assertThat(breakdown.get(ExpenseCategory.OFFICE_COSTS)).isEqualByComparingTo(new BigDecimal("700.00"));
-            assertThat(breakdown.get(ExpenseCategory.TRAVEL)).isEqualByComparingTo(new BigDecimal("300.00"));
+            assertThat(breakdown.get(ExpenseCategory.OFFICE_COSTS).spent()).isEqualByComparingTo(new BigDecimal("700.00"));
+            assertThat(breakdown.get(ExpenseCategory.TRAVEL).spent()).isEqualByComparingTo(new BigDecimal("300.00"));
         }
     }
 
@@ -424,9 +425,23 @@ class TaxSummaryControllerTest {
         @Test
         @DisplayName("should format expenses as negative for calculation display")
         void shouldFormatExpensesAsNegativeForCalculation() {
-            viewModel.setTotalExpenses(new BigDecimal("5000.00"));
+            viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("5000.00"));
 
             assertThat(controller.getFormattedExpensesForCalculation()).startsWith("-");
+        }
+
+        @Test
+        @DisplayName("deducts only the claimable part, not the whole spend")
+        void shouldDeductOnlyTheClaimablePart() {
+            viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("1000.00"));
+            viewModel.addExpenseByCategory(ExpenseCategory.BUSINESS_ENTERTAINMENT, new BigDecimal("200.00"));
+            viewModel.addExpenseByCategory(ExpenseCategory.TRAVEL, new BigDecimal("100.00"),
+                    new BigDecimal("60.00"));
+
+            assertThat(controller.getFormattedExpensesForCalculation())
+                    .as("shown beside 'Less: Allowable Expenses': the disallowed £200 and the private "
+                        + "£40 of the part-business travel must not be deducted")
+                    .isEqualTo("-" + Money.format(new BigDecimal("1060.00")));
         }
     }
 

@@ -114,7 +114,7 @@
             <HBox styleClass="section-header" alignment="CENTER_LEFT"
                   onMouseClicked="#handleToggleExpensesSection">
                 <Label fx:id="expensesToggle" text="[v]" styleClass="section-toggle"/>
-                <Label text="%taxSummary.allowableExpensesTitle" styleClass="section-title"/>
+                <Label text="%taxSummary.expensesTitle" styleClass="section-title"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="expensesTotalLabel" text="£0.00" styleClass="section-total, expenses"/>
             </HBox>

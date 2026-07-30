@@ -19,18 +19,21 @@ import java.util.UUID;
  * with its author, not with each other — which is how the previous consistency test came to pass while
  * the paths it compared disagreed.
  *
- * <p>Two datasets. {@link #seedBase} is the one the quality-gates epic specifies, mixing an allowable
+ * <p>Four datasets, each answering a question the others cannot. {@link #seedBase} mixes an allowable
  * expense with one in a category HMRC disallows. {@link #seedWithPartBusinessExpense} adds an expense
  * used only partly for business, because a share below 100% is where three of the four known
  * divergences occurred: anything summing raw amounts gets a different profit from anything using
- * {@link uk.selfemploy.common.domain.Expense#allowableAmount()}.
+ * {@link uk.selfemploy.common.domain.Expense#allowableAmount()}. Those two produce a profit below every
+ * threshold, so {@link #seedHighProfit} and {@link #seedClass2Boundary} exist to make the tax and
+ * National Insurance figures non-zero — an assertion that zero equals zero holds however broken the
+ * calculation is.
  */
 public final class OneProfitFixture {
 
     /**
-     * Fixed deliberately. Turnover of £7,100 sits below the 2026/27 Class 2 small-profits threshold of
-     * £7,105 but above 2025/26's £6,845, so leaving the year to the calendar would silently switch
-     * Class 2 National Insurance on and off as the machine clock passed April.
+     * Pinned, because every rate and threshold the expected figures depend on is a property of the
+     * year. Leaving it to the calendar would make the tax and National Insurance assertions change
+     * answer as the machine clock passed April.
      */
     public static final TaxYear TAX_YEAR = TaxYear.of(2025);
 
@@ -63,6 +66,28 @@ public final class OneProfitFixture {
 
     public static final BigDecimal TAXABLE_PROFIT_WITH_PHONE = new BigDecimal("5905.62");
 
+    /**
+     * A second dataset whose profit is large enough to owe tax.
+     *
+     * <p>The dataset above yields £5,941.62, which is below the personal allowance, the Class 4 lower
+     * profits limit and the Class 2 small-profits threshold alike — so every tax and NI figure for it
+     * is legitimately zero, and an assertion that they match the calculator holds even if the
+     * calculation never ran. £55,000 crosses the personal allowance, the basic-rate limit and the Class
+     * 4 upper profits limit, so each of those figures is non-zero and a broken calculation shows.
+     */
+    public static final BigDecimal HIGH_TURNOVER = new BigDecimal("60000.00");
+    public static final BigDecimal HIGH_OFFICE_COSTS = new BigDecimal("5000.00");
+    public static final BigDecimal HIGH_TAXABLE_PROFIT = new BigDecimal("55000.00");
+
+    /**
+     * A dataset whose profit lands between the two Class 2 small-profits thresholds — above 2025/26's
+     * £6,845 and below 2026/27's £7,105 — so the pinned year is doing visible work here: run it against
+     * the wrong year and Class 2 changes.
+     */
+    public static final BigDecimal BOUNDARY_TURNOVER = new BigDecimal("8000.00");
+    public static final BigDecimal BOUNDARY_OFFICE_COSTS = new BigDecimal("1000.00");
+    public static final BigDecimal BOUNDARY_TAXABLE_PROFIT = new BigDecimal("7000.00");
+
     private OneProfitFixture() {
     }
 
@@ -72,19 +97,14 @@ public final class OneProfitFixture {
      */
     public static void seedBase(IncomeService incomeService, ExpenseService expenseService,
                                 UUID businessId) {
-        incomeService.create(businessId, DATE, TURNOVER, "Consulting", IncomeCategory.SALES, null);
-        expenseService.create(businessId, DATE, OFFICE_COSTS, "Office rent",
-                ExpenseCategory.OFFICE_COSTS, null, null);
-        expenseService.create(businessId, DATE, ENTERTAINMENT, "Client dinner",
-                ExpenseCategory.BUSINESS_ENTERTAINMENT, null, null);
+        seedBaseOn(incomeService, expenseService, businessId, DATE);
     }
 
     /** The base dataset, plus a phone bill the user has marked 60% business. */
     public static void seedWithPartBusinessExpense(IncomeService incomeService,
                                                   ExpenseService expenseService, UUID businessId) {
-        seedBase(incomeService, expenseService, businessId);
-        expenseService.create(businessId, DATE, PHONE_BILL, "Phone bill",
-                ExpenseCategory.OFFICE_COSTS, null, null, PHONE_BUSINESS_USE);
+        seedBaseOn(incomeService, expenseService, businessId, DATE);
+        seedPhoneBillOn(expenseService, businessId, DATE);
     }
 
     /**
@@ -99,12 +119,41 @@ public final class OneProfitFixture {
     public static void seedToday(IncomeService incomeService, ExpenseService expenseService,
                                  UUID businessId) {
         LocalDate today = LocalDate.now();
-        incomeService.create(businessId, today, TURNOVER, "Consulting", IncomeCategory.SALES, null);
-        expenseService.create(businessId, today, OFFICE_COSTS, "Office rent",
+        seedBaseOn(incomeService, expenseService, businessId, today);
+        seedPhoneBillOn(expenseService, businessId, today);
+    }
+
+    /** Turnover and one allowable expense, sized so the profit owes tax at more than one rate. */
+    public static void seedHighProfit(IncomeService incomeService, ExpenseService expenseService,
+                                      UUID businessId) {
+        seedSimple(incomeService, expenseService, businessId, HIGH_TURNOVER, HIGH_OFFICE_COSTS);
+    }
+
+    /** Turnover and one allowable expense, sized so the profit sits between the two Class 2 thresholds. */
+    public static void seedClass2Boundary(IncomeService incomeService, ExpenseService expenseService,
+                                          UUID businessId) {
+        seedSimple(incomeService, expenseService, businessId, BOUNDARY_TURNOVER, BOUNDARY_OFFICE_COSTS);
+    }
+
+    private static void seedSimple(IncomeService incomeService, ExpenseService expenseService,
+                                   UUID businessId, BigDecimal turnover, BigDecimal officeCosts) {
+        incomeService.create(businessId, DATE, turnover, "Consulting", IncomeCategory.SALES, null);
+        expenseService.create(businessId, DATE, officeCosts, "Office rent",
                 ExpenseCategory.OFFICE_COSTS, null, null);
-        expenseService.create(businessId, today, ENTERTAINMENT, "Client dinner",
+    }
+
+    private static void seedBaseOn(IncomeService incomeService, ExpenseService expenseService,
+                                   UUID businessId, LocalDate date) {
+        incomeService.create(businessId, date, TURNOVER, "Consulting", IncomeCategory.SALES, null);
+        expenseService.create(businessId, date, OFFICE_COSTS, "Office rent",
+                ExpenseCategory.OFFICE_COSTS, null, null);
+        expenseService.create(businessId, date, ENTERTAINMENT, "Client dinner",
                 ExpenseCategory.BUSINESS_ENTERTAINMENT, null, null);
-        expenseService.create(businessId, today, PHONE_BILL, "Phone bill",
+    }
+
+    private static void seedPhoneBillOn(ExpenseService expenseService, UUID businessId,
+                                        LocalDate date) {
+        expenseService.create(businessId, date, PHONE_BILL, "Phone bill",
                 ExpenseCategory.OFFICE_COSTS, null, null, PHONE_BUSINESS_USE);
     }
 }

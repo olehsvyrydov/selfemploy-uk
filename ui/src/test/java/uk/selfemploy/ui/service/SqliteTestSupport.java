@@ -1,7 +1,7 @@
 package uk.selfemploy.ui.service;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.logging.Level;
@@ -179,16 +179,26 @@ public final class SqliteTestSupport {
     }
 
     /**
-     * Resets CoreServiceFactory state for testing.
-     * Clears all cached services so they will be recreated.
+     * Resets CoreServiceFactory state for testing, so the next caller builds services against
+     * whichever data store is then in effect.
+     *
+     * <p>Call this in {@code @AfterAll} as well as during setup. A cached service holds the business
+     * id it was built with; leaving one behind after an in-memory store is discarded binds later test
+     * classes in the same fork to a business that no longer exists, and their screens come up empty.
      */
     public static synchronized void resetCoreServiceFactory() {
         try {
-            // Clear all service references
-            setStaticField(CoreServiceFactory.class, "expenseService", null);
-            setStaticField(CoreServiceFactory.class, "incomeService", null);
-            setStaticField(CoreServiceFactory.class, "receiptStorageService", null);
-            setStaticField(CoreServiceFactory.class, "defaultBusinessId", null);
+            // Every cached field, so a service added later is cleared without anyone remembering to
+            // list it here. Primitives are skipped because they cannot hold null and none of them
+            // caches anything.
+            for (Field field : CoreServiceFactory.class.getDeclaredFields()) {
+                int modifiers = field.getModifiers();
+                if (Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers)
+                        && !field.getType().isPrimitive()) {
+                    field.setAccessible(true);
+                    field.set(null, null);
+                }
+            }
 
             LOG.fine("CoreServiceFactory reset");
         } catch (Exception e) {
@@ -205,11 +215,5 @@ public final class SqliteTestSupport {
             LOG.log(Level.WARNING, "Failed to get connection via reflection", e);
             return null;
         }
-    }
-
-    private static void setStaticField(Class<?> clazz, String fieldName, Object value) throws Exception {
-        Field field = clazz.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(null, value);
     }
 }

@@ -426,13 +426,13 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
 
         // Count bindings
         viewModel.totalCountProperty().addListener((obs, oldVal, newVal) ->
-            totalCount.setText(newVal + " entries"));
+            totalCount.setText(entryCountText(newVal)));
 
         viewModel.deductibleCountProperty().addListener((obs, oldVal, newVal) ->
-            deductibleCount.setText(newVal + " entries"));
+            deductibleCount.setText(entryCountText(newVal)));
 
         viewModel.nonDeductibleCountProperty().addListener((obs, oldVal, newVal) ->
-            nonDeductibleCount.setText(newVal + " entries"));
+            nonDeductibleCount.setText(entryCountText(newVal)));
 
         // Empty state visibility
         viewModel.emptyStateProperty().addListener((obs, oldVal, newVal) -> {
@@ -452,9 +452,14 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
         totalValue.setText(viewModel.getFormattedTotalExpenses());
         deductibleValue.setText(viewModel.getFormattedDeductibleTotal());
         nonDeductibleValue.setText(viewModel.getFormattedNonDeductibleTotal());
-        totalCount.setText(viewModel.getTotalCount() + " entries");
-        deductibleCount.setText(viewModel.getDeductibleCount() + " entries");
-        nonDeductibleCount.setText(viewModel.getNonDeductibleCount() + " entries");
+        totalCount.setText(entryCountText(viewModel.getTotalCount()));
+        deductibleCount.setText(entryCountText(viewModel.getDeductibleCount()));
+        nonDeductibleCount.setText(entryCountText(viewModel.getNonDeductibleCount()));
+    }
+
+    /** The "N entries" line under a summary card. */
+    private static String entryCountText(Number count) {
+        return Messages.format("expenses.card.entries", count);
     }
 
     private void setupSearch() {

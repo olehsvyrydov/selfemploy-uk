@@ -1,5 +1,5 @@
 broken=74
-tests=886
+tests=854
 
 What the nightly e2e run is measured against.
 
@@ -9,10 +9,18 @@ What the nightly e2e run is measured against.
           a run that never happened reports zero failures and would otherwise look like a clean
           sweep. A count far above it means reports from an earlier run are being counted too.
 
-Current readings, 886 tests:
+Current readings, 854 tests:
 
   73   CI
   74   this baseline: the highest expected reading, plus nothing
+  72   a developer desktop, after the consistency suite landed — lower than any earlier local
+       reading (76, 77), so something genuinely improved, most likely e2e classes no longer
+       inheriting a CoreServiceFactory left pointing at a discarded in-memory database. Left at 74
+       until CI confirms it, because a baseline lowered on a local reading trips on the next CI run.
+
+`tests` fell from 886 because ExpenseListViewModelTest gave up its e2e tag: its 33 tests need no
+toolkit and now run in ordinary CI, where a failure blocks a PR instead of being counted here. One
+e2e test was added, so 886 - 33 + 1 = 854.
 
 `broken` is set from CI, where it is enforced, and carries one test of headroom over the highest
 reading seen there. Two runs of the same tree once differed by one, so at least one test is flaky,

@@ -20,6 +20,7 @@ public record ExpenseTableRow(
     ExpenseCategory category,
     BigDecimal amount,
     boolean deductible,
+    BigDecimal allowableAmount,
     String notes,
     int receiptCount
 ) {
@@ -43,9 +44,28 @@ public record ExpenseTableRow(
             expense.category(),
             expense.amount(),
             expense.isAllowable(),
+            expense.allowableAmount(),
             expense.notes(),
             receiptCount
         );
+    }
+
+    /**
+     * Whether any of this expense may be claimed. Not the same as {@link #deductible()}, which asks
+     * only whether the category is allowable: an expense in an allowable category that is marked 0%
+     * business use is deductible by category and claimable for nothing.
+     */
+    public boolean hasClaimableAmount() {
+        return allowableAmount.signum() > 0;
+    }
+
+    /**
+     * Whether any of this expense cannot be claimed — a disallowed category, or the private share of
+     * one marked part business use. An expense can answer true to this and {@link #hasClaimableAmount()}
+     * at once, which is why the summary card counts do not add up to the number of rows.
+     */
+    public boolean hasNonClaimableAmount() {
+        return allowableAmount.compareTo(amount) < 0;
     }
 
     /**
