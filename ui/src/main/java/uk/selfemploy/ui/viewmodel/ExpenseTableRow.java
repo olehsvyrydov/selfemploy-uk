@@ -2,6 +2,7 @@ package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public record ExpenseTableRow(
     BigDecimal amount,
     boolean deductible,
     BigDecimal allowableAmount,
+    int businessUsePercentage,
     String notes,
     int receiptCount
 ) {
@@ -45,6 +47,7 @@ public record ExpenseTableRow(
             expense.amount(),
             expense.isAllowable(),
             expense.allowableAmount(),
+            expense.businessUsePercentage(),
             expense.notes(),
             receiptCount
         );
@@ -66,6 +69,39 @@ public record ExpenseTableRow(
      */
     public boolean hasNonClaimableAmount() {
         return allowableAmount.compareTo(amount) < 0;
+    }
+
+    /** Whether only part of this expense is claimed, which is what the row has to explain. */
+    public boolean isPartlyClaimed() {
+        return hasClaimableAmount() && hasNonClaimableAmount();
+    }
+
+    /**
+     * The claim shown beneath the amount when it is not the whole of it, e.g. "£36.00 claimed (60%
+     * business)"; empty when the amount and the claim are the same and there is nothing to explain.
+     *
+     * <p>The share is the one the user stated, not one derived by dividing the claim by the amount:
+     * the claim is rounded to the penny, so dividing back gives 59% or 61% as often as it gives the
+     * figure they typed.
+     */
+    public String getClaimNote() {
+        if (!isPartlyClaimed()) {
+            return "";
+        }
+        return Messages.format("expenses.row.partClaimed",
+            Money.format(allowableAmount), businessUsePercentage);
+    }
+
+    /**
+     * The whole sentence behind {@link #getClaimNote()}, which the column is too narrow to show.
+     * Empty when there is no claim note.
+     */
+    public String getClaimTooltip() {
+        if (!isPartlyClaimed()) {
+            return "";
+        }
+        return Messages.format("expenses.row.partClaimed.tooltip",
+            Money.format(allowableAmount), Money.format(amount), businessUsePercentage);
     }
 
     /**

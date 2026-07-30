@@ -295,13 +295,34 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
             @Override
             protected void updateItem(String amount, boolean empty) {
                 super.updateItem(amount, empty);
+                setText(null);
                 if (empty || amount == null) {
-                    setText(null);
-                } else {
-                    setText(amount);
-                    setAlignment(Pos.CENTER_RIGHT);
-                    getStyleClass().add("amount-cell");
+                    setGraphic(null);
+                    return;
                 }
+                setAlignment(Pos.CENTER_RIGHT);
+                getStyleClass().add("amount-cell");
+
+                ExpenseTableRow row = getTableRow() == null ? null : getTableRow().getItem();
+                String claimNote = row == null ? "" : row.getClaimNote();
+                if (claimNote.isEmpty()) {
+                    setGraphic(null);
+                    setText(amount);
+                    return;
+                }
+
+                // The amount is what left the bank account, so it stays the figure that reconciles
+                // against a statement; the claim goes underneath rather than replacing it.
+                Label amountLabel = new Label(amount);
+                amountLabel.getStyleClass().add("expense-amount-value");
+                Label claimLabel = new Label(claimNote);
+                claimLabel.getStyleClass().add("expense-claim-note");
+                // The column is too narrow for the whole sentence, so the note is abbreviated and
+                // the reason it is abbreviated to lives in the tooltip.
+                Tooltip.install(claimLabel, new Tooltip(row.getClaimTooltip()));
+                VBox stacked = new VBox(amountLabel, claimLabel);
+                stacked.setAlignment(Pos.CENTER_RIGHT);
+                setGraphic(stacked);
             }
         });
         amountColumn.getStyleClass().add("expense-amount-cell");
@@ -361,13 +382,19 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     setText(null);
                     setGraphic(null);
                 } else {
-                    // Use checkmark for yes, X for no
-                    Label badge = new Label(deductible ? StatusGlyph.PASS : StatusGlyph.FAIL);
-                    badge.getStyleClass().addAll("deductible-badge",
-                        deductible ? "deductible-yes" : "deductible-no");
+                    // A part-business expense is deductible by category but claimed only in part, so
+                    // it gets its own mark: a plain tick would say the whole amount reduces the bill.
+                    ExpenseTableRow row = getTableRow() == null ? null : getTableRow().getItem();
+                    boolean partial = row != null && row.isPartlyClaimed();
 
-                    Tooltip tooltip = new Tooltip(deductible ?
-                        "Tax deductible - reduces your tax bill" : "Not tax deductible");
+                    Label badge = new Label(partial ? StatusGlyph.NEUTRAL
+                        : deductible ? StatusGlyph.PASS : StatusGlyph.FAIL);
+                    badge.getStyleClass().addAll("deductible-badge", partial ? "deductible-partial"
+                        : deductible ? "deductible-yes" : "deductible-no");
+
+                    Tooltip tooltip = new Tooltip(partial
+                        ? Messages.format("expenses.tax.partial", row.businessUsePercentage())
+                        : Messages.get(deductible ? "expenses.tax.yes" : "expenses.tax.no"));
                     Tooltip.install(badge, tooltip);
 
                     setGraphic(badge);

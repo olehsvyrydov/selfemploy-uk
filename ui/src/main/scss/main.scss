@@ -1436,11 +1436,31 @@
     -fx-text-fill: t.$danger-text;
 }
 
+/* Claimed in part: neither the tick nor the cross is true of a part-business expense. */
+.deductible-partial {
+    -fx-background-color: t.$warning-bg;
+    -fx-text-fill: t.$warning-text;
+}
+
 /* ===== Expense Amount Cell ===== */
 .expense-amount-cell {
     -fx-alignment: CENTER_RIGHT;
     -fx-font-weight: bold;
     -fx-text-fill: t.$accent;
+}
+
+/* A stacked amount cell sets a graphic, and the cell's own text styling does not reach a child
+   label — so the amount carries the column's look explicitly and stays flush with the plain rows. */
+.expense-amount-value {
+    -fx-font-weight: bold;
+    -fx-text-fill: t.$accent;
+}
+
+/* The claimable share, under the amount that left the bank account. */
+.expense-claim-note {
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
+    -fx-text-fill: -fx-text-muted;
 }
 
 .amount-cell {
