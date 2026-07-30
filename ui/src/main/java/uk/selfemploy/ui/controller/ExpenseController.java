@@ -382,20 +382,33 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     setText(null);
                     setGraphic(null);
                 } else {
-                    // A part-business expense is deductible by category but claimed only in part, so
-                    // it gets its own mark: a plain tick would say the whole amount reduces the bill.
+                    // The mark reports what is claimed, not what the category permits. Those differ:
+                    // an allowable category at 0% business use claims nothing, and a tick there would
+                    // tell the user their whole spend reduces their bill while every total disagrees.
                     ExpenseTableRow row = getTableRow() == null ? null : getTableRow().getItem();
-                    boolean partial = row != null && row.isPartlyClaimed();
+                    ExpenseTableRow.ClaimState state = row == null
+                        ? (deductible ? ExpenseTableRow.ClaimState.FULL : ExpenseTableRow.ClaimState.NONE)
+                        : row.claimState();
 
-                    Label badge = new Label(partial ? StatusGlyph.NEUTRAL
-                        : deductible ? StatusGlyph.PASS : StatusGlyph.FAIL);
-                    badge.getStyleClass().addAll("deductible-badge", partial ? "deductible-partial"
-                        : deductible ? "deductible-yes" : "deductible-no");
+                    Label badge = new Label(switch (state) {
+                        case FULL -> StatusGlyph.PASS;
+                        case PARTIAL -> StatusGlyph.NEUTRAL;
+                        case NONE -> StatusGlyph.FAIL;
+                    });
+                    badge.getStyleClass().addAll("deductible-badge", switch (state) {
+                        case FULL -> "deductible-yes";
+                        case PARTIAL -> "deductible-partial";
+                        case NONE -> "deductible-no";
+                    });
 
-                    Tooltip tooltip = new Tooltip(partial
-                        ? Messages.format("expenses.tax.partial", row.businessUsePercentage())
-                        : Messages.get(deductible ? "expenses.tax.yes" : "expenses.tax.no"));
-                    Tooltip.install(badge, tooltip);
+                    Tooltip.install(badge, new Tooltip(switch (state) {
+                        case FULL -> Messages.get("expenses.tax.yes");
+                        case PARTIAL -> Messages.format("expenses.tax.partial",
+                            row.businessUsePercentage());
+                        case NONE -> row != null && row.deductible()
+                            ? Messages.format("expenses.tax.noneAtZero", row.businessUsePercentage())
+                            : Messages.get("expenses.tax.no");
+                    }));
 
                     setGraphic(badge);
                     setText(null);

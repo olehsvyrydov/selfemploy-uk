@@ -13,6 +13,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
@@ -481,6 +482,60 @@ class TaxSummaryControllerTest {
             assertThat(lineItems.get(0).boxRef()).isEqualTo("Box 17");
             assertThat(lineItems.get(1).boxRef()).isEqualTo("Box 20");
             assertThat(lineItems.get(2).boxRef()).isEqualTo("Box 28");
+        }
+
+        @Test
+        @DisplayName("a box reports what was spent in it and how much of that is claimed")
+        void shouldCarryBothTheSpendAndTheClaim() {
+            viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("100.00"),
+                    new BigDecimal("60.00"));
+
+            var lineItem = controller.getExpenseLineItems().get(0);
+
+            assertThat(lineItem.amount())
+                    .as("SA103F reports the whole spend in the box, whatever is claimed of it")
+                    .isEqualByComparingTo(new BigDecimal("100.00"));
+            assertThat(lineItem.claimable()).isEqualByComparingTo(new BigDecimal("60.00"));
+        }
+
+        @Test
+        @DisplayName("a box claiming less than it holds says so on the row")
+        void shouldMarkABoxThatIsNotFullyClaimed() {
+            viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("100.00"),
+                    new BigDecimal("60.00"));
+
+            assertThat(controller.getExpenseLineItems().get(0).claimNote())
+                    .as("without this the row reads as if the whole £100.00 reduced profit, and a "
+                        + "user transcribing the box onto SA103F over-claims")
+                    .contains(Money.format(new BigDecimal("60.00")));
+        }
+
+        @Test
+        @DisplayName("a disallowed box is marked not claimable rather than left to look ordinary")
+        void shouldMarkADisallowedBox() {
+            viewModel.addExpenseByCategory(ExpenseCategory.BUSINESS_ENTERTAINMENT,
+                    new BigDecimal("79.11"));
+
+            var lineItem = controller.getExpenseLineItems().get(0);
+
+            assertThat(lineItem.amount())
+                    .as("reported at what it cost — disallowed for profit is not the same as "
+                        + "unreportable")
+                    .isEqualByComparingTo(new BigDecimal("79.11"));
+            assertThat(lineItem.claimable()).isZero();
+            assertThat(lineItem.claimNote())
+                    .isEqualTo(Messages.get("taxSummary.lineItem.notClaimable"));
+        }
+
+        @Test
+        @DisplayName("a box claimed in full carries no note, so the mark means something")
+        void shouldNotAnnotateAFullyClaimedBox() {
+            viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("500.00"));
+
+            assertThat(controller.getExpenseLineItems().get(0).claimNote())
+                    .as("annotating every row would make the annotation invisible on the rows that "
+                        + "need it")
+                    .isEmpty();
         }
     }
 

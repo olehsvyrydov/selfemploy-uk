@@ -31,14 +31,4 @@ public record CategorySpend(BigDecimal spent, BigDecimal claimable) {
                 spent.add(moreSpent == null ? BigDecimal.ZERO : moreSpent),
                 claimable.add(moreClaimable == null ? BigDecimal.ZERO : moreClaimable));
     }
-
-    /** Whether any part of this category's spend cannot be claimed. */
-    public boolean isPartlyClaimable() {
-        return claimable.signum() > 0 && claimable.compareTo(spent) < 0;
-    }
-
-    /** Whether none of this category's spend may be claimed. */
-    public boolean isNotClaimable() {
-        return claimable.signum() == 0 && spent.signum() != 0;
-    }
 }

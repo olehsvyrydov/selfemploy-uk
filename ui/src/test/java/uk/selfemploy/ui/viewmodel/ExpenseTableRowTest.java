@@ -58,6 +58,42 @@ class ExpenseTableRowTest {
     }
 
     @Test
+    @DisplayName("an allowable category at 0% business use claims nothing, and says so")
+    void anAllowableCategoryAtZeroPercentClaimsNothing() {
+        // Reachable from the UI: the dialog accepts 0, and the category is deductible, so the row
+        // looks like an ordinary claim unless it is marked otherwise.
+        ExpenseTableRow row = row(new BigDecimal("600.00"), ExpenseCategory.OFFICE_COSTS, 0);
+
+        assertThat(row.deductible())
+                .as("the category permits a claim, which is exactly why the row cannot take its "
+                    + "mark from the category")
+                .isTrue();
+        assertThat(row.allowableAmount()).isZero();
+        assertThat(row.claimState())
+                .as("a tick here would tell the user £600.00 reduces their bill while the CLAIMABLE "
+                    + "card excludes it and the Tax Summary calls it not claimable")
+                .isEqualTo(ExpenseTableRow.ClaimState.NONE);
+        assertThat(row.getClaimNote()).contains("0%");
+    }
+
+    @Test
+    @DisplayName("a wholly business allowable expense is claimed in full")
+    void aWhollyBusinessAllowableExpenseIsClaimedInFull() {
+        ExpenseTableRow row = row(new BigDecimal("500.00"), ExpenseCategory.OFFICE_COSTS,
+                Expense.FULLY_BUSINESS);
+
+        assertThat(row.claimState()).isEqualTo(ExpenseTableRow.ClaimState.FULL);
+    }
+
+    @Test
+    @DisplayName("a part-business expense is marked as claimed in part")
+    void aPartBusinessExpenseIsMarkedPartial() {
+        ExpenseTableRow row = row(new BigDecimal("60.00"), ExpenseCategory.OFFICE_COSTS, 60);
+
+        assertThat(row.claimState()).isEqualTo(ExpenseTableRow.ClaimState.PARTIAL);
+    }
+
+    @Test
     @DisplayName("a disallowed category is not 'partly' claimed — none of it is")
     void aDisallowedExpenseIsNotPartlyClaimed() {
         ExpenseTableRow row = row(new BigDecimal("79.11"), ExpenseCategory.BUSINESS_ENTERTAINMENT,
@@ -66,10 +102,13 @@ class ExpenseTableRowTest {
         assertThat(row.hasClaimableAmount()).isFalse();
         assertThat(row.hasNonClaimableAmount()).isTrue();
         assertThat(row.isPartlyClaimed())
-                .as("the row is marked not claimable rather than partly claimed, so the amount "
-                    + "must not carry a claim note of its own")
+                .as("the row is marked not claimable rather than partly claimed")
                 .isFalse();
-        assertThat(row.getClaimNote()).isEmpty();
+        assertThat(row.claimState()).isEqualTo(ExpenseTableRow.ClaimState.NONE);
+        assertThat(row.getClaimNote())
+                .as("the category name is itself the reason, so a note would only repeat it — "
+                    + "unlike an allowable category claiming nothing, which looks ordinary")
+                .isEmpty();
     }
 
     private static ExpenseTableRow row(BigDecimal amount, ExpenseCategory category, int businessUse) {

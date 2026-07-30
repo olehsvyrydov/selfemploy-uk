@@ -77,6 +77,24 @@ public record ExpenseTableRow(
     }
 
     /**
+     * How much of this expense reduces the tax bill, which is what the row's mark has to report.
+     *
+     * <p>Read from the money rather than from {@link #deductible()}, because the category answers a
+     * different question. An expense in an allowable category marked 0% business use is deductible by
+     * category and claims nothing, and a mark taken from the category alone tells that user their
+     * whole spend reduces their bill while every total on the same screen says it does not.
+     */
+    public ClaimState claimState() {
+        if (!hasClaimableAmount()) {
+            return ClaimState.NONE;
+        }
+        return hasNonClaimableAmount() ? ClaimState.PARTIAL : ClaimState.FULL;
+    }
+
+    /** What a row's claim mark can say. */
+    public enum ClaimState { FULL, PARTIAL, NONE }
+
+    /**
      * The claim shown beneath the amount when it is not the whole of it, e.g. "£36.00 claimed (60%
      * business)"; empty when the amount and the claim are the same and there is nothing to explain.
      *
@@ -85,11 +103,17 @@ public record ExpenseTableRow(
      * figure they typed.
      */
     public String getClaimNote() {
-        if (!isPartlyClaimed()) {
-            return "";
+        if (isPartlyClaimed()) {
+            return Messages.format("expenses.row.partClaimed",
+                Money.format(allowableAmount), businessUsePercentage);
         }
-        return Messages.format("expenses.row.partClaimed",
-            Money.format(allowableAmount), businessUsePercentage);
+        // An allowable category claiming nothing is the case a reader cannot work out for themselves:
+        // the category column says "Office costs", so without this the row looks like an ordinary
+        // claim. A disallowed category needs no note — its own name is the reason.
+        if (claimState() == ClaimState.NONE && deductible) {
+            return Messages.format("expenses.row.noneClaimed", businessUsePercentage);
+        }
+        return "";
     }
 
     /**
@@ -97,6 +121,10 @@ public record ExpenseTableRow(
      * Empty when there is no claim note.
      */
     public String getClaimTooltip() {
+        if (claimState() == ClaimState.NONE && deductible) {
+            return Messages.format("expenses.row.noneClaimed.tooltip",
+                Money.format(amount), businessUsePercentage);
+        }
         if (!isPartlyClaimed()) {
             return "";
         }
