@@ -524,7 +524,7 @@ class ExpenseControllerTest {
         }
 
         @Test
-        @DisplayName("TC-EXP-050: should show deductible indicator based on category")
+        @DisplayName("TC-EXP-050: should show the claim indicator, which follows the claim not the category")
         void shouldShowDeductibleIndicator() {
             // Given - deductible and non-deductible expenses
             List<Expense> expenses = List.of(
@@ -551,6 +551,11 @@ class ExpenseControllerTest {
 
             assertThat(officeRow.deductible()).isTrue();
             assertThat(deprecRow.deductible()).isFalse();
+
+            // deductible() is category-allowability, which is not what the indicator shows. The mark
+            // follows the claim, so that an allowable category claiming nothing is not ticked.
+            assertThat(officeRow.claimState()).isEqualTo(ExpenseTableRow.ClaimState.FULL);
+            assertThat(deprecRow.claimState()).isEqualTo(ExpenseTableRow.ClaimState.NONE);
         }
 
         @Test

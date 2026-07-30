@@ -328,6 +328,11 @@ public class ExpenseDialogController implements Initializable {
         saveBtn.disableProperty().bind(viewModel.formValidProperty().not());
 
         // Deductible checkbox enable state
+        // A derived indicator, not an input: the claim follows the category and the business-use
+        // share, and save() has never read this box. Leaving it clickable offered the user a choice
+        // that changed nothing and would now be overwritten on their next keystroke.
+        deductibleCheckbox.setMouseTransparent(true);
+        deductibleCheckbox.setFocusTraversable(false);
         deductibleCheckbox.disableProperty().bind(viewModel.deductibleEnabledProperty().not());
 
         // Deductible helper text

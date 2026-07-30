@@ -311,6 +311,10 @@ public class ExpenseDialogViewModel {
                 LocalDate.now(), new BigDecimal(amount.get()), "preview",
                 cat, null, null).withBusinessUsePercentage(share);
         claimableAmount.set(Money.format(candidate.allowableAmount()));
+        // The tick says the expense reduces taxable profit, so it has to follow the claim and not the
+        // category: at 0% business use an allowable category claims nothing, and a tick there
+        // contradicts the £0.00 shown beside it and every total on the screens behind it.
+        deductible.set(candidate.allowableAmount().signum() > 0);
     }
 
     private void validateDate() {

@@ -4,6 +4,7 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.util.Money;
+import uk.selfemploy.ui.util.StatusGlyph;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -93,6 +94,41 @@ public record ExpenseTableRow(
 
     /** What a row's claim mark can say. */
     public enum ClaimState { FULL, PARTIAL, NONE }
+
+    /**
+     * The glyph, style class and tooltip for this row's claim mark.
+     *
+     * <p>Here rather than in the cell factory because a {@code TableCell} needs a JavaFX toolkit, and
+     * a rule that can only be exercised with one ends up with no test at all — which is how the mark
+     * came to be derived from the category while every total on the screen disagreed.
+     */
+    public String claimGlyph() {
+        return switch (claimState()) {
+            case FULL -> StatusGlyph.PASS;
+            case PARTIAL -> StatusGlyph.NEUTRAL;
+            case NONE -> StatusGlyph.FAIL;
+        };
+    }
+
+    /** The style class for {@link #claimGlyph()}. */
+    public String claimBadgeStyleClass() {
+        return switch (claimState()) {
+            case FULL -> "deductible-yes";
+            case PARTIAL -> "deductible-partial";
+            case NONE -> "deductible-no";
+        };
+    }
+
+    /** What the claim mark says when hovered. */
+    public String claimBadgeTooltip() {
+        return switch (claimState()) {
+            case FULL -> Messages.get("expenses.tax.yes");
+            case PARTIAL -> Messages.format("expenses.tax.partial", businessUsePercentage);
+            case NONE -> deductible
+                ? Messages.format("expenses.tax.noneAtZero", businessUsePercentage)
+                : Messages.get("expenses.tax.no");
+        };
+    }
 
     /**
      * The claim shown beneath the amount when it is not the whole of it, e.g. "£36.00 claimed (60%

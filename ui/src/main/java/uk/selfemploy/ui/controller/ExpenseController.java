@@ -386,29 +386,17 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     // an allowable category at 0% business use claims nothing, and a tick there would
                     // tell the user their whole spend reduces their bill while every total disagrees.
                     ExpenseTableRow row = getTableRow() == null ? null : getTableRow().getItem();
-                    ExpenseTableRow.ClaimState state = row == null
-                        ? (deductible ? ExpenseTableRow.ClaimState.FULL : ExpenseTableRow.ClaimState.NONE)
-                        : row.claimState();
+                    if (row == null) {
+                        // The row is not attached yet; leave the cell blank rather than guess from
+                        // the category, which is the rule this mark exists to stop using.
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
 
-                    Label badge = new Label(switch (state) {
-                        case FULL -> StatusGlyph.PASS;
-                        case PARTIAL -> StatusGlyph.NEUTRAL;
-                        case NONE -> StatusGlyph.FAIL;
-                    });
-                    badge.getStyleClass().addAll("deductible-badge", switch (state) {
-                        case FULL -> "deductible-yes";
-                        case PARTIAL -> "deductible-partial";
-                        case NONE -> "deductible-no";
-                    });
-
-                    Tooltip.install(badge, new Tooltip(switch (state) {
-                        case FULL -> Messages.get("expenses.tax.yes");
-                        case PARTIAL -> Messages.format("expenses.tax.partial",
-                            row.businessUsePercentage());
-                        case NONE -> row != null && row.deductible()
-                            ? Messages.format("expenses.tax.noneAtZero", row.businessUsePercentage())
-                            : Messages.get("expenses.tax.no");
-                    }));
+                    Label badge = new Label(row.claimGlyph());
+                    badge.getStyleClass().addAll("deductible-badge", row.claimBadgeStyleClass());
+                    Tooltip.install(badge, new Tooltip(row.claimBadgeTooltip()));
 
                     setGraphic(badge);
                     setText(null);
