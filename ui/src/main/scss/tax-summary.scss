@@ -191,6 +191,14 @@
     -fx-text-fill: -fx-text-primary;
 }
 
+/* Why a row's amount is not all deducted: a disallowed category, or a part-business share. */
+.line-item-claim-note {
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+    -fx-text-fill: -fx-text-muted;
+    -fx-padding: 0 8 0 0;
+}
+
 .line-item-value.negative {
     -fx-text-fill: t.$accent;
 }

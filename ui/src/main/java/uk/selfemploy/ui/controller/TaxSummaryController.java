@@ -25,6 +25,7 @@ import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.util.Money;
+import uk.selfemploy.ui.viewmodel.CategorySpend;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
@@ -341,7 +342,8 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
         for (Expense expense : expenses) {
-            viewModel.addExpenseByCategory(expense.category(), expense.allowableAmount());
+            viewModel.addExpenseByCategory(expense.category(), expense.amount(),
+                expense.allowableAmount());
         }
 
         // Calculate tax with the loaded data
@@ -480,11 +482,12 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         return formatCurrency(viewModel.getTurnover());
     }
 
+    /** The deduction in the profit calculation, which is only ever the claimable part. */
     public String getFormattedExpensesForCalculation() {
         if (viewModel == null) {
             return "-" + formatCurrency(BigDecimal.ZERO);
         }
-        return "-" + formatCurrency(viewModel.getTotalExpenses());
+        return "-" + formatCurrency(viewModel.getAllowableExpenses());
     }
 
     // === Expense Line Items ===
@@ -497,7 +500,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             return Collections.emptyList();
         }
 
-        Map<ExpenseCategory, BigDecimal> breakdown;
+        Map<ExpenseCategory, CategorySpend> breakdown;
         try {
             breakdown = viewModel.getExpenseBreakdown();
         } catch (IllegalArgumentException e) {
@@ -513,7 +516,8 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             .map(entry -> new ExpenseLineItem(
                 formatCategoryDisplayName(entry.getKey()),
                 "Box " + entry.getKey().getSa103Box(),
-                entry.getValue()
+                entry.getValue().spent(),
+                entry.getValue().claimable()
             ))
             .sorted(Comparator.comparing(item -> Integer.parseInt(item.boxRef().replace("Box ", ""))))
             .collect(Collectors.toList());
@@ -853,7 +857,16 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         Label amountLabel = new Label(formatCurrency(item.amount()));
         amountLabel.getStyleClass().add("line-item-value");
 
-        row.getChildren().addAll(categoryLabel, boxLabel, spacer, amountLabel);
+        row.getChildren().addAll(categoryLabel, boxLabel, spacer);
+
+        String claimNote = item.claimNote();
+        if (!claimNote.isEmpty()) {
+            Label claimLabel = new Label(claimNote);
+            claimLabel.getStyleClass().add("line-item-claim-note");
+            row.getChildren().add(claimLabel);
+        }
+
+        row.getChildren().add(amountLabel);
         return row;
     }
 
@@ -1040,9 +1053,26 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     // === Record Types for Line Items ===
 
     /**
-     * Represents an expense line item with SA103 box reference.
+     * One SA103 box row: what was spent in that category, and how much of it is being claimed.
+     *
+     * <p>Both, because the row means different things to the two readers it has. A user reconciling
+     * against their bank needs the spend; a user working out why their profit is what it is needs the
+     * claim. Showing only one leaves the other unexplained — and showing only the spend, under a
+     * heading that says "allowable", invites an over-claim on the return.
      */
-    public record ExpenseLineItem(String category, String boxRef, BigDecimal amount) {}
+    public record ExpenseLineItem(String category, String boxRef, BigDecimal amount,
+                                  BigDecimal claimable) {
+
+        /** The note shown beside the amount, or empty when the whole amount is claimed. */
+        public String claimNote() {
+            if (claimable.compareTo(amount) >= 0) {
+                return "";
+            }
+            return claimable.signum() == 0
+                    ? Messages.get("taxSummary.lineItem.notClaimable")
+                    : Messages.format("taxSummary.lineItem.partClaimable", Money.format(claimable));
+        }
+    }
 
     /**
      * Represents a tax band row for income tax or NI display.

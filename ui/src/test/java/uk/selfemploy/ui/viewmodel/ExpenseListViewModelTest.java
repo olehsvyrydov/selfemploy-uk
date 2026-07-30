@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ExpenseListViewModel")
-@Tag("e2e") // Uses JavaFX properties - exclude from headless CI
 class ExpenseListViewModelTest {
 
     @Mock
@@ -167,6 +166,32 @@ class ExpenseListViewModelTest {
             assertThat(viewModel.getTotalCount()).isEqualTo(3);
             assertThat(viewModel.getDeductibleCount()).isEqualTo(2);
             assertThat(viewModel.getNonDeductibleCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("a part-business expense is counted under both cards, as its money is")
+        void shouldCountAPartBusinessExpenseUnderBothCards() {
+            // £54.99 office costs, £45.00 travel at 60% business, £250.00 depreciation.
+            List<Expense> expenses = List.of(
+                expense(new BigDecimal("54.99"), ExpenseCategory.OFFICE_COSTS, Expense.FULLY_BUSINESS),
+                expense(new BigDecimal("45.00"), ExpenseCategory.TRAVEL, 60),
+                expense(new BigDecimal("250.00"), ExpenseCategory.DEPRECIATION, Expense.FULLY_BUSINESS));
+            when(expenseService.findByTaxYear(eq(businessId), eq(taxYear))).thenReturn(expenses);
+            when(expenseService.getTotalByTaxYear(any(), any())).thenReturn(new BigDecimal("349.99"));
+            when(expenseService.getDeductibleTotal(any(), any())).thenReturn(new BigDecimal("81.99"));
+
+            viewModel.loadExpenses();
+
+            assertThat(viewModel.getTotalCount()).isEqualTo(3);
+            assertThat(viewModel.getDeductibleCount())
+                .as("the office costs and the business 60%% of the travel")
+                .isEqualTo(2);
+            assertThat(viewModel.getNonDeductibleCount())
+                .as("the depreciation and the private 40%% of the travel — the travel is counted "
+                    + "twice because its money appears on both cards, so counting it by category "
+                    + "would leave %s of the not-claimable total unaccounted for",
+                    new BigDecimal("18.00"))
+                .isEqualTo(2);
         }
 
         @Test
@@ -601,6 +626,12 @@ class ExpenseListViewModelTest {
                 "Equipment depreciation", ExpenseCategory.DEPRECIATION, null, null, null, null, null,
                 null)
         );
+    }
+
+    private Expense expense(BigDecimal amount, ExpenseCategory category, int businessUsePercentage) {
+        return new Expense(UUID.randomUUID(), businessId, LocalDate.of(2025, 6, 10), amount,
+            category.getDisplayName(), category, null, null, null, null, null, null,
+            businessUsePercentage);
     }
 
     private List<Expense> createManyExpenses(int count) {

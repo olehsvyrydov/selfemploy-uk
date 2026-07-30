@@ -295,13 +295,34 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
             @Override
             protected void updateItem(String amount, boolean empty) {
                 super.updateItem(amount, empty);
+                setText(null);
                 if (empty || amount == null) {
-                    setText(null);
-                } else {
-                    setText(amount);
-                    setAlignment(Pos.CENTER_RIGHT);
-                    getStyleClass().add("amount-cell");
+                    setGraphic(null);
+                    return;
                 }
+                setAlignment(Pos.CENTER_RIGHT);
+                getStyleClass().add("amount-cell");
+
+                ExpenseTableRow row = getTableRow() == null ? null : getTableRow().getItem();
+                String claimNote = row == null ? "" : row.getClaimNote();
+                if (claimNote.isEmpty()) {
+                    setGraphic(null);
+                    setText(amount);
+                    return;
+                }
+
+                // The amount is what left the bank account, so it stays the figure that reconciles
+                // against a statement; the claim goes underneath rather than replacing it.
+                Label amountLabel = new Label(amount);
+                amountLabel.getStyleClass().add("expense-amount-value");
+                Label claimLabel = new Label(claimNote);
+                claimLabel.getStyleClass().add("expense-claim-note");
+                // The column is too narrow for the whole sentence, so the note is abbreviated and
+                // the reason it is abbreviated to lives in the tooltip.
+                Tooltip.install(claimLabel, new Tooltip(row.getClaimTooltip()));
+                VBox stacked = new VBox(amountLabel, claimLabel);
+                stacked.setAlignment(Pos.CENTER_RIGHT);
+                setGraphic(stacked);
             }
         });
         amountColumn.getStyleClass().add("expense-amount-cell");
@@ -361,14 +382,21 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
                     setText(null);
                     setGraphic(null);
                 } else {
-                    // Use checkmark for yes, X for no
-                    Label badge = new Label(deductible ? StatusGlyph.PASS : StatusGlyph.FAIL);
-                    badge.getStyleClass().addAll("deductible-badge",
-                        deductible ? "deductible-yes" : "deductible-no");
+                    // The mark reports what is claimed, not what the category permits. Those differ:
+                    // an allowable category at 0% business use claims nothing, and a tick there would
+                    // tell the user their whole spend reduces their bill while every total disagrees.
+                    ExpenseTableRow row = getTableRow() == null ? null : getTableRow().getItem();
+                    if (row == null) {
+                        // The row is not attached yet; leave the cell blank rather than guess from
+                        // the category, which is the rule this mark exists to stop using.
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
 
-                    Tooltip tooltip = new Tooltip(deductible ?
-                        "Tax deductible - reduces your tax bill" : "Not tax deductible");
-                    Tooltip.install(badge, tooltip);
+                    Label badge = new Label(row.claimGlyph());
+                    badge.getStyleClass().addAll("deductible-badge", row.claimBadgeStyleClass());
+                    Tooltip.install(badge, new Tooltip(row.claimBadgeTooltip()));
 
                     setGraphic(badge);
                     setText(null);
@@ -426,13 +454,13 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
 
         // Count bindings
         viewModel.totalCountProperty().addListener((obs, oldVal, newVal) ->
-            totalCount.setText(newVal + " entries"));
+            totalCount.setText(entryCountText(newVal)));
 
         viewModel.deductibleCountProperty().addListener((obs, oldVal, newVal) ->
-            deductibleCount.setText(newVal + " entries"));
+            deductibleCount.setText(entryCountText(newVal)));
 
         viewModel.nonDeductibleCountProperty().addListener((obs, oldVal, newVal) ->
-            nonDeductibleCount.setText(newVal + " entries"));
+            nonDeductibleCount.setText(entryCountText(newVal)));
 
         // Empty state visibility
         viewModel.emptyStateProperty().addListener((obs, oldVal, newVal) -> {
@@ -452,9 +480,14 @@ public class ExpenseController implements Initializable, MainController.TaxYearA
         totalValue.setText(viewModel.getFormattedTotalExpenses());
         deductibleValue.setText(viewModel.getFormattedDeductibleTotal());
         nonDeductibleValue.setText(viewModel.getFormattedNonDeductibleTotal());
-        totalCount.setText(viewModel.getTotalCount() + " entries");
-        deductibleCount.setText(viewModel.getDeductibleCount() + " entries");
-        nonDeductibleCount.setText(viewModel.getNonDeductibleCount() + " entries");
+        totalCount.setText(entryCountText(viewModel.getTotalCount()));
+        deductibleCount.setText(entryCountText(viewModel.getDeductibleCount()));
+        nonDeductibleCount.setText(entryCountText(viewModel.getNonDeductibleCount()));
+    }
+
+    /** The "N entries" line under a summary card. */
+    private static String entryCountText(Number count) {
+        return Messages.format("expenses.card.entries", count);
     }
 
     private void setupSearch() {

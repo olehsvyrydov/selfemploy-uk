@@ -1,5 +1,5 @@
 broken=74
-tests=882
+tests=854
 
 What the nightly e2e run is measured against.
 
@@ -9,10 +9,22 @@ What the nightly e2e run is measured against.
           a run that never happened reports zero failures and would otherwise look like a clean
           sweep. A count far above it means reports from an earlier run are being counted too.
 
-Current readings, 882 tests:
+Current readings, 854 tests:
 
-  73   CI
+  70   CI, nightly of 2026-07-30 on this branch (886 tests, before the review fixes)
+  72   a developer desktop, after the review fixes — lower than any earlier local reading (76, 77),
+       most likely e2e classes no longer inheriting a CoreServiceFactory left pointing at a
+       discarded in-memory database
+  73   CI, earlier
   74   this baseline: the highest expected reading, plus nothing
+
+Left at 74 on one nightly. CI has read 73 and 70, so a single reading is not yet enough to tell a
+real gain from the known flake, and a baseline set to the best run trips on the next ordinary one.
+Lower it once a second nightly agrees.
+
+`tests` fell from 886 because ExpenseListViewModelTest gave up its e2e tag: its 33 tests need no
+toolkit and now run in ordinary CI, where a failure blocks a PR instead of being counted here. One
+e2e test was added, so 886 - 33 + 1 = 854.
 
 `broken` is set from CI, where it is enforced, and carries one test of headroom over the highest
 reading seen there. Two runs of the same tree once differed by one, so at least one test is flaky,

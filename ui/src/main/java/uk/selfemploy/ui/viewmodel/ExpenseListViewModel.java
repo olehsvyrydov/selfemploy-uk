@@ -102,11 +102,14 @@ public class ExpenseListViewModel {
             deductibleTotal.set(allowable);
             nonDeductibleTotal.set(nonAllowable);
 
-            // Calculate counts
+            // Counted by the money each card reports, not by category, so an expense marked part
+            // business use is counted under both: its claimable share is in one total and its private
+            // share in the other. The two therefore overlap rather than summing to the row count.
             totalCount.set(rows.size());
-            long deductible = rows.stream().filter(ExpenseTableRow::deductible).count();
-            deductibleCount.set((int) deductible);
-            nonDeductibleCount.set(rows.size() - (int) deductible);
+            deductibleCount.set(
+                    (int) rows.stream().filter(ExpenseTableRow::hasClaimableAmount).count());
+            nonDeductibleCount.set(
+                    (int) rows.stream().filter(ExpenseTableRow::hasNonClaimableAmount).count());
 
             // Update pagination
             updatePagination();
