@@ -341,7 +341,8 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
         for (Expense expense : expenses) {
-            viewModel.addExpenseByCategory(expense.category(), expense.allowableAmount());
+            viewModel.addExpenseByCategory(expense.category(), expense.amount(),
+                expense.allowableAmount());
         }
 
         // Calculate tax with the loaded data
@@ -480,11 +481,12 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         return formatCurrency(viewModel.getTurnover());
     }
 
+    /** The deduction in the profit calculation, which is only ever the claimable part. */
     public String getFormattedExpensesForCalculation() {
         if (viewModel == null) {
             return "-" + formatCurrency(BigDecimal.ZERO);
         }
-        return "-" + formatCurrency(viewModel.getTotalExpenses());
+        return "-" + formatCurrency(viewModel.getAllowableExpenses());
     }
 
     // === Expense Line Items ===

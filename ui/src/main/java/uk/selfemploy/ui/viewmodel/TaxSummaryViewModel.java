@@ -76,8 +76,13 @@ public class TaxSummaryViewModel {
 
     // === Expense Breakdown ===
 
+    /** What was spent per SA103 category, which is what a return has to declare. */
     private final ObservableMap<ExpenseCategory, BigDecimal> expenseBreakdown =
         FXCollections.observableMap(new EnumMap<>(ExpenseCategory.class));
+
+    /** The part of each category's spend that may be claimed, which is what reduces profit. */
+    private final Map<ExpenseCategory, BigDecimal> claimableBreakdown =
+        new EnumMap<>(ExpenseCategory.class);
 
     // === Calculation Results (cached) ===
 
@@ -432,21 +437,38 @@ public class TaxSummaryViewModel {
     }
 
     /**
-     * Adds an expense amount to a specific SA103 category.
-     * Updates both the category breakdown and total expenses.
+     * Adds what was spent in an SA103 category, claiming as much of it as the category allows.
      *
      * @param category The expense category
      * @param amount The expense amount to add
      */
     public void addExpenseByCategory(ExpenseCategory category, BigDecimal amount) {
+        addExpenseByCategory(category, amount, category != null && category.isAllowable()
+                ? amount : BigDecimal.ZERO);
+    }
+
+    /**
+     * Adds what was spent in an SA103 category together with the part of it that may be claimed.
+     *
+     * <p>The two differ for a part-business expense, where the claim is a stated share of the amount.
+     * The category alone cannot answer that, which is why the claimable figure is supplied rather than
+     * derived: the breakdown reports the spend a return has to declare, and the claim is what reduces
+     * profit.
+     *
+     * @param category the expense category
+     * @param amount what was spent
+     * @param claimable the part of it that may be claimed, which may be zero
+     */
+    public void addExpenseByCategory(ExpenseCategory category, BigDecimal amount, BigDecimal claimable) {
         if (category == null || amount == null) {
             return;
         }
 
-        BigDecimal current = expenseBreakdown.getOrDefault(category, BigDecimal.ZERO);
-        expenseBreakdown.put(category, current.add(amount));
+        expenseBreakdown.put(category,
+                expenseBreakdown.getOrDefault(category, BigDecimal.ZERO).add(amount));
+        claimableBreakdown.put(category, claimableBreakdown.getOrDefault(category, BigDecimal.ZERO)
+                .add(claimable == null ? BigDecimal.ZERO : claimable));
 
-        // Recalculate totals
         recalculateExpenseTotals();
     }
 
@@ -455,6 +477,7 @@ public class TaxSummaryViewModel {
      */
     public void clearExpenseBreakdown() {
         expenseBreakdown.clear();
+        claimableBreakdown.clear();
         totalExpenses.set(BigDecimal.ZERO);
         allowableExpenses.set(BigDecimal.ZERO);
     }
@@ -466,8 +489,13 @@ public class TaxSummaryViewModel {
      */
     public void setExpenseBreakdown(Map<ExpenseCategory, BigDecimal> breakdown) {
         expenseBreakdown.clear();
+        claimableBreakdown.clear();
         if (breakdown != null) {
-            expenseBreakdown.putAll(breakdown);
+            breakdown.forEach((category, amount) -> {
+                expenseBreakdown.put(category, amount);
+                claimableBreakdown.put(category,
+                        category.isAllowable() ? amount : BigDecimal.ZERO);
+            });
         }
         recalculateExpenseTotals();
     }
@@ -560,15 +588,13 @@ public class TaxSummaryViewModel {
 
     private void recalculateExpenseTotals() {
         BigDecimal total = BigDecimal.ZERO;
-        BigDecimal allowable = BigDecimal.ZERO;
-
-        for (Map.Entry<ExpenseCategory, BigDecimal> entry : expenseBreakdown.entrySet()) {
-            BigDecimal amount = entry.getValue();
+        for (BigDecimal amount : expenseBreakdown.values()) {
             total = total.add(amount);
+        }
 
-            if (entry.getKey().isAllowable()) {
-                allowable = allowable.add(amount);
-            }
+        BigDecimal allowable = BigDecimal.ZERO;
+        for (BigDecimal amount : claimableBreakdown.values()) {
+            allowable = allowable.add(amount);
         }
 
         totalExpenses.set(total);

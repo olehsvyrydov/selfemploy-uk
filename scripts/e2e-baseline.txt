@@ -1,5 +1,5 @@
 broken=74
-tests=882
+tests=886
 
 What the nightly e2e run is measured against.
 
@@ -9,7 +9,7 @@ What the nightly e2e run is measured against.
           a run that never happened reports zero failures and would otherwise look like a clean
           sweep. A count far above it means reports from an earlier run are being counted too.
 
-Current readings, 882 tests:
+Current readings, 886 tests:
 
   73   CI
   74   this baseline: the highest expected reading, plus nothing
