@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.core.profit.CategorySpend;
+import uk.selfemploy.core.profit.ProfitTotals;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
@@ -468,12 +469,30 @@ public class TaxSummaryViewModel {
     }
 
     /**
+     * Takes every figure from one derivation, rather than recomputing any of them here.
+     *
+     * <p>The totals are assigned from the record instead of being re-summed from its breakdown. The
+     * two agree today, but only because two pieces of code happen to add the same numbers the same
+     * way, and that is the arrangement four separate defects came from. Assigning them means there
+     * is one answer.
+     */
+    public void setTotals(ProfitTotals totals) {
+        ProfitTotals derived = totals == null ? ProfitTotals.EMPTY : totals;
+        expenseBreakdown.clear();
+        expenseBreakdown.putAll(derived.byCategory());
+        totalExpenses.set(derived.grossSpend());
+        turnover.set(derived.turnover());
+        // Last, because it is what the net-profit listener watches: setting it after turnover means
+        // the profit is recomputed once, from a turnover that is already current.
+        allowableExpenses.set(derived.allowableSpend());
+    }
+
+    /**
      * Replaces the breakdown with one already derived, category by category.
      *
-     * <p>Takes the spend and the claim together rather than a bare amount. An earlier version of this
-     * method took amounts alone and re-derived the claim from {@link ExpenseCategory#isAllowable()},
-     * which claimed the private share of a part-business expense in full — a figure this type cannot
-     * now express, because it is given both.
+     * <p>Takes the spend and the claim together rather than a bare amount, so a caller cannot supply
+     * a claim re-derived from {@link ExpenseCategory#isAllowable()} alone — which claimed the private
+     * share of a part-business expense in full.
      */
     public void setExpenseBreakdown(Map<ExpenseCategory, CategorySpend> breakdown) {
         expenseBreakdown.clear();

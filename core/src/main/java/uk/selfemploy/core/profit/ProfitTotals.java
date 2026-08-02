@@ -43,7 +43,11 @@ public record ProfitTotals(
         turnover = turnover == null ? BigDecimal.ZERO : turnover;
         grossSpend = grossSpend == null ? BigDecimal.ZERO : grossSpend;
         allowableSpend = allowableSpend == null ? BigDecimal.ZERO : allowableSpend;
-        byCategory = byCategory == null ? Map.of() : Collections.unmodifiableMap(byCategory);
+        // Copied, not wrapped: wrapping leaves a live view over a map the caller still holds, so a
+        // breakdown could stop summing to the totals beside it without anything here changing.
+        byCategory = byCategory == null || byCategory.isEmpty()
+                ? Map.of()
+                : Collections.unmodifiableMap(new EnumMap<>(byCategory));
     }
 
     /**
@@ -56,7 +60,7 @@ public record ProfitTotals(
     public static ProfitTotals of(Collection<Income> incomes, Collection<Expense> expenses) {
         BigDecimal turnover = BigDecimal.ZERO;
         for (Income income : incomes == null ? List.<Income>of() : incomes) {
-            if (income != null && income.amount() != null) {
+            if (income != null) {
                 turnover = turnover.add(income.amount());
             }
         }
@@ -64,8 +68,10 @@ public record ProfitTotals(
         BigDecimal gross = BigDecimal.ZERO;
         BigDecimal allowable = BigDecimal.ZERO;
         Map<ExpenseCategory, CategorySpend> byCategory = new EnumMap<>(ExpenseCategory.class);
+        // Only the element check: Expense's own constructor already refuses a null amount or
+        // category, so guarding those here would be unreachable code pretending to be a safety net.
         for (Expense expense : expenses == null ? List.<Expense>of() : expenses) {
-            if (expense == null || expense.category() == null || expense.amount() == null) {
+            if (expense == null) {
                 continue;
             }
             BigDecimal claim = expense.allowableAmount();

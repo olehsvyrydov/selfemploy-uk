@@ -336,11 +336,10 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
 
-        // Derived once, in core, so this screen cannot reach a different profit from the Dashboard
-        // or from what is filed. Every figure below formats these totals rather than summing again.
-        ProfitTotals totals = ProfitTotals.of(incomes, expenses);
-        viewModel.setTurnover(totals.turnover());
-        viewModel.setExpenseBreakdown(totals.byCategory());
+        // Derived in core, by the same code the quarterly submission uses, so this screen and what
+        // is filed cannot reach different figures. Everything below formats these totals rather than
+        // summing the records again.
+        viewModel.setTotals(ProfitTotals.of(incomes, expenses));
 
         // Calculate tax with the loaded data
         viewModel.calculateTax();
