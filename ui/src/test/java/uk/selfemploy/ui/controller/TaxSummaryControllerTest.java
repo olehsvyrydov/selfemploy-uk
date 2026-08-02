@@ -485,6 +485,15 @@ class TaxSummaryControllerTest {
         }
 
         @Test
+        @DisplayName("a year with no records has no line items, and does not throw getting them")
+        void shouldReturnNoLineItemsForAnEmptyYear() {
+            // This used to throw IllegalArgumentException from EnumMap's copy constructor, and the
+            // controller survived only by catching it. The catch is gone, so the empty year has to
+            // work rather than be rescued.
+            assertThat(controller.getExpenseLineItems()).isEmpty();
+        }
+
+        @Test
         @DisplayName("a box reports what was spent in it and how much of that is claimed")
         void shouldCarryBothTheSpendAndTheClaim() {
             viewModel.addExpenseByCategory(ExpenseCategory.OFFICE_COSTS, new BigDecimal("100.00"),

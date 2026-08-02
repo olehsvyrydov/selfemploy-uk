@@ -41,7 +41,7 @@ public class QuarterlyReviewData {
     private final LocalDate periodEnd;
     private final BigDecimal totalIncome;
     private final int incomeTransactionCount;
-    private final Map<ExpenseCategory, CategorySummary> expensesByCategory;
+    private final EnumMap<ExpenseCategory, CategorySummary> expensesByCategory;
     private final BigDecimal totalExpenses;
     private final int expenseTransactionCount;
 
@@ -52,9 +52,12 @@ public class QuarterlyReviewData {
         this.periodEnd = Objects.requireNonNull(builder.periodEnd, "periodEnd must not be null");
         this.totalIncome = Objects.requireNonNull(builder.totalIncome, "totalIncome must not be null");
         this.incomeTransactionCount = builder.incomeTransactionCount;
-        this.expensesByCategory = builder.expensesByCategory != null
-                ? new EnumMap<>(builder.expensesByCategory)
-                : new EnumMap<>(ExpenseCategory.class);
+        // Built by putAll rather than the EnumMap copy constructor, which throws when handed an
+        // empty map that is not itself an EnumMap. A quarter with no expenses is ordinary.
+        this.expensesByCategory = new EnumMap<>(ExpenseCategory.class);
+        if (builder.expensesByCategory != null) {
+            this.expensesByCategory.putAll(builder.expensesByCategory);
+        }
         this.totalExpenses = Objects.requireNonNull(builder.totalExpenses, "totalExpenses must not be null");
         this.expenseTransactionCount = builder.expenseTransactionCount;
     }
@@ -86,7 +89,9 @@ public class QuarterlyReviewData {
     }
 
     public Map<ExpenseCategory, CategorySummary> getExpensesByCategory() {
-        return new EnumMap<>(expensesByCategory);
+        Map<ExpenseCategory, CategorySummary> copy = new EnumMap<>(ExpenseCategory.class);
+        copy.putAll(expensesByCategory);
+        return copy;
     }
 
     public BigDecimal getTotalExpenses() {

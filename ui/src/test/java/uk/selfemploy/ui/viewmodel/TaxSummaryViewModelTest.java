@@ -384,14 +384,29 @@ class TaxSummaryViewModelTest {
         }
 
         @Test
-        @DisplayName("net profit is taken from the derivation too, not recomputed here")
-        void shouldTakeNetProfitFromTheDerivation() {
-            viewModel.setTotals(inconsistent());
+        @DisplayName("net profit is assigned, so it cannot survive a period that changed nothing")
+        void shouldAssignNetProfitEvenWhenNoPropertyChanges() {
+            // The inconsistent fixture cannot test this: ProfitTotals.netProfit() is defined as
+            // turnover minus allowable, and setTotals writes both into the properties the listener
+            // reads, so listener and assignment always agree. What separates them is a period where
+            // neither property changes — JavaFX fires on reference inequality, and a fresh view
+            // model already holds the same BigDecimal.ZERO that an empty period carries. Then no
+            // listener runs at all, and only an explicit assignment clears the stale figure.
+            viewModel.setNetProfit(new BigDecimal("999.00"));
+
+            viewModel.setTotals(ProfitTotals.EMPTY);
 
             assertThat(viewModel.getNetProfit())
-                    .as("Box 31 is the figure a return is built on, so it must come from the same "
-                        + "derivation as everything beside it")
-                    .isEqualByComparingTo(new BigDecimal("600.00"));
+                    .as("Box 31 left over from the year before is a wrong figure on a return")
+                    .isZero();
+        }
+
+        @Test
+        @DisplayName("net profit matches the derivation for an ordinary period")
+        void shouldReportTheDerivedNetProfit() {
+            viewModel.setTotals(inconsistent());
+
+            assertThat(viewModel.getNetProfit()).isEqualByComparingTo(new BigDecimal("600.00"));
         }
 
         @Test

@@ -492,11 +492,12 @@ public class TaxSummaryViewModel {
         totalExpenses.set(derived.grossSpend());
         turnover.set(derived.turnover());
         allowableExpenses.set(derived.allowableSpend());
-        // Assigned last and explicitly. Both properties above carry a listener that recomputes the
-        // profit, so during this method it is computed twice, once from a turnover that is current
-        // against an allowable total that is not yet. Those intermediate values are never observed,
-        // but leaving the final figure to a listener would mean Box 31 is the one number on the
-        // return this method did not take from the derivation.
+        // Assigned last and explicitly, rather than left to the listeners on the two properties
+        // above. Those listeners fire only when a property's value changes by reference, so on a
+        // period whose turnover and allowable total are unchanged — an empty year after another
+        // empty year, most obviously — none of them fires at all and net profit would keep whatever
+        // the previous period left in it. Box 31 is the figure a return is built on; it comes from
+        // the derivation like everything beside it.
         netProfit.set(derived.netProfit());
     }
 
