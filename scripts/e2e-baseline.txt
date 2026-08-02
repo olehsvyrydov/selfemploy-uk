@@ -1,4 +1,4 @@
-broken=74
+broken=72
 tests=854
 
 What the nightly e2e run is measured against.
@@ -9,27 +9,24 @@ What the nightly e2e run is measured against.
           a run that never happened reports zero failures and would otherwise look like a clean
           sweep. A count far above it means reports from an earlier run are being counted too.
 
-Current readings, 854 tests:
+Current readings, 854 tests. Three nightlies of the SAME commit (1839c83), which is what makes the
+flake measurable rather than inferred:
 
-  70   CI, nightly of 2026-07-30 on this branch (886 tests, before the review fixes)
-  72   a developer desktop, after the review fixes — lower than any earlier local reading (76, 77),
-       most likely e2e classes no longer inheriting a CoreServiceFactory left pointing at a
-       discarded in-memory database
-  73   CI, earlier
-  74   this baseline: the highest expected reading, plus nothing
-
-Left at 74 on one nightly. CI has read 73 and 70, so a single reading is not yet enough to tell a
-real gain from the known flake, and a baseline set to the best run trips on the next ordinary one.
-Lower it once a second nightly agrees.
+  71   CI, 2026-07-31
+  70   CI, 2026-08-01
+  71   CI, 2026-08-02
+  72   this baseline: the highest reading, plus one for the flake those three runs just measured
 
 `tests` fell from 886 because ExpenseListViewModelTest gave up its e2e tag: its 33 tests need no
 toolkit and now run in ordinary CI, where a failure blocks a PR instead of being counted here. One
-e2e test was added, so 886 - 33 + 1 = 854.
+e2e test was added, so 886 - 33 + 1 = 854 — and all three nightlies read exactly 854, so the
+population is what it claims to be.
 
 `broken` is set from CI, where it is enforced, and carries one test of headroom over the highest
-reading seen there. Two runs of the same tree once differed by one, so at least one test is flaky,
-and a ratchet that trips on a coin flip gets ignored like any other false alarm - which is how this
-suite reached its current state. Finding that flaky test would let this drop.
+reading seen there. The three readings above are the same tree scoring 71, 70, 71, which pins the
+flake at plus or minus one rather than leaving it inferred - so 71 would trip on a coin flip, and a
+ratchet that cries wolf gets ignored like any other false alarm, which is how this suite reached its
+current state. Finding that flaky test would let this drop to 70.
 
 How it got here, since the numbers only make sense in order (all on 2026-07-28):
 
