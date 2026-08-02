@@ -17,19 +17,16 @@ flake measurable rather than inferred:
   71   CI, 2026-08-02
   72   this baseline: the highest reading, plus one for the flake those three runs just measured
 
-The same tree scoring 71, 70, 71 is the one-test flake this file has been describing, now pinned to
-±1 rather than guessed at. So 72 is the lowest honest baseline: 71 would trip on a coin flip, and a
-ratchet that cries wolf gets ignored, which is how this suite reached its current state.
-
 `tests` fell from 886 because ExpenseListViewModelTest gave up its e2e tag: its 33 tests need no
 toolkit and now run in ordinary CI, where a failure blocks a PR instead of being counted here. One
 e2e test was added, so 886 - 33 + 1 = 854 — and all three nightlies read exactly 854, so the
 population is what it claims to be.
 
 `broken` is set from CI, where it is enforced, and carries one test of headroom over the highest
-reading seen there. Two runs of the same tree once differed by one, so at least one test is flaky,
-and a ratchet that trips on a coin flip gets ignored like any other false alarm - which is how this
-suite reached its current state. Finding that flaky test would let this drop.
+reading seen there. The three readings above are the same tree scoring 71, 70, 71, which pins the
+flake at plus or minus one rather than leaving it inferred - so 71 would trip on a coin flip, and a
+ratchet that cries wolf gets ignored like any other false alarm, which is how this suite reached its
+current state. Finding that flaky test would let this drop to 70.
 
 How it got here, since the numbers only make sense in order (all on 2026-07-28):
 
