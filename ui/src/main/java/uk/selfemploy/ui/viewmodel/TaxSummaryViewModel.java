@@ -1,5 +1,6 @@
 package uk.selfemploy.ui.viewmodel;
 
+import uk.selfemploy.core.profit.CategorySpend;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
@@ -463,6 +464,22 @@ public class TaxSummaryViewModel {
         expenseBreakdown.put(category,
                 expenseBreakdown.getOrDefault(category, CategorySpend.ZERO).plus(amount, claimable));
 
+        recalculateExpenseTotals();
+    }
+
+    /**
+     * Replaces the breakdown with one already derived, category by category.
+     *
+     * <p>Takes the spend and the claim together rather than a bare amount. An earlier version of this
+     * method took amounts alone and re-derived the claim from {@link ExpenseCategory#isAllowable()},
+     * which claimed the private share of a part-business expense in full — a figure this type cannot
+     * now express, because it is given both.
+     */
+    public void setExpenseBreakdown(Map<ExpenseCategory, CategorySpend> breakdown) {
+        expenseBreakdown.clear();
+        if (breakdown != null) {
+            expenseBreakdown.putAll(breakdown);
+        }
         recalculateExpenseTotals();
     }
 

@@ -11,6 +11,8 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.core.profit.CategorySpend;
+import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.component.QuarterInfoDialog;
@@ -809,16 +811,22 @@ public class QuarterlyUpdatesController implements Initializable, MainController
         try {
             List<Expense> expenses = expenseService.findByQuarter(businessId, taxYear, quarter);
 
-            // Group by category with amount and count
-            Map<ExpenseCategory, List<Expense>> grouped = expenses.stream()
+            // The money comes from the shared derivation, so what is filed cannot differ from what
+            // the Tax Summary showed. Only the transaction counts are computed here, because they
+            // are a property of the records rather than of the totals.
+            ProfitTotals totals = ProfitTotals.of(List.of(), expenses);
+            Map<ExpenseCategory, Long> counts = expenses.stream()
                     .filter(Expense::isAllowable)
-                    .collect(Collectors.groupingBy(Expense::category));
+                    .collect(Collectors.groupingBy(Expense::category, Collectors.counting()));
 
-            for (Map.Entry<ExpenseCategory, List<Expense>> entry : grouped.entrySet()) {
-                BigDecimal categoryTotal = entry.getValue().stream()
-                        .map(Expense::allowableAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                int categoryCount = entry.getValue().size();
+            for (Map.Entry<ExpenseCategory, CategorySpend> entry : totals.byCategory().entrySet()) {
+                // A category HMRC disallows is reported on the return but claimed for nothing, and
+                // the quarterly payload carries claims — so it contributes no line here.
+                if (!entry.getKey().isAllowable()) {
+                    continue;
+                }
+                BigDecimal categoryTotal = entry.getValue().claimable();
+                int categoryCount = counts.getOrDefault(entry.getKey(), 0L).intValue();
                 expensesByCategory.put(entry.getKey(), new CategorySummary(categoryTotal, categoryCount));
                 totalExpenses = totalExpenses.add(categoryTotal);
                 expenseTransactionCount += categoryCount;

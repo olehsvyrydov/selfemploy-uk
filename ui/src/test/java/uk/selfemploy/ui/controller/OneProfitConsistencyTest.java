@@ -14,7 +14,7 @@ import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.SqliteExpenseService;
 import uk.selfemploy.ui.service.SqliteIncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
-import uk.selfemploy.ui.viewmodel.CategorySpend;
+import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;

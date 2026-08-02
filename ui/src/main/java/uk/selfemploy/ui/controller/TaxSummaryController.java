@@ -20,12 +20,13 @@ import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.help.HelpTopicStyle;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.util.Money;
-import uk.selfemploy.ui.viewmodel.CategorySpend;
+import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
@@ -331,20 +332,15 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         viewModel.clearExpenseBreakdown();
         viewModel.setTurnover(BigDecimal.ZERO);
 
-        // Load income data
         var incomes = incomeService.findByTaxYear(businessId, taxYear);
-        BigDecimal totalIncome = incomes.stream()
-            .map(Income::amount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        viewModel.setTurnover(totalIncome);
-
-        // Load expense data and group by category for SA103 breakdown
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
-        for (Expense expense : expenses) {
-            viewModel.addExpenseByCategory(expense.category(), expense.amount(),
-                expense.allowableAmount());
-        }
+
+        // Derived once, in core, so this screen cannot reach a different profit from the Dashboard
+        // or from what is filed. Every figure below formats these totals rather than summing again.
+        ProfitTotals totals = ProfitTotals.of(incomes, expenses);
+        viewModel.setTurnover(totals.turnover());
+        viewModel.setExpenseBreakdown(totals.byCategory());
 
         // Calculate tax with the loaded data
         viewModel.calculateTax();
