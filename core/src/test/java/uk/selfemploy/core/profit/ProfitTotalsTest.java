@@ -181,6 +181,10 @@ class ProfitTotalsTest {
         assertThat(totals.allowableSpend())
                 .as("summed per expense, which is what Expense.allowableAmount() decides")
                 .isEqualByComparingTo(new BigDecimal("0.03"));
+        assertThat(totals.byCategory().get(ExpenseCategory.OFFICE_COSTS).claimable())
+                .as("and per category, which is the figure actually filed — asserting only the "
+                    + "grand total would let the same rounding defect through where it lands")
+                .isEqualByComparingTo(new BigDecimal("0.03"));
     }
 
     @Test

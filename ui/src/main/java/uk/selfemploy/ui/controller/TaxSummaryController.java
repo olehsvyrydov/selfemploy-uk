@@ -336,9 +336,10 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
 
-        // Derived in core, by the same code the quarterly submission uses, so this screen and what
-        // is filed cannot reach different figures. Everything below formats these totals rather than
-        // summing the records again.
+        // Derived in core, by the same code the quarterly submission uses, so the two cannot apply
+        // the claim rule differently. They still report different quantities from it — this screen
+        // shows what was spent in every category, the submission files what is claimed in the
+        // allowable ones — but those now differ by choice rather than by two loops drifting.
         viewModel.setTotals(ProfitTotals.of(incomes, expenses));
 
         // Calculate tax with the loaded data
@@ -495,13 +496,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             return Collections.emptyList();
         }
 
-        Map<ExpenseCategory, CategorySpend> breakdown;
-        try {
-            breakdown = viewModel.getExpenseBreakdown();
-        } catch (IllegalArgumentException e) {
-            // EnumMap copy constructor fails on empty maps
-            return Collections.emptyList();
-        }
+        Map<ExpenseCategory, CategorySpend> breakdown = viewModel.getExpenseBreakdown();
 
         if (breakdown == null || breakdown.isEmpty()) {
             return Collections.emptyList();

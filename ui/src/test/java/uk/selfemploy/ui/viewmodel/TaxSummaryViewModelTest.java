@@ -1,6 +1,7 @@
 package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.core.profit.CategorySpend;
+import uk.selfemploy.core.profit.ProfitTotals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,6 +11,7 @@ import uk.selfemploy.common.enums.ExpenseCategory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -347,6 +349,75 @@ class TaxSummaryViewModelTest {
             viewModel.setTaxYear(TaxYear.of(2025));
 
             assertThat(viewModel.getTaxYearLabel()).isEqualTo("2025/26");
+        }
+    }
+
+    @Nested
+    @DisplayName("Totals come from the derivation")
+    class TotalsComeFromTheDerivation {
+
+        /**
+         * Deliberately inconsistent: the scalars say one thing, the breakdown another. Real records
+         * cannot produce this, which is the point — it is the only way to tell a view model that
+         * ASSIGNS the derived totals from one that re-sums the breakdown and happens to agree.
+         */
+        private ProfitTotals inconsistent() {
+            Map<ExpenseCategory, CategorySpend> breakdown = new EnumMap<>(ExpenseCategory.class);
+            breakdown.put(ExpenseCategory.OFFICE_COSTS,
+                    new CategorySpend(new BigDecimal("11.00"), new BigDecimal("7.00")));
+            return new ProfitTotals(new BigDecimal("1000.00"), new BigDecimal("500.00"),
+                    new BigDecimal("400.00"), breakdown);
+        }
+
+        @Test
+        @DisplayName("the totals shown are the derived ones, not a re-sum of the breakdown")
+        void shouldTakeTheTotalsFromTheDerivation() {
+            viewModel.setTotals(inconsistent());
+
+            assertThat(viewModel.getTotalExpenses())
+                    .as("re-summing the breakdown would give 11.00")
+                    .isEqualByComparingTo(new BigDecimal("500.00"));
+            assertThat(viewModel.getAllowableExpenses())
+                    .as("re-summing the breakdown would give 7.00")
+                    .isEqualByComparingTo(new BigDecimal("400.00"));
+            assertThat(viewModel.getTurnover()).isEqualByComparingTo(new BigDecimal("1000.00"));
+        }
+
+        @Test
+        @DisplayName("net profit is taken from the derivation too, not recomputed here")
+        void shouldTakeNetProfitFromTheDerivation() {
+            viewModel.setTotals(inconsistent());
+
+            assertThat(viewModel.getNetProfit())
+                    .as("Box 31 is the figure a return is built on, so it must come from the same "
+                        + "derivation as everything beside it")
+                    .isEqualByComparingTo(new BigDecimal("600.00"));
+        }
+
+        @Test
+        @DisplayName("the breakdown can be read on a year with no records")
+        void shouldReadTheBreakdownOnAnEmptyYear() {
+            viewModel.setTotals(ProfitTotals.EMPTY);
+
+            assertThat(viewModel.getExpenseBreakdown())
+                    .as("a year with no expenses is ordinary, and asking for its breakdown used to "
+                        + "throw — the Tax Summary only survived it by catching the exception")
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("a second year replaces the first, leaving nothing of it behind")
+        void shouldNotLeaveThePreviousYearBehind() {
+            viewModel.setTotals(inconsistent());
+            viewModel.setTotals(ProfitTotals.EMPTY);
+
+            assertThat(viewModel.getTurnover()).isZero();
+            assertThat(viewModel.getTotalExpenses()).isZero();
+            assertThat(viewModel.getAllowableExpenses()).isZero();
+            assertThat(viewModel.getNetProfit())
+                    .as("a stale profit from the year before is a wrong figure on screen")
+                    .isZero();
+            assertThat(viewModel.getExpenseBreakdown()).isEmpty();
         }
     }
 }

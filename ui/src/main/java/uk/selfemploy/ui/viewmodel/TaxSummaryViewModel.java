@@ -426,8 +426,17 @@ public class TaxSummaryViewModel {
 
     // === Expense Breakdown by Category ===
 
+    /**
+     * A copy of the breakdown, safe to hold and safe to ask for on a year with no records.
+     *
+     * <p>Built by {@code putAll} rather than the {@link EnumMap} copy constructor, which throws
+     * {@code IllegalArgumentException} when handed an empty map that is not itself an EnumMap — as
+     * this observable one is not. A year with no expenses is ordinary, not exceptional.
+     */
     public Map<ExpenseCategory, CategorySpend> getExpenseBreakdown() {
-        return new EnumMap<>(expenseBreakdown);
+        Map<ExpenseCategory, CategorySpend> copy = new EnumMap<>(ExpenseCategory.class);
+        copy.putAll(expenseBreakdown);
+        return copy;
     }
 
     public ObservableMap<ExpenseCategory, CategorySpend> expenseBreakdownProperty() {
@@ -482,17 +491,22 @@ public class TaxSummaryViewModel {
         expenseBreakdown.putAll(derived.byCategory());
         totalExpenses.set(derived.grossSpend());
         turnover.set(derived.turnover());
-        // Last, because it is what the net-profit listener watches: setting it after turnover means
-        // the profit is recomputed once, from a turnover that is already current.
         allowableExpenses.set(derived.allowableSpend());
+        // Assigned last and explicitly. Both properties above carry a listener that recomputes the
+        // profit, so during this method it is computed twice, once from a turnover that is current
+        // against an allowable total that is not yet. Those intermediate values are never observed,
+        // but leaving the final figure to a listener would mean Box 31 is the one number on the
+        // return this method did not take from the derivation.
+        netProfit.set(derived.netProfit());
     }
 
     /**
      * Replaces the breakdown with one already derived, category by category.
      *
-     * <p>Takes the spend and the claim together rather than a bare amount, so a caller cannot supply
-     * a claim re-derived from {@link ExpenseCategory#isAllowable()} alone — which claimed the private
-     * share of a part-business expense in full.
+     * <p>Takes the spend and the claim as a pair, so the caller has to have decided the claim before
+     * calling. That is weaker than it looks: nothing here checks where the claim came from, and
+     * {@link #addExpenseByCategory(ExpenseCategory, BigDecimal)} in this class still derives one from
+     * the category alone. Prefer {@link #setTotals}, which takes a whole derivation.
      */
     public void setExpenseBreakdown(Map<ExpenseCategory, CategorySpend> breakdown) {
         expenseBreakdown.clear();
