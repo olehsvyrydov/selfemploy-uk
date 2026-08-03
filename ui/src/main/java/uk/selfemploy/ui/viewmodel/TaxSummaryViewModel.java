@@ -492,12 +492,17 @@ public class TaxSummaryViewModel {
         totalExpenses.set(derived.grossSpend());
         turnover.set(derived.turnover());
         allowableExpenses.set(derived.allowableSpend());
-        // Assigned rather than left to the listeners on the two properties above. Today they would
-        // reach the same number — they compute turnover minus allowable, which is exactly how
-        // ProfitTotals defines net profit — so this changes no figure the app can currently produce.
-        // It makes the derivation the authority instead of that agreement: if net profit there ever
-        // stops being a plain subtraction, say for loss relief carried in, a listener recomputing it
-        // here would quietly disagree with the return it is supposed to be building.
+        // Assigned rather than left to the listeners on the two properties above. Today they reach
+        // the same number — they compute turnover minus allowable, which is how ProfitTotals defines
+        // net profit — so this changes no figure the app can currently produce. It makes the
+        // derivation the authority instead of that agreement, so that a net profit which stops being
+        // a plain subtraction arrives here rather than being recomputed into something else.
+        //
+        // This figure is the Tax Summary's: the profit on screen, the tax estimate beside it and the
+        // Class 2 section. Neither submission reads it — the quarterly return carries its own totals
+        // and the annual one still derives its profit from the services directly. Those are separate
+        // work, and until they are done "one profit" describes this screen and the quarterly
+        // aggregation, not the whole app.
         netProfit.set(derived.netProfit());
     }
 
