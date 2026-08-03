@@ -53,7 +53,10 @@ public class QuarterlyReviewData {
         this.totalIncome = Objects.requireNonNull(builder.totalIncome, "totalIncome must not be null");
         this.incomeTransactionCount = builder.incomeTransactionCount;
         // Built by putAll rather than the EnumMap copy constructor, which throws when handed an
-        // empty map that is not itself an EnumMap. A quarter with no expenses is ordinary.
+        // empty map that is not itself an EnumMap. Every caller today passes an EnumMap, so this
+        // guards a quarter no current code can build - but a nil quarter is an ordinary thing to
+        // report, and a builder that refuses one supplied as Map.of() is a trap worth removing
+        // before someone finds it.
         this.expensesByCategory = new EnumMap<>(ExpenseCategory.class);
         if (builder.expensesByCategory != null) {
             this.expensesByCategory.putAll(builder.expensesByCategory);
@@ -89,9 +92,7 @@ public class QuarterlyReviewData {
     }
 
     public Map<ExpenseCategory, CategorySummary> getExpensesByCategory() {
-        Map<ExpenseCategory, CategorySummary> copy = new EnumMap<>(ExpenseCategory.class);
-        copy.putAll(expensesByCategory);
-        return copy;
+        return new EnumMap<>(expensesByCategory);
     }
 
     public BigDecimal getTotalExpenses() {

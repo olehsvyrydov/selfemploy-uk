@@ -384,20 +384,20 @@ class TaxSummaryViewModelTest {
         }
 
         @Test
-        @DisplayName("net profit is assigned, so it cannot survive a period that changed nothing")
-        void shouldAssignNetProfitEvenWhenNoPropertyChanges() {
-            // The inconsistent fixture cannot test this: ProfitTotals.netProfit() is defined as
-            // turnover minus allowable, and setTotals writes both into the properties the listener
-            // reads, so listener and assignment always agree. What separates them is a period where
-            // neither property changes — JavaFX fires on reference inequality, and a fresh view
-            // model already holds the same BigDecimal.ZERO that an empty period carries. Then no
-            // listener runs at all, and only an explicit assignment clears the stale figure.
+        @DisplayName("net profit is assigned by setTotals, not left to the property listeners")
+        void shouldAssignNetProfitRatherThanLeaveItToListeners() {
+            // Deliberately artificial. The listeners compute turnover minus allowable, which is how
+            // ProfitTotals defines net profit, so on any state production can reach the two agree
+            // and no fixture can separate them. Planting a figure that disagrees — through a setter
+            // production never calls — is what makes the assignment observable at all, and the point
+            // is only that it happens: the derivation decides Box 31, not an arithmetic coincidence
+            // in this class.
             viewModel.setNetProfit(new BigDecimal("999.00"));
 
             viewModel.setTotals(ProfitTotals.EMPTY);
 
             assertThat(viewModel.getNetProfit())
-                    .as("Box 31 left over from the year before is a wrong figure on a return")
+                    .as("setTotals must write the derived profit, not rely on a listener firing")
                     .isZero();
         }
 

@@ -492,12 +492,12 @@ public class TaxSummaryViewModel {
         totalExpenses.set(derived.grossSpend());
         turnover.set(derived.turnover());
         allowableExpenses.set(derived.allowableSpend());
-        // Assigned last and explicitly, rather than left to the listeners on the two properties
-        // above. Those listeners fire only when a property's value changes by reference, so on a
-        // period whose turnover and allowable total are unchanged — an empty year after another
-        // empty year, most obviously — none of them fires at all and net profit would keep whatever
-        // the previous period left in it. Box 31 is the figure a return is built on; it comes from
-        // the derivation like everything beside it.
+        // Assigned rather than left to the listeners on the two properties above. Today they would
+        // reach the same number — they compute turnover minus allowable, which is exactly how
+        // ProfitTotals defines net profit — so this changes no figure the app can currently produce.
+        // It makes the derivation the authority instead of that agreement: if net profit there ever
+        // stops being a plain subtraction, say for loss relief carried in, a listener recomputing it
+        // here would quietly disagree with the return it is supposed to be building.
         netProfit.set(derived.netProfit());
     }
 
