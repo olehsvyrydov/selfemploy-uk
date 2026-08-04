@@ -30,7 +30,16 @@ class OAuthCallbackServerTest {
 
     private static Vertx vertx;
     private OAuthCallbackServer server;
-    private static final int TEST_PORT = 18088; // Different port to avoid conflicts
+    /**
+     * Any free port, chosen by the OS per test rather than shared between them.
+     *
+     * <p>These tests used to share a fixed 18088. Stopping the server is asynchronous, so a test
+     * could bind the port while the previous test's server was still shutting down, and that
+     * shutdown then closed the socket underneath it — the next request got "connection refused"
+     * from a server the test had just watched start. It failed rarely enough to be re-run rather
+     * than fixed, which is how it survived to break the main branch.
+     */
+    private static final int ANY_FREE_PORT = 0;
 
     @BeforeAll
     static void setupVertx() {
@@ -46,7 +55,7 @@ class OAuthCallbackServerTest {
 
     @BeforeEach
     void setup() {
-        server = new OAuthCallbackServer(vertx, TEST_PORT, "/oauth/callback");
+        server = new OAuthCallbackServer(vertx, ANY_FREE_PORT, "/oauth/callback");
     }
 
     @AfterEach
@@ -181,7 +190,7 @@ class OAuthCallbackServerTest {
         @DisplayName("should timeout if no callback received")
         void shouldTimeoutIfNoCallback() throws Exception {
             // Create server with short timeout for test
-            OAuthCallbackServer shortTimeoutServer = new OAuthCallbackServer(vertx, TEST_PORT + 1, "/oauth/callback", 2);
+            OAuthCallbackServer shortTimeoutServer = new OAuthCallbackServer(vertx, ANY_FREE_PORT, "/oauth/callback", 2);
 
             try {
                 CompletableFuture<String> future = shortTimeoutServer.startAndAwaitCallback("state");
@@ -285,7 +294,7 @@ class OAuthCallbackServerTest {
         @DisplayName("should not complete future with USER_CANCELLED if already timed out")
         void shouldNotOverwriteTimeoutWithUserCancelled() throws Exception {
             // Short timeout server
-            OAuthCallbackServer shortTimeoutServer = new OAuthCallbackServer(vertx, TEST_PORT + 2, "/oauth/callback", 1);
+            OAuthCallbackServer shortTimeoutServer = new OAuthCallbackServer(vertx, ANY_FREE_PORT, "/oauth/callback", 1);
 
             try {
                 CompletableFuture<String> future = shortTimeoutServer.startAndAwaitCallback("state");
@@ -328,7 +337,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?code=" + code + "&state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, TEST_PORT, "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(requestFuture::completeExceptionally);
@@ -341,7 +350,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?code=" + code + "&state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, TEST_PORT, "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(err -> requestFuture.complete(null)); // Ignore errors
@@ -354,7 +363,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?error=" + error + "&error_description=" + description + "&state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, TEST_PORT, "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(err -> requestFuture.complete(null)); // Ignore errors
@@ -367,7 +376,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, TEST_PORT, "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(err -> requestFuture.complete(null)); // Ignore errors
@@ -380,7 +389,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?code=" + code + "&state=" + state;
 
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, TEST_PORT, "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
             .compose(HttpClientRequest::send)
             .compose(response -> response.body())
             .onSuccess(body -> responseFuture.complete(body.toString()))
