@@ -41,6 +41,16 @@ class OAuthCallbackServerTest {
      */
     private static final int ANY_FREE_PORT = 0;
 
+    /**
+     * The address the server actually binds, not a name that may resolve elsewhere.
+     *
+     * <p>These tests used to connect to "localhost" while {@code OAuthCallbackServer} binds
+     * 127.0.0.1. Where localhost resolves to ::1 first, the request goes to IPv6 loopback, where
+     * nothing is listening, and fails with "connection refused" from a server that is running
+     * perfectly well on IPv4 — the symptom that broke the main branch.
+     */
+    private static final String LOOPBACK_HOST = "127.0.0.1";
+
     @BeforeAll
     static void setupVertx() {
         vertx = Vertx.vertx();
@@ -337,7 +347,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?code=" + code + "&state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), LOOPBACK_HOST, uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(requestFuture::completeExceptionally);
@@ -350,7 +360,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?code=" + code + "&state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), LOOPBACK_HOST, uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(err -> requestFuture.complete(null)); // Ignore errors
@@ -363,7 +373,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?error=" + error + "&error_description=" + description + "&state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), LOOPBACK_HOST, uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(err -> requestFuture.complete(null)); // Ignore errors
@@ -376,7 +386,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?state=" + state;
 
         CompletableFuture<Void> requestFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), LOOPBACK_HOST, uri)
             .compose(HttpClientRequest::send)
             .onSuccess(response -> requestFuture.complete(null))
             .onFailure(err -> requestFuture.complete(null)); // Ignore errors
@@ -389,7 +399,7 @@ class OAuthCallbackServerTest {
         String uri = "/oauth/callback?code=" + code + "&state=" + state;
 
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
-        client.request(HttpMethod.GET, server.actualPort(), "localhost", uri)
+        client.request(HttpMethod.GET, server.actualPort(), LOOPBACK_HOST, uri)
             .compose(HttpClientRequest::send)
             .compose(response -> response.body())
             .onSuccess(body -> responseFuture.complete(body.toString()))

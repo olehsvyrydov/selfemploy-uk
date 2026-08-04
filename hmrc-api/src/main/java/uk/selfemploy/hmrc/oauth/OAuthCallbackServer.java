@@ -200,7 +200,13 @@ public class OAuthCallbackServer {
      */
     public int actualPort() {
         HttpServer bound = server;
-        return bound == null ? port : bound.actualPort();
+        if (bound == null) {
+            return port;
+        }
+        // Vert.x reports 0 until the socket is bound. Returning that would hand a caller a port
+        // number that cannot be connected to, which is worse than telling them what was asked for.
+        int actual = bound.actualPort();
+        return actual > 0 ? actual : port;
     }
 
     /**
