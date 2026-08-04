@@ -1,5 +1,7 @@
 package uk.selfemploy.ui.viewmodel;
 
+import uk.selfemploy.core.profit.CategorySpend;
+import uk.selfemploy.core.profit.ProfitTotals;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
@@ -424,8 +426,17 @@ public class TaxSummaryViewModel {
 
     // === Expense Breakdown by Category ===
 
+    /**
+     * A copy of the breakdown, safe to hold and safe to ask for on a year with no records.
+     *
+     * <p>Built by {@code putAll} rather than the {@link EnumMap} copy constructor, which throws
+     * {@code IllegalArgumentException} when handed an empty map that is not itself an EnumMap — as
+     * this observable one is not. A year with no expenses is ordinary, not exceptional.
+     */
     public Map<ExpenseCategory, CategorySpend> getExpenseBreakdown() {
-        return new EnumMap<>(expenseBreakdown);
+        Map<ExpenseCategory, CategorySpend> copy = new EnumMap<>(ExpenseCategory.class);
+        copy.putAll(expenseBreakdown);
+        return copy;
     }
 
     public ObservableMap<ExpenseCategory, CategorySpend> expenseBreakdownProperty() {
@@ -463,6 +474,46 @@ public class TaxSummaryViewModel {
         expenseBreakdown.put(category,
                 expenseBreakdown.getOrDefault(category, CategorySpend.ZERO).plus(amount, claimable));
 
+        recalculateExpenseTotals();
+    }
+
+    /**
+     * Takes every figure from one derivation, rather than recomputing any of them here.
+     *
+     * <p>The totals are assigned from the record instead of being re-summed from its breakdown, and
+     * net profit with them. Left to the listeners on turnover and allowable expenses it would reach
+     * the same number today, because they compute the same subtraction {@link ProfitTotals} does —
+     * but that is two pieces of code agreeing by arithmetic, which is the arrangement four separate
+     * defects came from. Assigning it means a profit that stops being a plain subtraction arrives
+     * here rather than being recomputed into something else.
+     *
+     * <p>These are the Tax Summary's figures: the profit on screen, the tax estimate beside it, the
+     * Class 2 section. Neither submission reads them — the quarterly return carries its own totals,
+     * the annual one still derives its profit from the services directly.
+     */
+    public void setTotals(ProfitTotals totals) {
+        ProfitTotals derived = totals == null ? ProfitTotals.EMPTY : totals;
+        expenseBreakdown.clear();
+        expenseBreakdown.putAll(derived.byCategory());
+        totalExpenses.set(derived.grossSpend());
+        turnover.set(derived.turnover());
+        allowableExpenses.set(derived.allowableSpend());
+        netProfit.set(derived.netProfit());
+    }
+
+    /**
+     * Replaces the breakdown with one already derived, category by category.
+     *
+     * <p>Takes the spend and the claim as a pair, so the caller has to have decided the claim before
+     * calling. That is weaker than it looks: nothing here checks where the claim came from, and
+     * {@link #addExpenseByCategory(ExpenseCategory, BigDecimal)} in this class still derives one from
+     * the category alone. Prefer {@link #setTotals}, which takes a whole derivation.
+     */
+    public void setExpenseBreakdown(Map<ExpenseCategory, CategorySpend> breakdown) {
+        expenseBreakdown.clear();
+        if (breakdown != null) {
+            expenseBreakdown.putAll(breakdown);
+        }
         recalculateExpenseTotals();
     }
 

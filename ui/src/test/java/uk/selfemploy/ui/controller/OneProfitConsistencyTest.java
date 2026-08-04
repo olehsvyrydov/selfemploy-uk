@@ -14,7 +14,7 @@ import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.SqliteExpenseService;
 import uk.selfemploy.ui.service.SqliteIncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
-import uk.selfemploy.ui.viewmodel.CategorySpend;
+import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
@@ -303,5 +303,14 @@ class OneProfitConsistencyTest {
                 .reduce(BigDecimal.ZERO, BigDecimal::add))
                 .as("the breakdown adds up to the total that is filed")
                 .isEqualByComparingTo(filed.getTotalExpenses());
+        assertThat(officeCosts.transactionCount())
+                .as("the rent and the phone bill are two records, and the count is derived by a "
+                    + "separate pass from the money — a filed count that disagrees with the filed "
+                    + "amount is a wrong submission")
+                .isEqualTo(2);
+        assertThat(filed.getExpenseTransactionCount())
+                .as("and the totals agree with the per-category counts they are built from")
+                .isEqualTo(filed.getExpensesByCategory().values().stream()
+                        .mapToInt(CategorySummary::transactionCount).sum());
     }
 }

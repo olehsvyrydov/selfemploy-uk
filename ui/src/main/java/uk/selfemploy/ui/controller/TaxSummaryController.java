@@ -20,12 +20,13 @@ import uk.selfemploy.ui.help.HelpTopic;
 import uk.selfemploy.ui.help.HelpTopicStyle;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.legal.Disclaimers;
+import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
 import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.util.Money;
-import uk.selfemploy.ui.viewmodel.CategorySpend;
+import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
@@ -331,20 +332,15 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         viewModel.clearExpenseBreakdown();
         viewModel.setTurnover(BigDecimal.ZERO);
 
-        // Load income data
         var incomes = incomeService.findByTaxYear(businessId, taxYear);
-        BigDecimal totalIncome = incomes.stream()
-            .map(Income::amount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        viewModel.setTurnover(totalIncome);
-
-        // Load expense data and group by category for SA103 breakdown
         var expenses = expenseService.findByTaxYear(businessId, taxYear);
         hasData = !incomes.isEmpty() || !expenses.isEmpty();
-        for (Expense expense : expenses) {
-            viewModel.addExpenseByCategory(expense.category(), expense.amount(),
-                expense.allowableAmount());
-        }
+
+        // Derived in core, by the same code the quarterly submission uses, so the two cannot apply
+        // the claim rule differently. They still report different quantities from it — this screen
+        // shows what was spent in every category, the submission files what is claimed in the
+        // allowable ones — but those now differ by choice rather than by two loops drifting.
+        viewModel.setTotals(ProfitTotals.of(incomes, expenses));
 
         // Calculate tax with the loaded data
         viewModel.calculateTax();
@@ -500,13 +496,7 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             return Collections.emptyList();
         }
 
-        Map<ExpenseCategory, CategorySpend> breakdown;
-        try {
-            breakdown = viewModel.getExpenseBreakdown();
-        } catch (IllegalArgumentException e) {
-            // EnumMap copy constructor fails on empty maps
-            return Collections.emptyList();
-        }
+        Map<ExpenseCategory, CategorySpend> breakdown = viewModel.getExpenseBreakdown();
 
         if (breakdown == null || breakdown.isEmpty()) {
             return Collections.emptyList();
