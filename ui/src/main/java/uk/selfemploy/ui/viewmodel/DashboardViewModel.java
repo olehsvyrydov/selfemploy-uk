@@ -7,6 +7,7 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
+import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.util.Money;
@@ -304,22 +305,20 @@ public class DashboardViewModel {
         // Update current tax year
         setCurrentTaxYear(taxYear);
 
-        // Load totals. Gross expenses feed the "total expenses" card; allowable expenses
-        // feed the taxable net-profit and estimated-tax figures.
-        BigDecimal incomeTotal = incomeService.getTotalByTaxYear(businessId, taxYear);
-        BigDecimal expenseTotal = expenseService.getTotalByTaxYear(businessId, taxYear);
-        BigDecimal allowableTotal = expenseService.getDeductibleTotal(businessId, taxYear);
-
-        setTotalIncome(incomeTotal != null ? incomeTotal : BigDecimal.ZERO);
-        setTotalExpenses(expenseTotal != null ? expenseTotal : BigDecimal.ZERO);
-        setAllowableExpenses(allowableTotal != null ? allowableTotal : BigDecimal.ZERO);
-
-        // Calculate estimated tax
-        calculateEstimatedTax(taxYear);
-
-        // Load entries for monthly trends and activity
         List<Income> incomes = incomeService.findByTaxYear(businessId, taxYear);
         List<Expense> expenses = expenseService.findByTaxYear(businessId, taxYear);
+
+        // Derived from the records this screen already had to load anyway, by the same code as the
+        // Tax Summary and both submissions — so the headline figures and what is filed cannot apply
+        // the claim rule differently. The gross total feeds the expenses card; the allowable one
+        // feeds net profit and the tax estimate.
+        ProfitTotals totals = ProfitTotals.of(incomes, expenses);
+        setTotalIncome(totals.turnover());
+        setTotalExpenses(totals.grossSpend());
+        setAllowableExpenses(totals.allowableSpend());
+        setNetProfit(totals.netProfit());
+
+        calculateEstimatedTax(taxYear);
 
         // Calculate monthly trends
         calculateMonthlyTrends(incomes, expenses);
