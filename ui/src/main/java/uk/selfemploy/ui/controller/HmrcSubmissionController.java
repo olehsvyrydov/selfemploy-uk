@@ -14,6 +14,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.CoreServiceFactory;
@@ -185,6 +186,17 @@ public class HmrcSubmissionController implements Initializable, MainController.T
     }
 
     /**
+     * The year's figures, derived by the same code as the Tax Summary that previewed them and the
+     * quarterly updates already filed against it — so a return cannot be built on a profit the user
+     * was never shown. The services are still where the records come from; only the arithmetic moved.
+     */
+    private ProfitTotals annualTotals() {
+        return ProfitTotals.of(
+                incomeService.findByTaxYear(businessId, taxYear),
+                expenseService.findByTaxYear(businessId, taxYear));
+    }
+
+    /**
      * Initializes the Annual Submission controller with financial data.
      * Package-private for testing.
      *
@@ -196,15 +208,15 @@ public class HmrcSubmissionController implements Initializable, MainController.T
         this.taxYear = taxYear;
         initializeServices();
 
-        BigDecimal totalIncome = incomeService.getTotalByTaxYear(businessId, taxYear);
-        BigDecimal totalExpenses = expenseService.getDeductibleTotal(businessId, taxYear);
-        BigDecimal netProfit = totalIncome.subtract(totalExpenses);
-
+        // Derives through the same method production uses. It used to do the arithmetic itself,
+        // which meant a test could confirm a figure the app would never produce.
+        ProfitTotals totals = annualTotals();
         if (controller != null) {
-            controller.initializeSubmission(taxYear, totalIncome, totalExpenses, netProfit);
+            controller.initializeSubmission(taxYear, totals.turnover(), totals.allowableSpend(),
+                    totals.netProfit());
         }
 
-        return netProfit;
+        return totals.netProfit();
     }
 
     /**
@@ -406,15 +418,14 @@ public class HmrcSubmissionController implements Initializable, MainController.T
         // Ensure services are initialized
         initializeServices();
 
-        // Calculate totals for the tax year using service methods
-        BigDecimal totalIncome = incomeService.getTotalByTaxYear(businessId, taxYear);
-        BigDecimal totalExpenses = expenseService.getDeductibleTotal(businessId, taxYear);
-        BigDecimal netProfit = totalIncome.subtract(totalExpenses);
+        ProfitTotals totals = annualTotals();
 
-        LOG.info("Initializing Annual Submission for " + taxYear.label() +
-                 ": Income=" + totalIncome + ", Expenses=" + totalExpenses + ", NetProfit=" + netProfit);
+        LOG.info("Initializing Annual Submission for " + taxYear.label()
+                 + ": Income=" + totals.turnover()
+                 + ", Expenses=" + totals.allowableSpend()
+                 + ", NetProfit=" + totals.netProfit());
 
-        // Initialize the submission with financial data
-        controller.initializeSubmission(taxYear, totalIncome, totalExpenses, netProfit);
+        controller.initializeSubmission(taxYear, totals.turnover(), totals.allowableSpend(),
+                totals.netProfit());
     }
 }

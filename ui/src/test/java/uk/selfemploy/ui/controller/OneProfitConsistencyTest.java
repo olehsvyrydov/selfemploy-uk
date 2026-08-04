@@ -15,6 +15,7 @@ import uk.selfemploy.ui.service.SqliteExpenseService;
 import uk.selfemploy.ui.service.SqliteIncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
 import uk.selfemploy.core.profit.CategorySpend;
+import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.DashboardViewModel;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
@@ -155,6 +156,44 @@ class OneProfitConsistencyTest {
                 .as("the deduction declared to HMRC must be the claimable one, not the whole spend")
                 .isEqualByComparingTo(OneProfitFixture.ALLOWABLE);
         assertThat(filed.getNetProfit()).isEqualByComparingTo(OneProfitFixture.TAXABLE_PROFIT);
+    }
+
+    /** The figures the annual return is initialised with, derived the way that path derives them. */
+    private ProfitTotals annualReturn() {
+        return ProfitTotals.of(
+                incomeService.findByTaxYear(businessId, OneProfitFixture.TAX_YEAR),
+                expenseService.findByTaxYear(businessId, OneProfitFixture.TAX_YEAR));
+    }
+
+    @Test
+    @DisplayName("the annual return is built on the canonical profit")
+    void theAnnualReturnAgrees() {
+        OneProfitFixture.seedWithPartBusinessExpense(incomeService, expenseService, businessId);
+
+        ProfitTotals annual = annualReturn();
+
+        assertThat(annual.turnover()).isEqualByComparingTo(OneProfitFixture.TURNOVER);
+        assertThat(annual.allowableSpend())
+                .as("the deduction on an SA return is the claimable one, not the whole spend")
+                .isEqualByComparingTo(OneProfitFixture.ALLOWABLE_WITH_PHONE);
+        assertThat(annual.netProfit())
+                .as("this is the figure filed in Box 31")
+                .isEqualByComparingTo(OneProfitFixture.TAXABLE_PROFIT_WITH_PHONE);
+    }
+
+    @Test
+    @DisplayName("the annual return and the service aggregates cannot drift apart")
+    void theAnnualReturnMatchesTheServiceAggregates() {
+        OneProfitFixture.seedWithPartBusinessExpense(incomeService, expenseService, businessId);
+
+        ProfitTotals annual = annualReturn();
+
+        // The path this replaces asked the services for the two totals and subtracted them. Both
+        // routes must give the same answer, or rewiring the annual submission changed what is filed.
+        assertThat(annual.turnover())
+                .isEqualByComparingTo(incomeService.getTotalByTaxYear(businessId, OneProfitFixture.TAX_YEAR));
+        assertThat(annual.allowableSpend())
+                .isEqualByComparingTo(expenseService.getDeductibleTotal(businessId, OneProfitFixture.TAX_YEAR));
     }
 
     @Test
