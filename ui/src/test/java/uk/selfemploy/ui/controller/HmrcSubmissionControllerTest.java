@@ -9,13 +9,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.selfemploy.common.domain.Expense;
+import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.common.enums.IncomeCategory;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -458,167 +463,107 @@ class HmrcSubmissionControllerTest {
             controller.initializeWithDependencies(incomeService, expenseService, businessId);
         }
 
-        @Test
-        @DisplayName("should load total income from income service")
-        void shouldLoadTotalIncomeFromService() {
-            // Given
-            BigDecimal expectedIncome = new BigDecimal("50000.00");
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(expectedIncome);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+        /** Stubs the year's records. The annual return derives its figures from these, not from
+         *  service-level totals, so that it cannot reach a profit the Tax Summary never showed. */
+        private void givenRecords(List<Income> incomes, List<Expense> expenses) {
+            when(incomeService.findByTaxYear(businessId, taxYear)).thenReturn(incomes);
+            when(expenseService.findByTaxYear(businessId, taxYear)).thenReturn(expenses);
+        }
 
-            // When
-            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
+        private Income income(String amount) {
+            return Income.create(businessId, LocalDate.of(2025, 6, 15), new BigDecimal(amount),
+                    "Consulting", IncomeCategory.SALES, null);
+        }
 
-            // Then
-            verify(incomeService).getTotalByTaxYear(businessId, taxYear);
-            assertThat(netProfit).isEqualByComparingTo(expectedIncome);
+        private Expense expense(String amount, ExpenseCategory category) {
+            return Expense.create(businessId, LocalDate.of(2025, 6, 15), new BigDecimal(amount),
+                    category.getDisplayName(), category, null, null);
         }
 
         @Test
-        @DisplayName("should load deductible expenses from expense service")
-        void shouldLoadDeductibleExpensesFromService() {
-            // Given
-            BigDecimal totalIncome = new BigDecimal("50000.00");
-            BigDecimal expectedExpenses = new BigDecimal("10000.00");
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(expectedExpenses);
+        @DisplayName("the return's turnover is the year's income")
+        void shouldTakeTurnoverFromTheYearsIncome() {
+            givenRecords(List.of(income("30000.00"), income("20000.00")), List.of());
 
-            // When
-            controller.initializeAnnualSubmissionForTest(null, taxYear);
-
-            // Then
-            verify(expenseService).getDeductibleTotal(businessId, taxYear);
+            assertThat(controller.initializeAnnualSubmissionForTest(null, taxYear))
+                    .isEqualByComparingTo(new BigDecimal("50000.00"));
         }
 
         @Test
-        @DisplayName("should calculate net profit correctly")
-        void shouldCalculateNetProfitCorrectly() {
-            // Given
-            BigDecimal totalIncome = new BigDecimal("50000.00");
-            BigDecimal totalExpenses = new BigDecimal("15000.00");
-            BigDecimal expectedNetProfit = new BigDecimal("35000.00");
+        @DisplayName("only the claimable part of an expense is deducted")
+        void shouldDeductOnlyWhatMayBeClaimed() {
+            givenRecords(List.of(income("50000.00")), List.of(
+                    expense("10000.00", ExpenseCategory.OFFICE_COSTS),
+                    expense("500.00", ExpenseCategory.BUSINESS_ENTERTAINMENT)));
 
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(totalExpenses);
-
-            // When
-            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
-
-            // Then
-            assertThat(netProfit).isEqualByComparingTo(expectedNetProfit);
+            assertThat(controller.initializeAnnualSubmissionForTest(null, taxYear))
+                    .as("entertainment is reported on a return but reduces no profit, so filing "
+                        + "£39,500 would understate the tax due")
+                    .isEqualByComparingTo(new BigDecimal("40000.00"));
         }
 
         @Test
-        @DisplayName("should handle zero income")
-        void shouldHandleZeroIncome() {
-            // Given
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+        @DisplayName("a part-business expense is deducted at its share")
+        void shouldDeductAPartBusinessExpenseAtItsShare() {
+            givenRecords(List.of(income("50000.00")), List.of(
+                    expense("1000.00", ExpenseCategory.OFFICE_COSTS)
+                            .withBusinessUsePercentage(60)));
 
-            // When
-            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
-
-            // Then
-            assertThat(netProfit).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(controller.initializeAnnualSubmissionForTest(null, taxYear))
+                    .as("the private 40% is not the business's to claim")
+                    .isEqualByComparingTo(new BigDecimal("49400.00"));
         }
 
         @Test
-        @DisplayName("should handle zero expenses")
-        void shouldHandleZeroExpenses() {
-            // Given
-            BigDecimal totalIncome = new BigDecimal("50000.00");
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+        @DisplayName("a year with no records files nothing rather than failing")
+        void shouldHandleAnEmptyYear() {
+            givenRecords(List.of(), List.of());
 
-            // When
-            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
-
-            // Then
-            assertThat(netProfit).isEqualByComparingTo(totalIncome);
+            assertThat(controller.initializeAnnualSubmissionForTest(null, taxYear)).isZero();
         }
 
         @Test
-        @DisplayName("should handle expenses greater than income (loss)")
-        void shouldHandleExpensesGreaterThanIncome() {
-            // Given - loss scenario
-            BigDecimal totalIncome = new BigDecimal("10000.00");
-            BigDecimal totalExpenses = new BigDecimal("15000.00");
-            BigDecimal expectedNetLoss = new BigDecimal("-5000.00");
+        @DisplayName("expenses above income give a loss, not a floor of zero")
+        void shouldReportALoss() {
+            givenRecords(List.of(income("10000.00")),
+                    List.of(expense("15000.00", ExpenseCategory.OFFICE_COSTS)));
 
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(totalIncome);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(totalExpenses);
-
-            // When
-            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
-
-            // Then
-            assertThat(netProfit).isEqualByComparingTo(expectedNetLoss);
+            assertThat(controller.initializeAnnualSubmissionForTest(null, taxYear))
+                    .as("clamping a loss hides it from the return that has to report it")
+                    .isEqualByComparingTo(new BigDecimal("-5000.00"));
         }
 
         @Test
-        @DisplayName("should use correct tax year when loading data")
-        void shouldUseCorrectTaxYearWhenLoadingData() {
-            // Given
+        @DisplayName("pence are exact, not rounded away")
+        void shouldKeepPenceExact() {
+            givenRecords(List.of(income("50000.55")),
+                    List.of(expense("10000.33", ExpenseCategory.OFFICE_COSTS)));
+
+            assertThat(controller.initializeAnnualSubmissionForTest(null, taxYear))
+                    .isEqualByComparingTo(new BigDecimal("40000.22"));
+        }
+
+        @Test
+        @DisplayName("the year asked for is the year loaded")
+        void shouldLoadTheYearItWasGiven() {
             TaxYear differentYear = TaxYear.of(2024);
-            when(incomeService.getTotalByTaxYear(businessId, differentYear)).thenReturn(BigDecimal.ZERO);
-            when(expenseService.getDeductibleTotal(businessId, differentYear)).thenReturn(BigDecimal.ZERO);
+            when(incomeService.findByTaxYear(businessId, differentYear)).thenReturn(List.of());
+            when(expenseService.findByTaxYear(businessId, differentYear)).thenReturn(List.of());
 
-            // When
             controller.initializeAnnualSubmissionForTest(null, differentYear);
 
-            // Then
-            verify(incomeService).getTotalByTaxYear(businessId, differentYear);
-            verify(expenseService).getDeductibleTotal(businessId, differentYear);
+            verify(incomeService).findByTaxYear(businessId, differentYear);
+            verify(expenseService).findByTaxYear(businessId, differentYear);
         }
 
         @Test
         @DisplayName("should set tax year on controller after initialization")
         void shouldSetTaxYearOnController() {
-            // Given
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(BigDecimal.ZERO);
+            givenRecords(List.of(), List.of());
 
-            // When
             controller.initializeAnnualSubmissionForTest(null, taxYear);
 
-            // Then
             assertThat(controller.getTaxYear()).isEqualTo(taxYear);
-        }
-
-        @Test
-        @DisplayName("should handle large income values")
-        void shouldHandleLargeIncomeValues() {
-            // Given - large income value
-            BigDecimal largeIncome = new BigDecimal("1000000.00");
-            BigDecimal expenses = new BigDecimal("100000.00");
-            BigDecimal expectedNet = new BigDecimal("900000.00");
-
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(largeIncome);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(expenses);
-
-            // When
-            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
-
-            // Then
-            assertThat(netProfit).isEqualByComparingTo(expectedNet);
-        }
-
-        @Test
-        @DisplayName("should handle decimal precision correctly")
-        void shouldHandleDecimalPrecisionCorrectly() {
-            // Given - values with decimal precision
-            BigDecimal income = new BigDecimal("50000.75");
-            BigDecimal expenses = new BigDecimal("15000.25");
-            BigDecimal expectedNet = new BigDecimal("35000.50");
-
-            when(incomeService.getTotalByTaxYear(businessId, taxYear)).thenReturn(income);
-            when(expenseService.getDeductibleTotal(businessId, taxYear)).thenReturn(expenses);
-
-            // When
-            BigDecimal netProfit = controller.initializeAnnualSubmissionForTest(null, taxYear);
-
-            // Then
-            assertThat(netProfit).isEqualByComparingTo(expectedNet);
         }
     }
 
