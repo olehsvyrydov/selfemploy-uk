@@ -17,6 +17,7 @@ import uk.selfemploy.core.service.IncomeService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -138,6 +139,23 @@ class DashboardViewModelDataIntegrationTest {
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
 
             assertThat(viewModel.getEstimatedTax()).isGreaterThan(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("loading publishes one profit, never a figure the year never had")
+        void shouldNotPublishAnIntermediateProfit() {
+            givenRecords(List.of(createIncome(LocalDate.of(2025, 6, 15), new BigDecimal("50000.00"))),
+                    List.of(createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("15000.00"),
+                            ExpenseCategory.OFFICE_COSTS)));
+            List<BigDecimal> published = new ArrayList<>();
+            viewModel.netProfitProperty().addListener((o, was, now) -> published.add(now));
+
+            viewModel.loadData(incomeService, expenseService, businessId, taxYear);
+
+            assertThat(published)
+                    .as("setting income before expenses used to publish £50,000 — the whole turnover "
+                        + "as profit — to anything bound to this property, before correcting itself")
+                    .containsExactly(new BigDecimal("35000.00"));
         }
 
         @Test

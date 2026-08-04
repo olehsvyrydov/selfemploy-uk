@@ -217,7 +217,19 @@ public class DashboardViewModel {
 
     // === Private Methods ===
 
+    /**
+     * True while {@link #loadData} is replacing every total at once.
+     *
+     * <p>The properties are set one at a time, and recomputing between them publishes figures that
+     * were never true of the year — setting income before expenses briefly reports the whole
+     * turnover as profit. Nothing should see those.
+     */
+    private boolean replacingTotals;
+
     private void updateNetProfit() {
+        if (replacingTotals) {
+            return;
+        }
         BigDecimal income = getTotalIncome() != null ? getTotalIncome() : BigDecimal.ZERO;
         BigDecimal allowable = getAllowableExpenses() != null ? getAllowableExpenses() : BigDecimal.ZERO;
         netProfit.set(income.subtract(allowable));
@@ -313,9 +325,14 @@ public class DashboardViewModel {
         // the claim rule differently. The gross total feeds the expenses card; the allowable one
         // feeds net profit and the tax estimate.
         ProfitTotals totals = ProfitTotals.of(incomes, expenses);
-        setTotalIncome(totals.turnover());
-        setTotalExpenses(totals.grossSpend());
-        setAllowableExpenses(totals.allowableSpend());
+        replacingTotals = true;
+        try {
+            setTotalIncome(totals.turnover());
+            setTotalExpenses(totals.grossSpend());
+            setAllowableExpenses(totals.allowableSpend());
+        } finally {
+            replacingTotals = false;
+        }
         setNetProfit(totals.netProfit());
 
         calculateEstimatedTax(taxYear);
