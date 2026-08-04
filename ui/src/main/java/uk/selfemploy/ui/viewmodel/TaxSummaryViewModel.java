@@ -480,10 +480,16 @@ public class TaxSummaryViewModel {
     /**
      * Takes every figure from one derivation, rather than recomputing any of them here.
      *
-     * <p>The totals are assigned from the record instead of being re-summed from its breakdown. The
-     * two agree today, but only because two pieces of code happen to add the same numbers the same
-     * way, and that is the arrangement four separate defects came from. Assigning them means there
-     * is one answer.
+     * <p>The totals are assigned from the record instead of being re-summed from its breakdown, and
+     * net profit with them. Left to the listeners on turnover and allowable expenses it would reach
+     * the same number today, because they compute the same subtraction {@link ProfitTotals} does —
+     * but that is two pieces of code agreeing by arithmetic, which is the arrangement four separate
+     * defects came from. Assigning it means a profit that stops being a plain subtraction arrives
+     * here rather than being recomputed into something else.
+     *
+     * <p>These are the Tax Summary's figures: the profit on screen, the tax estimate beside it, the
+     * Class 2 section. Neither submission reads them — the quarterly return carries its own totals,
+     * the annual one still derives its profit from the services directly.
      */
     public void setTotals(ProfitTotals totals) {
         ProfitTotals derived = totals == null ? ProfitTotals.EMPTY : totals;
@@ -492,17 +498,6 @@ public class TaxSummaryViewModel {
         totalExpenses.set(derived.grossSpend());
         turnover.set(derived.turnover());
         allowableExpenses.set(derived.allowableSpend());
-        // Assigned rather than left to the listeners on the two properties above. Today they reach
-        // the same number — they compute turnover minus allowable, which is how ProfitTotals defines
-        // net profit — so this changes no figure the app can currently produce. It makes the
-        // derivation the authority instead of that agreement, so that a net profit which stops being
-        // a plain subtraction arrives here rather than being recomputed into something else.
-        //
-        // This figure is the Tax Summary's: the profit on screen, the tax estimate beside it and the
-        // Class 2 section. Neither submission reads it — the quarterly return carries its own totals
-        // and the annual one still derives its profit from the services directly. Those are separate
-        // work, and until they are done "one profit" describes this screen and the quarterly
-        // aggregation, not the whole app.
         netProfit.set(derived.netProfit());
     }
 
