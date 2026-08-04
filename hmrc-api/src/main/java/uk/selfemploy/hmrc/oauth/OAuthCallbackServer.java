@@ -190,6 +190,26 @@ public class OAuthCallbackServer {
     }
 
     /**
+     * The port the callback endpoint is actually bound to, once {@link #listening()} has completed.
+     *
+     * <p>Normally the same port that was asked for — the redirect URI registered with HMRC names it,
+     * so production cannot let the OS choose. Passing 0 asks for any free port, which is how a test
+     * avoids competing with another test for a fixed one; this reports what it got.
+     *
+     * @return the bound port, or the requested port if the server is not listening
+     */
+    public int actualPort() {
+        HttpServer bound = server;
+        if (bound == null) {
+            return port;
+        }
+        // Vert.x reports 0 until the socket is bound. Returning that would hand a caller a port
+        // number that cannot be connected to, which is worse than telling them what was asked for.
+        int actual = bound.actualPort();
+        return actual > 0 ? actual : port;
+    }
+
+    /**
      * Stops the callback server and completes the pending future with USER_CANCELLED
      * if it has not already been completed (by a successful callback, error, or timeout).
      *
