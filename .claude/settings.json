@@ -1,0 +1,8 @@
+{
+  "extraKnownMarketplaces": {
+    "aidevteam": {
+      "source": { "source": "github", "repo": "olehsvyrydov/AI-development-team" }
+    }
+  },
+  "enabledPlugins": { "ai-dev-team@aidevteam": true }
+}
