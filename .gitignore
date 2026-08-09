@@ -154,7 +154,8 @@ drafts/
 
 # AI / agent tooling and local state (not part of the product)
 CLAUDE.md
-.claude/
+.claude/*
+!.claude/skills/
 .mcp.json
 .praxis/
 .workflow-state.json
