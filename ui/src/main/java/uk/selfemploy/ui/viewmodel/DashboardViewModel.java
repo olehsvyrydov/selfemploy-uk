@@ -7,6 +7,7 @@ import uk.selfemploy.common.domain.Expense;
 import uk.selfemploy.common.domain.Income;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
+import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.core.service.ExpenseService;
 import uk.selfemploy.core.service.IncomeService;
 import uk.selfemploy.ui.util.Money;
@@ -216,7 +217,19 @@ public class DashboardViewModel {
 
     // === Private Methods ===
 
+    /**
+     * True while {@link #loadData} is replacing every total at once.
+     *
+     * <p>The properties are set one at a time, and recomputing between them publishes figures that
+     * were never true of the year — setting income before expenses briefly reports the whole
+     * turnover as profit. Nothing should see those.
+     */
+    private boolean replacingTotals;
+
     private void updateNetProfit() {
+        if (replacingTotals) {
+            return;
+        }
         BigDecimal income = getTotalIncome() != null ? getTotalIncome() : BigDecimal.ZERO;
         BigDecimal allowable = getAllowableExpenses() != null ? getAllowableExpenses() : BigDecimal.ZERO;
         netProfit.set(income.subtract(allowable));
@@ -304,22 +317,25 @@ public class DashboardViewModel {
         // Update current tax year
         setCurrentTaxYear(taxYear);
 
-        // Load totals. Gross expenses feed the "total expenses" card; allowable expenses
-        // feed the taxable net-profit and estimated-tax figures.
-        BigDecimal incomeTotal = incomeService.getTotalByTaxYear(businessId, taxYear);
-        BigDecimal expenseTotal = expenseService.getTotalByTaxYear(businessId, taxYear);
-        BigDecimal allowableTotal = expenseService.getDeductibleTotal(businessId, taxYear);
-
-        setTotalIncome(incomeTotal != null ? incomeTotal : BigDecimal.ZERO);
-        setTotalExpenses(expenseTotal != null ? expenseTotal : BigDecimal.ZERO);
-        setAllowableExpenses(allowableTotal != null ? allowableTotal : BigDecimal.ZERO);
-
-        // Calculate estimated tax
-        calculateEstimatedTax(taxYear);
-
-        // Load entries for monthly trends and activity
         List<Income> incomes = incomeService.findByTaxYear(businessId, taxYear);
         List<Expense> expenses = expenseService.findByTaxYear(businessId, taxYear);
+
+        // Derived from the records this screen already had to load anyway, by the same code as the
+        // Tax Summary and both submissions — so the headline figures and what is filed cannot apply
+        // the claim rule differently. The gross total feeds the expenses card; the allowable one
+        // feeds net profit and the tax estimate.
+        ProfitTotals totals = ProfitTotals.of(incomes, expenses);
+        replacingTotals = true;
+        try {
+            setTotalIncome(totals.turnover());
+            setTotalExpenses(totals.grossSpend());
+            setAllowableExpenses(totals.allowableSpend());
+        } finally {
+            replacingTotals = false;
+        }
+        setNetProfit(totals.netProfit());
+
+        calculateEstimatedTax(taxYear);
 
         // Calculate monthly trends
         calculateMonthlyTrends(incomes, expenses);

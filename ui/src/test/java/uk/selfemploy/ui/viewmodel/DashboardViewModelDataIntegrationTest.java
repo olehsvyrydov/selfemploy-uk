@@ -17,6 +17,7 @@ import uk.selfemploy.core.service.IncomeService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,83 +63,108 @@ class DashboardViewModelDataIntegrationTest {
     @DisplayName("Loading Totals")
     class LoadingTotals {
 
-        @Test
-        @DisplayName("should load total income from service")
-        void shouldLoadTotalIncomeFromService() {
-            // Given
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("50000.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(BigDecimal.ZERO);
+        /** The Dashboard derives its figures from the year's records, as every other consumer does. */
+        private void givenRecords(List<Income> incomes, List<Expense> expenses) {
+            when(incomeService.findByTaxYear(eq(businessId), any(TaxYear.class))).thenReturn(incomes);
+            when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class))).thenReturn(expenses);
+        }
 
-            // When
+        @Test
+        @DisplayName("total income is the year's income")
+        void shouldShowTheYearsIncome() {
+            givenRecords(List.of(createIncome(LocalDate.of(2025, 6, 15), new BigDecimal("50000.00"))),
+                    List.of());
+
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
 
-            // Then
             assertThat(viewModel.getTotalIncome()).isEqualByComparingTo("50000.00");
         }
 
         @Test
-        @DisplayName("should load total expenses from service")
-        void shouldLoadTotalExpensesFromService() {
-            // Given
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(BigDecimal.ZERO);
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("15000.00"));
+        @DisplayName("total expenses is what was spent, disallowed categories included")
+        void shouldShowGrossSpendAsTotalExpenses() {
+            givenRecords(List.of(), List.of(
+                    createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("14500.00"),
+                            ExpenseCategory.OFFICE_COSTS),
+                    createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("500.00"),
+                            ExpenseCategory.BUSINESS_ENTERTAINMENT)));
 
-            // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
 
-            // Then
-            assertThat(viewModel.getTotalExpenses()).isEqualByComparingTo("15000.00");
+            assertThat(viewModel.getTotalExpenses())
+                    .as("the card reconciles against a bank statement, so it shows the whole spend")
+                    .isEqualByComparingTo("15000.00");
         }
 
         @Test
-        @DisplayName("should calculate net profit as income minus expenses")
-        void shouldCalculateNetProfit() {
-            // Given
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("50000.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("15000.00"));
+        @DisplayName("net profit deducts only what may be claimed")
+        void shouldDeductOnlyTheClaimablePart() {
+            givenRecords(List.of(createIncome(LocalDate.of(2025, 6, 15), new BigDecimal("50000.00"))),
+                    List.of(
+                        createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("14500.00"),
+                                ExpenseCategory.OFFICE_COSTS),
+                        createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("500.00"),
+                                ExpenseCategory.BUSINESS_ENTERTAINMENT)));
 
-            // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
 
-            // Then
-            assertThat(viewModel.getNetProfit()).isEqualByComparingTo("35000.00");
+            assertThat(viewModel.getAllowableExpenses()).isEqualByComparingTo("14500.00");
+            assertThat(viewModel.getNetProfit())
+                    .as("the entertainment is spent but not claimable, so £35,000 would be the "
+                        + "figure only if the card deducted the whole spend")
+                    .isEqualByComparingTo("35500.00");
+        }
+
+        @Test
+        @DisplayName("a part-business expense is claimed at its share")
+        void shouldClaimAPartBusinessExpenseAtItsShare() {
+            givenRecords(List.of(createIncome(LocalDate.of(2025, 6, 15), new BigDecimal("50000.00"))),
+                    List.of(createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("1000.00"),
+                            ExpenseCategory.OFFICE_COSTS).withBusinessUsePercentage(60)));
+
+            viewModel.loadData(incomeService, expenseService, businessId, taxYear);
+
+            assertThat(viewModel.getTotalExpenses()).isEqualByComparingTo("1000.00");
+            assertThat(viewModel.getAllowableExpenses()).isEqualByComparingTo("600.00");
+            assertThat(viewModel.getNetProfit()).isEqualByComparingTo("49400.00");
         }
 
         @Test
         @DisplayName("should calculate estimated tax for net profit")
         void shouldCalculateEstimatedTax() {
-            // Given - net profit of 35000 (above personal allowance)
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("50000.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("15000.00"));
+            givenRecords(List.of(createIncome(LocalDate.of(2025, 6, 15), new BigDecimal("50000.00"))),
+                    List.of(createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("15000.00"),
+                            ExpenseCategory.OFFICE_COSTS)));
 
-            // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
 
-            // Then - should have some tax liability
             assertThat(viewModel.getEstimatedTax()).isGreaterThan(BigDecimal.ZERO);
         }
 
         @Test
-        @DisplayName("should handle null totals as zero")
-        void shouldHandleNullTotalsAsZero() {
-            // Given
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(null);
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(null);
+        @DisplayName("loading publishes one profit, never a figure the year never had")
+        void shouldNotPublishAnIntermediateProfit() {
+            givenRecords(List.of(createIncome(LocalDate.of(2025, 6, 15), new BigDecimal("50000.00"))),
+                    List.of(createExpense(LocalDate.of(2025, 6, 15), new BigDecimal("15000.00"),
+                            ExpenseCategory.OFFICE_COSTS)));
+            List<BigDecimal> published = new ArrayList<>();
+            viewModel.netProfitProperty().addListener((o, was, now) -> published.add(now));
 
-            // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
 
-            // Then
+            assertThat(published)
+                    .as("setting income before expenses used to publish £50,000 — the whole turnover "
+                        + "as profit — to anything bound to this property, before correcting itself")
+                    .containsExactly(new BigDecimal("35000.00"));
+        }
+
+        @Test
+        @DisplayName("a year with no records shows zeroes, not nulls")
+        void shouldShowZeroesForAnEmptyYear() {
+            givenRecords(List.of(), List.of());
+
+            viewModel.loadData(incomeService, expenseService, businessId, taxYear);
+
             assertThat(viewModel.getTotalIncome()).isEqualByComparingTo("0.00");
             assertThat(viewModel.getTotalExpenses()).isEqualByComparingTo("0.00");
             assertThat(viewModel.getNetProfit()).isEqualByComparingTo("0.00");
@@ -163,10 +189,6 @@ class DashboardViewModelDataIntegrationTest {
                 .thenReturn(List.of(thisMonthIncome, lastMonthIncome));
             when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class)))
                 .thenReturn(List.of());
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("8000.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(BigDecimal.ZERO);
 
             // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
@@ -189,10 +211,6 @@ class DashboardViewModelDataIntegrationTest {
                 .thenReturn(List.of());
             when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class)))
                 .thenReturn(List.of(thisMonthExpense, lastMonthExpense));
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(BigDecimal.ZERO);
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("2300.00"));
 
             // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
@@ -218,10 +236,6 @@ class DashboardViewModelDataIntegrationTest {
                 .thenReturn(List.of(income));
             when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class)))
                 .thenReturn(List.of(expense));
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("5000.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("200.00"));
 
             // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
@@ -243,10 +257,6 @@ class DashboardViewModelDataIntegrationTest {
                 .thenReturn(List.of(incomeToday, incomeLastWeek));
             when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class)))
                 .thenReturn(List.of(expenseYesterday));
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("8000.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("200.00"));
 
             // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
@@ -271,10 +281,6 @@ class DashboardViewModelDataIntegrationTest {
                 .thenReturn(manyIncomes);
             when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class)))
                 .thenReturn(List.of());
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("1500.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(BigDecimal.ZERO);
 
             // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
@@ -294,10 +300,6 @@ class DashboardViewModelDataIntegrationTest {
                 .thenReturn(List.of(income));
             when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class)))
                 .thenReturn(List.of());
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("5000.00"));
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(BigDecimal.ZERO);
 
             // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
@@ -317,10 +319,6 @@ class DashboardViewModelDataIntegrationTest {
                 .thenReturn(List.of());
             when(expenseService.findByTaxYear(eq(businessId), any(TaxYear.class)))
                 .thenReturn(List.of(expense));
-            when(incomeService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(BigDecimal.ZERO);
-            when(expenseService.getTotalByTaxYear(eq(businessId), any(TaxYear.class)))
-                .thenReturn(new BigDecimal("200.00"));
 
             // When
             viewModel.loadData(incomeService, expenseService, businessId, taxYear);
@@ -343,14 +341,10 @@ class DashboardViewModelDataIntegrationTest {
     }
 
     private Expense createExpense(LocalDate date, BigDecimal amount) {
-        return Expense.create(
-            businessId,
-            date,
-            amount,
-            "Test expense",
-            ExpenseCategory.OFFICE_COSTS,
-            null,
-            null
-        );
+        return createExpense(date, amount, ExpenseCategory.OFFICE_COSTS);
+    }
+
+    private Expense createExpense(LocalDate date, BigDecimal amount, ExpenseCategory category) {
+        return Expense.create(businessId, date, amount, "Test expense", category, null, null);
     }
 }
