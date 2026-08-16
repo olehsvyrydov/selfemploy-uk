@@ -4,8 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import uk.selfemploy.core.config.TaxRateConfiguration;
 
 import java.math.BigDecimal;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,11 +18,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * Class 2 NI Rates (2025/26):
  * - Weekly rate: £3.50/week
- * - Annual amount: £3.50 x 52 = £182.00
- * - Small Profits Threshold: £6,845 (mandatory above, voluntary below)
+ * - Annual amount: £3.50 x 52 = £182.00, charged only on the voluntary path
+ * - Small Profits Threshold: £6,845 (treated as paid above, voluntary below)
  *
  * Note: Class 2 NI is separate from Class 4 NI:
- * - Class 2: Flat rate based on weeks, applies if profits > £6,845 (Small Profits Threshold)
+ * - Class 2: Flat weekly rate, tied to the Small Profits Threshold (£6,845)
  * - Class 4: Percentage-based on profits above £12,570 (Lower Profits Limit)
  */
 @DisplayName("National Insurance Class 2 Calculator Tests (2025/26)")
@@ -32,47 +36,46 @@ class NationalInsuranceClass2CalculatorTest {
     }
 
     @Nested
-    @DisplayName("Mandatory Class 2 NI - Above Small Profits Threshold")
-    class MandatoryClass2NI {
+    @DisplayName("Above Small Profits Threshold - treated as paid, nothing charged")
+    class AboveSmallProfitsThreshold {
 
         @Test
-        @DisplayName("profits above SPT should calculate mandatory Class 2 NI at £182.00")
-        void profitsAboveSptShouldCalculateMandatoryClass2Ni() {
+        @DisplayName("profits above SPT are treated as paid and cost nothing")
+        void profitsAboveSptAreTreatedAsPaid() {
             // £10,000 profit > £6,845 Small Profits Threshold
-            // £3.50/week x 52 weeks = £182.00
             BigDecimal profit = new BigDecimal("10000");
 
             Class2NICalculationResult result = calculator.calculate(profit);
 
-            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("182.00"));
-            assertThat(result.isMandatory()).isTrue();
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.isTreatedAsPaid()).isTrue();
+            assertThat(result.isMandatory()).isFalse();
             assertThat(result.isVoluntary()).isFalse();
             assertThat(result.weeklyRate()).isEqualByComparingTo(new BigDecimal("3.50"));
-            assertThat(result.weeksLiable()).isEqualTo(52);
+            assertThat(result.weeksLiable()).isZero();
         }
 
         @Test
-        @DisplayName("profits just above SPT should calculate mandatory Class 2 NI")
-        void profitsJustAboveSptShouldCalculateMandatoryClass2Ni() {
+        @DisplayName("profits just above SPT are treated as paid")
+        void profitsJustAboveSptAreTreatedAsPaid() {
             // £6,846 profit > £6,845 Small Profits Threshold
             BigDecimal profit = new BigDecimal("6846");
 
             Class2NICalculationResult result = calculator.calculate(profit);
 
-            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("182.00"));
-            assertThat(result.isMandatory()).isTrue();
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.isTreatedAsPaid()).isTrue();
         }
 
         @Test
-        @DisplayName("high profits should still calculate same Class 2 NI amount")
-        void highProfitsShouldStillCalculateSameClass2NiAmount() {
-            // Class 2 NI is a flat rate, not percentage-based like Class 4
+        @DisplayName("high profits are treated as paid too - the charge does not return")
+        void highProfitsAreAlsoTreatedAsPaid() {
             BigDecimal profit = new BigDecimal("100000");
 
             Class2NICalculationResult result = calculator.calculate(profit);
 
-            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("182.00"));
-            assertThat(result.isMandatory()).isTrue();
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.isTreatedAsPaid()).isTrue();
         }
     }
 
@@ -127,15 +130,15 @@ class NationalInsuranceClass2CalculatorTest {
         @Test
         @DisplayName("voluntary flag should be ignored if profits above SPT")
         void voluntaryFlagShouldBeIgnoredIfProfitsAboveSpt() {
-            // £10,000 profit > £6,845 - Class 2 NI is mandatory regardless
+            // £10,000 profit > £6,845 - there is nothing to volunteer for, the year is already paid
             BigDecimal profit = new BigDecimal("10000");
             boolean voluntary = true;
 
             Class2NICalculationResult result = calculator.calculate(profit, voluntary);
 
-            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("182.00"));
-            assertThat(result.isMandatory()).isTrue();
-            assertThat(result.isVoluntary()).isFalse(); // Not voluntary, it's mandatory
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.isTreatedAsPaid()).isTrue();
+            assertThat(result.isVoluntary()).isFalse();
         }
 
         @Test
@@ -206,9 +209,9 @@ class NationalInsuranceClass2CalculatorTest {
         }
 
         @Test
-        @DisplayName("should provide correct weeks liable for full year")
+        @DisplayName("should provide correct weeks liable for a full voluntary year")
         void shouldProvideCorrectWeeksLiableForFullYear() {
-            Class2NICalculationResult result = calculator.calculate(new BigDecimal("10000"));
+            Class2NICalculationResult result = calculator.calculate(new BigDecimal("5000"), true);
 
             assertThat(result.weeksLiable()).isEqualTo(52);
         }
@@ -222,9 +225,9 @@ class NationalInsuranceClass2CalculatorTest {
         }
 
         @Test
-        @DisplayName("annual calculation should be £3.50 x 52 = £182.00")
+        @DisplayName("voluntary annual calculation should be £3.50 x 52 = £182.00")
         void annualCalculationShouldBe3_50Times52() {
-            Class2NICalculationResult result = calculator.calculate(new BigDecimal("10000"));
+            Class2NICalculationResult result = calculator.calculate(new BigDecimal("5000"), true);
 
             // Verify: £3.50 x 52 = £182.00
             BigDecimal expectedAnnual = new BigDecimal("3.50").multiply(new BigDecimal("52"));
@@ -240,11 +243,11 @@ class NationalInsuranceClass2CalculatorTest {
         @Test
         @DisplayName("effectiveRate should calculate correct percentage")
         void effectiveRateShouldCalculateCorrectPercentage() {
-            BigDecimal profit = new BigDecimal("10000");
-            Class2NICalculationResult result = calculator.calculate(profit);
+            BigDecimal profit = new BigDecimal("5000");
+            Class2NICalculationResult result = calculator.calculate(profit, true);
 
-            // £182.00 / £10,000 = 1.82%
-            assertThat(result.effectiveRate()).isEqualByComparingTo(new BigDecimal("1.82"));
+            // £182.00 / £5,000 = 3.64%
+            assertThat(result.effectiveRate()).isEqualByComparingTo(new BigDecimal("3.64"));
         }
 
         @Test
@@ -258,7 +261,7 @@ class NationalInsuranceClass2CalculatorTest {
         @Test
         @DisplayName("isApplicable should return true when NI is due")
         void isApplicableShouldReturnTrueWhenNiIsDue() {
-            Class2NICalculationResult result = calculator.calculate(new BigDecimal("10000"));
+            Class2NICalculationResult result = calculator.calculate(new BigDecimal("5000"), true);
 
             assertThat(result.isApplicable()).isTrue();
         }
@@ -269,6 +272,80 @@ class NationalInsuranceClass2CalculatorTest {
             Class2NICalculationResult result = calculator.calculate(new BigDecimal("5000"));
 
             assertThat(result.isApplicable()).isFalse();
+        }
+
+        @Test
+        @DisplayName("isApplicable should be false above the threshold, where nothing is charged")
+        void isApplicableShouldBeFalseWhenTreatedAsPaid() {
+            Class2NICalculationResult result = calculator.calculate(new BigDecimal("10000"));
+
+            assertThat(result.isApplicable()).isFalse();
+            assertThat(result.isTreatedAsPaid()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Class 2 abolition — no weekly charge above the SPT from 2024/25")
+    class AbolishedFrom2024 {
+
+        /**
+         * Every configured tax year from 2024/25 onwards, so a new rate file is covered the day it
+         * is added rather than the day someone remembers to extend this list.
+         */
+        static IntStream abolishedYears() {
+            return TaxRateConfiguration.getInstance().getSupportedTaxYears().stream()
+                .mapToInt(Integer::intValue)
+                .filter(year -> year >= 2024);
+        }
+
+        @Test
+        @DisplayName("the years under test are the configured ones from 2024/25 onwards")
+        void abolishedYearsCoversEveryConfiguredYearFrom2024() {
+            assertThat(abolishedYears().boxed()).contains(2024, 2025, 2026);
+        }
+
+        @ParameterizedTest(name = "{0}/{1}")
+        @MethodSource("abolishedYears")
+        @DisplayName("above-SPT profit is treated as paid, adding nothing to Class 2")
+        void aboveSptAddsNoClass2Charge(int taxYear) {
+            NationalInsuranceClass2Calculator calc = new NationalInsuranceClass2Calculator(taxYear);
+            BigDecimal aboveSpt = calc.getRates().smallProfitsThreshold().add(new BigDecimal("10000"));
+
+            Class2NICalculationResult result = calc.calculate(aboveSpt);
+
+            assertThat(result.totalNI()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.weeksLiable()).isZero();
+            assertThat(result.isMandatory()).isFalse();
+            assertThat(result.isTreatedAsPaid()).isTrue();
+        }
+
+        @ParameterizedTest(name = "{0}/{1}")
+        @MethodSource("abolishedYears")
+        @DisplayName("above-SPT profit adds no weekly charge to the total liability")
+        void aboveSptAddsNoClass2ChargeToTotalLiability(int taxYear) {
+            BigDecimal profit = new BigDecimal("30000");
+
+            TaxLiabilityResult result = new TaxLiabilityCalculator(taxYear).calculate(profit);
+
+            assertThat(result.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.totalLiability())
+                .isEqualByComparingTo(result.incomeTax().add(result.niClass4()));
+        }
+
+        @ParameterizedTest(name = "{0}/{1}")
+        @MethodSource("abolishedYears")
+        @DisplayName("the voluntary path below the SPT survives abolition")
+        void belowSptRemainsVoluntary(int taxYear) {
+            NationalInsuranceClass2Calculator calc = new NationalInsuranceClass2Calculator(taxYear);
+            BigDecimal belowSpt = calc.getRates().smallProfitsThreshold().subtract(BigDecimal.ONE);
+            BigDecimal expected = calc.getRates().weeklyRate().multiply(new BigDecimal("52"));
+
+            Class2NICalculationResult result = calc.calculate(belowSpt, true);
+
+            assertThat(result.totalNI()).isEqualByComparingTo(expected);
+            assertThat(result.weeksLiable()).isEqualTo(52);
+            assertThat(result.isVoluntary()).isTrue();
+            assertThat(result.isTreatedAsPaid()).isFalse();
         }
     }
 
@@ -281,11 +358,10 @@ class NationalInsuranceClass2CalculatorTest {
         void shouldUseCorrectRatesFor2024TaxYear() {
             NationalInsuranceClass2Calculator calculator2024 = new NationalInsuranceClass2Calculator(2024);
 
-            Class2NICalculationResult result = calculator2024.calculate(new BigDecimal("10000"));
+            Class2NICalculationResult result = calculator2024.calculate(new BigDecimal("5000"), true);
 
-            // 2024/25 rate is also £3.45/week (before correction) - check with /inga for historical rates
-            // For now, we'll use the same rate structure
-            assertThat(result.totalNI()).isGreaterThan(BigDecimal.ZERO);
+            assertThat(result.weeklyRate()).isEqualByComparingTo(new BigDecimal("3.45"));
+            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("179.40"));
         }
 
         @Test
@@ -294,14 +370,14 @@ class NationalInsuranceClass2CalculatorTest {
             NationalInsuranceClass2Calculator calc2024 = new NationalInsuranceClass2Calculator(2024);
             NationalInsuranceClass2Calculator calc2025 = new NationalInsuranceClass2Calculator(2025);
 
-            BigDecimal profit = new BigDecimal("10000");
+            BigDecimal profit = new BigDecimal("5000");
 
-            Class2NICalculationResult result2024 = calc2024.calculate(profit);
-            Class2NICalculationResult result2025 = calc2025.calculate(profit);
+            Class2NICalculationResult result2024 = calc2024.calculate(profit, true);
+            Class2NICalculationResult result2025 = calc2025.calculate(profit, true);
 
-            // Both should calculate valid results
-            assertThat(result2024.totalNI()).isGreaterThan(BigDecimal.ZERO);
-            assertThat(result2025.totalNI()).isGreaterThan(BigDecimal.ZERO);
+            // Each year charges its own weekly rate on the voluntary path
+            assertThat(result2024.totalNI()).isEqualByComparingTo(new BigDecimal("179.40"));
+            assertThat(result2025.totalNI()).isEqualByComparingTo(new BigDecimal("182.00"));
         }
     }
 }

@@ -58,33 +58,37 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
     }
 
     // =========================================================================
-    // TC-801-010: Mandatory Class 2 NI - Above Threshold
+    // TC-801-010: Class 2 NI Above Threshold - treated as paid since 6 April 2024
     // Priority: P0
     // =========================================================================
     @Nested
-    @DisplayName("TC-801-010: Mandatory Class 2 NI - Above Threshold")
-    class MandatoryClass2NIAboveThreshold {
+    @DisplayName("TC-801-010: Class 2 NI Above Threshold - Treated As Paid")
+    class Class2NITreatedAsPaidAboveThreshold {
 
         @Test
-        @DisplayName("profits of GBP 10,000 (above threshold GBP 6,845) should calculate mandatory Class 2 NI = GBP 182.00")
-        void profitsAboveThresholdShouldCalculateMandatoryClass2NI() {
+        @DisplayName("profits of GBP 10,000 (above threshold GBP 6,845) should charge no Class 2 NI")
+        void profitsAboveThresholdShouldChargeNoClass2NI() {
             // Given: Gross profit GBP 10,000 (above Small Profits Threshold of GBP 6,845)
             BigDecimal grossProfit = new BigDecimal("10000");
 
             // When: Calculate Class 2 NI
             Class2NICalculationResult result = calculator.calculate(grossProfit);
 
-            // Then: Mandatory Class 2 NI should be GBP 182.00
+            // Then: nothing is charged, but the year still counts
             assertThat(result.totalNI())
-                .as("Class 2 NI for profits above threshold should be GBP 182.00")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Class 2 NI for profits above threshold should be zero")
+                .isEqualByComparingTo(BigDecimal.ZERO);
 
-            assertThat(result.isMandatory())
-                .as("Class 2 NI should be mandatory when profits exceed threshold")
+            assertThat(result.isTreatedAsPaid())
+                .as("Class 2 NI should be treated as paid when profits exceed threshold")
                 .isTrue();
 
+            assertThat(result.isMandatory())
+                .as("Class 2 NI has not been mandatory since 6 April 2024")
+                .isFalse();
+
             assertThat(result.isVoluntary())
-                .as("Class 2 NI should NOT be voluntary when mandatory")
+                .as("There is nothing to volunteer for above the threshold")
                 .isFalse();
 
             assertThat(result.weeklyRate())
@@ -92,8 +96,8 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
                 .isEqualByComparingTo(WEEKLY_RATE_2025);
 
             assertThat(result.weeksLiable())
-                .as("Weeks liable should be 52 for full year")
-                .isEqualTo(52);
+                .as("No weeks are charged for")
+                .isZero();
         }
     }
 
@@ -185,40 +189,40 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
     class JustAboveThreshold {
 
         @Test
-        @DisplayName("profits of GBP 6,846 (just above GBP 6,845) should apply Class 2 NI")
-        void profitsJustAboveThresholdShouldApplyClass2NI() {
+        @DisplayName("profits of GBP 6,846 (just above GBP 6,845) are treated as paid")
+        void profitsJustAboveThresholdAreTreatedAsPaid() {
             // Given: Gross profit GBP 6,846 (GBP 1 above threshold)
             BigDecimal grossProfit = new BigDecimal("6846");
 
             // When: Calculate Class 2 NI
             Class2NICalculationResult result = calculator.calculate(grossProfit);
 
-            // Then: Class 2 NI should apply
+            // Then: nothing charged, year counts
             assertThat(result.totalNI())
-                .as("Class 2 NI should be GBP 182.00 when profit exceeds threshold")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Class 2 NI should be zero when profit exceeds threshold")
+                .isEqualByComparingTo(BigDecimal.ZERO);
 
-            assertThat(result.isMandatory())
-                .as("Class 2 NI should be mandatory when profit exceeds threshold")
+            assertThat(result.isTreatedAsPaid())
+                .as("Class 2 NI should be treated as paid when profit exceeds threshold")
                 .isTrue();
         }
 
         @Test
-        @DisplayName("profits of GBP 6,845.01 (pennies above threshold) should apply Class 2 NI")
-        void profitsPenniesAboveThresholdShouldApplyClass2NI() {
+        @DisplayName("profits of GBP 6,845.01 (pennies above threshold) are treated as paid")
+        void profitsPenniesAboveThresholdAreTreatedAsPaid() {
             // Given: Gross profit GBP 6,845.01 (1 penny above threshold)
             BigDecimal grossProfit = new BigDecimal("6845.01");
 
             // When: Calculate Class 2 NI
             Class2NICalculationResult result = calculator.calculate(grossProfit);
 
-            // Then: Class 2 NI should apply
+            // Then: nothing charged, year counts
             assertThat(result.totalNI())
-                .as("Class 2 NI should apply even with 1 penny above threshold")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Class 2 NI should be zero even with 1 penny above threshold")
+                .isEqualByComparingTo(BigDecimal.ZERO);
 
-            assertThat(result.isMandatory())
-                .as("Class 2 NI should be mandatory for GBP 6,845.01")
+            assertThat(result.isTreatedAsPaid())
+                .as("Class 2 NI should be treated as paid for GBP 6,845.01")
                 .isTrue();
         }
     }
@@ -242,8 +246,8 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
 
             // Then: Class 2 and Class 4 should be separate
             assertThat(result.niClass2())
-                .as("Class 2 NI should be GBP 182.00 (flat rate)")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Class 2 NI is treated as paid above the Small Profits Threshold")
+                .isEqualByComparingTo(BigDecimal.ZERO);
 
             assertThat(result.niClass4())
                 .as("Class 4 NI should be calculated separately based on profits above LPL")
@@ -266,59 +270,58 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
         }
 
         @Test
-        @DisplayName("profits of GBP 10,000 (above Class 2, below Class 4 threshold) should show only Class 2")
-        void profitsAboveClass2OnlyShouldShowOnlyClass2() {
+        @DisplayName("profits of GBP 10,000 (above Class 2, below Class 4 threshold) should show no NI at all")
+        void profitsAboveClass2OnlyShouldShowNoNI() {
             // Given: Profit GBP 10,000 (> GBP 6,845 Class 2 threshold, < GBP 12,570 Class 4 LPL)
             BigDecimal grossProfit = new BigDecimal("10000");
 
             // When: Calculate combined tax liability
             TaxLiabilityResult result = taxLiabilityCalculator.calculate(grossProfit);
 
-            // Then: Only Class 2 NI should apply
+            // Then: nothing is due — Class 2 is treated as paid, Class 4 is below its limit
             assertThat(result.niClass2())
-                .as("Class 2 NI should be GBP 182.00")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Class 2 NI should be zero (treated as paid)")
+                .isEqualByComparingTo(BigDecimal.ZERO);
+
+            assertThat(result.niClass2Details().isTreatedAsPaid())
+                .as("The year still counts towards State Pension")
+                .isTrue();
 
             assertThat(result.niClass4())
                 .as("Class 4 NI should be zero (below Lower Profits Limit)")
                 .isEqualByComparingTo(BigDecimal.ZERO);
 
             assertThat(result.totalNI())
-                .as("Total NI should equal Class 2 only")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Total NI should be zero")
+                .isEqualByComparingTo(BigDecimal.ZERO);
         }
     }
 
     // =========================================================================
-    // TC-801-030: Total Tax Includes Class 2 NI
+    // TC-801-030: Total Tax And Class 2 NI
     // Priority: P0
     // =========================================================================
     @Nested
-    @DisplayName("TC-801-030: Total Tax Includes Class 2 NI")
-    class TotalTaxIncludesClass2NI {
+    @DisplayName("TC-801-030: Total Tax And Class 2 NI")
+    class TotalTaxAndClass2NI {
 
         @Test
-        @DisplayName("total tax liability should include Class 2 NI")
-        void totalTaxLiabilityShouldIncludeClass2NI() {
+        @DisplayName("total tax liability should carry no Class 2 charge above the threshold")
+        void totalTaxLiabilityShouldCarryNoClass2ChargeAboveThreshold() {
             // Given: Gross profit GBP 30,000
             BigDecimal grossProfit = new BigDecimal("30000");
 
             // When: Calculate combined tax liability
             TaxLiabilityResult result = taxLiabilityCalculator.calculate(grossProfit);
 
-            // Then: Total should equal Income Tax + Class 4 NI + Class 2 NI
-            BigDecimal expectedTotal = result.incomeTax()
-                .add(result.niClass4())
-                .add(result.niClass2());
+            // Then: Total should be Income Tax + Class 4 NI, with nothing added for Class 2
+            assertThat(result.niClass2())
+                .as("Class 2 NI component should be zero")
+                .isEqualByComparingTo(BigDecimal.ZERO);
 
             assertThat(result.totalLiability())
-                .as("Total liability should include Class 2 NI (GBP 182.00)")
-                .isEqualByComparingTo(expectedTotal);
-
-            // Verify Class 2 NI is specifically included
-            assertThat(result.niClass2())
-                .as("Class 2 NI component should be GBP 182.00")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Total liability should be Income Tax plus Class 4 only")
+                .isEqualByComparingTo(result.incomeTax().add(result.niClass4()));
         }
     }
 
@@ -436,13 +439,13 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
     class RateVerification {
 
         @Test
-        @DisplayName("annual amount should equal weekly rate times 52 weeks")
+        @DisplayName("voluntary annual amount should equal weekly rate times 52 weeks")
         void annualAmountShouldEqualWeeklyRateTimes52() {
-            // Given: Profit above threshold
-            BigDecimal grossProfit = new BigDecimal("10000");
+            // Given: Profit below threshold, paying voluntarily — the only path that charges
+            BigDecimal grossProfit = new BigDecimal("5000");
 
             // When: Calculate Class 2 NI
-            Class2NICalculationResult result = calculator.calculate(grossProfit);
+            Class2NICalculationResult result = calculator.calculate(grossProfit, true);
 
             // Then: Verify rate calculation
             BigDecimal calculatedAnnual = result.weeklyRate()
@@ -466,10 +469,10 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
         void previousYearRatesShouldBeDifferent() {
             // Given: Calculator for 2024/25
             NationalInsuranceClass2Calculator calc2024 = new NationalInsuranceClass2Calculator(TAX_YEAR_2024);
-            BigDecimal grossProfit = new BigDecimal("10000");
+            BigDecimal grossProfit = new BigDecimal("5000");
 
-            // When: Calculate Class 2 NI for 2024/25
-            Class2NICalculationResult result = calc2024.calculate(grossProfit);
+            // When: Calculate voluntary Class 2 NI for 2024/25
+            Class2NICalculationResult result = calc2024.calculate(grossProfit, true);
 
             // Then: Should use 2024/25 rates
             assertThat(result.weeklyRate())
@@ -515,16 +518,20 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
                 .isEqualByComparingTo(WEEKLY_RATE_2025);
 
             assertThat(details.weeksLiable())
-                .as("Weeks liable should be 52")
-                .isEqualTo(52);
+                .as("No weeks are charged for above the threshold")
+                .isZero();
 
             assertThat(details.totalNI())
-                .as("Total NI should be GBP 182.00")
-                .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                .as("Total NI should be zero")
+                .isEqualByComparingTo(BigDecimal.ZERO);
+
+            assertThat(details.isTreatedAsPaid())
+                .as("isTreatedAsPaid should be true")
+                .isTrue();
 
             assertThat(details.isMandatory())
-                .as("isMandatory should be true")
-                .isTrue();
+                .as("isMandatory should be false")
+                .isFalse();
 
             assertThat(details.isVoluntary())
                 .as("isVoluntary should be false")
@@ -540,8 +547,8 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
     class AdditionalIntegrationScenarios {
 
         @Test
-        @DisplayName("Class 2 NI should remain flat rate regardless of income level")
-        void class2NIShouldRemainFlatRateRegardlessOfIncome() {
+        @DisplayName("Class 2 NI should stay at zero regardless of income level")
+        void class2NIShouldStayZeroRegardlessOfIncome() {
             // Given: Very high income scenarios
             BigDecimal[] highProfits = {
                 new BigDecimal("100000"),
@@ -553,50 +560,53 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
                 // When: Calculate Class 2 NI
                 Class2NICalculationResult result = calculator.calculate(profit);
 
-                // Then: Class 2 NI should always be GBP 182.00
+                // Then: Class 2 NI should always be zero above the threshold
                 assertThat(result.totalNI())
-                    .as("Class 2 NI for profit GBP %s should still be GBP 182.00", profit)
-                    .isEqualByComparingTo(ANNUAL_AMOUNT_2025);
+                    .as("Class 2 NI for profit GBP %s should be zero", profit)
+                    .isEqualByComparingTo(BigDecimal.ZERO);
+                assertThat(result.isTreatedAsPaid())
+                    .as("Profit GBP %s is above the threshold", profit)
+                    .isTrue();
             }
         }
 
         @Test
-        @DisplayName("effective rate should decrease as profit increases")
+        @DisplayName("effective rate of a voluntary contribution decreases as profit increases")
         void effectiveRateShouldDecreaseAsProfitIncreases() {
-            // Given: Different profit levels
-            BigDecimal profit10k = new BigDecimal("10000");
-            BigDecimal profit20k = new BigDecimal("20000");
+            // Given: Two profit levels below the threshold, both paying voluntarily
+            BigDecimal profit2k = new BigDecimal("2000");
+            BigDecimal profit4k = new BigDecimal("4000");
 
             // When: Calculate effective rates
-            Class2NICalculationResult result10k = calculator.calculate(profit10k);
-            Class2NICalculationResult result20k = calculator.calculate(profit20k);
+            Class2NICalculationResult result2k = calculator.calculate(profit2k, true);
+            Class2NICalculationResult result4k = calculator.calculate(profit4k, true);
 
             // Then: Effective rate should be lower for higher profits
-            assertThat(result10k.effectiveRate())
-                .as("Effective rate for GBP 10,000 should be 1.82%")
-                .isEqualByComparingTo(new BigDecimal("1.82"));
+            assertThat(result2k.effectiveRate())
+                .as("Effective rate for GBP 2,000 should be 9.10%")
+                .isEqualByComparingTo(new BigDecimal("9.10"));
 
-            assertThat(result20k.effectiveRate())
-                .as("Effective rate for GBP 20,000 should be 0.91%")
-                .isEqualByComparingTo(new BigDecimal("0.91"));
+            assertThat(result4k.effectiveRate())
+                .as("Effective rate for GBP 4,000 should be 4.55%")
+                .isEqualByComparingTo(new BigDecimal("4.55"));
 
-            assertThat(result10k.effectiveRate())
+            assertThat(result2k.effectiveRate())
                 .as("Higher profit should have lower effective rate")
-                .isGreaterThan(result20k.effectiveRate());
+                .isGreaterThan(result4k.effectiveRate());
         }
 
         @Test
-        @DisplayName("isApplicable should return true when NI is due")
+        @DisplayName("isApplicable should return true only when a payment is actually due")
         void isApplicableShouldReturnTrueWhenNIIsDue() {
             // Given/When: Calculate for various scenarios
-            Class2NICalculationResult mandatory = calculator.calculate(new BigDecimal("10000"));
+            Class2NICalculationResult treatedAsPaid = calculator.calculate(new BigDecimal("10000"));
             Class2NICalculationResult voluntary = calculator.calculate(new BigDecimal("5000"), true);
             Class2NICalculationResult neither = calculator.calculate(new BigDecimal("5000"), false);
 
             // Then
-            assertThat(mandatory.isApplicable())
-                .as("Mandatory Class 2 NI should be applicable")
-                .isTrue();
+            assertThat(treatedAsPaid.isApplicable())
+                .as("Nothing is payable when Class 2 is treated as paid")
+                .isFalse();
 
             assertThat(voluntary.isApplicable())
                 .as("Voluntary Class 2 NI should be applicable")
@@ -614,7 +624,7 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
                 String scenario,
                 BigDecimal profit,
                 BigDecimal expectedNI,
-                boolean expectedMandatory
+                boolean expectedTreatedAsPaid
         ) {
             // When
             Class2NICalculationResult result = calculator.calculate(profit);
@@ -624,9 +634,13 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
                 .as("Scenario: %s - Expected NI: GBP %s", scenario, expectedNI)
                 .isEqualByComparingTo(expectedNI);
 
+            assertThat(result.isTreatedAsPaid())
+                .as("Scenario: %s - Expected treated as paid: %s", scenario, expectedTreatedAsPaid)
+                .isEqualTo(expectedTreatedAsPaid);
+
             assertThat(result.isMandatory())
-                .as("Scenario: %s - Expected mandatory: %s", scenario, expectedMandatory)
-                .isEqualTo(expectedMandatory);
+                .as("Scenario: %s - Class 2 is never mandatory from 2024/25", scenario)
+                .isFalse();
         }
     }
 
@@ -635,8 +649,8 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
         return Stream.of(
             Arguments.of("Below threshold (GBP 6,844)", new BigDecimal("6844"), BigDecimal.ZERO, false),
             Arguments.of("At threshold (GBP 6,845)", new BigDecimal("6845"), BigDecimal.ZERO, false),
-            Arguments.of("Just above threshold (GBP 6,846)", new BigDecimal("6846"), new BigDecimal("182.00"), true),
-            Arguments.of("One penny above (GBP 6,845.01)", new BigDecimal("6845.01"), new BigDecimal("182.00"), true),
+            Arguments.of("Just above threshold (GBP 6,846)", new BigDecimal("6846"), BigDecimal.ZERO, true),
+            Arguments.of("One penny above (GBP 6,845.01)", new BigDecimal("6845.01"), BigDecimal.ZERO, true),
             Arguments.of("Zero profit", BigDecimal.ZERO, BigDecimal.ZERO, false),
             Arguments.of("Negative profit (loss)", new BigDecimal("-5000"), BigDecimal.ZERO, false)
         );
@@ -690,13 +704,13 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
             // When: Calculate with voluntary flag
             Class2NICalculationResult result = calculator.calculate(grossProfit, true);
 
-            // Then: Should be mandatory, not voluntary
-            assertThat(result.isMandatory())
-                .as("Class 2 NI should be mandatory above threshold regardless of voluntary flag")
-                .isTrue();
+            // Then: nothing to pay, voluntarily or otherwise
+            assertThat(result.totalNI())
+                .as("Class 2 NI should be zero above the threshold regardless of voluntary flag")
+                .isEqualByComparingTo(BigDecimal.ZERO);
 
             assertThat(result.isVoluntary())
-                .as("Voluntary flag should be ignored when mandatory")
+                .as("Voluntary flag should be ignored when the year is already treated as paid")
                 .isFalse();
         }
 

@@ -49,8 +49,9 @@ niClass4:
 
 niClass2:
   # National Insurance Class 2 - flat-rate self-employed contributions
-  # Updated rates for 2026/27 (uprated from 2025/26).
+  # Updated rates for 2026/27 (uprated from 2025/26). Above the Small Profits Threshold Class 2
+  # is treated as paid, so the weekly rate is only ever charged on the voluntary path below it.
   # HMRC ref: https://www.gov.uk/self-employed-national-insurance-rates
 
-  weeklyRate: 3.65             # £3.65 per week = £189.80/year (52 weeks)
+  weeklyRate: 3.65             # £3.65 per week = £189.80/year (52 weeks) if paid voluntarily
   smallProfitsThreshold: 7105  # Class 2 NI is treated as paid above this threshold

@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated issue/PR templates to reference public roadmap
 
 ### Fixed
+- Class 2 National Insurance is no longer charged for tax years from 2024/25 onwards. Profits above the Small Profits Threshold are treated as having paid it (the requirement to pay was removed on 6 April 2024), so estimates no longer overstate the liability by 52 weeks of the weekly rate. Voluntary Class 2 below the threshold is unchanged.
+- The Tax Summary's Class 2 card now shows the rates of the tax year being viewed instead of 2025/26 for every year.
+- Submission History shows the tax due on an annual submission's stored profit instead of "£0.00", and shows "Not applicable" for a quarterly update rather than a zero.
+- A tax year with no rate file in this build now shows a banner and badges its figures "Estimated on YYYY rates" instead of presenting rates from another year as current.
 - jpackage `mainJar` now correctly references `quarkus-run.jar` instead of non-existent artifact JAR
 - jpackage `mainClass` now uses `QuarkusEntryPoint` for proper classloader bootstrapping
 - jpackage `appVersion` strips `-SNAPSHOT` suffix for version compliance

@@ -12,6 +12,8 @@ import uk.selfemploy.core.calculator.TaxLiabilityResult;
 import uk.selfemploy.core.calculator.TaxCalculationResult;
 import uk.selfemploy.core.calculator.NICalculationResult;
 import uk.selfemploy.core.calculator.Class2NICalculationResult;
+import uk.selfemploy.core.config.RateBasis;
+import uk.selfemploy.core.config.TaxRateConfiguration;
 import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
@@ -64,6 +66,7 @@ public class TaxSummaryViewModel {
     private final IntegerProperty niClass2WeeksLiable = new SimpleIntegerProperty(0);
     private final BooleanProperty niClass2Mandatory = new SimpleBooleanProperty(false);
     private final BooleanProperty niClass2Voluntary = new SimpleBooleanProperty(false);
+    private final BooleanProperty niClass2TreatedAsPaid = new SimpleBooleanProperty(false);
     private final ObjectProperty<BigDecimal> totalNI = new SimpleObjectProperty<>(BigDecimal.ZERO);
 
     // === Payment on Account ===
@@ -75,6 +78,13 @@ public class TaxSummaryViewModel {
 
     private final ObjectProperty<TaxYear> taxYear = new SimpleObjectProperty<>();
     private final BooleanProperty submitted = new SimpleBooleanProperty(false);
+
+    /**
+     * Which published year's rates back everything on this screen. Null only while no tax year is
+     * selected; otherwise always present, so the "estimated" case has no unset state to slip
+     * through.
+     */
+    private final ObjectProperty<RateBasis> rateBasis = new SimpleObjectProperty<>();
 
     // === Expense Breakdown ===
 
@@ -92,6 +102,11 @@ public class TaxSummaryViewModel {
         // Net profit is turnover minus ALLOWABLE expenses, so recompute when the
         // allowable total changes (it is set after the gross total in recalculateExpenseTotals).
         allowableExpenses.addListener((obs, oldVal, newVal) -> updateNetProfit());
+        // Selecting a year is what decides whose rates the screen is about to show, so the basis
+        // is resolved there rather than when figures happen to be calculated: a year with no
+        // records still gets its banner.
+        taxYear.addListener((obs, oldVal, newVal) -> rateBasis.set(
+            newVal == null ? null : TaxRateConfiguration.getInstance().rateBasisFor(newVal.startYear())));
     }
 
     // === Turnover (SA103 Box 15) ===
@@ -316,6 +331,19 @@ public class TaxSummaryViewModel {
         return niClass2Voluntary;
     }
 
+    /**
+     * Whether the year counts towards the State Pension without a Class 2 payment, because profits
+     * are above the Small Profits Threshold. Distinguishes a £0 Class 2 that earned a qualifying
+     * year from a £0 Class 2 that left a gap in the record.
+     */
+    public boolean isNiClass2TreatedAsPaid() {
+        return niClass2TreatedAsPaid.get();
+    }
+
+    public BooleanProperty niClass2TreatedAsPaidProperty() {
+        return niClass2TreatedAsPaid;
+    }
+
     // === Total NI (Class 2 + Class 4) ===
 
     public BigDecimal getTotalNI() {
@@ -404,6 +432,33 @@ public class TaxSummaryViewModel {
             return "";
         }
         return year.label();
+    }
+
+    // === Rate Basis ===
+
+    /**
+     * Which published year's rates every figure on this screen was computed on.
+     *
+     * <p>Written in two places that cannot disagree: when the tax year is selected, and again in
+     * {@link #calculateTax()} from the {@code rateBasis} the {@link TaxLiabilityResult} itself
+     * carries. The first means the notice is present for a year with no records; the second means
+     * the notice describes the basis the numbers on screen were actually produced from.
+     */
+    public ReadOnlyObjectProperty<RateBasis> rateBasisProperty() {
+        return rateBasis;
+    }
+
+    public RateBasis getRateBasis() {
+        return rateBasis.get();
+    }
+
+    /**
+     * Whether this screen's figures are computed on a year other than the one being viewed,
+     * because the viewed year has no published rates in this build.
+     */
+    public boolean isRatesEstimated() {
+        RateBasis basis = rateBasis.get();
+        return basis != null && basis.isEstimated();
     }
 
     // === Draft Status ===
@@ -552,6 +607,10 @@ public class TaxSummaryViewModel {
             // Store result for reference
             this.lastCalculationResult = result;
 
+            // The figures and the rates they were computed on arrive together and are published
+            // together, so no figure can reach the screen without its basis.
+            rateBasis.set(result.rateBasis());
+
             // Update Income Tax values
             TaxCalculationResult itResult = result.incomeTaxDetails();
             incomeTax.set(result.incomeTax());
@@ -576,6 +635,7 @@ public class TaxSummaryViewModel {
             niClass2WeeksLiable.set(niClass2Result.weeksLiable());
             niClass2Mandatory.set(niClass2Result.isMandatory());
             niClass2Voluntary.set(niClass2Result.isVoluntary());
+            niClass2TreatedAsPaid.set(niClass2Result.isTreatedAsPaid());
 
             // Update total NI (Class 2 + Class 4)
             totalNI.set(result.totalNI());
@@ -643,6 +703,7 @@ public class TaxSummaryViewModel {
         niClass2WeeksLiable.set(0);
         niClass2Mandatory.set(false);
         niClass2Voluntary.set(false);
+        niClass2TreatedAsPaid.set(false);
         totalNI.set(BigDecimal.ZERO);
         // Reset POA
         requiresPaymentOnAccount.set(false);

@@ -410,10 +410,14 @@ class StatePensionAgeExemptionIntegrationTest {
 
             TaxLiabilityResult result = taxCalculator2024.calculate(profit, pensionerDob);
 
-            // Class 2 NI is still mandatory if above Small Profits Threshold
+            // Class 2 follows the same rule for everyone: above the Small Profits Threshold it is
+            // treated as paid, so a pensioner is charged nothing for it either.
             assertThat(result.niClass2())
-                .as("Pensioner should still pay Class 2 NI if above threshold")
-                .isGreaterThan(BigDecimal.ZERO);
+                .as("Nobody is charged Class 2 above the threshold from 2024/25")
+                .isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.niClass2Details().isTreatedAsPaid())
+                .as("Pensioner above the threshold is treated as having paid")
+                .isTrue();
         }
     }
 

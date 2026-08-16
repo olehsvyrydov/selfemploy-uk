@@ -28,6 +28,30 @@
     -fx-font-size: 13px;
 }
 
+/* ===== Unpublished Tax Rates Banner ===== */
+.estimated-rates-banner {
+    -fx-background-color: t.$warning-bg;
+    -fx-border-color: t.$warning;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+}
+
+.estimated-rates-text {
+    -fx-text-fill: t.$warning-text;
+    -fx-font-size: 13px;
+}
+
+.estimated-rates-badge {
+    -fx-background-color: t.$warning-bg;
+    -fx-text-fill: t.$warning-text;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 3 8;
+    -fx-background-radius: 12;
+}
+
 /* ===== Submission Status Banner ===== */
 .submitted-banner {
     -fx-background-color: t.$success-bg;

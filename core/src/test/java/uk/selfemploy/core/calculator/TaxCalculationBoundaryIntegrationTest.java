@@ -71,16 +71,18 @@ class TaxCalculationBoundaryIntegrationTest {
         }
 
         @Test
-        @DisplayName("combined calculation at £12,570 should be Class 2 NI only")
-        void combinedAt12570ShouldBeClass2Only() {
+        @DisplayName("combined calculation at £12,570 should be nothing at all")
+        void combinedAt12570ShouldBeNothing() {
             BigDecimal profit = new BigDecimal("12570");
 
             TaxLiabilityResult result = calculator2024.calculate(profit);
 
             assertThat(result.incomeTax()).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(result.niClass4()).isEqualByComparingTo(BigDecimal.ZERO);
-            // Class 2 NI applies since £12,570 > £6,725 Small Profits Threshold
-            assertThat(result.niClass2()).isGreaterThan(BigDecimal.ZERO);
+            // £12,570 > £6,725 Small Profits Threshold, so Class 2 is treated as paid, not charged
+            assertThat(result.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.niClass2Details().isTreatedAsPaid()).isTrue();
+            assertThat(result.totalLiability()).isEqualByComparingTo(BigDecimal.ZERO);
         }
     }
 

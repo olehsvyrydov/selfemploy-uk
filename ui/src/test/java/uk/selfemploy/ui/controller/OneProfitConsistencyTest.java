@@ -280,7 +280,9 @@ class OneProfitConsistencyTest {
         // view model's tax getters start at zero and calculateTax() resets them to zero on failure.
         assertThat(expected.incomeTax()).as("the dataset must owe income tax").isPositive();
         assertThat(expected.niClass4()).as("the dataset must owe Class 4").isPositive();
-        assertThat(expected.niClass2()).as("the dataset must owe Class 2").isPositive();
+        // Class 2 is legitimately zero above the Small Profits Threshold, so it cannot serve as a
+        // did-the-calculation-run guard; the two figures above do that.
+        assertThat(expected.niClass2()).as("Class 2 is treated as paid at this profit").isZero();
 
         assertThat(taxSummary.getIncomeTax()).isEqualByComparingTo(expected.incomeTax());
         assertThat(taxSummary.getNiClass4()).isEqualByComparingTo(expected.niClass4());
@@ -298,10 +300,13 @@ class OneProfitConsistencyTest {
 
         assertThat(taxSummary.getNetProfit())
                 .isEqualByComparingTo(OneProfitFixture.BOUNDARY_TAXABLE_PROFIT);
-        assertThat(expected.niClass2())
+        assertThat(expected.niClass2Details().isTreatedAsPaid())
                 .as("£7,000 is above 2025/26's small-profits threshold of £6,845 and below 2026/27's "
-                    + "£7,105, so a Class 2 charge here is what proves the pinned year was used")
-                .isPositive();
+                    + "£7,105, so being treated as paid here is what proves the pinned year was used "
+                    + "— against 2026/27 this profit is below the threshold and is not")
+                .isTrue();
+        assertThat(taxSummary.isNiClass2TreatedAsPaid())
+                .isEqualTo(expected.niClass2Details().isTreatedAsPaid());
         assertThat(taxSummary.getNiClass2()).isEqualByComparingTo(expected.niClass2());
     }
 

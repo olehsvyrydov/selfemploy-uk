@@ -46,8 +46,10 @@ niClass4:
 
 niClass2:
   # National Insurance Class 2 - flat-rate self-employed contributions
-  # Mandatory if profits exceed Small Profits Threshold
+  # The requirement to pay was removed from 6 April 2024, so this is the first year in which
+  # profits above the Small Profits Threshold are treated as paid rather than charged. The
+  # weekly rate below is therefore only ever charged on the voluntary path, below the threshold.
   # HMRC ref: https://www.gov.uk/self-employed-national-insurance-rates
 
-  weeklyRate: 3.45             # £3.45 per week = £179.40/year (52 weeks)
-  smallProfitsThreshold: 6725  # Class 2 NI is mandatory above this threshold
+  weeklyRate: 3.45             # £3.45 per week = £179.40/year (52 weeks) if paid voluntarily
+  smallProfitsThreshold: 6725  # Class 2 NI is treated as paid above this threshold

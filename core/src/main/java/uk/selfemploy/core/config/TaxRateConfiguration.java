@@ -5,6 +5,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,12 +15,16 @@ import java.util.logging.Logger;
 /**
  * Configuration loader for externalized tax rates.
  *
- * Loads tax rates from YAML configuration files in the tax-rates/ resource directory.
- * Falls back to hardcoded rates if YAML files are not found (graceful degradation).
+ * <p>Loads tax rates from YAML configuration files in the tax-rates/ resource directory.
  *
- * File naming convention: {year}-{year+1 mod 100}.yaml (e.g., 2024-25.yaml)
+ * <p>A year with no rate file of its own is served the nearest configured year's rates rather
+ * than a hardcoded default — see {@link #ratesYearFor(int)} — and {@link #rateBasisFor(int)}
+ * reports which year those rates belong to, so figures computed past the last published year can
+ * be labelled as the estimates they are instead of passing for that year's tax.
  *
- * Thread-safe singleton with caching of loaded rates.
+ * <p>File naming convention: {year}-{year+1 mod 100}.yaml (e.g., 2024-25.yaml)
+ *
+ * <p>Thread-safe singleton with caching of loaded rates.
  */
 public class TaxRateConfiguration {
 
@@ -65,7 +70,8 @@ public class TaxRateConfiguration {
      * @return IncomeTaxRates for the specified year
      */
     public IncomeTaxRates getIncomeTaxRates(int taxYear) {
-        return incomeTaxRatesCache.computeIfAbsent(taxYear, this::loadIncomeTaxRates);
+        return incomeTaxRatesCache.computeIfAbsent(taxYear,
+            year -> loadIncomeTaxRates(ratesYearFor(year)));
     }
 
     /**
@@ -77,7 +83,8 @@ public class TaxRateConfiguration {
      * @return NIClass4Rates for the specified year
      */
     public NIClass4Rates getNIClass4Rates(int taxYear) {
-        return niClass4RatesCache.computeIfAbsent(taxYear, this::loadNIClass4Rates);
+        return niClass4RatesCache.computeIfAbsent(taxYear,
+            year -> loadNIClass4Rates(ratesYearFor(year)));
     }
 
     /**
@@ -89,7 +96,52 @@ public class TaxRateConfiguration {
      * @return NIClass2Rates for the specified year
      */
     public NIClass2Rates getNIClass2Rates(int taxYear) {
-        return niClass2RatesCache.computeIfAbsent(taxYear, this::loadNIClass2Rates);
+        return niClass2RatesCache.computeIfAbsent(taxYear,
+            year -> loadNIClass2Rates(ratesYearFor(year)));
+    }
+
+    /**
+     * The tax year whose rate file actually supplies the rates returned for {@code taxYear}.
+     *
+     * <p>This is {@code taxYear} itself whenever a rate file exists for it. Otherwise it is the
+     * latest configured year at or before it, or — for a year earlier than anything configured —
+     * the earliest configured year. Every rate getter resolves through this method, so a year
+     * running past the last published rate file is served that file rather than the hardcoded
+     * {@code defaultRates()}, which now answers only when no rate file ships at all (or when a
+     * shipped one omits the section being asked for).
+     *
+     * <p>It is also the whole of the difference between a figure that is this year's tax and one
+     * that is an estimate on an older year's rates: see {@link #rateBasisFor(int)}.
+     *
+     * @param taxYear the tax year being asked about
+     * @return the tax year whose rates will be used
+     */
+    public int ratesYearFor(int taxYear) {
+        if (supportedTaxYears.isEmpty() || supportedTaxYears.contains(taxYear)) {
+            return taxYear;
+        }
+        int earliest = Collections.min(supportedTaxYears);
+        if (taxYear < earliest) {
+            return earliest;
+        }
+        int resolved = earliest;
+        for (int candidate : supportedTaxYears) {
+            if (candidate <= taxYear && candidate > resolved) {
+                resolved = candidate;
+            }
+        }
+        return resolved;
+    }
+
+    /**
+     * Which published year's rates back the figures for {@code taxYear}.
+     *
+     * @param taxYear the tax year being asked about
+     * @return the basis, whose {@link RateBasis#isEstimated()} is true exactly when
+     *         {@code taxYear} has no rate file of its own
+     */
+    public RateBasis rateBasisFor(int taxYear) {
+        return new RateBasis(taxYear, ratesYearFor(taxYear));
     }
 
     /**

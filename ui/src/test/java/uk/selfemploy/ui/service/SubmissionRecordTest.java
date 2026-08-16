@@ -7,6 +7,8 @@ import uk.selfemploy.common.domain.Submission;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.SubmissionStatus;
 import uk.selfemploy.common.enums.SubmissionType;
+import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
+import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.ui.viewmodel.SubmissionTableRow;
 
 import java.math.BigDecimal;
@@ -241,6 +243,66 @@ class SubmissionRecordTest {
 
             assertThat(row.type()).isEqualTo(SubmissionType.ANNUAL);
             assertThat(row.taxYear()).isEqualTo("2024/25");
+        }
+
+        @Test
+        @DisplayName("an annual row's Tax Due is the liability on its stored profit, not zero")
+        void annualRowCarriesTaxDueDerivedFromStoredProfit() {
+            SubmissionRecord record = new SubmissionRecord(
+                TEST_ID, TEST_BUSINESS_ID, "ANNUAL", 2025,
+                LocalDate.of(2025, 4, 6), LocalDate.of(2026, 4, 5),
+                new BigDecimal("50000.00"), new BigDecimal("10000.00"), new BigDecimal("40000.00"),
+                "ACCEPTED", "SA-2025-REF", null, TEST_SUBMITTED_AT
+            );
+
+            SubmissionTableRow row = record.toTableRow();
+
+            BigDecimal expected = new TaxLiabilityCalculator(2025)
+                .calculate(new BigDecimal("40000.00")).totalLiability();
+            assertThat(expected).isGreaterThan(BigDecimal.ZERO);
+            assertThat(row.taxDue()).isEqualByComparingTo(expected);
+            assertThat(row.getFormattedTaxDue()).isEqualTo(Money.format(expected));
+            assertThat(row.getPrimaryValueDisplay()).isEqualTo(Money.format(expected));
+        }
+
+        @Test
+        @DisplayName("an annual row's Tax Due uses the rates of the year it was filed for")
+        void annualRowTaxDueUsesItsOwnTaxYear() {
+            BigDecimal profit = new BigDecimal("40000.00");
+
+            BigDecimal due2024 = annualRecordFor(2024, profit).toTableRow().taxDue();
+            BigDecimal due2026 = annualRecordFor(2026, profit).toTableRow().taxDue();
+
+            assertThat(due2024).isEqualByComparingTo(
+                new TaxLiabilityCalculator(2024).calculate(profit).totalLiability());
+            assertThat(due2026).isEqualByComparingTo(
+                new TaxLiabilityCalculator(2026).calculate(profit).totalLiability());
+        }
+
+        @Test
+        @DisplayName("an annual row for a loss has no tax due")
+        void annualRowForLossHasZeroTaxDue() {
+            SubmissionTableRow row = annualRecordFor(2025, new BigDecimal("-2000.00")).toTableRow();
+
+            assertThat(row.taxDue()).isEqualByComparingTo(BigDecimal.ZERO);
+        }
+
+        @Test
+        @DisplayName("a quarterly row has no annual tax due, and does not pretend it is zero")
+        void quarterlyRowHasNoTaxDue() {
+            SubmissionTableRow row = createRecord("QUARTERLY_Q1").toTableRow();
+
+            assertThat(row.taxDue()).isNull();
+            assertThat(row.getFormattedTaxDue()).isNotEqualTo(Money.format(BigDecimal.ZERO));
+        }
+
+        private SubmissionRecord annualRecordFor(int taxYearStart, BigDecimal netProfit) {
+            return new SubmissionRecord(
+                TEST_ID, TEST_BUSINESS_ID, "ANNUAL", taxYearStart,
+                LocalDate.of(taxYearStart, 4, 6), LocalDate.of(taxYearStart + 1, 4, 5),
+                netProfit, BigDecimal.ZERO, netProfit,
+                "ACCEPTED", "SA-REF", null, TEST_SUBMITTED_AT
+            );
         }
 
         @Test

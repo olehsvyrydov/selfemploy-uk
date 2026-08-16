@@ -14,6 +14,7 @@ import uk.selfemploy.core.calculator.Class2NICalculationResult;
 import uk.selfemploy.core.calculator.NICalculationResult;
 import uk.selfemploy.core.calculator.TaxCalculationResult;
 import uk.selfemploy.core.calculator.TaxLiabilityResult;
+import uk.selfemploy.core.config.RateBasis;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -483,8 +484,9 @@ class SubmissionPdfGeneratorTest {
                 new BigDecimal("3.50"),     // weeklyRate
                 52,                         // weeksLiable
                 new BigDecimal("182.00"),   // totalNI
-                true,                       // isMandatory
-                false                       // isVoluntary
+                false,                      // isMandatory
+                true,                       // isVoluntary
+                false                       // isTreatedAsPaid
         );
 
         return new TaxLiabilityResult(
@@ -495,7 +497,8 @@ class SubmissionPdfGeneratorTest {
                 new BigDecimal("7313.80"),  // totalLiability (5486 + 1645.80 + 182)
                 incomeTaxDetails,
                 niClass4Details,
-                niClass2Details
+                niClass2Details,
+                new RateBasis(2025, 2025)
         );
     }
 

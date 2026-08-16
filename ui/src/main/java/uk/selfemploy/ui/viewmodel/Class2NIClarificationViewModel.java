@@ -3,115 +3,62 @@ package uk.selfemploy.ui.viewmodel;
 import javafx.beans.property.*;
 import uk.selfemploy.core.config.NIClass2Rates;
 import uk.selfemploy.core.config.TaxRateConfiguration;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * ViewModel for the Class 2 NI Credit Clarification UI.
+ * ViewModel for the Class 2 NI clarification card on the Tax Summary.
  *
- * <p>SE-810: Provides educational content about Class 2 National Insurance
- * and its importance for State Pension credits. Content varies based on
- * the user's profit level:</p>
+ * <p>Explains what Class 2 National Insurance means for the user's State Pension record at their
+ * profit level: above the Small Profits Threshold the year is treated as paid, below it Class 2 is
+ * voluntary, and with no profit there is nothing to pay and a possible gap in the record.
  *
- * <ul>
- *   <li><b>Above SPT (£6,725):</b> Must pay Class 2, entitled message</li>
- *   <li><b>Below SPT:</b> Voluntary payment option</li>
- *   <li><b>Zero/Loss:</b> No payment required, gap warning</li>
- * </ul>
- *
- * <h3>2025/26 Rates:</h3>
- * <ul>
- *   <li>Weekly rate: £3.45</li>
- *   <li>Annual amount (52 weeks): £179.40</li>
- *   <li>Small Profits Threshold: £6,725</li>
- * </ul>
+ * <p>Every figure the card shows — the threshold in the body text, the weekly rate, the annual
+ * amount and the year in the rate label — is written by {@link #update(int, BigDecimal)} from the
+ * rates of the tax year passed to it. There is no other writer and no default year: until
+ * {@code update} is called the card is invisible and its rate fields are empty, so the card cannot
+ * show one year's rates beside another year's profit.
  *
  * @see <a href="https://www.gov.uk/self-employed-national-insurance-rates">HMRC Class 2 NI rates</a>
  */
 public class Class2NIClarificationViewModel {
 
-    // Default tax year (2025/26)
-    private static final int DEFAULT_TAX_YEAR = 2025;
     private static final int WEEKS_PER_YEAR = 52;
-
-    // Tax year for this instance
-    private final int taxYear;
-
-    // Rates loaded from TaxRateConfiguration
-    private final NIClass2Rates rates;
 
     // HMRC URLs
     private static final String STATE_PENSION_FORECAST_URL = "https://www.gov.uk/check-state-pension";
     private static final String NI_RECORD_URL = "https://www.gov.uk/check-national-insurance-record";
     private static final String VOLUNTARY_NI_URL = "https://www.gov.uk/voluntary-national-insurance-contributions";
 
-    // Content for different scenarios
-    private static final String TITLE_STANDARD = "Class 2 NI Credits";
-    private static final String TITLE_VOLUNTARY = "Class 2 NI Credits (Voluntary)";
-
-    // Note: Body text references SPT dynamically in applyAboveSPTState() and applyBelowSPTState()
-    private static final String BODY_ABOVE_SPT_TEMPLATE =
-            "Class 2 National Insurance helps you qualify for State Pension. " +
-                    "As your profits exceed %s, you're entitled to pay Class 2 contributions.";
-
-    private static final String BODY_BELOW_SPT_TEMPLATE =
-            "Your profits are below the Small Profits Threshold (%s), so " +
-                    "Class 2 NI is voluntary. However, you may still want to pay to " +
-                    "protect your State Pension entitlement.";
-
-    private static final String BODY_ZERO_LOSS =
-            "You have no profits this year, so you don't need to pay Class 2 NI. " +
-                    "However, gaps in your National Insurance record can affect your State Pension.";
-
-    private static final String PENSION_INSIGHT_STANDARD =
-            "Each year you pay Class 2 NI counts as a 'qualifying year' for State Pension. " +
-                    "You need 35 qualifying years for the full State Pension.";
-
-    private static final String PENSION_INSIGHT_VOLUNTARY_TEMPLATE =
-            "Paying voluntarily ensures this year counts toward your 35 qualifying years " +
-                    "for full State Pension. At just %s per year, this can be valuable protection.";
-
-    private static final String PENSION_INSIGHT_ZERO_LOSS =
-            "Each year without Class 2 contributions may create a gap in your NI record. " +
-                    "Consider checking your qualifying year count for State Pension.";
+    /** Rates of the year last passed to {@link #update(int, BigDecimal)}; null until then. */
+    private NIClass2Rates rates;
 
     // === State Properties ===
     private final BooleanProperty visible = new SimpleBooleanProperty(false);
     private final BooleanProperty showVoluntaryBadge = new SimpleBooleanProperty(false);
-    private final StringProperty titleText = new SimpleStringProperty(TITLE_STANDARD);
+    private final StringProperty titleText = new SimpleStringProperty(Messages.get("taxSummary.class2.title"));
     private final StringProperty bodyText = new SimpleStringProperty("");
-    private final StringProperty pensionInsightText = new SimpleStringProperty(PENSION_INSIGHT_STANDARD);
+    private final StringProperty pensionInsightText = new SimpleStringProperty("");
     private final ObjectProperty<Scenario> scenario = new SimpleObjectProperty<>(null);
+
+    // === Rate Properties (year-specific; empty until a tax year is supplied) ===
+    private final StringProperty weeklyRateLabel = new SimpleStringProperty("");
+    private final StringProperty weeklyRateText = new SimpleStringProperty("");
+    private final StringProperty annualAmountText = new SimpleStringProperty("");
 
     /**
      * Profit scenarios for Class 2 NI.
      */
     public enum Scenario {
-        /** Profits >= £6,725 - must pay Class 2 */
+        /** Profits at or above the Small Profits Threshold - the year is treated as paid. */
         ABOVE_SPT,
-        /** Profits > £0 but < £6,725 - voluntary */
+        /** Profits above zero but below the Small Profits Threshold - voluntary. */
         BELOW_SPT,
-        /** Profits <= £0 - no payment required */
+        /** Profits at or below zero - no payment required. */
         ZERO_LOSS
-    }
-
-    /**
-     * Creates a new Class2NIClarificationViewModel with default tax year (2025/26).
-     */
-    public Class2NIClarificationViewModel() {
-        this(DEFAULT_TAX_YEAR);
-    }
-
-    /**
-     * Creates a new Class2NIClarificationViewModel for a specific tax year.
-     *
-     * @param taxYear the tax year (e.g., 2025 for 2025/26)
-     */
-    public Class2NIClarificationViewModel(int taxYear) {
-        this.taxYear = taxYear;
-        this.rates = TaxRateConfiguration.getInstance().getNIClass2Rates(taxYear);
     }
 
     // === State Properties ===
@@ -158,82 +105,101 @@ public class Class2NIClarificationViewModel {
         return scenario;
     }
 
+    // === Rate Properties ===
+
+    /**
+     * Property containing the weekly-rate row label, including the tax year it applies to.
+     */
+    public ReadOnlyStringProperty weeklyRateLabelProperty() {
+        return weeklyRateLabel;
+    }
+
+    /**
+     * Property containing the formatted weekly Class 2 rate for the tax year being viewed.
+     */
+    public ReadOnlyStringProperty weeklyRateTextProperty() {
+        return weeklyRateText;
+    }
+
+    /**
+     * Property containing the formatted 52-week amount for the tax year being viewed.
+     */
+    public ReadOnlyStringProperty annualAmountTextProperty() {
+        return annualAmountText;
+    }
+
     // === Actions ===
 
     /**
-     * Updates the ViewModel based on the user's profit.
+     * Rebuilds the card for one tax year and the profit shown for that same year.
      *
-     * @param profit the net profit amount (can be null for zero)
+     * <p>The rates are re-read from {@link TaxRateConfiguration} for {@code taxYearStart} on every
+     * call, and the scenario text and all three rate fields are written from them together. Passing
+     * the year in rather than holding one is what keeps the card's figures and the profit beside it
+     * describing the same year.
+     *
+     * @param taxYearStart the tax year being viewed (e.g. 2025 for 2025/26)
+     * @param profit       the net profit for that year (null is treated as zero)
      */
-    public void updateForProfit(BigDecimal profit) {
-        BigDecimal effectiveProfit = profit != null ? profit : BigDecimal.ZERO;
+    public void update(int taxYearStart, BigDecimal profit) {
+        this.rates = TaxRateConfiguration.getInstance().getNIClass2Rates(taxYearStart);
 
+        weeklyRateLabel.set(Messages.format("taxSummary.class2.weeklyRateLabel", taxYearLabel(taxYearStart)));
+        weeklyRateText.set(Money.format(rates.weeklyRate()));
+        annualAmountText.set(Money.format(annualAmount()));
+
+        BigDecimal effectiveProfit = profit != null ? profit : BigDecimal.ZERO;
         visible.set(true);
 
         if (effectiveProfit.compareTo(rates.smallProfitsThreshold()) >= 0) {
-            // Above or at SPT - must pay
-            applyAboveSPTState();
+            applyAboveSPTState(taxYearStart);
         } else if (effectiveProfit.compareTo(BigDecimal.ZERO) > 0) {
-            // Below SPT but positive - voluntary
             applyBelowSPTState();
         } else {
-            // Zero or loss - no payment required
             applyZeroLossState();
         }
+    }
+
+    /**
+     * Hides the card and clears every year-specific figure, for when there is no year to show.
+     */
+    public void clear() {
+        rates = null;
+        visible.set(false);
+        showVoluntaryBadge.set(false);
+        scenario.set(null);
+        titleText.set(Messages.get("taxSummary.class2.title"));
+        bodyText.set("");
+        pensionInsightText.set("");
+        weeklyRateLabel.set("");
+        weeklyRateText.set("");
+        annualAmountText.set("");
     }
 
     // === Rate Information ===
 
     /**
-     * Returns the Class 2 NI weekly rate from TaxRateConfiguration.
+     * Returns the Class 2 NI weekly rate for the year last passed to
+     * {@link #update(int, BigDecimal)}, or null if no year has been supplied.
      */
     public BigDecimal getWeeklyRate() {
-        return rates.weeklyRate();
+        return rates != null ? rates.weeklyRate() : null;
     }
 
     /**
-     * Returns the Class 2 NI annual amount (52 weeks).
-     * Calculated from weekly rate.
+     * Returns the 52-week Class 2 amount for the year last passed to
+     * {@link #update(int, BigDecimal)}, or null if no year has been supplied.
      */
     public BigDecimal getAnnualAmount() {
-        return rates.weeklyRate()
-                .multiply(BigDecimal.valueOf(WEEKS_PER_YEAR))
-                .setScale(2, RoundingMode.HALF_UP);
+        return rates != null ? annualAmount() : null;
     }
 
     /**
-     * Returns the formatted weekly rate (e.g., "£3.45").
-     */
-    public String getFormattedWeeklyRate() {
-        return Money.format(rates.weeklyRate());
-    }
-
-    /**
-     * Returns the formatted annual amount (e.g., "£179.40").
-     */
-    public String getFormattedAnnualAmount() {
-        return Money.format(getAnnualAmount());
-    }
-
-    /**
-     * Returns the Small Profits Threshold from TaxRateConfiguration.
+     * Returns the Small Profits Threshold for the year last passed to
+     * {@link #update(int, BigDecimal)}, or null if no year has been supplied.
      */
     public BigDecimal getSmallProfitsThreshold() {
-        return rates.smallProfitsThreshold();
-    }
-
-    /**
-     * Returns the current tax year formatted as "YYYY/YY".
-     */
-    public String getTaxYear() {
-        return String.format("%d/%02d", taxYear, (taxYear + 1) % 100);
-    }
-
-    /**
-     * Returns the weekly rate label including tax year.
-     */
-    public String getWeeklyRateLabel() {
-        return "Weekly rate (" + getTaxYear() + "):";
+        return rates != null ? rates.smallProfitsThreshold() : null;
     }
 
     // === External Links ===
@@ -261,34 +227,41 @@ public class Class2NIClarificationViewModel {
 
     // === Private Methods ===
 
-    private void applyAboveSPTState() {
+    private BigDecimal annualAmount() {
+        return rates.weeklyRate()
+                .multiply(BigDecimal.valueOf(WEEKS_PER_YEAR))
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static String taxYearLabel(int taxYearStart) {
+        return String.format("%d/%02d", taxYearStart, (taxYearStart + 1) % 100);
+    }
+
+    private void applyAboveSPTState(int taxYearStart) {
         scenario.set(Scenario.ABOVE_SPT);
         showVoluntaryBadge.set(false);
-        titleText.set(TITLE_STANDARD);
-        bodyText.set(String.format(BODY_ABOVE_SPT_TEMPLATE, getFormattedSmallProfitsThreshold()));
-        pensionInsightText.set(PENSION_INSIGHT_STANDARD);
+        titleText.set(Messages.get("taxSummary.class2.title"));
+        bodyText.set(Messages.format("taxSummary.class2.bodyTreatedAsPaid",
+                Money.format(rates.smallProfitsThreshold()), taxYearLabel(taxYearStart)));
+        pensionInsightText.set(Messages.format("taxSummary.class2.pensionTreatedAsPaid",
+                taxYearLabel(taxYearStart)));
     }
 
     private void applyBelowSPTState() {
         scenario.set(Scenario.BELOW_SPT);
         showVoluntaryBadge.set(true);
-        titleText.set(TITLE_VOLUNTARY);
-        bodyText.set(String.format(BODY_BELOW_SPT_TEMPLATE, getFormattedSmallProfitsThreshold()));
-        pensionInsightText.set(String.format(PENSION_INSIGHT_VOLUNTARY_TEMPLATE, getFormattedAnnualAmount()));
-    }
-
-    /**
-     * Returns the formatted Small Profits Threshold (e.g., "£6,845").
-     */
-    private String getFormattedSmallProfitsThreshold() {
-        return Money.format(rates.smallProfitsThreshold());
+        titleText.set(Messages.get("taxSummary.class2.titleVoluntary"));
+        bodyText.set(Messages.format("taxSummary.class2.bodyBelowThreshold",
+                Money.format(rates.smallProfitsThreshold())));
+        pensionInsightText.set(Messages.format("taxSummary.class2.pensionVoluntary",
+                Money.format(annualAmount())));
     }
 
     private void applyZeroLossState() {
         scenario.set(Scenario.ZERO_LOSS);
         showVoluntaryBadge.set(false);
-        titleText.set(TITLE_STANDARD);
-        bodyText.set(BODY_ZERO_LOSS);
-        pensionInsightText.set(PENSION_INSIGHT_ZERO_LOSS);
+        titleText.set(Messages.get("taxSummary.class2.title"));
+        bodyText.set(Messages.get("taxSummary.class2.bodyZeroLoss"));
+        pensionInsightText.set(Messages.get("taxSummary.class2.pensionZeroLoss"));
     }
 }
