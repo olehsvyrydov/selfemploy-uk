@@ -1,6 +1,7 @@
 package uk.selfemploy.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
@@ -32,7 +33,11 @@ import java.time.LocalDate;
 public record PeriodicUpdate(
     @JsonProperty("periodDates") PeriodDates periodDates,
     @JsonProperty("periodIncome") PeriodIncome periodIncome,
-    @JsonProperty("periodExpenses") PeriodExpenses periodExpenses
+    @JsonProperty("periodExpenses") PeriodExpenses periodExpenses,
+    // Omitted rather than serialized as null: the request schema types this as an object, so a
+    // literal null is a payload HMRC rejects outright.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("periodDisallowableExpenses") DisallowableExpenses periodDisallowableExpenses
 ) {
 
     /**
@@ -41,7 +46,24 @@ public record PeriodicUpdate(
      */
     public PeriodicUpdate(LocalDate periodFromDate, LocalDate periodToDate,
                           PeriodIncome periodIncome, PeriodExpenses periodExpenses) {
-        this(new PeriodDates(periodFromDate, periodToDate), periodIncome, periodExpenses);
+        this(periodFromDate, periodToDate, periodIncome, periodExpenses, null);
+    }
+
+    /**
+     * Constructor that takes individual dates and both expense columns.
+     * Creates the PeriodDates wrapper automatically.
+     */
+    public PeriodicUpdate(LocalDate periodFromDate, LocalDate periodToDate,
+                          PeriodIncome periodIncome, PeriodExpenses periodExpenses,
+                          DisallowableExpenses periodDisallowableExpenses) {
+        this(new PeriodDates(periodFromDate, periodToDate), periodIncome, periodExpenses,
+             periodDisallowableExpenses);
+    }
+
+    /** Three-argument form, for callers that carry no disallowable spend. */
+    public PeriodicUpdate(PeriodDates periodDates, PeriodIncome periodIncome,
+                          PeriodExpenses periodExpenses) {
+        this(periodDates, periodIncome, periodExpenses, null);
     }
 
     /**
@@ -78,15 +100,17 @@ public record PeriodicUpdate(
     }
 
     /**
-     * Calculates the net profit for this period.
+     * The profit this payload declares, derived the way HMRC derives it from the two columns.
      * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
      *
-     * @return Total income minus total expenses
+     * @return income, less the declared spend, plus back the part of it that cannot be claimed
      */
     public BigDecimal calculateNetProfit() {
         BigDecimal totalIncome = periodIncome != null ? periodIncome.calculateTotal() : BigDecimal.ZERO;
         BigDecimal totalExpenses = periodExpenses != null ? periodExpenses.calculateTotal() : BigDecimal.ZERO;
-        return totalIncome.subtract(totalExpenses);
+        BigDecimal disallowed = periodDisallowableExpenses != null
+                ? periodDisallowableExpenses.calculateTotal() : BigDecimal.ZERO;
+        return totalIncome.subtract(totalExpenses).add(disallowed);
     }
 
     /**
@@ -130,27 +154,35 @@ public record PeriodicUpdate(
     }
 
     /**
-     * Expense breakdown for the period, aligned with SA103F categories.
+     * The first column of SA103F: what was spent in each category, boxes 17 to 30.
      *
-     * <p>Maps to HMRC MTD API periodExpenses structure.</p>
+     * <p>This is the whole spend, not the claimable part of it. The part that cannot be claimed is
+     * declared alongside in {@link DisallowableExpenses}, and HMRC subtracts one from the other to
+     * reach the deduction — so narrowing this column to allowable spend without emptying that one
+     * files a smaller deduction than the records support.
+     *
+     * <p>The component names are the Java-side SA103F names and the {@code @JsonProperty} values
+     * are the wire names the v5 request schemas define. Where the two differ, the wire name is the
+     * only one HMRC sees; the pairing is asserted against HMRC's own schemas by
+     * {@code HmrcPayloadContractTest}.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record PeriodExpenses(
-        @JsonProperty("costOfGoodsBought") BigDecimal costOfGoodsBought,           // SA103F Box 17
-        @JsonProperty("cisPaymentsToSubcontractors") BigDecimal cisPaymentsToSubcontractors, // Box 18
-        @JsonProperty("staffCosts") BigDecimal staffCosts,                         // Box 19
-        @JsonProperty("travelCosts") BigDecimal travelCosts,                       // Box 20
-        @JsonProperty("premisesRunningCosts") BigDecimal premisesRunningCosts,     // Box 21
-        @JsonProperty("maintenanceCosts") BigDecimal maintenanceCosts,             // Box 22
-        @JsonProperty("adminCosts") BigDecimal adminCosts,                         // Box 23
-        @JsonProperty("advertisingCosts") BigDecimal advertisingCosts,             // Box 24
-        @JsonProperty("businessEntertainmentCosts") BigDecimal businessEntertainmentCosts, // Not allowable
-        @JsonProperty("interest") BigDecimal interest,                             // Box 25
-        @JsonProperty("financialCharges") BigDecimal financialCharges,             // Box 26
-        @JsonProperty("badDebt") BigDecimal badDebt,                               // Box 27
-        @JsonProperty("professionalFees") BigDecimal professionalFees,             // Box 28
-        @JsonProperty("depreciation") BigDecimal depreciation,                     // Box 29 (not allowable)
-        @JsonProperty("other") BigDecimal other                                    // Box 30
+        @JsonProperty("costOfGoods") BigDecimal costOfGoodsBought,
+        @JsonProperty("paymentsToSubcontractors") BigDecimal cisPaymentsToSubcontractors,
+        @JsonProperty("wagesAndStaffCosts") BigDecimal staffCosts,
+        @JsonProperty("carVanTravelExpenses") BigDecimal travelCosts,
+        @JsonProperty("premisesRunningCosts") BigDecimal premisesRunningCosts,
+        @JsonProperty("maintenanceCosts") BigDecimal maintenanceCosts,
+        @JsonProperty("adminCosts") BigDecimal adminCosts,
+        @JsonProperty("advertisingCosts") BigDecimal advertisingCosts,
+        @JsonProperty("businessEntertainmentCosts") BigDecimal businessEntertainmentCosts,
+        @JsonProperty("interestOnBankOtherLoans") BigDecimal interest,
+        @JsonProperty("financeCharges") BigDecimal financialCharges,
+        @JsonProperty("irrecoverableDebts") BigDecimal badDebt,
+        @JsonProperty("professionalFees") BigDecimal professionalFees,
+        @JsonProperty("depreciation") BigDecimal depreciation,
+        @JsonProperty("otherExpenses") BigDecimal other
     ) {
         public PeriodExpenses {
             // Normalize nulls to zero
@@ -206,8 +238,13 @@ public record PeriodicUpdate(
         }
 
         /**
-         * Calculates total allowable expenses (excludes depreciation and business entertainment).
-         * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
+         * The declared spend less the two categories that are disallowable in full.
+         *
+         * <p>Not the claim: a category disallowed only in part — a phone bill used 60% for business
+         * — is counted here in full. The claim is this column less
+         * {@link PeriodicUpdate#periodDisallowableExpenses()}, which is the only figure that
+         * accounts for a partial share. Named 'calculate' instead of 'get' to prevent Jackson from
+         * serializing it.
          */
         public BigDecimal calculateAllowableTotal() {
             return calculateTotal()

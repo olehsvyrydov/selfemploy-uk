@@ -95,23 +95,62 @@ class CumulativeSummaryTest {
             // When
             String json = objectMapper.writeValueAsString(summary);
 
-            // Then
+            // Then: the v5 wire names, which are what the request schema defines. The Java accessors
+            // above keep the older SA103F names; only these reach HMRC.
             assertThat(json)
-                    .contains("\"costOfGoodsBought\"")
-                    .contains("\"cisPaymentsToSubcontractors\"")
-                    .contains("\"staffCosts\"")
-                    .contains("\"travelCosts\"")
+                    .contains("\"costOfGoods\"")
+                    .contains("\"paymentsToSubcontractors\"")
+                    .contains("\"wagesAndStaffCosts\"")
+                    .contains("\"carVanTravelExpenses\"")
                     .contains("\"premisesRunningCosts\"")
                     .contains("\"maintenanceCosts\"")
                     .contains("\"adminCosts\"")
                     .contains("\"advertisingCosts\"")
                     .contains("\"businessEntertainmentCosts\"")
-                    .contains("\"interest\"")
-                    .contains("\"financialCharges\"")
-                    .contains("\"badDebt\"")
+                    .contains("\"interestOnBankOtherLoans\"")
+                    .contains("\"financeCharges\"")
+                    .contains("\"irrecoverableDebts\"")
                     .contains("\"professionalFees\"")
                     .contains("\"depreciation\"")
-                    .contains("\"other\"");
+                    .contains("\"otherExpenses\"");
+        }
+
+        @Test
+        @DisplayName("should omit the disallowable block rather than serialize it as null")
+        void shouldOmitAnAbsentDisallowableBlock() throws Exception {
+            // Given
+            var summary = new CumulativeSummary(
+                    CumulativeSummary.CumulativeIncome.ofTurnover(new BigDecimal("5000.00")),
+                    CumulativeSummary.CumulativeExpenses.empty());
+
+            // When
+            String json = objectMapper.writeValueAsString(summary);
+
+            // Then: the schema types periodDisallowableExpenses as an object, so a literal null is
+            // a payload HMRC rejects outright.
+            assertThat(json).doesNotContain("periodDisallowableExpenses");
+        }
+
+        @Test
+        @DisplayName("should serialize the disallowable block under the wire names")
+        void shouldSerializeTheDisallowableBlock() throws Exception {
+            // Given
+            var summary = new CumulativeSummary(
+                    CumulativeSummary.CumulativeIncome.ofTurnover(new BigDecimal("5000.00")),
+                    CumulativeSummary.CumulativeExpenses.empty(),
+                    DisallowableExpenses.builder()
+                            .businessEntertainmentCosts(new BigDecimal("900.00"))
+                            .adminCosts(new BigDecimal("24.00"))
+                            .build());
+
+            // When
+            String json = objectMapper.writeValueAsString(summary);
+
+            // Then
+            assertThat(json)
+                    .contains("\"periodDisallowableExpenses\"")
+                    .contains("\"businessEntertainmentCostsDisallowable\":900.00")
+                    .contains("\"adminCostsDisallowable\":24.00");
         }
 
         @Test
@@ -125,9 +164,12 @@ class CumulativeSummaryTest {
                         "other": 750.00
                     },
                     "periodExpenses": {
-                        "costOfGoodsBought": 2000.00,
-                        "staffCosts": 3000.00,
-                        "travelCosts": 500.00
+                        "costOfGoods": 2000.00,
+                        "wagesAndStaffCosts": 3000.00,
+                        "carVanTravelExpenses": 500.00
+                    },
+                    "periodDisallowableExpenses": {
+                        "carVanTravelExpensesDisallowable": 125.00
                     }
                 }
                 """;
@@ -141,6 +183,8 @@ class CumulativeSummaryTest {
             assertThat(summary.periodExpenses().costOfGoodsBought()).isEqualByComparingTo("2000.00");
             assertThat(summary.periodExpenses().staffCosts()).isEqualByComparingTo("3000.00");
             assertThat(summary.periodExpenses().travelCosts()).isEqualByComparingTo("500.00");
+            assertThat(summary.periodDisallowableExpenses().travelCosts())
+                    .isEqualByComparingTo("125.00");
         }
     }
 

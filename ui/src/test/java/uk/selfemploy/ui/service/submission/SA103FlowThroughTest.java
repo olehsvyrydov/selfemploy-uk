@@ -12,7 +12,7 @@ import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.common.enums.IncomeCategory;
-import uk.selfemploy.ui.viewmodel.CategorySummary;
+import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
 
 import java.math.BigDecimal;
@@ -56,14 +56,14 @@ class SA103FlowThroughTest {
 
     private QuarterlyReviewData buildReviewData(
             BigDecimal totalIncome,
-            Map<ExpenseCategory, CategorySummary> expenses,
+            Map<ExpenseCategory, CategorySpend> expenses,
             BigDecimal totalExpenses) {
         return buildReviewData(totalIncome, expenses, totalExpenses, TAX_YEAR_2024, Q1);
     }
 
     private QuarterlyReviewData buildReviewData(
             BigDecimal totalIncome,
-            Map<ExpenseCategory, CategorySummary> expenses,
+            Map<ExpenseCategory, CategorySpend> expenses,
             BigDecimal totalExpenses,
             TaxYear taxYear,
             Quarter quarter) {
@@ -74,16 +74,16 @@ class SA103FlowThroughTest {
                 .periodEnd(quarter.getEndDate(taxYear))
                 .totalIncome(totalIncome)
                 .incomeTransactionCount(1)
-                .expensesByCategory(expenses)
+                .spendByCategory(expenses)
                 .totalExpenses(totalExpenses)
                 .expenseTransactionCount(expenses.size())
                 .build();
     }
 
-    private Map<ExpenseCategory, CategorySummary> singleCategoryExpense(
+    private Map<ExpenseCategory, CategorySpend> singleCategoryExpense(
             ExpenseCategory category, BigDecimal amount) {
-        Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-        expenses.put(category, new CategorySummary(amount, 1));
+        Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+        expenses.put(category, new CategorySpend(amount, amount));
         return expenses;
     }
 
@@ -100,7 +100,7 @@ class SA103FlowThroughTest {
                 ExpenseCategory category, String expectedFieldName, String sa103Box) {
 
             BigDecimal amount = new BigDecimal("150.00");
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(category, amount);
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(category, amount);
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
@@ -117,7 +117,7 @@ class SA103FlowThroughTest {
                 ExpenseCategory category, String expectedFieldName, String sa103Box) {
 
             BigDecimal amount = new BigDecimal("250.00");
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(category, amount);
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(category, amount);
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
@@ -137,7 +137,7 @@ class SA103FlowThroughTest {
                 ExpenseCategory category, String expectedFieldName, String sa103Box) throws Exception {
 
             BigDecimal amount = new BigDecimal("99.99");
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(category, amount);
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(category, amount);
             QuarterlyReviewData data = buildReviewData(BigDecimal.ZERO, expenses, amount);
 
             String json = periodStrategy.serializeRequest(data);
@@ -156,7 +156,7 @@ class SA103FlowThroughTest {
                 ExpenseCategory category, String expectedFieldName, String sa103Box) throws Exception {
 
             BigDecimal amount = new BigDecimal("77.77");
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(category, amount);
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(category, amount);
             QuarterlyReviewData data = buildReviewData(
                     BigDecimal.ZERO, expenses, amount, TAX_YEAR_2025, Q1);
 
@@ -256,79 +256,79 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("TRAVEL + TRAVEL_MILEAGE should aggregate to travelCosts (Box 20)")
         void travelAndMileageShouldAggregate() {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.TRAVEL, new CategorySummary(new BigDecimal("200.00"), 5));
-            expenses.put(ExpenseCategory.TRAVEL_MILEAGE, new CategorySummary(new BigDecimal("150.00"), 10));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.TRAVEL, new CategorySpend(new BigDecimal("200.00"), new BigDecimal("200.00")));
+            expenses.put(ExpenseCategory.TRAVEL_MILEAGE, new CategorySpend(new BigDecimal("150.00"), new BigDecimal("150.00")));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.travelCosts()).isEqualByComparingTo(new BigDecimal("350.00"));
+            assertThat(mapped.travelCosts().spent()).isEqualByComparingTo(new BigDecimal("350.00"));
         }
 
         @Test
         @DisplayName("OTHER_EXPENSES + HOME_OFFICE_SIMPLIFIED should aggregate to other (Box 30)")
         void otherAndHomeOfficeShouldAggregate() {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.OTHER_EXPENSES, new CategorySummary(new BigDecimal("100.00"), 3));
-            expenses.put(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, new CategorySummary(new BigDecimal("26.00"), 1));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.OTHER_EXPENSES, new CategorySpend(new BigDecimal("100.00"), new BigDecimal("100.00")));
+            expenses.put(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, new CategorySpend(new BigDecimal("26.00"), new BigDecimal("26.00")));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.other()).isEqualByComparingTo(new BigDecimal("126.00"));
+            assertThat(mapped.other().spent()).isEqualByComparingTo(new BigDecimal("126.00"));
         }
 
         @Test
         @DisplayName("TRAVEL only (without TRAVEL_MILEAGE) should map correctly")
         void travelOnlyShouldMapCorrectly() {
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(
                     ExpenseCategory.TRAVEL, new BigDecimal("300.00"));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.travelCosts()).isEqualByComparingTo(new BigDecimal("300.00"));
+            assertThat(mapped.travelCosts().spent()).isEqualByComparingTo(new BigDecimal("300.00"));
         }
 
         @Test
         @DisplayName("TRAVEL_MILEAGE only (without TRAVEL) should map correctly")
         void travelMileageOnlyShouldMapCorrectly() {
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(
                     ExpenseCategory.TRAVEL_MILEAGE, new BigDecimal("175.00"));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.travelCosts()).isEqualByComparingTo(new BigDecimal("175.00"));
+            assertThat(mapped.travelCosts().spent()).isEqualByComparingTo(new BigDecimal("175.00"));
         }
 
         @Test
         @DisplayName("OTHER_EXPENSES only (without HOME_OFFICE_SIMPLIFIED) should map correctly")
         void otherExpensesOnlyShouldMapCorrectly() {
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(
                     ExpenseCategory.OTHER_EXPENSES, new BigDecimal("50.00"));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.other()).isEqualByComparingTo(new BigDecimal("50.00"));
+            assertThat(mapped.other().spent()).isEqualByComparingTo(new BigDecimal("50.00"));
         }
 
         @Test
         @DisplayName("HOME_OFFICE_SIMPLIFIED only (without OTHER_EXPENSES) should map correctly")
         void homeOfficeOnlyShouldMapCorrectly() {
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(
                     ExpenseCategory.HOME_OFFICE_SIMPLIFIED, new BigDecimal("18.00"));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.other()).isEqualByComparingTo(new BigDecimal("18.00"));
+            assertThat(mapped.other().spent()).isEqualByComparingTo(new BigDecimal("18.00"));
         }
 
         @Test
         @DisplayName("aggregation should serialize correctly through period strategy")
         void aggregationShouldSerializeThroughPeriodStrategy() throws Exception {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.TRAVEL, new CategorySummary(new BigDecimal("100.00"), 2));
-            expenses.put(ExpenseCategory.TRAVEL_MILEAGE, new CategorySummary(new BigDecimal("75.00"), 5));
-            expenses.put(ExpenseCategory.OTHER_EXPENSES, new CategorySummary(new BigDecimal("50.00"), 1));
-            expenses.put(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, new CategorySummary(new BigDecimal("26.00"), 1));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.TRAVEL, new CategorySpend(new BigDecimal("100.00"), new BigDecimal("100.00")));
+            expenses.put(ExpenseCategory.TRAVEL_MILEAGE, new CategorySpend(new BigDecimal("75.00"), new BigDecimal("75.00")));
+            expenses.put(ExpenseCategory.OTHER_EXPENSES, new CategorySpend(new BigDecimal("50.00"), new BigDecimal("50.00")));
+            expenses.put(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, new CategorySpend(new BigDecimal("26.00"), new BigDecimal("26.00")));
 
             QuarterlyReviewData data = buildReviewData(
                     BigDecimal.ZERO, expenses, new BigDecimal("251.00"));
@@ -337,26 +337,28 @@ class SA103FlowThroughTest {
             JsonNode root = objectMapper.readTree(json);
             JsonNode expNode = root.path("periodExpenses");
 
-            assertThat(expNode.path("travelCosts").decimalValue())
+            assertThat(expNode.path("carVanTravelExpenses").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("175.00"));
-            assertThat(expNode.path("other").decimalValue())
+            assertThat(expNode.path("otherExpenses").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("76.00"));
         }
 
         @Test
         @DisplayName("aggregation should be consistent between Period and Cumulative strategies")
         void aggregationShouldBeConsistentBetweenStrategies() {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.TRAVEL, new CategorySummary(new BigDecimal("500.00"), 10));
-            expenses.put(ExpenseCategory.TRAVEL_MILEAGE, new CategorySummary(new BigDecimal("300.00"), 20));
-            expenses.put(ExpenseCategory.OTHER_EXPENSES, new CategorySummary(new BigDecimal("200.00"), 5));
-            expenses.put(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, new CategorySummary(new BigDecimal("78.00"), 3));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.TRAVEL, new CategorySpend(new BigDecimal("500.00"), new BigDecimal("500.00")));
+            expenses.put(ExpenseCategory.TRAVEL_MILEAGE, new CategorySpend(new BigDecimal("300.00"), new BigDecimal("300.00")));
+            expenses.put(ExpenseCategory.OTHER_EXPENSES, new CategorySpend(new BigDecimal("200.00"), new BigDecimal("200.00")));
+            expenses.put(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, new CategorySpend(new BigDecimal("78.00"), new BigDecimal("78.00")));
 
             AbstractSubmissionStrategy.MappedExpenses periodMapped = periodStrategy.mapExpenses(expenses);
             AbstractSubmissionStrategy.MappedExpenses cumulMapped = cumulativeStrategy.mapExpenses(expenses);
 
-            assertThat(periodMapped.travelCosts()).isEqualByComparingTo(cumulMapped.travelCosts());
-            assertThat(periodMapped.other()).isEqualByComparingTo(cumulMapped.other());
+            // Both columns, not just the declared spend: the strategies filing the same total while
+            // disagreeing about the disallowed part of it would file two different deductions.
+            assertThat(periodMapped.travelCosts()).isEqualTo(cumulMapped.travelCosts());
+            assertThat(periodMapped.other()).isEqualTo(cumulMapped.other());
         }
     }
 
@@ -369,25 +371,25 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("empty expense map should produce all zero fields")
         void emptyExpenseMapShouldProduceAllZeros() {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.costOfGoodsBought()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.cisPaymentsToSubcontractors()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.staffCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.travelCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.premisesRunningCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.maintenanceCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.adminCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.advertisingCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.businessEntertainmentCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.interest()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.financialCharges()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.badDebt()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.professionalFees()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.depreciation()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.other()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.costOfGoodsBought().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.cisPaymentsToSubcontractors().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.staffCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.travelCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.premisesRunningCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.maintenanceCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.adminCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.advertisingCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.businessEntertainmentCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.interest().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.financialCharges().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.badDebt().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.professionalFees().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.depreciation().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.other().spent()).isEqualByComparingTo(BigDecimal.ZERO);
         }
 
         @Test
@@ -395,24 +397,24 @@ class SA103FlowThroughTest {
         void nullExpenseMapShouldProduceAllZeros() {
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(null);
 
-            assertThat(mapped.costOfGoodsBought()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.travelCosts()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(mapped.other()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.costOfGoodsBought().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.travelCosts().spent()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(mapped.other().spent()).isEqualByComparingTo(BigDecimal.ZERO);
         }
 
         @Test
         @DisplayName("only allowable categories should be mapped (non-allowable still included)")
         void nonAllowableCategoriesShouldStillBeMapped() {
             // DEPRECIATION and BUSINESS_ENTERTAINMENT are not allowable but still mapped
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.DEPRECIATION, new CategorySummary(new BigDecimal("500.00"), 1));
-            expenses.put(ExpenseCategory.BUSINESS_ENTERTAINMENT, new CategorySummary(new BigDecimal("200.00"), 2));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.DEPRECIATION, new CategorySpend(new BigDecimal("500.00"), new BigDecimal("500.00")));
+            expenses.put(ExpenseCategory.BUSINESS_ENTERTAINMENT, new CategorySpend(new BigDecimal("200.00"), new BigDecimal("200.00")));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
             // They should still appear in the mapping - HMRC needs them for the form
-            assertThat(mapped.depreciation()).isEqualByComparingTo(new BigDecimal("500.00"));
-            assertThat(mapped.businessEntertainmentCosts()).isEqualByComparingTo(new BigDecimal("200.00"));
+            assertThat(mapped.depreciation().spent()).isEqualByComparingTo(new BigDecimal("500.00"));
+            assertThat(mapped.businessEntertainmentCosts().spent()).isEqualByComparingTo(new BigDecimal("200.00"));
         }
 
         @Test
@@ -440,23 +442,23 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("DEPRECIATION should map to depreciation field (Box 29, not allowable)")
         void depreciationShouldMapCorrectly() {
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(
                     ExpenseCategory.DEPRECIATION, new BigDecimal("1000.00"));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.depreciation()).isEqualByComparingTo(new BigDecimal("1000.00"));
+            assertThat(mapped.depreciation().spent()).isEqualByComparingTo(new BigDecimal("1000.00"));
         }
 
         @Test
         @DisplayName("BUSINESS_ENTERTAINMENT should map to businessEntertainmentCosts (not allowable)")
         void businessEntertainmentShouldMapCorrectly() {
-            Map<ExpenseCategory, CategorySummary> expenses = singleCategoryExpense(
+            Map<ExpenseCategory, CategorySpend> expenses = singleCategoryExpense(
                     ExpenseCategory.BUSINESS_ENTERTAINMENT, new BigDecimal("350.00"));
 
             AbstractSubmissionStrategy.MappedExpenses mapped = periodStrategy.mapExpenses(expenses);
 
-            assertThat(mapped.businessEntertainmentCosts()).isEqualByComparingTo(new BigDecimal("350.00"));
+            assertThat(mapped.businessEntertainmentCosts().spent()).isEqualByComparingTo(new BigDecimal("350.00"));
         }
 
         @Test
@@ -474,9 +476,9 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("non-allowable expenses should still be serialized in JSON")
         void nonAllowableShouldBeSerializedInJson() throws Exception {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.DEPRECIATION, new CategorySummary(new BigDecimal("500.00"), 1));
-            expenses.put(ExpenseCategory.BUSINESS_ENTERTAINMENT, new CategorySummary(new BigDecimal("100.00"), 1));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.DEPRECIATION, new CategorySpend(new BigDecimal("500.00"), new BigDecimal("500.00")));
+            expenses.put(ExpenseCategory.BUSINESS_ENTERTAINMENT, new CategorySpend(new BigDecimal("100.00"), new BigDecimal("100.00")));
 
             QuarterlyReviewData data = buildReviewData(
                     BigDecimal.ZERO, expenses, new BigDecimal("600.00"));
@@ -494,11 +496,11 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("mixed allowable and non-allowable expenses should serialize correctly")
         void mixedAllowableAndNonAllowableShouldSerialize() throws Exception {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.TRAVEL, new CategorySummary(new BigDecimal("200.00"), 5));
-            expenses.put(ExpenseCategory.DEPRECIATION, new CategorySummary(new BigDecimal("500.00"), 1));
-            expenses.put(ExpenseCategory.PROFESSIONAL_FEES, new CategorySummary(new BigDecimal("300.00"), 2));
-            expenses.put(ExpenseCategory.BUSINESS_ENTERTAINMENT, new CategorySummary(new BigDecimal("100.00"), 1));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.TRAVEL, new CategorySpend(new BigDecimal("200.00"), new BigDecimal("200.00")));
+            expenses.put(ExpenseCategory.DEPRECIATION, new CategorySpend(new BigDecimal("500.00"), new BigDecimal("500.00")));
+            expenses.put(ExpenseCategory.PROFESSIONAL_FEES, new CategorySpend(new BigDecimal("300.00"), new BigDecimal("300.00")));
+            expenses.put(ExpenseCategory.BUSINESS_ENTERTAINMENT, new CategorySpend(new BigDecimal("100.00"), new BigDecimal("100.00")));
 
             QuarterlyReviewData data = buildReviewData(
                     new BigDecimal("5000.00"), expenses, new BigDecimal("1100.00"));
@@ -507,7 +509,7 @@ class SA103FlowThroughTest {
             JsonNode root = objectMapper.readTree(json);
             JsonNode expNode = root.path("periodExpenses");
 
-            assertThat(expNode.path("travelCosts").decimalValue())
+            assertThat(expNode.path("carVanTravelExpenses").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("200.00"));
             assertThat(expNode.path("depreciation").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("500.00"));
@@ -639,9 +641,9 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("should serialize Q1 review data correctly")
         void shouldSerializeQ1Correctly() throws Exception {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.TRAVEL, new CategorySummary(new BigDecimal("500.00"), 10));
-            expenses.put(ExpenseCategory.OFFICE_COSTS, new CategorySummary(new BigDecimal("200.00"), 5));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.TRAVEL, new CategorySpend(new BigDecimal("500.00"), new BigDecimal("500.00")));
+            expenses.put(ExpenseCategory.OFFICE_COSTS, new CategorySpend(new BigDecimal("200.00"), new BigDecimal("200.00")));
 
             QuarterlyReviewData data = buildReviewData(
                     new BigDecimal("10000.00"), expenses, new BigDecimal("700.00"),
@@ -652,7 +654,7 @@ class SA103FlowThroughTest {
 
             assertThat(root.path("periodIncome").path("turnover").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("10000.00"));
-            assertThat(root.path("periodExpenses").path("travelCosts").decimalValue())
+            assertThat(root.path("periodExpenses").path("carVanTravelExpenses").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("500.00"));
             assertThat(root.path("periodExpenses").path("adminCosts").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("200.00"));
@@ -662,9 +664,9 @@ class SA103FlowThroughTest {
         @DisplayName("should serialize all four quarters for a tax year")
         void shouldSerializeAllFourQuarters() throws Exception {
             for (Quarter q : Quarter.values()) {
-                Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
+                Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
                 expenses.put(ExpenseCategory.PROFESSIONAL_FEES,
-                        new CategorySummary(new BigDecimal("100.00"), 1));
+                        new CategorySpend(new BigDecimal("100.00"), new BigDecimal("100.00")));
 
                 QuarterlyReviewData data = buildReviewData(
                         new BigDecimal("2500.00"), expenses, new BigDecimal("100.00"),
@@ -706,8 +708,8 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("cumulative strategy should serialize Q1 correctly for 2025-26")
         void cumulativeStrategyShouldSerializeQ1() throws Exception {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
-            expenses.put(ExpenseCategory.STAFF_COSTS, new CategorySummary(new BigDecimal("3000.00"), 3));
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
+            expenses.put(ExpenseCategory.STAFF_COSTS, new CategorySpend(new BigDecimal("3000.00"), new BigDecimal("3000.00")));
 
             QuarterlyReviewData data = buildReviewData(
                     new BigDecimal("15000.00"), expenses, new BigDecimal("3000.00"),
@@ -718,16 +720,16 @@ class SA103FlowThroughTest {
 
             assertThat(root.path("periodIncome").path("turnover").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("15000.00"));
-            assertThat(root.path("periodExpenses").path("staffCosts").decimalValue())
+            assertThat(root.path("periodExpenses").path("wagesAndStaffCosts").decimalValue())
                     .isEqualByComparingTo(new BigDecimal("3000.00"));
         }
 
         @Test
         @DisplayName("all expense categories should round-trip through Period strategy")
         void allCategoriesShouldRoundTripThroughPeriodStrategy() throws Exception {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
             for (ExpenseCategory cat : ExpenseCategory.values()) {
-                expenses.put(cat, new CategorySummary(new BigDecimal("10.00"), 1));
+                expenses.put(cat, new CategorySpend(new BigDecimal("10.00"), new BigDecimal("10.00")));
             }
 
             BigDecimal totalExpenses = new BigDecimal("170.00"); // 17 categories x 10
@@ -744,9 +746,9 @@ class SA103FlowThroughTest {
         @Test
         @DisplayName("all expense categories should round-trip through Cumulative strategy")
         void allCategoriesShouldRoundTripThroughCumulativeStrategy() throws Exception {
-            Map<ExpenseCategory, CategorySummary> expenses = new EnumMap<>(ExpenseCategory.class);
+            Map<ExpenseCategory, CategorySpend> expenses = new EnumMap<>(ExpenseCategory.class);
             for (ExpenseCategory cat : ExpenseCategory.values()) {
-                expenses.put(cat, new CategorySummary(new BigDecimal("10.00"), 1));
+                expenses.put(cat, new CategorySpend(new BigDecimal("10.00"), new BigDecimal("10.00")));
             }
 
             BigDecimal totalExpenses = new BigDecimal("170.00");
@@ -793,22 +795,22 @@ class SA103FlowThroughTest {
 
     static Stream<Arguments> singleCategoryArguments() {
         return Stream.of(
-                Arguments.of(ExpenseCategory.COST_OF_GOODS, "costOfGoodsBought", "17"),
-                Arguments.of(ExpenseCategory.SUBCONTRACTOR_COSTS, "cisPaymentsToSubcontractors", "18"),
-                Arguments.of(ExpenseCategory.STAFF_COSTS, "staffCosts", "19"),
-                Arguments.of(ExpenseCategory.TRAVEL, "travelCosts", "20"),
-                Arguments.of(ExpenseCategory.TRAVEL_MILEAGE, "travelCosts", "20"),
+                Arguments.of(ExpenseCategory.COST_OF_GOODS, "costOfGoods", "17"),
+                Arguments.of(ExpenseCategory.SUBCONTRACTOR_COSTS, "paymentsToSubcontractors", "18"),
+                Arguments.of(ExpenseCategory.STAFF_COSTS, "wagesAndStaffCosts", "19"),
+                Arguments.of(ExpenseCategory.TRAVEL, "carVanTravelExpenses", "20"),
+                Arguments.of(ExpenseCategory.TRAVEL_MILEAGE, "carVanTravelExpenses", "20"),
                 Arguments.of(ExpenseCategory.PREMISES, "premisesRunningCosts", "21"),
                 Arguments.of(ExpenseCategory.REPAIRS, "maintenanceCosts", "22"),
                 Arguments.of(ExpenseCategory.OFFICE_COSTS, "adminCosts", "23"),
                 Arguments.of(ExpenseCategory.ADVERTISING, "advertisingCosts", "24"),
-                Arguments.of(ExpenseCategory.INTEREST, "interest", "25"),
-                Arguments.of(ExpenseCategory.FINANCIAL_CHARGES, "financialCharges", "26"),
-                Arguments.of(ExpenseCategory.BAD_DEBTS, "badDebt", "27"),
+                Arguments.of(ExpenseCategory.INTEREST, "interestOnBankOtherLoans", "25"),
+                Arguments.of(ExpenseCategory.FINANCIAL_CHARGES, "financeCharges", "26"),
+                Arguments.of(ExpenseCategory.BAD_DEBTS, "irrecoverableDebts", "27"),
                 Arguments.of(ExpenseCategory.PROFESSIONAL_FEES, "professionalFees", "28"),
                 Arguments.of(ExpenseCategory.DEPRECIATION, "depreciation", "29"),
-                Arguments.of(ExpenseCategory.OTHER_EXPENSES, "other", "30"),
-                Arguments.of(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, "other", "30"),
+                Arguments.of(ExpenseCategory.OTHER_EXPENSES, "otherExpenses", "30"),
+                Arguments.of(ExpenseCategory.HOME_OFFICE_SIMPLIFIED, "otherExpenses", "30"),
                 Arguments.of(ExpenseCategory.BUSINESS_ENTERTAINMENT, "businessEntertainmentCosts", "24")
         );
     }
@@ -842,21 +844,21 @@ class SA103FlowThroughTest {
      */
     private BigDecimal getFieldValue(AbstractSubmissionStrategy.MappedExpenses mapped, String fieldName) {
         return switch (fieldName) {
-            case "costOfGoodsBought" -> mapped.costOfGoodsBought();
-            case "cisPaymentsToSubcontractors" -> mapped.cisPaymentsToSubcontractors();
-            case "staffCosts" -> mapped.staffCosts();
-            case "travelCosts" -> mapped.travelCosts();
-            case "premisesRunningCosts" -> mapped.premisesRunningCosts();
-            case "maintenanceCosts" -> mapped.maintenanceCosts();
-            case "adminCosts" -> mapped.adminCosts();
-            case "advertisingCosts" -> mapped.advertisingCosts();
-            case "businessEntertainmentCosts" -> mapped.businessEntertainmentCosts();
-            case "interest" -> mapped.interest();
-            case "financialCharges" -> mapped.financialCharges();
-            case "badDebt" -> mapped.badDebt();
-            case "professionalFees" -> mapped.professionalFees();
-            case "depreciation" -> mapped.depreciation();
-            case "other" -> mapped.other();
+            case "costOfGoods" -> mapped.costOfGoodsBought().spent();
+            case "paymentsToSubcontractors" -> mapped.cisPaymentsToSubcontractors().spent();
+            case "wagesAndStaffCosts" -> mapped.staffCosts().spent();
+            case "carVanTravelExpenses" -> mapped.travelCosts().spent();
+            case "premisesRunningCosts" -> mapped.premisesRunningCosts().spent();
+            case "maintenanceCosts" -> mapped.maintenanceCosts().spent();
+            case "adminCosts" -> mapped.adminCosts().spent();
+            case "advertisingCosts" -> mapped.advertisingCosts().spent();
+            case "businessEntertainmentCosts" -> mapped.businessEntertainmentCosts().spent();
+            case "interestOnBankOtherLoans" -> mapped.interest().spent();
+            case "financeCharges" -> mapped.financialCharges().spent();
+            case "irrecoverableDebts" -> mapped.badDebt().spent();
+            case "professionalFees" -> mapped.professionalFees().spent();
+            case "depreciation" -> mapped.depreciation().spent();
+            case "otherExpenses" -> mapped.other().spent();
             default -> throw new IllegalArgumentException("Unknown field: " + fieldName);
         };
     }
@@ -865,21 +867,21 @@ class SA103FlowThroughTest {
      * Sums all fields in a MappedExpenses record.
      */
     private BigDecimal getAllFieldsTotal(AbstractSubmissionStrategy.MappedExpenses mapped) {
-        return mapped.costOfGoodsBought()
-                .add(mapped.cisPaymentsToSubcontractors())
-                .add(mapped.staffCosts())
-                .add(mapped.travelCosts())
-                .add(mapped.premisesRunningCosts())
-                .add(mapped.maintenanceCosts())
-                .add(mapped.adminCosts())
-                .add(mapped.advertisingCosts())
-                .add(mapped.businessEntertainmentCosts())
-                .add(mapped.interest())
-                .add(mapped.financialCharges())
-                .add(mapped.badDebt())
-                .add(mapped.professionalFees())
-                .add(mapped.depreciation())
-                .add(mapped.other());
+        return mapped.costOfGoodsBought().spent()
+                .add(mapped.cisPaymentsToSubcontractors().spent())
+                .add(mapped.staffCosts().spent())
+                .add(mapped.travelCosts().spent())
+                .add(mapped.premisesRunningCosts().spent())
+                .add(mapped.maintenanceCosts().spent())
+                .add(mapped.adminCosts().spent())
+                .add(mapped.advertisingCosts().spent())
+                .add(mapped.businessEntertainmentCosts().spent())
+                .add(mapped.interest().spent())
+                .add(mapped.financialCharges().spent())
+                .add(mapped.badDebt().spent())
+                .add(mapped.professionalFees().spent())
+                .add(mapped.depreciation().spent())
+                .add(mapped.other().spent());
     }
 
     /**

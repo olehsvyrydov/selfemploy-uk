@@ -12,6 +12,7 @@ import uk.selfemploy.ui.service.submission.CumulativeSubmissionStrategy;
 import uk.selfemploy.ui.service.submission.PeriodSubmissionStrategy;
 import uk.selfemploy.ui.service.submission.SubmissionStrategy;
 import uk.selfemploy.ui.service.submission.SubmissionStrategyFactory;
+import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
 
@@ -124,8 +125,10 @@ class CumulativeSubmissionE2ETest {
 
             String json = strategy.serializeRequest(reviewData);
 
-            assertThat(json).contains("\"costOfGoodsBought\"");
-            assertThat(json).contains("\"travelCosts\"");
+            // The v5 wire names, carrying the amounts — a key-presence check alone passes on a
+            // payload of zeros.
+            assertThat(json).contains("\"costOfGoods\":100.00");
+            assertThat(json).contains("\"carVanTravelExpenses\":80.00");
         }
     }
 
@@ -360,6 +363,21 @@ class CumulativeSubmissionE2ETest {
                 .totalExpenses(totalExpenses)
                 .expenseTransactionCount(expenses.size())
                 .expensesByCategory(expenses)
+                .spendByCategory(asSpend(expenses))
                 .build();
+    }
+
+    /**
+     * The same figures as a two-column breakdown, with nothing disallowed.
+     *
+     * <p>The payload is built from {@code spendByCategory}, not from the dialog's claimable-only
+     * view, so a fixture that sets only the latter serialises as all zeros.
+     */
+    private static Map<ExpenseCategory, CategorySpend> asSpend(
+            Map<ExpenseCategory, CategorySummary> expenses) {
+        Map<ExpenseCategory, CategorySpend> spend = new EnumMap<>(ExpenseCategory.class);
+        expenses.forEach((category, summary) ->
+                spend.put(category, new CategorySpend(summary.amount(), summary.amount())));
+        return spend;
     }
 }

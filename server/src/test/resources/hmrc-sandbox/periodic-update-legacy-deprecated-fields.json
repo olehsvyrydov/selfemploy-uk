@@ -9,18 +9,18 @@
     "other": 250.00
   },
   "periodExpenses": {
-    "costOfGoodsBought": 1000.00,
-    "staffCosts": 4500.00,
-    "travelCosts": 350.00,
+    "costOfGoods": 1000.00,
+    "wagesAndStaffCosts": 4500.00,
+    "carVanTravelExpenses": 350.00,
     "premisesRunningCosts": 800.00,
     "adminCosts": 120.00,
     "advertisingCosts": 60.00,
-    "interest": 0.00,
-    "financialCharges": 0.00,
-    "badDebt": 0.00,
+    "interestOnBankOtherLoans": 0.00,
+    "financeCharges": 0.00,
+    "irrecoverableDebts": 0.00,
     "professionalFees": 200.00,
     "depreciation": 0.00,
-    "other": 0.00
+    "otherExpenses": 0.00
   },
   "adjustments": {
     "includedNonTaxableProfits": 0.00,

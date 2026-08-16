@@ -26,6 +26,17 @@ public record CategorySpend(BigDecimal spent, BigDecimal claimable) {
         claimable = claimable == null ? BigDecimal.ZERO : claimable;
     }
 
+    /**
+     * The part of the spend that cannot be claimed, which is what SA103F boxes 32-45 report.
+     *
+     * <p>Derived rather than carried so it cannot disagree with the two figures it comes from. A
+     * return declares the whole spend and this alongside it; HMRC subtracts one from the other to
+     * reach the deduction, which is why filing either column without the other changes the tax.
+     */
+    public BigDecimal disallowable() {
+        return spent.subtract(claimable);
+    }
+
     /** This category's running totals with another expense's figures folded in. */
     public CategorySpend plus(BigDecimal moreSpent, BigDecimal moreClaimable) {
         return new CategorySpend(

@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import uk.selfemploy.common.domain.TaxYear;
+import uk.selfemploy.common.dto.DisallowableExpenses;
 import uk.selfemploy.common.enums.ExpenseCategory;
-import uk.selfemploy.ui.viewmodel.CategorySummary;
+import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.QuarterlyReviewData;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -104,34 +104,38 @@ public abstract class AbstractSubmissionStrategy implements SubmissionStrategy {
     // ==================== Expense Category Helpers ====================
 
     /**
-     * Gets the amount for a single expense category, defaulting to zero if not present.
+     * Gets both columns for a single expense category, defaulting to zero if not present.
      *
-     * @param expenses the expense category map
+     * @param expenses the two-column breakdown for the period
      * @param category the category to look up
-     * @return the category amount or BigDecimal.ZERO
+     * @return what was spent in the category and how much of it may be claimed
      */
-    protected BigDecimal getCategoryAmount(Map<ExpenseCategory, CategorySummary> expenses, ExpenseCategory category) {
+    protected CategorySpend getCategorySpend(Map<ExpenseCategory, CategorySpend> expenses,
+                                             ExpenseCategory category) {
         if (expenses == null) {
-            return BigDecimal.ZERO;
+            return CategorySpend.ZERO;
         }
-        CategorySummary summary = expenses.get(category);
-        return summary != null ? summary.amount() : BigDecimal.ZERO;
+        CategorySpend spend = expenses.get(category);
+        return spend != null ? spend : CategorySpend.ZERO;
     }
 
     /**
-     * Sums amounts for multiple expense categories.
+     * Sums both columns across several categories that share one SA103 box.
      *
      * <p>Used for aggregating related categories like Travel + Travel Mileage,
-     * or Other Expenses + Home Office Simplified.</p>
+     * or Other Expenses + Home Office Simplified. The two columns are summed together so a box's
+     * declared spend and its disallowable part are always derived from the same set of records.</p>
      *
-     * @param expenses the expense category map
+     * @param expenses the two-column breakdown for the period
      * @param categories the categories to sum
-     * @return the total amount
+     * @return the combined spend and claim for the box
      */
-    protected BigDecimal sumCategoryAmounts(Map<ExpenseCategory, CategorySummary> expenses, ExpenseCategory... categories) {
-        BigDecimal sum = BigDecimal.ZERO;
+    protected CategorySpend sumCategorySpend(Map<ExpenseCategory, CategorySpend> expenses,
+                                             ExpenseCategory... categories) {
+        CategorySpend sum = CategorySpend.ZERO;
         for (ExpenseCategory category : categories) {
-            sum = sum.add(getCategoryAmount(expenses, category));
+            CategorySpend spend = getCategorySpend(expenses, category);
+            sum = sum.plus(spend.spent(), spend.claimable());
         }
         return sum;
     }
@@ -151,7 +155,7 @@ public abstract class AbstractSubmissionStrategy implements SubmissionStrategy {
     // ==================== Expense Mapping ====================
 
     /**
-     * Maps UI expense categories to HMRC SA103 expense fields.
+     * Maps UI expense categories to the SA103 boxes, keeping both columns per box.
      *
      * <p>This method extracts the common expense mapping logic used by both
      * {@link PeriodSubmissionStrategy} and {@link CumulativeSubmissionStrategy}.
@@ -161,37 +165,70 @@ public abstract class AbstractSubmissionStrategy implements SubmissionStrategy {
      *   <li>Other Expenses + Home Office Simplified → other</li>
      * </ul>
      *
-     * @param expenses the expense category map from QuarterlyReviewData
-     * @return a MappedExpenses record with all HMRC SA103 fields
+     * <p>Fed from {@link QuarterlyReviewData#getSpendByCategory()}, which is unfiltered: a category
+     * HMRC disallows reaches this map with its spend intact and nothing claimable, which is what a
+     * return has to report. Filtering it here would file that spend as £0.00.</p>
+     *
+     * @param expenses the two-column breakdown from QuarterlyReviewData
+     * @return a MappedExpenses record with both columns of every SA103 box
      */
-    protected MappedExpenses mapExpenses(Map<ExpenseCategory, CategorySummary> expenses) {
+    protected MappedExpenses mapExpenses(Map<ExpenseCategory, CategorySpend> expenses) {
         return new MappedExpenses(
-                getCategoryAmount(expenses, ExpenseCategory.COST_OF_GOODS),
-                getCategoryAmount(expenses, ExpenseCategory.SUBCONTRACTOR_COSTS),
-                getCategoryAmount(expenses, ExpenseCategory.STAFF_COSTS),
-                sumCategoryAmounts(expenses, ExpenseCategory.TRAVEL, ExpenseCategory.TRAVEL_MILEAGE),
-                getCategoryAmount(expenses, ExpenseCategory.PREMISES),
-                getCategoryAmount(expenses, ExpenseCategory.REPAIRS),
-                getCategoryAmount(expenses, ExpenseCategory.OFFICE_COSTS),
-                getCategoryAmount(expenses, ExpenseCategory.ADVERTISING),
-                getCategoryAmount(expenses, ExpenseCategory.BUSINESS_ENTERTAINMENT),
-                getCategoryAmount(expenses, ExpenseCategory.INTEREST),
-                getCategoryAmount(expenses, ExpenseCategory.FINANCIAL_CHARGES),
-                getCategoryAmount(expenses, ExpenseCategory.BAD_DEBTS),
-                getCategoryAmount(expenses, ExpenseCategory.PROFESSIONAL_FEES),
-                getCategoryAmount(expenses, ExpenseCategory.DEPRECIATION),
-                sumCategoryAmounts(expenses, ExpenseCategory.OTHER_EXPENSES, ExpenseCategory.HOME_OFFICE_SIMPLIFIED)
+                getCategorySpend(expenses, ExpenseCategory.COST_OF_GOODS),
+                getCategorySpend(expenses, ExpenseCategory.SUBCONTRACTOR_COSTS),
+                getCategorySpend(expenses, ExpenseCategory.STAFF_COSTS),
+                sumCategorySpend(expenses, ExpenseCategory.TRAVEL, ExpenseCategory.TRAVEL_MILEAGE),
+                getCategorySpend(expenses, ExpenseCategory.PREMISES),
+                getCategorySpend(expenses, ExpenseCategory.REPAIRS),
+                getCategorySpend(expenses, ExpenseCategory.OFFICE_COSTS),
+                getCategorySpend(expenses, ExpenseCategory.ADVERTISING),
+                getCategorySpend(expenses, ExpenseCategory.BUSINESS_ENTERTAINMENT),
+                getCategorySpend(expenses, ExpenseCategory.INTEREST),
+                getCategorySpend(expenses, ExpenseCategory.FINANCIAL_CHARGES),
+                getCategorySpend(expenses, ExpenseCategory.BAD_DEBTS),
+                getCategorySpend(expenses, ExpenseCategory.PROFESSIONAL_FEES),
+                getCategorySpend(expenses, ExpenseCategory.DEPRECIATION),
+                sumCategorySpend(expenses, ExpenseCategory.OTHER_EXPENSES, ExpenseCategory.HOME_OFFICE_SIMPLIFIED)
         );
     }
 
     /**
-     * Intermediate record holding mapped expense amounts for HMRC SA103 fields.
+     * The disallowable column of the payload, built from the same mapping as the spend column.
+     *
+     * <p>Each figure is {@link CategorySpend#disallowable()} for that box, so the two columns are
+     * derived from one set of records and cannot disagree. A payload with a spend column and no
+     * such block declares the whole spend as deductible.</p>
+     *
+     * @param mapped the two-column mapping from {@link #mapExpenses(Map)}
+     * @return the periodDisallowableExpenses block
+     */
+    protected DisallowableExpenses disallowableExpenses(MappedExpenses mapped) {
+        return DisallowableExpenses.builder()
+                .costOfGoods(mapped.costOfGoodsBought().disallowable())
+                .cisPaymentsToSubcontractors(mapped.cisPaymentsToSubcontractors().disallowable())
+                .staffCosts(mapped.staffCosts().disallowable())
+                .travelCosts(mapped.travelCosts().disallowable())
+                .premisesRunningCosts(mapped.premisesRunningCosts().disallowable())
+                .maintenanceCosts(mapped.maintenanceCosts().disallowable())
+                .adminCosts(mapped.adminCosts().disallowable())
+                .advertisingCosts(mapped.advertisingCosts().disallowable())
+                .businessEntertainmentCosts(mapped.businessEntertainmentCosts().disallowable())
+                .interest(mapped.interest().disallowable())
+                .financialCharges(mapped.financialCharges().disallowable())
+                .badDebt(mapped.badDebt().disallowable())
+                .professionalFees(mapped.professionalFees().disallowable())
+                .depreciation(mapped.depreciation().disallowable())
+                .other(mapped.other().disallowable())
+                .build();
+    }
+
+    /**
+     * Intermediate record holding both SA103 columns per box.
      *
      * <p>This record is used to transfer mapped expense data between the base class
-     * and strategy subclasses, avoiding code duplication in expense mapping logic.</p>
-     *
-     * <p>Created per Rev's code review suggestion to extract shared mapping logic
-     * from PeriodSubmissionStrategy and CumulativeSubmissionStrategy.</p>
+     * and strategy subclasses, avoiding code duplication in expense mapping logic. Each component
+     * carries what was spent in that box and how much of it may be claimed, because the payload
+     * declares both and deriving them separately is how they came to disagree.</p>
      *
      * @param costOfGoodsBought SA103F Box 17
      * @param cisPaymentsToSubcontractors SA103F Box 18
@@ -201,29 +238,29 @@ public abstract class AbstractSubmissionStrategy implements SubmissionStrategy {
      * @param maintenanceCosts SA103F Box 22
      * @param adminCosts SA103F Box 23
      * @param advertisingCosts SA103F Box 24
-     * @param businessEntertainmentCosts Not allowable
+     * @param businessEntertainmentCosts disallowable in full
      * @param interest SA103F Box 25
      * @param financialCharges SA103F Box 26
      * @param badDebt SA103F Box 27
      * @param professionalFees SA103F Box 28
-     * @param depreciation SA103F Box 29 (not allowable)
+     * @param depreciation SA103F Box 29 (disallowable in full)
      * @param other SA103F Box 30 (Other Expenses + Home Office Simplified combined)
      */
     public record MappedExpenses(
-            BigDecimal costOfGoodsBought,
-            BigDecimal cisPaymentsToSubcontractors,
-            BigDecimal staffCosts,
-            BigDecimal travelCosts,
-            BigDecimal premisesRunningCosts,
-            BigDecimal maintenanceCosts,
-            BigDecimal adminCosts,
-            BigDecimal advertisingCosts,
-            BigDecimal businessEntertainmentCosts,
-            BigDecimal interest,
-            BigDecimal financialCharges,
-            BigDecimal badDebt,
-            BigDecimal professionalFees,
-            BigDecimal depreciation,
-            BigDecimal other
+            CategorySpend costOfGoodsBought,
+            CategorySpend cisPaymentsToSubcontractors,
+            CategorySpend staffCosts,
+            CategorySpend travelCosts,
+            CategorySpend premisesRunningCosts,
+            CategorySpend maintenanceCosts,
+            CategorySpend adminCosts,
+            CategorySpend advertisingCosts,
+            CategorySpend businessEntertainmentCosts,
+            CategorySpend interest,
+            CategorySpend financialCharges,
+            CategorySpend badDebt,
+            CategorySpend professionalFees,
+            CategorySpend depreciation,
+            CategorySpend other
     ) {}
 }

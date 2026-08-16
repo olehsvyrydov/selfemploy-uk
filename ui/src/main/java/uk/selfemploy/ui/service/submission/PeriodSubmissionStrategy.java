@@ -77,8 +77,12 @@ public class PeriodSubmissionStrategy extends AbstractSubmissionStrategy {
      * <p>Uses the shared {@link #mapExpenses(Map)} method from the base class
      * to ensure consistent SA103 category mapping across all strategies.</p>
      *
+     * <p>Both expense columns are filed: what was spent, and the part of it that cannot be claimed.
+     * HMRC subtracts the second from the first, so the deduction this payload asks for is the
+     * claimable spend the rest of the app computes.</p>
+     *
      * @param reviewData the quarterly review data
-     * @return PeriodicUpdate with periodDates, periodIncome, and periodExpenses
+     * @return PeriodicUpdate with periodDates, periodIncome, and both expense columns
      */
     private PeriodicUpdate buildPeriodicUpdate(QuarterlyReviewData reviewData) {
         // Income as turnover
@@ -86,31 +90,32 @@ public class PeriodSubmissionStrategy extends AbstractSubmissionStrategy {
                 PeriodicUpdate.PeriodIncome.ofTurnover(reviewData.getTotalIncome());
 
         // Expenses mapped to SA103 categories using shared mapping logic
-        MappedExpenses mapped = mapExpenses(reviewData.getExpensesByCategory());
+        MappedExpenses mapped = mapExpenses(reviewData.getSpendByCategory());
 
         PeriodicUpdate.PeriodExpenses periodExpenses = PeriodicUpdate.PeriodExpenses.builder()
-                .costOfGoodsBought(mapped.costOfGoodsBought())
-                .cisPaymentsToSubcontractors(mapped.cisPaymentsToSubcontractors())
-                .staffCosts(mapped.staffCosts())
-                .travelCosts(mapped.travelCosts())
-                .premisesRunningCosts(mapped.premisesRunningCosts())
-                .maintenanceCosts(mapped.maintenanceCosts())
-                .adminCosts(mapped.adminCosts())
-                .advertisingCosts(mapped.advertisingCosts())
-                .businessEntertainmentCosts(mapped.businessEntertainmentCosts())
-                .interest(mapped.interest())
-                .financialCharges(mapped.financialCharges())
-                .badDebt(mapped.badDebt())
-                .professionalFees(mapped.professionalFees())
-                .depreciation(mapped.depreciation())
-                .other(mapped.other())
+                .costOfGoodsBought(mapped.costOfGoodsBought().spent())
+                .cisPaymentsToSubcontractors(mapped.cisPaymentsToSubcontractors().spent())
+                .staffCosts(mapped.staffCosts().spent())
+                .travelCosts(mapped.travelCosts().spent())
+                .premisesRunningCosts(mapped.premisesRunningCosts().spent())
+                .maintenanceCosts(mapped.maintenanceCosts().spent())
+                .adminCosts(mapped.adminCosts().spent())
+                .advertisingCosts(mapped.advertisingCosts().spent())
+                .businessEntertainmentCosts(mapped.businessEntertainmentCosts().spent())
+                .interest(mapped.interest().spent())
+                .financialCharges(mapped.financialCharges().spent())
+                .badDebt(mapped.badDebt().spent())
+                .professionalFees(mapped.professionalFees().spent())
+                .depreciation(mapped.depreciation().spent())
+                .other(mapped.other().spent())
                 .build();
 
         return new PeriodicUpdate(
                 reviewData.getPeriodStart(),
                 reviewData.getPeriodEnd(),
                 periodIncome,
-                periodExpenses
+                periodExpenses,
+                disallowableExpenses(mapped)
         );
     }
 }

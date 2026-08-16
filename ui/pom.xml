@@ -136,6 +136,11 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Build-time only: the SCSS compiler, run via exec at generate-resources. provided = not shipped. -->
         <dependency>
             <groupId>uk.selfemploy</groupId>
