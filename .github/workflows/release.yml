@@ -244,8 +244,8 @@ jobs:
       - name: Generate SHA-256 checksums
         run: |
           cd final-assets
-          sha256sum * > CHECKSUMS-SHA256.txt
-          cat CHECKSUMS-SHA256.txt
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -277,10 +277,13 @@ jobs:
 
             ### Checksums
 
-            Verify your download with the `CHECKSUMS-SHA256.txt` file:
+            Verify your download with the `SHA256SUMS` file:
             ```bash
-            sha256sum -c CHECKSUMS-SHA256.txt
+            sha256sum -c SHA256SUMS --ignore-missing
             ```
+
+            `install.sh --install` and `install.ps1 -Install` verify this automatically and refuse
+            to install an asset whose checksum does not match.
           files: |
             final-assets/*
           fail_on_unmatched_files: true

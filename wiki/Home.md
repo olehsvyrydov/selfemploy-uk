@@ -1,8 +1,6 @@
 # UK Self-Employment Manager
 
-Welcome to the **UK Self-Employment Manager** wiki - the comprehensive documentation for our free, open-source desktop application helping UK self-employed individuals manage their accounting and submit annual reports to HMRC.
-
-**Website:** [https://selfemploy.uk](https://selfemploy.uk)
+Welcome to the **UK Self-Employment Manager** wiki - the comprehensive documentation for our free, open-source desktop application helping UK self-employed individuals manage their accounting and exercise HMRC's **sandbox** Making Tax Digital API.
 
 ## Quick Links
 
@@ -22,8 +20,9 @@ Welcome to the **UK Self-Employment Manager** wiki - the comprehensive documenta
 A **free, privacy-first desktop application** for UK self-employed individuals to:
 
 - **Track income and expenses** throughout the year
-- **Calculate tax estimates** (Income Tax + National Insurance Class 4)
-- **Submit annual Self Assessment** to HMRC via Making Tax Digital (MTD) APIs
+- **Calculate tax estimates** (Income Tax + National Insurance Class 2 and Class 4)
+- **Submit to HMRC's sandbox** Making Tax Digital (MTD) API — see [Getting Started](Getting-Started)
+  for why this is sandbox-only
 - **Store data locally** on your device (HMRC credentials and National Insurance number encrypted with AES-256-GCM)
 
 ### Why This Project?
@@ -95,7 +94,6 @@ This application will be MTD-compliant, helping you meet these requirements for 
 
 ## Support
 
-- **Website**: [selfemploy.uk](https://selfemploy.uk)
 - **Issues**: [GitHub Issues](https://github.com/olehsvyrydov/selfemploy-uk/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/olehsvyrydov/selfemploy-uk/discussions)
 - **Contributing**: See [CONTRIBUTING.md](https://github.com/olehsvyrydov/selfemploy-uk/blob/main/docs/CONTRIBUTING.md)

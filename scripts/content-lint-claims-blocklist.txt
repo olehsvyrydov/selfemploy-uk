@@ -1,0 +1,22 @@
+# Public-claims blocklist for the README's "claims" content-lint rule.
+#
+# Each line is a phrase (case-insensitive substring match) that must never reappear in
+# README.md. Every entry here was removed from the README because it claimed a
+# capability the code does not have, or pointed at a dead resource. Comments (#) and
+# blank lines are ignored.
+
+# "Submit with one click" overstated the multi-step annual-submission wizard
+# (AnnualSubmissionController: step1..step4 — a guided review/calculate/confirm/submit flow).
+one-click
+
+# The app records an optional invoice-number reference on income/expense entries; it does
+# not create, generate, or manage invoices. No invoice code exists in the repo.
+record invoices
+
+# selfemploy.uk does not resolve and the dedicated website repo no longer exists.
+selfemploy.uk
+
+# Partnership and Limited Company are disabled BusinessType stubs with no filing logic —
+# they are not "coming in Phase 2 / Phase 3".
+(phase 2)
+(phase 3)

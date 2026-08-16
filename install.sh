@@ -250,6 +250,40 @@ create_installer() {
     esac
 }
 
+# Verifies that $2 (a downloaded file) matches the checksum published for $3 (its filename)
+# in the SHA256SUMS file at $1. Prints an error and returns non-zero on any failure to
+# verify — a missing entry, a missing file, or a mismatch. There is no bypass: every exit
+# path is a refusal, never a warning.
+verify_checksum() {
+    local checksums_path="$1" filepath="$2" filename="$3"
+
+    if [[ ! -f "$checksums_path" ]]; then
+        error "Could not download SHA256SUMS. Refusing to install an unverified asset."
+        return 1
+    fi
+
+    local expected_checksum actual_checksum
+    expected_checksum=$(grep -E "[[:space:]]\*?${filename}\$" "$checksums_path" | awk '{print $1}' | head -1)
+
+    if [[ -z "$expected_checksum" ]]; then
+        error "No checksum for $filename found in SHA256SUMS. Refusing to install an unverified asset."
+        return 1
+    fi
+
+    actual_checksum=$(sha256sum "$filepath" | awk '{print $1}')
+
+    if [[ "$actual_checksum" != "$expected_checksum" ]]; then
+        error "Checksum mismatch for $filename."
+        error "  expected: $expected_checksum"
+        error "  actual:   $actual_checksum"
+        error "The downloaded file does not match the published checksum and will not be installed."
+        return 1
+    fi
+
+    success "Checksum verified."
+    return 0
+}
+
 setup_env() {
     if [[ ! -f .env ]]; then
         if [[ -f .env.example ]]; then
@@ -335,10 +369,21 @@ install_release() {
         exit 1
     fi
 
+    # Find the SHA256SUMS asset published alongside the installers. There is no bypass for a
+    # missing or mismatched checksum: if we cannot verify the download, we do not install it.
+    local checksums_url
+    checksums_url=$(echo "$release_json" | grep '"browser_download_url"' | grep 'SHA256SUMS' | head -1 | sed -E 's/.*"(https[^"]+)".*/\1/')
+
+    if [[ -z "$checksums_url" ]]; then
+        error "Release $version has no SHA256SUMS file to verify the download against. Refusing to install."
+        exit 1
+    fi
+
     info "Downloading $filename..."
     local tmpdir
     tmpdir=$(mktemp -d)
     local filepath="${tmpdir}/${filename}"
+    local checksums_path="${tmpdir}/SHA256SUMS"
 
     curl -L --progress-bar -o "$filepath" "$download_url"
 
@@ -349,6 +394,14 @@ install_release() {
     fi
 
     success "Downloaded: $filename"
+
+    info "Verifying checksum against published SHA256SUMS..."
+    curl -sL -o "$checksums_path" "$checksums_url"
+
+    if ! verify_checksum "$checksums_path" "$filepath" "$filename"; then
+        rm -rf "$tmpdir"
+        exit 1
+    fi
 
     # Install
     info "Installing..."
@@ -438,4 +491,6 @@ main() {
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

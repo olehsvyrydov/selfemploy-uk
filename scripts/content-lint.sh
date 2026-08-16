@@ -103,6 +103,33 @@ for dir in "${MAIN_DIRS[@]}"; do
     )
 done
 
+# --- claims: blocked public-claim phrases in reader-facing docs ------------------------
+# Verified-false or dead-link phrases, one case-insensitive substring per line, in
+# scripts/content-lint-claims-blocklist.txt. This is the guard that stops a removed claim
+# silently coming back.
+#
+# Scope is every doc a prospective user reads — the README and the wiki — because a claim
+# deleted from one and left in the other has not been removed, only moved. CHANGELOG.md is
+# deliberately excluded: it quotes these phrases to record that they were withdrawn.
+CLAIMS_FILE="$ROOT/scripts/content-lint-claims-blocklist.txt"
+if [ -f "$CLAIMS_FILE" ]; then
+    CLAIMS_TARGETS=("$ROOT/README.md")
+    while IFS= read -r wiki_doc; do
+        CLAIMS_TARGETS+=("$wiki_doc")
+    done < <(find "$ROOT/wiki" -name '*.md' -type f 2>/dev/null | sort)
+
+    for target in "${CLAIMS_TARGETS[@]}"; do
+        [ -f "$target" ] || continue
+        while IFS= read -r phrase; do
+            case "$phrase" in ''|\#*) continue ;; esac
+            if grep -qiF "$phrase" "$target"; then
+                echo "${target#$ROOT/}: [claims] blocked phrase found: \"$phrase\""
+                violations=$((violations + 1))
+            fi
+        done < "$CLAIMS_FILE"
+    done
+fi
+
 echo
 if [ "$violations" -gt 0 ]; then
     echo "content-lint: FAILED with $violations violation(s)."
