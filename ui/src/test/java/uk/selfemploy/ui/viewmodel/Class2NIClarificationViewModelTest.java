@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.selfemploy.core.calculator.NationalInsuranceClass2Calculator;
 
 import java.math.BigDecimal;
 
@@ -391,6 +392,61 @@ class Class2NIClarificationViewModelTest {
             viewModel.update(TAX_YEAR_2025, ZERO_PROFIT);
             assertThat(viewModel.scenarioProperty().get())
                     .isEqualTo(Class2NIClarificationViewModel.Scenario.ZERO_LOSS);
+        }
+    }
+
+    @Nested
+    @DisplayName("At exactly the Small Profits Threshold")
+    class AtExactlyTheThreshold {
+
+        /**
+         * The card and the calculator each decide, separately, whether the user still needs to pay
+         * voluntarily to earn a qualifying year. They read the same threshold but compared against
+         * it differently — the card inclusively, the calculator exclusively — so at exactly the
+         * threshold the screen said the year was already covered while the calculator said it was
+         * voluntary. Both are asserted together so the pair cannot drift apart again at the one
+         * profit where they disagreed.
+         */
+        @Test
+        @DisplayName("the card and the calculator agree the year is already covered")
+        void cardAndCalculatorAgreeAtTheThreshold() {
+            NationalInsuranceClass2Calculator calculator =
+                    new NationalInsuranceClass2Calculator(TAX_YEAR_2025);
+            BigDecimal exactlyThreshold = calculator.getRates().smallProfitsThreshold();
+
+            viewModel.update(TAX_YEAR_2025, exactlyThreshold);
+
+            assertThat(calculator.calculate(exactlyThreshold).isTreatedAsPaid())
+                    .as("HMRC treats profits at or above the threshold as having paid Class 2, so "
+                        + "a profit of exactly %s earns the qualifying year", exactlyThreshold)
+                    .isTrue();
+
+            assertThat(viewModel.showVoluntaryBadgeProperty().get())
+                    .as("the card must not offer a voluntary payment for a year the calculator "
+                        + "already treats as paid")
+                    .isFalse();
+
+            assertThat(viewModel.scenarioProperty().get())
+                    .isEqualTo(Class2NIClarificationViewModel.Scenario.ABOVE_SPT);
+        }
+
+        @Test
+        @DisplayName("a penny below the threshold is still the voluntary case")
+        void justBelowTheThresholdRemainsVoluntary() {
+            NationalInsuranceClass2Calculator calculator =
+                    new NationalInsuranceClass2Calculator(TAX_YEAR_2025);
+            BigDecimal justBelow = calculator.getRates().smallProfitsThreshold()
+                    .subtract(new BigDecimal("0.01"));
+
+            viewModel.update(TAX_YEAR_2025, justBelow);
+
+            assertThat(calculator.calculate(justBelow).isTreatedAsPaid())
+                    .as("below the threshold nothing is treated as paid")
+                    .isFalse();
+
+            assertThat(viewModel.showVoluntaryBadgeProperty().get())
+                    .as("below the threshold the voluntary option is the whole point of the card")
+                    .isTrue();
         }
     }
 }

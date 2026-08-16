@@ -154,14 +154,20 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
             // When: Calculate Class 2 NI
             Class2NICalculationResult result = calculator.calculate(grossProfit);
 
-            // Then: No Class 2 NI (threshold is NOT exceeded, condition is "greater than")
+            // Then: nothing to pay — but because the year is treated as paid, not because the
+            // profit fell short of the threshold. HMRC's rule is "at or above".
             assertThat(result.totalNI())
-                .as("Class 2 NI should be zero when profit equals threshold (> not >=)")
+                .as("nothing is charged at exactly the threshold from 2024/25 onwards")
                 .isEqualByComparingTo(BigDecimal.ZERO);
 
             assertThat(result.isMandatory())
-                .as("Class 2 NI should NOT be mandatory when profit equals threshold")
+                .as("no mandatory charge survives the 2024 abolition")
                 .isFalse();
+
+            assertThat(result.isTreatedAsPaid())
+                .as("a profit exactly at the threshold earns a qualifying year, so the user must "
+                    + "not be told to pay voluntarily for one they already have")
+                .isTrue();
         }
 
         @Test
@@ -648,7 +654,10 @@ class NationalInsuranceClass2CalculatorIntegrationTest {
     static Stream<Arguments> boundaryTestCases() {
         return Stream.of(
             Arguments.of("Below threshold (GBP 6,844)", new BigDecimal("6844"), BigDecimal.ZERO, false),
-            Arguments.of("At threshold (GBP 6,845)", new BigDecimal("6845"), BigDecimal.ZERO, false),
+            // "At or above" is HMRC's wording, so the threshold itself is the first qualifying
+            // profit — not the first penny past it.
+            Arguments.of("At threshold (GBP 6,845)", new BigDecimal("6845"), BigDecimal.ZERO, true),
+            Arguments.of("A penny below (GBP 6,844.99)", new BigDecimal("6844.99"), BigDecimal.ZERO, false),
             Arguments.of("Just above threshold (GBP 6,846)", new BigDecimal("6846"), BigDecimal.ZERO, true),
             Arguments.of("One penny above (GBP 6,845.01)", new BigDecimal("6845.01"), BigDecimal.ZERO, true),
             Arguments.of("Zero profit", BigDecimal.ZERO, BigDecimal.ZERO, false),
