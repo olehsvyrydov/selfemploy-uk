@@ -1,10 +1,12 @@
 package uk.selfemploy.ui.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import uk.selfemploy.common.dto.CumulativeSummary;
 import uk.selfemploy.common.enums.ExpenseCategory;
 import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
 import uk.selfemploy.core.calculator.TaxLiabilityResult;
@@ -14,6 +16,7 @@ import uk.selfemploy.ui.service.SqliteDataStore;
 import uk.selfemploy.ui.service.SqliteExpenseService;
 import uk.selfemploy.ui.service.SqliteIncomeService;
 import uk.selfemploy.ui.service.SqliteTestSupport;
+import uk.selfemploy.ui.service.submission.CumulativeSubmissionStrategy;
 import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.core.profit.ProfitTotals;
 import uk.selfemploy.ui.viewmodel.CategorySummary;
@@ -101,6 +104,18 @@ class OneProfitConsistencyTest {
         return controller.aggregateReviewData(OneProfitFixture.QUARTER);
     }
 
+    /**
+     * The payload itself, read back from the JSON the submission service would put on the wire.
+     *
+     * <p>Read back rather than inspected before serialization, because the wire names are part of
+     * what is being claimed: a payload whose keys HMRC does not recognise carries whatever profit
+     * you like and files none of it.
+     */
+    private CumulativeSummary filedPayload() throws Exception {
+        String json = new CumulativeSubmissionStrategy().serializeRequest(filedQuarter());
+        return new ObjectMapper().readValue(json, CumulativeSummary.class);
+    }
+
     @Test
     @DisplayName("the tax year's rates are configured, not silently defaulted")
     void theTaxYearIsConfigured() {
@@ -156,6 +171,43 @@ class OneProfitConsistencyTest {
                 .as("the deduction declared to HMRC must be the claimable one, not the whole spend")
                 .isEqualByComparingTo(OneProfitFixture.ALLOWABLE);
         assertThat(filed.getNetProfit()).isEqualByComparingTo(OneProfitFixture.TAXABLE_PROFIT);
+    }
+
+    @Test
+    @DisplayName("the profit the payload declares is the canonical one")
+    void thePayloadDeclaresTheCanonicalProfit() throws Exception {
+        OneProfitFixture.seedWithPartBusinessExpense(incomeService, expenseService, businessId);
+
+        CumulativeSummary payload = filedPayload();
+
+        assertThat(payload.periodExpenses().calculateTotal())
+                .as("the payload declares the whole spend, which is what reconciles with the bank")
+                .isEqualByComparingTo(OneProfitFixture.GROSS_SPEND_WITH_PHONE);
+        assertThat(payload.periodDisallowableExpenses())
+                .as("declaring the spend without this block asks HMRC to deduct all of it")
+                .isNotNull();
+        assertThat(payload.periodDisallowableExpenses().calculateTotal())
+                .isEqualByComparingTo(OneProfitFixture.GROSS_SPEND_WITH_PHONE
+                        .subtract(OneProfitFixture.ALLOWABLE_WITH_PHONE));
+        assertThat(payload.calculateNetProfit())
+                .as("HMRC subtracts one column from the other, and must land on the figure the "
+                    + "Dashboard, the Tax Summary and the annual return all show")
+                .isEqualByComparingTo(OneProfitFixture.TAXABLE_PROFIT_WITH_PHONE);
+    }
+
+    @Test
+    @DisplayName("what is filed and what is shown are still one profit")
+    void thePayloadAgreesWithEveryScreen() throws Exception {
+        OneProfitFixture.seedWithPartBusinessExpense(incomeService, expenseService, businessId);
+
+        BigDecimal fromPayload = filedPayload().calculateNetProfit();
+
+        assertThat(fromPayload).isEqualByComparingTo(dashboard().getNetProfit());
+        assertThat(fromPayload).isEqualByComparingTo(taxSummary().getNetProfit());
+        assertThat(fromPayload)
+                .as("the review dialog shows the claim, and the payload has to ask for that claim "
+                    + "and no more — filing gross spend with no disallowables under-declares tax")
+                .isEqualByComparingTo(filedQuarter().getNetProfit());
     }
 
     /** The figures the annual return is initialised with, derived the way that path derives them. */

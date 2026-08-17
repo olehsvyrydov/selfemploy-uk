@@ -3,6 +3,7 @@ package uk.selfemploy.ui.viewmodel;
 import uk.selfemploy.common.domain.Quarter;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.core.profit.CategorySpend;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,6 +43,7 @@ public class QuarterlyReviewData {
     private final BigDecimal totalIncome;
     private final int incomeTransactionCount;
     private final EnumMap<ExpenseCategory, CategorySummary> expensesByCategory;
+    private final EnumMap<ExpenseCategory, CategorySpend> spendByCategory;
     private final BigDecimal totalExpenses;
     private final int expenseTransactionCount;
 
@@ -59,6 +61,10 @@ public class QuarterlyReviewData {
         this.expensesByCategory = new EnumMap<>(ExpenseCategory.class);
         if (builder.expensesByCategory != null) {
             this.expensesByCategory.putAll(builder.expensesByCategory);
+        }
+        this.spendByCategory = new EnumMap<>(ExpenseCategory.class);
+        if (builder.spendByCategory != null) {
+            this.spendByCategory.putAll(builder.spendByCategory);
         }
         this.totalExpenses = Objects.requireNonNull(builder.totalExpenses, "totalExpenses must not be null");
         this.expenseTransactionCount = builder.expenseTransactionCount;
@@ -92,6 +98,18 @@ public class QuarterlyReviewData {
 
     public Map<ExpenseCategory, CategorySummary> getExpensesByCategory() {
         return new EnumMap<>(expensesByCategory);
+    }
+
+    /**
+     * What was spent in each category and how much of it may be claimed, for every category.
+     *
+     * <p>Unlike {@link #getExpensesByCategory()}, which carries the claimable amount for the
+     * categories the dialog lists, this is unfiltered and holds both columns. It is what the HMRC
+     * payload is built from: a return declares the whole spend in boxes 17-30 and the part that
+     * cannot be claimed in boxes 32-45, so a category disallowed in full still has to appear.</p>
+     */
+    public Map<ExpenseCategory, CategorySpend> getSpendByCategory() {
+        return new EnumMap<>(spendByCategory);
     }
 
     public BigDecimal getTotalExpenses() {
@@ -215,6 +233,7 @@ public class QuarterlyReviewData {
         private BigDecimal totalIncome;
         private int incomeTransactionCount;
         private Map<ExpenseCategory, CategorySummary> expensesByCategory;
+        private Map<ExpenseCategory, CategorySpend> spendByCategory;
         private BigDecimal totalExpenses;
         private int expenseTransactionCount;
 
@@ -250,6 +269,11 @@ public class QuarterlyReviewData {
 
         public Builder expensesByCategory(Map<ExpenseCategory, CategorySummary> expensesByCategory) {
             this.expensesByCategory = expensesByCategory;
+            return this;
+        }
+
+        public Builder spendByCategory(Map<ExpenseCategory, CategorySpend> spendByCategory) {
+            this.spendByCategory = spendByCategory;
             return this;
         }
 

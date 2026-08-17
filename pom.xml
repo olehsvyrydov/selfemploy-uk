@@ -73,6 +73,7 @@
         <mockito.version>5.23.0</mockito.version>
         <assertj.version>3.27.7</assertj.version>
         <testfx.version>4.0.18</testfx.version>
+        <json-schema-validator.version>1.5.1</json-schema-validator.version>
 
         <!-- Build Plugins -->
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
@@ -220,6 +221,14 @@
                 <groupId>org.testfx</groupId>
                 <artifactId>testfx-junit5</artifactId>
                 <version>${testfx.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- Validates outgoing HMRC payloads against the API's own request schemas, which set
+                 additionalProperties:false and so make a wrong key a build failure. -->
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>${json-schema-validator.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

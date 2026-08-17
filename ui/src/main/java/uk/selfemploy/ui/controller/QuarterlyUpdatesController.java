@@ -806,6 +806,7 @@ public class QuarterlyUpdatesController implements Initializable, MainController
 
         // Get expense data grouped by category
         Map<ExpenseCategory, CategorySummary> expensesByCategory = new EnumMap<>(ExpenseCategory.class);
+        Map<ExpenseCategory, CategorySpend> spendByCategory = new EnumMap<>(ExpenseCategory.class);
         BigDecimal totalExpenses = BigDecimal.ZERO;
         int expenseTransactionCount = 0;
         try {
@@ -819,9 +820,13 @@ public class QuarterlyUpdatesController implements Initializable, MainController
                     .filter(Expense::isAllowable)
                     .collect(Collectors.groupingBy(Expense::category, Collectors.counting()));
 
+            // Unfiltered, and carrying both columns, because the payload declares the whole spend
+            // and the disallowable part of it separately. The filtered view below is the dialog's.
+            spendByCategory = totals.byCategory();
+
             for (Map.Entry<ExpenseCategory, CategorySpend> entry : totals.byCategory().entrySet()) {
                 // A category HMRC disallows is reported on the return but claimed for nothing, and
-                // the quarterly payload carries claims — so it contributes no line here.
+                // this map carries claims — so it contributes no line here.
                 if (!entry.getKey().isAllowable()) {
                     continue;
                 }
@@ -843,6 +848,7 @@ public class QuarterlyUpdatesController implements Initializable, MainController
                 .totalIncome(totalIncome)
                 .incomeTransactionCount(incomeTransactionCount)
                 .expensesByCategory(expensesByCategory)
+                .spendByCategory(spendByCategory)
                 .totalExpenses(totalExpenses)
                 .expenseTransactionCount(expenseTransactionCount)
                 .build();

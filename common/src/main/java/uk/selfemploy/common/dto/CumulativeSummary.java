@@ -1,6 +1,7 @@
 package uk.selfemploy.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -37,8 +38,17 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CumulativeSummary(
     @JsonProperty("periodIncome") CumulativeIncome periodIncome,
-    @JsonProperty("periodExpenses") CumulativeExpenses periodExpenses
+    @JsonProperty("periodExpenses") CumulativeExpenses periodExpenses,
+    // Omitted rather than serialized as null: the request schema types this as an object, so a
+    // literal null is a payload HMRC rejects outright.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("periodDisallowableExpenses") DisallowableExpenses periodDisallowableExpenses
 ) {
+
+    /** Two-argument form, for callers that carry no disallowable spend. */
+    public CumulativeSummary(CumulativeIncome periodIncome, CumulativeExpenses periodExpenses) {
+        this(periodIncome, periodExpenses, null);
+    }
 
     /**
      * Creates a CumulativeSummary from a PeriodicUpdate.
@@ -85,19 +95,21 @@ public record CumulativeSummary(
             );
         }
 
-        return new CumulativeSummary(income, expenses);
+        return new CumulativeSummary(income, expenses, periodicUpdate.periodDisallowableExpenses());
     }
 
     /**
-     * Calculates the net profit for this cumulative period.
+     * The profit this payload declares, derived the way HMRC derives it from the two columns.
      * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
      *
-     * @return Total income minus total expenses
+     * @return income, less the declared spend, plus back the part of it that cannot be claimed
      */
     public BigDecimal calculateNetProfit() {
         BigDecimal totalIncome = periodIncome != null ? periodIncome.calculateTotal() : BigDecimal.ZERO;
         BigDecimal totalExpenses = periodExpenses != null ? periodExpenses.calculateTotal() : BigDecimal.ZERO;
-        return totalIncome.subtract(totalExpenses);
+        BigDecimal disallowed = periodDisallowableExpenses != null
+                ? periodDisallowableExpenses.calculateTotal() : BigDecimal.ZERO;
+        return totalIncome.subtract(totalExpenses).add(disallowed);
     }
 
     /**
@@ -134,28 +146,29 @@ public record CumulativeSummary(
     }
 
     /**
-     * Expense breakdown for the cumulative period, aligned with SA103F categories.
+     * The first column of SA103F for the cumulative period: what was spent, boxes 17 to 30.
      *
-     * <p>Same structure as {@link PeriodicUpdate.PeriodExpenses} but without the
-     * periodDates wrapper context.</p>
+     * <p>Same structure and same wire names as {@link PeriodicUpdate.PeriodExpenses}, without the
+     * periodDates wrapper context. As there, this is the whole spend and the part of it that cannot
+     * be claimed is declared alongside in {@link DisallowableExpenses}.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record CumulativeExpenses(
-        @JsonProperty("costOfGoodsBought") BigDecimal costOfGoodsBought,           // SA103F Box 17
-        @JsonProperty("cisPaymentsToSubcontractors") BigDecimal cisPaymentsToSubcontractors, // Box 18
-        @JsonProperty("staffCosts") BigDecimal staffCosts,                         // Box 19
-        @JsonProperty("travelCosts") BigDecimal travelCosts,                       // Box 20
-        @JsonProperty("premisesRunningCosts") BigDecimal premisesRunningCosts,     // Box 21
-        @JsonProperty("maintenanceCosts") BigDecimal maintenanceCosts,             // Box 22
-        @JsonProperty("adminCosts") BigDecimal adminCosts,                         // Box 23
-        @JsonProperty("advertisingCosts") BigDecimal advertisingCosts,             // Box 24
-        @JsonProperty("businessEntertainmentCosts") BigDecimal businessEntertainmentCosts, // Not allowable
-        @JsonProperty("interest") BigDecimal interest,                             // Box 25
-        @JsonProperty("financialCharges") BigDecimal financialCharges,             // Box 26
-        @JsonProperty("badDebt") BigDecimal badDebt,                               // Box 27
-        @JsonProperty("professionalFees") BigDecimal professionalFees,             // Box 28
-        @JsonProperty("depreciation") BigDecimal depreciation,                     // Box 29 (not allowable)
-        @JsonProperty("other") BigDecimal other                                    // Box 30
+        @JsonProperty("costOfGoods") BigDecimal costOfGoodsBought,
+        @JsonProperty("paymentsToSubcontractors") BigDecimal cisPaymentsToSubcontractors,
+        @JsonProperty("wagesAndStaffCosts") BigDecimal staffCosts,
+        @JsonProperty("carVanTravelExpenses") BigDecimal travelCosts,
+        @JsonProperty("premisesRunningCosts") BigDecimal premisesRunningCosts,
+        @JsonProperty("maintenanceCosts") BigDecimal maintenanceCosts,
+        @JsonProperty("adminCosts") BigDecimal adminCosts,
+        @JsonProperty("advertisingCosts") BigDecimal advertisingCosts,
+        @JsonProperty("businessEntertainmentCosts") BigDecimal businessEntertainmentCosts,
+        @JsonProperty("interestOnBankOtherLoans") BigDecimal interest,
+        @JsonProperty("financeCharges") BigDecimal financialCharges,
+        @JsonProperty("irrecoverableDebts") BigDecimal badDebt,
+        @JsonProperty("professionalFees") BigDecimal professionalFees,
+        @JsonProperty("depreciation") BigDecimal depreciation,
+        @JsonProperty("otherExpenses") BigDecimal other
     ) {
         public CumulativeExpenses {
             // Normalize nulls to zero
@@ -211,8 +224,12 @@ public record CumulativeSummary(
         }
 
         /**
-         * Calculates total allowable expenses (excludes depreciation and business entertainment).
-         * Named 'calculate' instead of 'get' to prevent Jackson from serializing it.
+         * The declared spend less the two categories that are disallowable in full.
+         *
+         * <p>Not the claim: a category disallowed only in part is counted here in full. The claim is
+         * this column less {@link CumulativeSummary#periodDisallowableExpenses()}, which is the only
+         * figure that accounts for a partial share. Named 'calculate' instead of 'get' to prevent
+         * Jackson from serializing it.
          */
         public BigDecimal calculateAllowableTotal() {
             return calculateTotal()
