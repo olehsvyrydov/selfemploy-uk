@@ -37,14 +37,14 @@ class TaxLiabilityCalculatorTest {
         void shouldCalculateCombinedLiabilityFor20kProfit() {
             // Income Tax: £1,486.00
             // NI Class 4: £445.80
-            // NI Class 2: £182.00 (profits > £6,845 threshold)
-            // Total: £2,113.80
+            // NI Class 2: £0 (profits > £6,845 threshold, so treated as paid)
+            // Total: £1,931.80
             TaxLiabilityResult result = calculator.calculate(new BigDecimal("20000"));
 
             assertThat(result.incomeTax()).isEqualByComparingTo(new BigDecimal("1486.00"));
             assertThat(result.niClass4()).isEqualByComparingTo(new BigDecimal("445.80"));
-            assertThat(result.niClass2()).isEqualByComparingTo(new BigDecimal("182.00"));
-            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("2113.80"));
+            assertThat(result.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("1931.80"));
         }
 
         @Test
@@ -52,14 +52,14 @@ class TaxLiabilityCalculatorTest {
         void shouldCalculateCombinedLiabilityFor60kProfit() {
             // Income Tax: £11,432.00
             // NI Class 4: £2,456.60
-            // NI Class 2: £182.00 (profits > £6,845 threshold)
-            // Total: £14,070.60
+            // NI Class 2: £0 (profits > £6,845 threshold, so treated as paid)
+            // Total: £13,888.60
             TaxLiabilityResult result = calculator.calculate(new BigDecimal("60000"));
 
             assertThat(result.incomeTax()).isEqualByComparingTo(new BigDecimal("11432.00"));
             assertThat(result.niClass4()).isEqualByComparingTo(new BigDecimal("2456.60"));
-            assertThat(result.niClass2()).isEqualByComparingTo(new BigDecimal("182.00"));
-            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("14070.60"));
+            assertThat(result.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("13888.60"));
         }
 
         @Test
@@ -75,18 +75,19 @@ class TaxLiabilityCalculatorTest {
         }
 
         @Test
-        @DisplayName("should calculate Class 2 NI only for profits between £6,845 and £12,570")
-        void shouldCalculateClass2NiOnlyBetweenThresholds() {
+        @DisplayName("should calculate nothing at all for profits between £6,845 and £12,570")
+        void shouldCalculateNothingBetweenThresholds() {
             // £10,000 profit > £6,845 SPT but < £12,570 LPL
             // Income Tax: £0 (below personal allowance)
             // NI Class 4: £0 (below Lower Profits Limit)
-            // NI Class 2: £182.00 (above Small Profits Threshold)
+            // NI Class 2: £0 (above Small Profits Threshold, so treated as paid)
             TaxLiabilityResult result = calculator.calculate(new BigDecimal("10000"));
 
             assertThat(result.incomeTax()).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(result.niClass4()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(result.niClass2()).isEqualByComparingTo(new BigDecimal("182.00"));
-            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("182.00"));
+            assertThat(result.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.niClass2Details().isTreatedAsPaid()).isTrue();
+            assertThat(result.totalLiability()).isEqualByComparingTo(BigDecimal.ZERO);
         }
     }
 
@@ -106,11 +107,12 @@ class TaxLiabilityCalculatorTest {
         }
 
         @Test
-        @DisplayName("should mark as mandatory when profits above threshold")
-        void shouldMarkAsMandatoryWhenProfitsAboveThreshold() {
+        @DisplayName("should mark as treated-as-paid when profits above threshold")
+        void shouldMarkAsTreatedAsPaidWhenProfitsAboveThreshold() {
             TaxLiabilityResult result = calculator.calculate(new BigDecimal("10000"));
 
-            assertThat(result.niClass2Details().isMandatory()).isTrue();
+            assertThat(result.niClass2Details().isTreatedAsPaid()).isTrue();
+            assertThat(result.niClass2Details().isMandatory()).isFalse();
             assertThat(result.niClass2Details().isVoluntary()).isFalse();
         }
     }
@@ -124,8 +126,8 @@ class TaxLiabilityCalculatorTest {
         void shouldCalculateTotalNiAsClass2PlusClass4() {
             TaxLiabilityResult result = calculator.calculate(new BigDecimal("60000"));
 
-            // Total NI = £182.00 (Class 2) + £2,456.60 (Class 4) = £2,638.60
-            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("2638.60"));
+            // Total NI = £0 (Class 2, treated as paid) + £2,456.60 (Class 4)
+            assertThat(result.totalNI()).isEqualByComparingTo(new BigDecimal("2456.60"));
         }
     }
 
@@ -134,12 +136,12 @@ class TaxLiabilityCalculatorTest {
     class NetProfitCalculations {
 
         @Test
-        @DisplayName("should calculate net profit after tax including Class 2 NI")
+        @DisplayName("should calculate net profit after tax")
         void shouldCalculateNetProfitAfterTax() {
             TaxLiabilityResult result = calculator.calculate(new BigDecimal("60000"));
 
-            // £60,000 - £14,070.60 = £45,929.40
-            assertThat(result.netProfitAfterTax()).isEqualByComparingTo(new BigDecimal("45929.40"));
+            // £60,000 - £13,888.60 = £46,111.40
+            assertThat(result.netProfitAfterTax()).isEqualByComparingTo(new BigDecimal("46111.40"));
         }
 
         @Test
@@ -147,7 +149,7 @@ class TaxLiabilityCalculatorTest {
         void shouldCalculateEffectiveTaxRate() {
             TaxLiabilityResult result = calculator.calculate(new BigDecimal("60000"));
 
-            // £14,070.60 / £60,000 = 23.45% (rounded)
+            // £13,888.60 / £60,000 = 23.15% (rounded)
             assertThat(result.effectiveRate())
                 .isGreaterThanOrEqualTo(new BigDecimal("23"))
                 .isLessThanOrEqualTo(new BigDecimal("24"));
@@ -171,9 +173,9 @@ class TaxLiabilityCalculatorTest {
             assertThat(result2024.totalLiability()).isGreaterThan(BigDecimal.ZERO);
             assertThat(result2025.totalLiability()).isGreaterThan(BigDecimal.ZERO);
 
-            // Both should include Class 2 NI
-            assertThat(result2024.niClass2()).isGreaterThan(BigDecimal.ZERO);
-            assertThat(result2025.niClass2()).isGreaterThan(BigDecimal.ZERO);
+            // Neither charges Class 2: both years are after its abolition
+            assertThat(result2024.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result2025.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
         }
     }
 
@@ -244,11 +246,11 @@ class TaxLiabilityCalculatorTest {
             assertThat(result.isClass4NIExempt()).isTrue();
             assertThat(result.class4ExemptionReason()).isEqualTo("State Pension Age reached before tax year start");
 
-            // NI Class 2 still applies (mandatory for profits above threshold)
-            assertThat(result.niClass2()).isEqualByComparingTo(new BigDecimal("182.00"));
+            // NI Class 2 is treated as paid for profits above the threshold
+            assertThat(result.niClass2()).isEqualByComparingTo(BigDecimal.ZERO);
 
-            // Total should be Income Tax + Class 2 only
-            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("11614.00"));
+            // Total should be Income Tax only
+            assertThat(result.totalLiability()).isEqualByComparingTo(new BigDecimal("11432.00"));
         }
 
         @Test

@@ -1,6 +1,10 @@
 package uk.selfemploy.ui.controller;
 import uk.selfemploy.ui.component.AppDialog;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
+import javafx.beans.binding.StringBinding;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -28,6 +32,7 @@ import uk.selfemploy.ui.util.BrowserUtil;
 import uk.selfemploy.ui.util.Money;
 import uk.selfemploy.core.profit.CategorySpend;
 import uk.selfemploy.ui.viewmodel.Class2NIClarificationViewModel;
+import uk.selfemploy.core.config.RateBasis;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.viewmodel.TaxSummaryViewModel;
 
@@ -67,6 +72,11 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     // Disclaimer Banner (SE-509)
     @FXML private HBox taxDisclaimerBanner;
     @FXML private Label taxDisclaimerText;
+
+    // Shown only when the viewed year has no published rates in this build
+    @FXML private HBox estimatedRatesBanner;
+    @FXML private Label estimatedRatesText;
+    @FXML private Label estimatedRatesBadge;
 
     // Tax At A Glance
     @FXML private Label netProfitValue;
@@ -180,7 +190,44 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
         }
         setupBindings();
         initializeDisclaimers();
+        initializeEstimatedRatesNotice();
         initializeClass2Section();
+    }
+
+    /**
+     * Binds the unpublished-rates banner and the figure badge to the rate basis of the year on
+     * screen.
+     *
+     * <p>Both are bound to {@link TaxSummaryViewModel#rateBasisProperty()} — the same value the
+     * screen's figures were computed from — so they appear and disappear with it rather than at
+     * the discretion of any call site.
+     */
+    private void initializeEstimatedRatesNotice() {
+        if (viewModel == null) {
+            return;
+        }
+        ReadOnlyObjectProperty<RateBasis> basis = viewModel.rateBasisProperty();
+        BooleanBinding estimated = Bindings.createBooleanBinding(
+            () -> basis.get() != null && basis.get().isEstimated(), basis);
+        StringBinding bannerText = Bindings.createStringBinding(
+            () -> basis.get() == null ? "" : Messages.format("taxSummary.estimatedRatesBanner",
+                basis.get().taxYearLabel(), basis.get().ratesYearLabel()), basis);
+        StringBinding badgeText = Bindings.createStringBinding(
+            () -> basis.get() == null ? "" : Messages.format("taxSummary.estimatedRatesBadge",
+                basis.get().ratesYearLabel()), basis);
+
+        if (estimatedRatesBanner != null) {
+            estimatedRatesBanner.visibleProperty().bind(estimated);
+            estimatedRatesBanner.managedProperty().bind(estimated);
+        }
+        if (estimatedRatesText != null) {
+            estimatedRatesText.textProperty().bind(bannerText);
+        }
+        if (estimatedRatesBadge != null) {
+            estimatedRatesBadge.textProperty().bind(badgeText);
+            estimatedRatesBadge.visibleProperty().bind(estimated);
+            estimatedRatesBadge.managedProperty().bind(estimated);
+        }
     }
 
     /**
@@ -194,8 +241,11 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
     }
 
     /**
-     * Initializes the Class 2 NI clarification section (SE-810).
-     * Sets up static content and binds dynamic properties to the ViewModel.
+     * Binds the Class 2 NI clarification card to the ViewModel.
+     *
+     * <p>Every field is bound, including the three rate fields: they change with the tax year
+     * being viewed, so setting them once here would leave the first year's rates on screen for
+     * every later year.
      */
     private void initializeClass2Section() {
         if (class2ViewModel == null) {
@@ -225,29 +275,35 @@ public class TaxSummaryController implements Initializable, MainController.TaxYe
             pensionInsightText.textProperty().bind(class2ViewModel.pensionInsightTextProperty());
         }
 
-        // Set static rate information
+        // Bind rate information
         if (class2WeeklyLabel != null) {
-            class2WeeklyLabel.setText(class2ViewModel.getWeeklyRateLabel());
+            class2WeeklyLabel.textProperty().bind(class2ViewModel.weeklyRateLabelProperty());
         }
         if (class2WeeklyValue != null) {
-            class2WeeklyValue.setText(class2ViewModel.getFormattedWeeklyRate());
+            class2WeeklyValue.textProperty().bind(class2ViewModel.weeklyRateTextProperty());
         }
         if (class2AnnualValue != null) {
-            class2AnnualValue.setText(class2ViewModel.getFormattedAnnualAmount());
+            class2AnnualValue.textProperty().bind(class2ViewModel.annualAmountTextProperty());
         }
     }
 
     /**
-     * Updates the Class 2 NI section based on the current net profit.
+     * Rebuilds the Class 2 NI card for the year and profit currently on screen.
+     *
+     * <p>Both are read from the same {@link TaxSummaryViewModel} and passed together, so the
+     * card's rates always belong to the year whose profit is shown beside them.
      */
     private void updateClass2Section() {
         if (class2ViewModel == null || viewModel == null) {
             return;
         }
 
-        // Update the ViewModel based on net profit
-        BigDecimal netProfit = viewModel.getNetProfit();
-        class2ViewModel.updateForProfit(netProfit);
+        TaxYear viewedYear = viewModel.getTaxYear();
+        if (viewedYear == null) {
+            class2ViewModel.clear();
+            return;
+        }
+        class2ViewModel.update(viewedYear.startYear(), viewModel.getNetProfit());
     }
 
     @Override

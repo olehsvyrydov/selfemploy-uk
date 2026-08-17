@@ -2,6 +2,7 @@ package uk.selfemploy.ui.viewmodel;
 
 import uk.selfemploy.common.enums.SubmissionStatus;
 import uk.selfemploy.common.enums.SubmissionType;
+import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.util.Money;
 
 import java.math.BigDecimal;
@@ -157,10 +158,12 @@ public record SubmissionTableRow(
     }
 
     /**
-     * Returns the tax due formatted as currency (e.g., "£5,051.80").
+     * Returns the tax due formatted as currency (e.g., "£5,051.80"), or a "not applicable" label
+     * where there is no tax due to report. A quarterly update carries one period's figures rather
+     * than a year's liability, and showing that as "£0.00" reads as a year with nothing to pay.
      */
     public String getFormattedTaxDue() {
-        return taxDue != null ? Money.format(taxDue) : Money.format(BigDecimal.ZERO);
+        return taxDue != null ? Money.format(taxDue) : Messages.get("submissionHistory.taxDueNotApplicable");
     }
 
     /**

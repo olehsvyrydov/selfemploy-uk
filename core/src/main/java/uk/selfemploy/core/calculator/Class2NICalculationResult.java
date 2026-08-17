@@ -8,13 +8,13 @@ import java.math.RoundingMode;
 /**
  * Result of a National Insurance Class 2 calculation.
  *
- * <p>Class 2 NI is a flat-rate contribution paid by self-employed individuals.
- * For 2025/26:
- * <ul>
- *   <li>Weekly rate: £3.50</li>
- *   <li>Annual amount: £182.00 (52 weeks)</li>
- *   <li>Small Profits Threshold: £6,845 (mandatory above, optional below)</li>
- * </ul>
+ * <p>Class 2 NI is a flat-rate weekly contribution for self-employed individuals. From
+ * 2024/25 onwards profits at or above the Small Profits Threshold are <em>treated as</em>
+ * having paid it, so nothing is due; below the threshold it may still be paid voluntarily.
+ * For tax years before 2024/25 it was mandatory above the threshold.
+ *
+ * <p>Nothing due is therefore two different facts, which {@link #isTreatedAsPaid()}
+ * separates: a qualifying year earned without payment, or no qualifying year at all.
  *
  * <p><strong>Null handling:</strong> The {@code grossProfit} field may be {@code null}
  * when the calculator receives a null input. In such cases, it is normalized to
@@ -25,8 +25,10 @@ import java.math.RoundingMode;
  * @param weeklyRate             The weekly Class 2 NI rate (never null)
  * @param weeksLiable            Number of weeks liable for Class 2 NI
  * @param totalNI                Total Class 2 NI due (never null)
- * @param isMandatory            Whether Class 2 NI is mandatory (profits above threshold)
+ * @param isMandatory            Whether Class 2 NI must be paid (only possible before 2024/25)
  * @param isVoluntary            Whether Class 2 NI is being paid voluntarily
+ * @param isTreatedAsPaid        Whether the year counts as paid without payment (above the
+ *                               threshold, 2024/25 onwards)
  */
 public record Class2NICalculationResult(
     @Nullable BigDecimal grossProfit,
@@ -35,10 +37,13 @@ public record Class2NICalculationResult(
     int weeksLiable,
     BigDecimal totalNI,
     boolean isMandatory,
-    boolean isVoluntary
+    boolean isVoluntary,
+    boolean isTreatedAsPaid
 ) {
     /**
-     * Returns true if Class 2 NI is applicable (either mandatory or voluntary).
+     * Returns true if there is a Class 2 payment to make. False both below the threshold with no
+     * voluntary payment and above it, where the year is treated as paid — see
+     * {@link #isTreatedAsPaid()} to tell those apart.
      *
      * @return {@code true} if total NI is greater than zero
      */

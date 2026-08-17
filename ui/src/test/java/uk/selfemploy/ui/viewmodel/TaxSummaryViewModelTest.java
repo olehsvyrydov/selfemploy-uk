@@ -6,13 +6,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import uk.selfemploy.common.domain.TaxYear;
 import uk.selfemploy.common.enums.ExpenseCategory;
+import uk.selfemploy.core.config.TaxRateConfiguration;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -433,6 +437,96 @@ class TaxSummaryViewModelTest {
                     .as("a stale profit from the year before is a wrong figure on screen")
                     .isZero();
             assertThat(viewModel.getExpenseBreakdown()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Class 2 NI reaches the screen with nothing added for it")
+    class Class2NIOnTheScreen {
+
+        static IntStream yearsSinceAbolition() {
+            return TaxRateConfiguration.getInstance().getSupportedTaxYears().stream()
+                .mapToInt(Integer::intValue)
+                .filter(year -> year >= 2024);
+        }
+
+        @ParameterizedTest(name = "{0}/{1}")
+        @MethodSource("yearsSinceAbolition")
+        @DisplayName("an above-threshold profit adds no Class 2 to the summary's total")
+        void aboveThresholdProfitAddsNoClass2ToTheTotal(int taxYear) {
+            viewModel.setTaxYear(TaxYear.of(taxYear));
+            viewModel.setTurnover(new BigDecimal("40000"));
+
+            viewModel.calculateTax();
+
+            assertThat(viewModel.getIncomeTax()).isGreaterThan(BigDecimal.ZERO);
+            assertThat(viewModel.getNiClass2()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(viewModel.getNiClass2WeeksLiable()).isZero();
+            assertThat(viewModel.isNiClass2Mandatory()).isFalse();
+            assertThat(viewModel.isNiClass2TreatedAsPaid()).isTrue();
+            assertThat(viewModel.getTotalNI()).isEqualByComparingTo(viewModel.getNiClass4());
+            assertThat(viewModel.getTotalTax())
+                .isEqualByComparingTo(viewModel.getIncomeTax().add(viewModel.getNiClass4()));
+        }
+    }
+
+    @Nested
+    @DisplayName("Rate basis of the figures on screen")
+    class RateBasisOfTheFigures {
+
+        @Test
+        @DisplayName("a configured year is not flagged as estimated")
+        void configuredYearIsNotEstimated() {
+            int configured = TaxRateConfiguration.getInstance().getSupportedTaxYears().stream()
+                .mapToInt(Integer::intValue).max().orElseThrow();
+
+            viewModel.setTaxYear(TaxYear.of(configured));
+
+            assertThat(viewModel.isRatesEstimated()).isFalse();
+            assertThat(viewModel.getRateBasis().ratesYear()).isEqualTo(configured);
+        }
+
+        @Test
+        @DisplayName("a year with no rate file is flagged as estimated before any figure exists")
+        void unconfiguredYearIsFlaggedBeforeAnyFigureExists() {
+            int beyondTheCliff = TaxRateConfiguration.getInstance().getSupportedTaxYears().stream()
+                .mapToInt(Integer::intValue).max().orElseThrow() + 1;
+
+            viewModel.setTaxYear(TaxYear.of(beyondTheCliff));
+
+            assertThat(viewModel.isRatesEstimated())
+                .as("a year with no records still needs its banner")
+                .isTrue();
+            assertThat(viewModel.getRateBasis().ratesYear()).isEqualTo(beyondTheCliff - 1);
+            assertThat(viewModel.getRateBasis().ratesYearLabel())
+                .isEqualTo((beyondTheCliff - 1) + "/" + String.format("%02d", beyondTheCliff % 100));
+        }
+
+        @Test
+        @DisplayName("the basis published with the figures is the one they were computed on")
+        void basisMatchesTheFiguresItWasPublishedWith() {
+            int beyondTheCliff = TaxRateConfiguration.getInstance().getSupportedTaxYears().stream()
+                .mapToInt(Integer::intValue).max().orElseThrow() + 1;
+            viewModel.setTaxYear(TaxYear.of(beyondTheCliff));
+            viewModel.setTurnover(new BigDecimal("40000"));
+
+            viewModel.calculateTax();
+
+            assertThat(viewModel.getIncomeTax()).isGreaterThan(BigDecimal.ZERO);
+            assertThat(viewModel.getRateBasis())
+                .isEqualTo(viewModel.getLastCalculationResult().rateBasis());
+            assertThat(viewModel.isRatesEstimated()).isTrue();
+        }
+
+        @Test
+        @DisplayName("clearing the tax year clears the basis rather than leaving a stale one")
+        void clearingTheTaxYearClearsTheBasis() {
+            viewModel.setTaxYear(TaxYear.of(2025));
+
+            viewModel.setTaxYear(null);
+
+            assertThat(viewModel.getRateBasis()).isNull();
+            assertThat(viewModel.isRatesEstimated()).isFalse();
         }
     }
 }

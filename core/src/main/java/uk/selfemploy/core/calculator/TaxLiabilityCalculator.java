@@ -1,5 +1,7 @@
 package uk.selfemploy.core.calculator;
 
+import uk.selfemploy.core.config.TaxRateConfiguration;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -8,8 +10,9 @@ import java.time.LocalDate;
  *
  * Calculates all tax components for self-employed individuals:
  * - Income Tax (based on taxable income bands)
- * - NI Class 4 (percentage-based on profits above Lower Profits Limit £12,570)
- * - NI Class 2 (flat rate, mandatory if profits > Small Profits Threshold £6,845)
+ * - NI Class 4 (percentage-based on profits above the Lower Profits Limit)
+ * - NI Class 2 (flat weekly rate; from 2024/25 charged only on the voluntary path below the
+ *   Small Profits Threshold, since profits above it are treated as having paid)
  *
  * SE-808: State Pension Age Exemption
  * When date of birth is provided, the calculator checks if the person is exempt
@@ -91,7 +94,8 @@ public class TaxLiabilityCalculator {
             totalLiability,
             incomeTaxResult,
             niClass4Result,
-            niClass2Result
+            niClass2Result,
+            TaxRateConfiguration.getInstance().rateBasisFor(taxYear)
         );
     }
 

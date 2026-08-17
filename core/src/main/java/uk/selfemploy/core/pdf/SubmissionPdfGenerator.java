@@ -418,6 +418,9 @@ public class SubmissionPdfGenerator {
             addTableRow(table, "Weekly Rate", formatCurrency(niClass2Details.weeklyRate()));
             addTableRow(table, "Weeks Liable", String.valueOf(niClass2Details.weeksLiable()));
             addBoldRow(table, "Total NI Class 2", formatCurrency(taxResult.niClass2()));
+        } else if (niClass2Details.isTreatedAsPaid()) {
+            addTableRow(table, "Status", "Treated as Paid (profits above Small Profits Threshold)");
+            addBoldRow(table, "Total NI Class 2", formatCurrency(BigDecimal.ZERO));
         } else {
             addTableRow(table, "Status", "Not Applicable (below threshold)");
             addBoldRow(table, "Total NI Class 2", formatCurrency(BigDecimal.ZERO));

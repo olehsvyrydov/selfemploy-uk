@@ -9,18 +9,29 @@ import java.math.RoundingMode;
 /**
  * Calculator for UK National Insurance Class 2.
  *
- * Class 2 NI is a flat-rate weekly contribution paid by self-employed individuals.
- * It differs from Class 4 (which is percentage-based on profits).
+ * <p>Class 2 NI is a flat-rate weekly contribution for self-employed individuals. It differs
+ * from Class 4 (which is percentage-based on profits): Class 2 uses the Small Profits
+ * Threshold, Class 4 the Lower Profits Limit.
  *
- * Rates are loaded from YAML configuration, with fallback to default rates.
+ * <p>The requirement to pay Class 2 was removed from 6 April 2024. From tax year 2024/25
+ * onwards, profits at or above the Small Profits Threshold are treated as having paid it, so
+ * nothing is charged; below the threshold it may still be paid voluntarily to protect a State
+ * Pension qualifying year. Tax years before 2024/25 keep the mandatory weekly charge.
  *
- * Key differences from Class 4 NI:
- * - Class 2: Uses Small Profits Threshold
- * - Class 4: Uses Lower Profits Limit
+ * <p>Rates are loaded from YAML configuration, with fallback to default rates.
+ *
+ * @see <a href="https://www.gov.uk/self-employed-national-insurance-rates">HMRC: self-employed
+ *      National Insurance rates</a>
  */
 public class NationalInsuranceClass2Calculator {
 
     private static final int WEEKS_IN_YEAR = 52;
+
+    /**
+     * First tax year in which profits at or above the Small Profits Threshold are treated as having
+     * paid Class 2 rather than being charged for it (6 April 2024).
+     */
+    private static final int TREATED_AS_PAID_FROM_TAX_YEAR = 2024;
 
     private final int taxYear;
     private final NIClass2Rates rates;
@@ -44,6 +55,13 @@ public class NationalInsuranceClass2Calculator {
     /**
      * Calculates Class 2 NI for the given gross profit with voluntary option.
      *
+     * <p>At or above the Small Profits Threshold the result depends on the tax year: from 2024/25
+     * nothing is charged and the year is treated as paid; earlier years charge 52 weeks.
+     *
+     * <p>The threshold comparison is inclusive because HMRC's rule is "at or above": a profit
+     * exactly equal to the threshold earns a qualifying year. Treating it as below would tell the
+     * user to pay voluntarily to protect a State Pension year they have already earned.
+     *
      * @param grossProfit The gross profit amount
      * @param voluntary Whether to pay Class 2 NI voluntarily (only applies below threshold)
      * @return Class2NICalculationResult containing the calculation details
@@ -54,28 +72,27 @@ public class NationalInsuranceClass2Calculator {
             grossProfit = BigDecimal.ZERO;
         }
 
-        // Check if profits exceed Small Profits Threshold
-        boolean exceedsThreshold = grossProfit.compareTo(rates.smallProfitsThreshold()) > 0;
+        boolean meetsThreshold = grossProfit.compareTo(rates.smallProfitsThreshold()) >= 0;
+        boolean treatedAsPaid = meetsThreshold && taxYear >= TREATED_AS_PAID_FROM_TAX_YEAR;
 
         boolean isMandatory = false;
         boolean isVoluntary = false;
         BigDecimal totalNI = BigDecimal.ZERO;
         int weeksLiable = 0;
 
-        if (exceedsThreshold) {
-            // Mandatory Class 2 NI - profits above Small Profits Threshold
+        if (meetsThreshold && !treatedAsPaid) {
+            // Pre-2024/25: mandatory Class 2 NI at or above the Small Profits Threshold
             isMandatory = true;
-            isVoluntary = false;
             weeksLiable = WEEKS_IN_YEAR;
             totalNI = calculateAnnualNI();
-        } else if (voluntary) {
+        } else if (!meetsThreshold && voluntary) {
             // Voluntary Class 2 NI - profits below threshold but choosing to pay
-            isMandatory = false;
             isVoluntary = true;
             weeksLiable = WEEKS_IN_YEAR;
             totalNI = calculateAnnualNI();
         }
-        // else: No Class 2 NI due (below threshold and not voluntary)
+        // else: nothing due — either treated as paid at or above the threshold, or below it and
+        // not opting in.
 
         return new Class2NICalculationResult(
             grossProfit,
@@ -84,7 +101,8 @@ public class NationalInsuranceClass2Calculator {
             weeksLiable,
             totalNI,
             isMandatory,
-            isVoluntary
+            isVoluntary,
+            treatedAsPaid
         );
     }
 

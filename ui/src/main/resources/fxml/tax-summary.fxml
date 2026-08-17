@@ -52,9 +52,19 @@
                    styleClass="tax-disclaimer-text" wrapText="true"/>
         </HBox>
 
+        <!-- Unpublished-rates banner: shown when the viewed year has no rate file in this build -->
+        <HBox fx:id="estimatedRatesBanner" alignment="CENTER_LEFT" spacing="8" managed="false" visible="false"
+              styleClass="estimated-rates-banner">
+            <Label fx:id="estimatedRatesText" styleClass="estimated-rates-text" wrapText="true"/>
+        </HBox>
+
         <!-- Tax At A Glance -->
         <VBox styleClass="tax-glance-card" spacing="20">
-            <Label text="%taxSummary.glanceTitle" styleClass="tax-glance-title"/>
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Label text="%taxSummary.glanceTitle" styleClass="tax-glance-title"/>
+                <Label fx:id="estimatedRatesBadge" styleClass="estimated-rates-badge"
+                       managed="false" visible="false"/>
+            </HBox>
 
             <HBox spacing="20">
                 <!-- Net Profit Metric -->
@@ -186,7 +196,7 @@
                 <StackPane styleClass="class2-ni-icon">
                     <FontIcon iconLiteral="fas-info-circle" iconSize="16"/>
                 </StackPane>
-                <Label fx:id="class2Title" text="Class 2 NI Credits" styleClass="class2-ni-title"/>
+                <Label fx:id="class2Title" styleClass="class2-ni-title"/>
                 <Label fx:id="voluntaryBadge" text="%taxSummary.voluntaryBadge" styleClass="voluntary-badge"
                        managed="false" visible="false"/>
                 <Region HBox.hgrow="ALWAYS"/>
@@ -200,14 +210,14 @@
             <!-- Rates Box -->
             <VBox styleClass="class2-rates-box" spacing="8">
                 <HBox styleClass="class2-rates-row" alignment="CENTER_LEFT">
-                    <Label fx:id="class2WeeklyLabel" text="Weekly rate (2025/26):" styleClass="class2-rates-label"/>
+                    <Label fx:id="class2WeeklyLabel" styleClass="class2-rates-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Label fx:id="class2WeeklyValue" text="£3.45" styleClass="class2-rates-value"/>
+                    <Label fx:id="class2WeeklyValue" styleClass="class2-rates-value"/>
                 </HBox>
                 <HBox styleClass="class2-rates-row" alignment="CENTER_LEFT">
                     <Label text="%taxSummary.class2AnnualLabel" styleClass="class2-rates-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Label fx:id="class2AnnualValue" text="£179.40" styleClass="class2-rates-value"/>
+                    <Label fx:id="class2AnnualValue" styleClass="class2-rates-value"/>
                 </HBox>
             </VBox>
 

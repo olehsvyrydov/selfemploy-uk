@@ -1,5 +1,7 @@
 package uk.selfemploy.core.calculator;
 
+import uk.selfemploy.core.config.RateBasis;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -8,12 +10,20 @@ import java.math.RoundingMode;
  *
  * This record contains all tax liability components:
  * - Income Tax (based on taxable income bands)
- * - NI Class 4 (percentage-based on profits above Lower Profits Limit £12,570)
- * - NI Class 2 (flat rate based on weeks, mandatory if profits > Small Profits Threshold £6,845)
+ * - NI Class 4 (percentage-based on profits above the Lower Profits Limit)
+ * - NI Class 2 (flat weekly rate; from 2024/25 charged only on the voluntary path below the
+ *   Small Profits Threshold, since profits above it are treated as having paid)
  *
  * SE-808: Now includes State Pension Age exemption status for Class 4 NI.
  * People who have reached State Pension Age (currently 66) before the start
  * of the tax year are exempt from Class 4 NI contributions.
+ *
+ * <p>{@code rateBasis} travels with the figures rather than beside them: whoever holds a
+ * liability from this record also holds the tax year whose published rates produced it, and can
+ * therefore tell this year's tax from an estimate computed on an older year's rates. There is no
+ * way to obtain the numbers without it.
+ *
+ * @param rateBasis which published tax year's rates these figures were computed on
  */
 public record TaxLiabilityResult(
     BigDecimal grossProfit,
@@ -23,7 +33,8 @@ public record TaxLiabilityResult(
     BigDecimal totalLiability,
     TaxCalculationResult incomeTaxDetails,
     NICalculationResult niClass4Details,
-    Class2NICalculationResult niClass2Details
+    Class2NICalculationResult niClass2Details,
+    RateBasis rateBasis
 ) {
     private static final BigDecimal POA_THRESHOLD = new BigDecimal("1000");
     private static final BigDecimal POA_DIVISOR = new BigDecimal("2");

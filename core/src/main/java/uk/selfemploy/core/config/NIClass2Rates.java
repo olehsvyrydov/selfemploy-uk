@@ -6,7 +6,8 @@ import java.math.BigDecimal;
  * National Insurance Class 2 rates configuration for a specific tax year.
  *
  * Class 2 NI is a flat-rate weekly contribution paid by self-employed individuals.
- * It's mandatory if profits exceed the Small Profits Threshold, voluntary otherwise.
+ * From 2024/25 onwards profits above the Small Profits Threshold are treated as having paid it;
+ * below the threshold it remains voluntary. Before 2024/25 it was mandatory above the threshold.
  */
 public record NIClass2Rates(
     BigDecimal weeklyRate,

@@ -3,6 +3,7 @@ package uk.selfemploy.ui.service;
 import uk.selfemploy.common.domain.Submission;
 import uk.selfemploy.common.enums.SubmissionStatus;
 import uk.selfemploy.common.enums.SubmissionType;
+import uk.selfemploy.core.calculator.TaxLiabilityCalculator;
 import uk.selfemploy.ui.viewmodel.SubmissionTableRow;
 
 import java.math.BigDecimal;
@@ -93,6 +94,11 @@ public record SubmissionRecord(
      *   <li>taxYearStart → formatted "YYYY/YY" string</li>
      * </ul>
      *
+     * <p>The tax due on an annual submission is derived here from the profit that was stored with
+     * it, at the rates of the tax year it was filed for, by the same calculator the Tax Summary
+     * uses. It is not stored alongside the submission, so leaving it out is what made history show
+     * an accepted return as "Tax Due £0.00".</p>
+     *
      * @return A SubmissionTableRow for UI display
      */
     public SubmissionTableRow toTableRow() {
@@ -108,9 +114,24 @@ public record SubmissionRecord(
             .totalIncome(totalIncome)
             .totalExpenses(totalExpenses)
             .netProfit(netProfit)
-            .taxDue(null) // Tax due is calculated separately for annual submissions
+            .taxDue(annualTaxDue())
             .errorMessage(errorMessage)
             .build();
+    }
+
+    /**
+     * The Income Tax and National Insurance due on this submission's stored profit, or null when
+     * the question does not apply — a quarterly update reports one period's figures, not a year's
+     * liability, so any annual figure derived from it would be an invention.
+     */
+    private BigDecimal annualTaxDue() {
+        if (!"ANNUAL".equals(type)) {
+            return null;
+        }
+        if (netProfit == null || netProfit.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return new TaxLiabilityCalculator(taxYearStart).calculate(netProfit).totalLiability();
     }
 
     /**
