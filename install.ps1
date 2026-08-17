@@ -318,6 +318,45 @@ function Install-Release {
 
     Write-Success "Downloaded: $fileName"
 
+    # Verify against the published SHA256SUMS before installing. There is no bypass flag:
+    # a missing checksum file, a missing entry, or a mismatch all refuse to install.
+    $checksumsAsset = $release.assets | Where-Object { $_.name -eq 'SHA256SUMS' } | Select-Object -First 1
+    if (-not $checksumsAsset) {
+        Write-Err "Release $version has no SHA256SUMS file to verify the download against. Refusing to install."
+        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+
+    $checksumsPath = Join-Path $tempDir "SHA256SUMS"
+    try {
+        Invoke-WebRequest -Uri $checksumsAsset.browser_download_url -OutFile $checksumsPath
+    }
+    catch {
+        Write-Err "Could not download SHA256SUMS. Refusing to install an unverified asset."
+        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+
+    Write-Info "Verifying checksum against published SHA256SUMS..."
+    $checksumLine = Get-Content $checksumsPath | Where-Object { $_ -match [regex]::Escape($fileName) + '\s*$' } | Select-Object -First 1
+    if (-not $checksumLine) {
+        Write-Err "No checksum for $fileName found in SHA256SUMS. Refusing to install an unverified asset."
+        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    $expectedChecksum = ($checksumLine -split '\s+')[0].ToLower()
+    $actualChecksum = (Get-FileHash -Path $filePath -Algorithm SHA256).Hash.ToLower()
+
+    if ($actualChecksum -ne $expectedChecksum) {
+        Write-Err "Checksum mismatch for $fileName."
+        Write-Err "  expected: $expectedChecksum"
+        Write-Err "  actual:   $actualChecksum"
+        Write-Err "The downloaded file does not match the published checksum and will not be installed."
+        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    Write-Success "Checksum verified."
+
     Write-Info "Installing..."
 
     try {

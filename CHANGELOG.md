@@ -13,14 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--install` mode for install.sh and `-Install` for install.ps1 (downloads pre-built installer)
 - Linux AppImage support in release workflow and install script
 - `packaging/SelfEmploy.desktop` for AppImage metadata
+- `SHA256SUMS` generated for every release; `install.sh --install` and `install.ps1 -Install` verify
+  the downloaded asset against it and refuse to install on a missing or mismatched checksum
+- `RELEASE_CHECKLIST.md` and a `RELEASE_NOTES.md` template for cutting the first release
+- `scripts/content-lint.sh` blocked-phrase check over the README and the wiki, backed by
+  `scripts/content-lint-claims-blocklist.txt`, so a withdrawn claim cannot reappear in either
 
 ### Changed
 - Fixed jpackage configuration (correct Quarkus main JAR and classloader entry point)
 - Renamed native package from "UK Self-Employment Manager" to "SelfEmploy" for cross-platform compatibility
-- Separated website into dedicated repo ([selfemploy-website](https://github.com/olehsvyrydov/selfemploy-website))
+- Separated the website into a dedicated repository
 - Migrated docs to Confluence (internal) and GitHub Wiki (client-facing); removed `docs/` directory
 - Updated README links to point to GitHub Wiki
 - Updated issue/PR templates to reference public roadmap
+- Rewrote README and wiki claims to match verified behaviour: the annual submission flow is a
+  guided multi-step wizard (not one-click), income/expense records have an optional invoice-number
+  reference field (the app does not create or manage invoices), NI estimates cover Class 2 and
+  Class 4, and every HMRC submission targets the sandbox API only. Added a "who can file with this"
+  scope statement and removed the dead `selfemploy.uk` site references
 
 ### Fixed
 - Class 2 National Insurance is no longer charged for tax years from 2024/25 onwards. Profits above the Small Profits Threshold are treated as having paid it (the requirement to pay was removed on 6 April 2024), so estimates no longer overstate the liability by 52 weeks of the weekly rate. Voluntary Class 2 below the threshold is unchanged.
@@ -30,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - jpackage `mainJar` now correctly references `quarkus-run.jar` instead of non-existent artifact JAR
 - jpackage `mainClass` now uses `QuarkusEntryPoint` for proper classloader bootstrapping
 - jpackage `appVersion` strips `-SNAPSHOT` suffix for version compliance
+- Removed a dead site link and a stale issue-tracker link from the project metadata and a test's
+  Javadoc
 
 ## [0.1.0] - Unreleased
 

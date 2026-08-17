@@ -22,22 +22,11 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * Integration tests for CSV Bank Import (SE-601).
- * Tests end-to-end import flow with real CSV data for all 6 supported UK banks.
- *
- * <p>Test Categories:
- * <ul>
- *   <li>Format detection for all 6 banks (AC-2)</li>
- *   <li>End-to-end import flow with real CSV data</li>
- *   <li>Duplicate detection accuracy (AC-7)</li>
- *   <li>Category suggestion accuracy (AC-8)</li>
- *   <li>Error handling (invalid files, too large, etc.) (AC-11)</li>
- * </ul>
- *
- * @author /adam - E2E Test Automation Engineer
- * @see <a href="https://jira.selfemploy.uk/browse/SE-601">SE-601 CSV Bank Import</a>
+ * Integration tests for CSV bank import: the end-to-end flow against real CSV data for all six
+ * supported UK banks, covering format detection, duplicate detection, category suggestion, and
+ * error handling for invalid or oversized files.
  */
-@DisplayName("CSV Import Integration Tests - SE-601")
+@DisplayName("CSV Import Integration Tests")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CsvImportIntegrationTest {
 

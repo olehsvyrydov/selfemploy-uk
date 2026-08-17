@@ -8,11 +8,11 @@
 
 ## Vision Statement
 
-> **For** UK self-employed individuals and small business owners **who** struggle with annual tax compliance and HMRC submissions, **the** UK Self-Employment Manager **is a** free, open-source desktop application **that** simplifies year-round financial record-keeping and enables one-click annual tax return submission to HMRC. **Unlike** expensive subscription-based accounting software or complex spreadsheets, **our product** offers privacy-first local storage with optional cloud backup, cross-platform support, and full Making Tax Digital compliance without ongoing costs.
+> **For** UK self-employed individuals and small business owners **who** struggle with annual tax compliance and HMRC submissions, **the** UK Self-Employment Manager **is a** free, open-source desktop application **that** simplifies year-round financial record-keeping and guides users through Self Assessment submission to HMRC's sandbox Making Tax Digital API. **Unlike** expensive subscription-based accounting software or complex spreadsheets, **our product** offers privacy-first local storage, cross-platform support, and Making Tax Digital sandbox compliance without ongoing costs. See the README's "Who can file with this" and "HMRC environment" sections for the current, verified scope.
 
 ### Elevator Pitch
 
-*"Stop dreading tax season. Track your income and expenses throughout the year, see your tax liability in real-time, and submit your Self Assessment to HMRC with a single click - all for free, all on your own computer, with optional cloud backup for peace of mind."*
+*"Stop dreading tax season. Track your income and expenses throughout the year, see your tax liability in real-time, and walk through your Self Assessment submission to HMRC's sandbox with a guided wizard - all for free, all on your own computer."*
 
 ---
 
@@ -35,7 +35,7 @@
 - Know how much tax I'll owe before January
 - Submit my Self Assessment without hiring an accountant
 
-### Persona 2: Mike the Partnership Partner (Phase 2)
+### Persona 2: Mike the Partnership Partner — not implemented, not planned
 
 | Attribute | Details |
 |-----------|---------|
@@ -44,7 +44,7 @@
 | **Current Pain** | Partnership accounting is confusing |
 | **Goals** | Track partnership income/expenses, understand profit share |
 
-### Persona 3: Emma the Ltd Director (Phase 3)
+### Persona 3: Emma the Ltd Director — not implemented, not planned
 
 | Attribute | Details |
 |-----------|---------|
@@ -61,12 +61,12 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Income Recording** | Record invoices, payments, client details |
+| **Income Recording** | Record income entries with client details and an optional invoice-number reference; the app does not create or manage invoices |
 | **Expense Tracking** | Log expenses with HMRC-aligned categories |
 | **Tax Year Management** | Work within UK tax year (6 Apr - 5 Apr) |
 | **Tax Calculation Preview** | Real-time estimated tax liability |
 | **HMRC Authentication** | OAuth2 connection to HMRC Gateway |
-| **Annual Return Submission** | One-click Self Assessment submission |
+| **Annual Return Submission** | Guided multi-step Self Assessment submission (review, calculate, confirm, submit) against HMRC's sandbox |
 | **Local Data Storage** | Local SQLite database |
 | **Backup/Restore** | Export and import data files |
 

@@ -2,27 +2,52 @@
 
 [![CI Build](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/ci.yml/badge.svg)](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/codeql.yml/badge.svg)](https://github.com/olehsvyrydov/selfemploy-uk/actions/workflows/codeql.yml)
-[![Website](https://img.shields.io/badge/website-selfemploy.uk-blue)](https://selfemploy.uk)
 
-A free, open-source desktop application for UK self-employed individuals to manage their accounting and submit annual reports to HMRC via Making Tax Digital (MTD) APIs.
-
-**Website:** [https://selfemploy.uk](https://selfemploy.uk)
+A free, open-source desktop application for UK self-employed individuals to track income and expenses,
+estimate Income Tax and National Insurance, and submit to HMRC's **sandbox** Making Tax Digital (MTD)
+API. See [Who can file with this](#who-can-file-with-this) and [HMRC environment](#hmrc-environment-sandbox-only)
+below before relying on it.
 
 ## Features
 
-- **Income Tracking**: Record invoices, payments, and income sources
-- **Expense Management**: Categorize expenses aligned with SA103 form categories
-- **Tax Calculator**: Real-time estimates for Income Tax and National Insurance Class 4
-- **HMRC Integration**: One-click annual report submission via MTD APIs
-- **Privacy-First**: All data stored locally on your device; HMRC credentials and your National Insurance number are encrypted (AES-256-GCM)
+- **Income & Expense Tracking**: Record income and expenses, categorised to SA103 form boxes; an
+  optional invoice number field lets you cross-reference your own invoices — the app does not create
+  or manage invoices itself
+- **Tax Calculator**: Real-time estimates for Income Tax and National Insurance **Class 2 and Class 4**
+- **HMRC Integration**: A guided, multi-step wizard (review → calculate → confirm → submit) for
+  quarterly updates and the final declaration via the MTD API, against the **HMRC sandbox only** —
+  see below
+- **Privacy-First**: All data stored locally on your device; HMRC credentials and your National
+  Insurance number are encrypted (AES-256-GCM)
 - **Cross-Platform**: Windows, macOS, and Linux support
+
+## Who can file with this
+
+This app supports a narrow, verified scope:
+
+- A single trade (one business), cash basis accounting
+- No employment income, no property income
+- No capital allowances — equipment/capital purchases are recorded but not calculated as an allowance
+- Partnership and Limited Company filing are not implemented (see [Target Users](#target-users))
+
+If your situation falls outside this scope, the figures the app produces will be incomplete.
+
+## HMRC environment: sandbox only
+
+Every submission and calculation in this app talks to **HMRC's test (sandbox) API**
+(`test-api.service.hmrc.gov.uk`), not the production MTD service. The app labels this in the UI
+("HMRC Sandbox") so it is never mistaken for a real filing.
+
+This project is **not seeking HMRC production access**. HMRC closed production credential
+applications for new 2026-27 quarterly-update products, so there is no route to production filing
+for a new application at this time.
 
 ## Why This Project?
 
 - **FREE**: No monthly subscriptions (QuickBooks £12-32/mo, FreeAgent £14.50/mo)
 - **Privacy-First**: Your financial data stays on your computer
 - **Open Source**: Transparent, community-driven development
-- **MTD Ready**: Compliant with HMRC Making Tax Digital requirements
+- **MTD Sandbox Ready**: Exercises the Making Tax Digital sandbox APIs end to end
 
 ## Quick Start
 
@@ -40,7 +65,13 @@ Or use the one-line installer:
 .\install.ps1 -Install
 ```
 
-See the full [Installation Guide](https://selfemploy.uk/install-guide.html) for detailed per-platform instructions.
+`--install` downloads the release asset for your platform and verifies it against the release's
+published `SHA256SUMS` before installing; it refuses to install if the checksum does not match, or
+if no checksum is published. To verify a manually downloaded installer yourself:
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+```
 
 ### Build from Source (Developers)
 
@@ -126,9 +157,12 @@ build profile and is not part of the desktop application.
 
 ## Target Users
 
-1. **Self-Employed Individuals**: Freelancers, contractors, sole traders
-2. **Partnerships**: (Phase 2) Business partners sharing profits
-3. **Ltd Company Directors**: (Phase 3) Salary/dividend optimization
+**Self-Employed Individuals**: Freelancers, contractors, and sole traders with a single trade, filing
+under cash basis (see [Who can file with this](#who-can-file-with-this)).
+
+Partnership and Limited Company support do not exist in this codebase — `BusinessType.PARTNERSHIP`
+and `BusinessType.LIMITED_COMPANY` are defined but disabled stubs with no filing logic behind them.
+The project is not developing them further.
 
 ## Plugin System
 
@@ -170,6 +204,8 @@ See the [Plugin Developer Documentation](https://github.com/olehsvyrydov/selfemp
 | HmrcApiExtension | HMRC API extensions |
 
 ## HMRC Making Tax Digital (MTD) Timeline
+
+HMRC's published mandation timeline (this is a general HMRC requirement, independent of this app):
 
 | Date | Requirement |
 |------|-------------|

@@ -250,6 +250,61 @@ create_installer() {
     esac
 }
 
+# Verifies that $2 (a downloaded file) matches the checksum published for $3 (its filename)
+# in the SHA256SUMS file at $1. Prints an error and returns non-zero on any failure to
+# verify — a missing entry, a missing file, or a mismatch. There is no bypass: every exit
+# path is a refusal, never a warning.
+# Prints the SHA-256 of $1. Linux ships sha256sum; macOS ships shasum instead, and this
+# script installs on both. Returns non-zero and prints nothing if neither exists, so an
+# absent tool becomes a refusal rather than an empty checksum that silently mismatches.
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    else
+        return 1
+    fi
+}
+
+verify_checksum() {
+    local checksums_path="$1" filepath="$2" filename="$3"
+
+    if [[ ! -f "$checksums_path" ]]; then
+        error "Could not download SHA256SUMS. Refusing to install an unverified asset."
+        return 1
+    fi
+
+    local expected_checksum actual_checksum
+    # Exact field match, not a regex: a filename contains dots, and as an ERE those match
+    # any character, so a pattern could pick up a different asset's line.
+    expected_checksum=$(awk -v want="$filename" \
+        '{ name = $2; sub(/^\*/, "", name); if (name == want) { print $1; exit } }' \
+        "$checksums_path")
+
+    if [[ -z "$expected_checksum" ]]; then
+        error "No checksum for $filename found in SHA256SUMS. Refusing to install an unverified asset."
+        return 1
+    fi
+
+    if ! actual_checksum=$(sha256_of "$filepath") || [[ -z "$actual_checksum" ]]; then
+        error "Neither sha256sum nor shasum is available, so the download cannot be verified."
+        error "Install one of them, or verify $filename against SHA256SUMS by hand."
+        return 1
+    fi
+
+    if [[ "$actual_checksum" != "$expected_checksum" ]]; then
+        error "Checksum mismatch for $filename."
+        error "  expected: $expected_checksum"
+        error "  actual:   $actual_checksum"
+        error "The downloaded file does not match the published checksum and will not be installed."
+        return 1
+    fi
+
+    success "Checksum verified."
+    return 0
+}
+
 setup_env() {
     if [[ ! -f .env ]]; then
         if [[ -f .env.example ]]; then
@@ -335,10 +390,21 @@ install_release() {
         exit 1
     fi
 
+    # Find the SHA256SUMS asset published alongside the installers. There is no bypass for a
+    # missing or mismatched checksum: if we cannot verify the download, we do not install it.
+    local checksums_url
+    checksums_url=$(echo "$release_json" | grep '"browser_download_url"' | grep 'SHA256SUMS' | head -1 | sed -E 's/.*"(https[^"]+)".*/\1/')
+
+    if [[ -z "$checksums_url" ]]; then
+        error "Release $version has no SHA256SUMS file to verify the download against. Refusing to install."
+        exit 1
+    fi
+
     info "Downloading $filename..."
     local tmpdir
     tmpdir=$(mktemp -d)
     local filepath="${tmpdir}/${filename}"
+    local checksums_path="${tmpdir}/SHA256SUMS"
 
     curl -L --progress-bar -o "$filepath" "$download_url"
 
@@ -349,6 +415,14 @@ install_release() {
     fi
 
     success "Downloaded: $filename"
+
+    info "Verifying checksum against published SHA256SUMS..."
+    curl -sL -o "$checksums_path" "$checksums_url"
+
+    if ! verify_checksum "$checksums_path" "$filepath" "$filename"; then
+        rm -rf "$tmpdir"
+        exit 1
+    fi
 
     # Install
     info "Installing..."
@@ -438,4 +512,6 @@ main() {
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
