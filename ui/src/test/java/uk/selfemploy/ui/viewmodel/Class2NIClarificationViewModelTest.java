@@ -5,6 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.selfemploy.core.calculator.NationalInsuranceClass2Calculator;
+import uk.selfemploy.core.config.RateBasis;
+import uk.selfemploy.core.config.TaxRateConfiguration;
 
 import java.math.BigDecimal;
 
@@ -447,6 +449,50 @@ class Class2NIClarificationViewModelTest {
             assertThat(viewModel.showVoluntaryBadgeProperty().get())
                     .as("below the threshold the voluntary option is the whole point of the card")
                     .isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Past the last published rate file")
+    class PastTheLastRateFile {
+
+        /**
+         * Rate lookups for an unconfigured year fall back to the latest published year rather than
+         * to a hardcoded default. That keeps the figure sane, but it means the weekly rate on the
+         * card belongs to an earlier year than the one being viewed — so the label has to name the
+         * year the rate was published for. Naming the viewed year would state that an old rate is
+         * that year's rate, which is exactly what the estimated-rates banner exists to deny.
+         */
+        @Test
+        @DisplayName("the rate label names the year the rate was published for, not the year viewed")
+        void rateLabelNamesThePublishedYear() {
+            int lastPublished = TaxRateConfiguration.getInstance().getSupportedTaxYears().stream()
+                    .max(Integer::compareTo)
+                    .orElseThrow();
+            int unconfigured = lastPublished + 1;
+
+            RateBasis basis = TaxRateConfiguration.getInstance().rateBasisFor(unconfigured);
+            assertThat(basis.isEstimated())
+                    .as("the year after the last rate file must resolve to an earlier year's rates, "
+                        + "otherwise this test is not exercising the fallback at all")
+                    .isTrue();
+
+            viewModel.update(unconfigured, new BigDecimal("30000.00"));
+
+            assertThat(viewModel.weeklyRateLabelProperty().get())
+                    .as("the rate shown is %s's, so the label must say so", basis.ratesYearLabel())
+                    .contains(basis.ratesYearLabel())
+                    .doesNotContain(basis.taxYearLabel());
+        }
+
+        @Test
+        @DisplayName("for a published year the label still names that same year")
+        void rateLabelNamesTheViewedYearWhenItIsPublished() {
+            viewModel.update(TAX_YEAR_2025, new BigDecimal("30000.00"));
+
+            assertThat(viewModel.weeklyRateLabelProperty().get())
+                    .as("a configured year's rates are its own, so nothing changes for the normal case")
+                    .contains("2025/26");
         }
     }
 }

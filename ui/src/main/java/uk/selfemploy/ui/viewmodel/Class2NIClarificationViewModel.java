@@ -2,6 +2,7 @@ package uk.selfemploy.ui.viewmodel;
 
 import javafx.beans.property.*;
 import uk.selfemploy.core.config.NIClass2Rates;
+import uk.selfemploy.core.config.RateBasis;
 import uk.selfemploy.core.config.TaxRateConfiguration;
 import uk.selfemploy.ui.i18n.Messages;
 import uk.selfemploy.ui.util.Money;
@@ -138,13 +139,20 @@ public class Class2NIClarificationViewModel {
      * the year in rather than holding one is what keeps the card's figures and the profit beside it
      * describing the same year.
      *
+     * <p>The rate label names the year the rates were <em>published</em> for, which past the last
+     * rate file is an earlier year than the one being viewed. Labelling an older weekly rate with
+     * the viewed year would present it as that year's rate — the precise thing the estimated-rates
+     * banner exists to prevent.
+     *
      * @param taxYearStart the tax year being viewed (e.g. 2025 for 2025/26)
      * @param profit       the net profit for that year (null is treated as zero)
      */
     public void update(int taxYearStart, BigDecimal profit) {
-        this.rates = TaxRateConfiguration.getInstance().getNIClass2Rates(taxYearStart);
+        TaxRateConfiguration config = TaxRateConfiguration.getInstance();
+        this.rates = config.getNIClass2Rates(taxYearStart);
+        RateBasis basis = config.rateBasisFor(taxYearStart);
 
-        weeklyRateLabel.set(Messages.format("taxSummary.class2.weeklyRateLabel", taxYearLabel(taxYearStart)));
+        weeklyRateLabel.set(Messages.format("taxSummary.class2.weeklyRateLabel", basis.ratesYearLabel()));
         weeklyRateText.set(Money.format(rates.weeklyRate()));
         annualAmountText.set(Money.format(annualAmount()));
 
