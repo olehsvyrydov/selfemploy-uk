@@ -254,6 +254,19 @@ create_installer() {
 # in the SHA256SUMS file at $1. Prints an error and returns non-zero on any failure to
 # verify — a missing entry, a missing file, or a mismatch. There is no bypass: every exit
 # path is a refusal, never a warning.
+# Prints the SHA-256 of $1. Linux ships sha256sum; macOS ships shasum instead, and this
+# script installs on both. Returns non-zero and prints nothing if neither exists, so an
+# absent tool becomes a refusal rather than an empty checksum that silently mismatches.
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    else
+        return 1
+    fi
+}
+
 verify_checksum() {
     local checksums_path="$1" filepath="$2" filename="$3"
 
@@ -263,14 +276,22 @@ verify_checksum() {
     fi
 
     local expected_checksum actual_checksum
-    expected_checksum=$(grep -E "[[:space:]]\*?${filename}\$" "$checksums_path" | awk '{print $1}' | head -1)
+    # Exact field match, not a regex: a filename contains dots, and as an ERE those match
+    # any character, so a pattern could pick up a different asset's line.
+    expected_checksum=$(awk -v want="$filename" \
+        '{ name = $2; sub(/^\*/, "", name); if (name == want) { print $1; exit } }' \
+        "$checksums_path")
 
     if [[ -z "$expected_checksum" ]]; then
         error "No checksum for $filename found in SHA256SUMS. Refusing to install an unverified asset."
         return 1
     fi
 
-    actual_checksum=$(sha256sum "$filepath" | awk '{print $1}')
+    if ! actual_checksum=$(sha256_of "$filepath") || [[ -z "$actual_checksum" ]]; then
+        error "Neither sha256sum nor shasum is available, so the download cannot be verified."
+        error "Install one of them, or verify $filename against SHA256SUMS by hand."
+        return 1
+    fi
 
     if [[ "$actual_checksum" != "$expected_checksum" ]]; then
         error "Checksum mismatch for $filename."
